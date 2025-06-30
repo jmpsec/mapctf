@@ -1,2 +1,2 @@
-# goctf
-Platform to host Capture the Flag competitions, written in go
+# mapctf
+Modern, scalable, and maintainable CTF & cyber range platform with a map-based UI
