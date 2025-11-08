@@ -1,0 +1,31 @@
+# mapctf-dev-base
+ARG GOLANG_VERSION=${GOLANG_VERSION:-1.24.3}
+FROM golang:${GOLANG_VERSION} AS mapctf-dev
+
+WORKDIR /usr/src/app/backend
+
+ENV GO111MODULE="on"
+ENV GOOS="linux"
+ENV CGO_ENABLED=0
+
+# Hot reloading mod
+RUN go install github.com/cosmtrek/air@v1.41.0
+RUN go install github.com/go-delve/delve/cmd/dlv@v1.20.1
+
+# Copy code
+COPY backend /usr/src/app/backend
+
+# Download deps
+RUN go mod download
+RUN go mod verify
+
+# Create directories for binaries and configuration
+RUN mkdir -p /opt/mapctf/bin
+RUN mkdir -p /opt/mapctf/config
+
+# Build API server
+RUN go build -o /opt/mapctf/bin/mapctf-api cmd/api/*.go
+
+EXPOSE 8081
+
+ENTRYPOINT ["air", "-c", "/usr/src/app/deploy/docker/conf/dev/air-mapctf-api.toml"]

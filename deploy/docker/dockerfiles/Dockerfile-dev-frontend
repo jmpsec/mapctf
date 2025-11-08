@@ -1,0 +1,23 @@
+# mapctf-ui-dev
+ARG NODE_VERSION=${NODE_VERSION:-18}
+FROM node:${NODE_VERSION}-alpine
+
+WORKDIR /app
+
+# Install dependencies for node-gyp if needed
+RUN apk add --no-cache python3 make g++
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Expose Vite dev server port
+EXPOSE 3000
+
+# Start development server
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

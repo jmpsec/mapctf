@@ -8,46 +8,28 @@
 # IDE metadata
 .vscode
 
-# Vagrant metadata
-.vagrant
+# Directories to ignore
+bin
+build
+.vscode
+tmp
 
 # Logs
 *.log
 
-# Golang
-vendor
-glide.lock
+# Configuration files except Docker env
+*.json
+*.yaml
+*.yml
+!docker-compose-dev.yml
 
-# Directories to ignore
-bin
-build
-vendor
+# Docker files
+.env
 
-# Plugins
-*.so
-
-# Deployment related files
-goctf.sh
-
-# Temp directory for tests
-tmp
-
-# Various packages
-*.deb
-*.pkg
-*.rpm
-
-# Certificates
-goctf.csr
-goctf.pem
-goctf.key
-goctf.crt
-dhparam.pem
-
-# Docker temporary folders and files
-docker/certs
-docker/config
-docker.flags
-
-# Random notes for debug
+# Notes
 notes.txt
+
+# Not tracking frontend files yet
+frontend
+static
+
