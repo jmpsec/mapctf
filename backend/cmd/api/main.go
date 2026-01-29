@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -21,7 +20,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli/v3"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -29,8 +27,6 @@ const (
 	projectName = "mapCTF"
 	// Service name
 	serviceName = projectName + "-api"
-	// Service version
-	serviceVersion = version.MapCTFVersion
 	// Service description
 	serviceDescription = "API service for " + projectName
 	// Application description
@@ -40,15 +36,6 @@ const (
 	// Default path used when generating example configs
 	defaultExampleConfigPath = "config/mapctf.example.yaml"
 )
-
-var validAuthMechanisms = map[string]struct{}{
-	config.AuthNone:  {},
-	config.AuthDB:    {},
-	config.AuthSAML:  {},
-	config.AuthJWT:   {},
-	config.AuthOAuth: {},
-	config.AuthOIDC:  {},
-}
 
 // Paths
 const (
@@ -115,97 +102,6 @@ func loadConfigurationYAML(file string) (config.MapCTFConfiguration, error) {
 	return cfg, nil
 }
 
-// Validate that required pieces of the configuration are set
-func validateConfigValues(cfg config.MapCTFConfiguration) error {
-	if cfg.Service.Listener == "" {
-		return fmt.Errorf("service.listener cannot be empty")
-	}
-	if cfg.Service.Port == "" {
-		return fmt.Errorf("service.port cannot be empty")
-	}
-	if _, err := strconv.Atoi(cfg.Service.Port); err != nil {
-		return fmt.Errorf("service.port must be numeric: %w", err)
-	}
-	if _, ok := validAuthMechanisms[cfg.Service.Auth]; !ok {
-		return fmt.Errorf("service.auth %q is not supported", cfg.Service.Auth)
-	}
-	if err := validateDBConfig(cfg.DB); err != nil {
-		return err
-	}
-	if err := validateRedisConfig(cfg.Redis); err != nil {
-		return err
-	}
-	if cfg.Metrics.Enabled {
-		if cfg.Metrics.Listener == "" {
-			return fmt.Errorf("metrics.listener cannot be empty when metrics are enabled")
-		}
-		if cfg.Metrics.Port == "" {
-			return fmt.Errorf("metrics.port cannot be empty when metrics are enabled")
-		}
-		if _, err := strconv.Atoi(cfg.Metrics.Port); err != nil {
-			return fmt.Errorf("metrics.port must be numeric: %w", err)
-		}
-	}
-	if cfg.TLS.Termination {
-		if cfg.TLS.CertificateFile == "" || cfg.TLS.KeyFile == "" {
-			return fmt.Errorf("tls.certificateFile and tls.keyFile are required when TLS termination is enabled")
-		}
-	}
-	if cfg.DebugHTTP.Enabled {
-		if cfg.DebugHTTP.File == "" {
-			return fmt.Errorf("debugHttp.file cannot be empty when HTTP debug logging is enabled")
-		}
-	}
-	return nil
-}
-
-func validateDBConfig(dbCfg config.ConfigurationDB) error {
-	switch dbCfg.Type {
-	case config.DBTypeSQLite:
-		if dbCfg.FilePath == "" {
-			return fmt.Errorf("db.filePath must be set when db.type is sqlite")
-		}
-	case config.DBTypePostgres, config.DBTypeMySQL:
-		if dbCfg.Host == "" {
-			return fmt.Errorf("db.host cannot be empty")
-		}
-		if dbCfg.Port == "" {
-			return fmt.Errorf("db.port cannot be empty")
-		}
-		if _, err := strconv.Atoi(dbCfg.Port); err != nil {
-			return fmt.Errorf("db.port must be numeric: %w", err)
-		}
-		if dbCfg.Name == "" {
-			return fmt.Errorf("db.name cannot be empty")
-		}
-		if dbCfg.Username == "" {
-			return fmt.Errorf("db.username cannot be empty")
-		}
-		if dbCfg.Password == "" {
-			return fmt.Errorf("db.password cannot be empty")
-		}
-	default:
-		return fmt.Errorf("db.type %q is not supported", dbCfg.Type)
-	}
-	return nil
-}
-
-func validateRedisConfig(redisCfg config.ConfigurationRedis) error {
-	if redisCfg.ConnectionString != "" {
-		return nil
-	}
-	if redisCfg.Host == "" {
-		return fmt.Errorf("redis.host cannot be empty when connectionString is not provided")
-	}
-	if redisCfg.Port == "" {
-		return fmt.Errorf("redis.port cannot be empty when connectionString is not provided")
-	}
-	if _, err := strconv.Atoi(redisCfg.Port); err != nil {
-		return fmt.Errorf("redis.port must be numeric: %w", err)
-	}
-	return nil
-}
-
 func configFileFromCommand(cmd *cli.Command) string {
 	if file := cmd.String("file"); file != "" {
 		return file
@@ -216,34 +112,6 @@ func configFileFromCommand(cmd *cli.Command) string {
 	return "config/mapctf.yaml"
 }
 
-func generateExampleConfigFile(path string, cfg config.MapCTFConfiguration, overwrite bool) error {
-	cfg.ServiceConfigFile = ""
-	data, err := yaml.Marshal(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to marshal configuration: %w", err)
-	}
-	if path == "" {
-		return fmt.Errorf("output path cannot be empty")
-	}
-	dir := filepath.Dir(path)
-	if dir != "." {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dir, err)
-		}
-	}
-	if !overwrite {
-		if _, err := os.Stat(path); err == nil {
-			return fmt.Errorf("file %s already exists (use --force to overwrite)", path)
-		} else if !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("failed to check if %s exists: %w", path, err)
-		}
-	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write configuration to %s: %w", path, err)
-	}
-	return nil
-}
-
 // Initialization code
 func init() {
 	// Initialize CLI flags using the config package
@@ -252,7 +120,7 @@ func init() {
 
 /*
 POST   /api/auth/login          - User login
-GET    /api/logout              - User logout
+GET    /api/auth/logout         - User logout
 GET    /api/teams               - List teams
 GET    /api/challenges          - List challenges
 GET    /api/admin/stats         - Admin stats
@@ -317,7 +185,7 @@ func mapCTFService() {
 	muxAPI.HandleFunc("GET /", handlersCTF.RootHandler)
 	// Testing
 	muxAPI.HandleFunc("GET "+healthPath, handlersCTF.HealthHandler)
-	// Rrror
+	// Error
 	muxAPI.HandleFunc("GET "+errorPath, handlersCTF.ErrorHandler)
 	// Forbidden
 	muxAPI.HandleFunc("GET "+forbiddenPath, handlersCTF.ForbiddenHandler)
@@ -327,22 +195,7 @@ func mapCTFService() {
 	muxAPI.HandleFunc("POST "+_apiPath(loginPath), handlersCTF.LoginHandler)
 	// Logout
 	muxAPI.HandleFunc("GET "+_apiPath(logoutPath), handlersCTF.LogoutHandler)
-	// Teams
-	muxAPI.HandleFunc("GET "+_apiPath(apiTeamsPath), handlersCTF.GetTeamsHandler)
-	// Challenges
-	muxAPI.HandleFunc("GET "+_apiPath(apiChallengesPath), handlersCTF.GetChallengesHandler)
-	// Admin Stats
-	muxAPI.HandleFunc("GET "+_apiPath(apiAdminPath+apiStatsPath), handlersCTF.GetAdminStatsHandler)
-	// Admin Teams
-	muxAPI.HandleFunc("GET "+_apiPath(apiAdminPath+apiTeamsPath), handlersCTF.GetAdminTeamsHandler)
-	muxAPI.HandleFunc("POST "+_apiPath(apiAdminPath+apiTeamsPath), handlersCTF.CreateAdminTeamHandler)
-	muxAPI.HandleFunc("DELETE "+_apiPath(apiAdminPath+apiTeamsPath), handlersCTF.DeleteAdminTeamHandler)
-	// Admin Challenges
-	muxAPI.HandleFunc("GET "+_apiPath(apiAdminPath+apiChallengesPath), handlersCTF.GetAdminChallengesHandler)
-	muxAPI.HandleFunc("POST "+_apiPath(apiAdminPath+apiChallengesPath), handlersCTF.CreateAdminChallengeHandler)
-	muxAPI.HandleFunc("PATCH "+_apiPath(apiAdminPath+apiChallengesPath), handlersCTF.UpdateAdminChallengeHandler)
-	muxAPI.HandleFunc("DELETE "+_apiPath(apiAdminPath+apiChallengesPath), handlersCTF.DeleteAdminChallengeHandler)
-	// Launch HTTP server for admin
+	// Launch HTTP server for api
 	serviceListener := flagParams.ConfigValues.Service.Listener + ":" + flagParams.ConfigValues.Service.Port
 	if flagParams.ConfigValues.TLS.Termination {
 		cfg := &tls.Config{
@@ -385,7 +238,7 @@ func cliAction() error {
 			return fmt.Errorf("failed to load service configuration %s - %w", flagParams.ConfigFile, err)
 		}
 	}
-	if err := validateConfigValues(flagParams.ConfigValues); err != nil {
+	if err := config.ValidateConfigValues(flagParams.ConfigValues); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 	return nil
@@ -420,6 +273,9 @@ func initializeLoggers(cfg config.MapCTFConfiguration) {
 }
 
 func main() {
+	// Customize command help template to hide global options
+	cli.CommandHelpTemplate = CommandHelpTemplateString
+
 	// Initiate CLI and parse arguments
 	app = &cli.Command{
 		Name:                  serviceName,
@@ -449,8 +305,9 @@ func main() {
 			},
 		},
 		{
-			Name:  "config-validate",
-			Usage: "Validate a MapCTF configuration file",
+			Name:     "config-validate",
+			Category: "configuration",
+			Usage:    "Validate a MapCTF configuration file",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:    "file",
@@ -464,7 +321,7 @@ func main() {
 				if err != nil {
 					return fmt.Errorf("failed to load %s: %w", path, err)
 				}
-				if err := validateConfigValues(cfg); err != nil {
+				if err := config.ValidateConfigValues(cfg); err != nil {
 					return fmt.Errorf("configuration %s is invalid: %w", path, err)
 				}
 				fmt.Printf("Configuration %s is valid.\n", path)
@@ -472,8 +329,9 @@ func main() {
 			},
 		},
 		{
-			Name:  "config-generate",
-			Usage: "Generate an example configuration file using the current flag values",
+			Name:     "config-generate",
+			Category: "configuration",
+			Usage:    "Generate an example configuration file using the current flag values",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:    "output",
@@ -482,17 +340,19 @@ func main() {
 					Usage:   "File path to write the generated configuration",
 				},
 				&cli.BoolFlag{
-					Name:  "force",
-					Usage: "Overwrite the output file if it already exists",
+					Name:    "force",
+					Aliases: []string{"f"},
+					Usage:   "Overwrite the output file if it already exists",
+					Value:   false,
 				},
 			},
 			Action: func(ctx context.Context, cmd *cli.Command) error {
 				output := cmd.String("output")
 				exampleConfig := flagParams.ConfigValues
-				if err := validateConfigValues(exampleConfig); err != nil {
+				if err := config.ValidateConfigValues(exampleConfig); err != nil {
 					return fmt.Errorf("generated configuration is invalid: %w", err)
 				}
-				if err := generateExampleConfigFile(output, exampleConfig, cmd.Bool("force")); err != nil {
+				if err := config.GenConfigFile(output, exampleConfig, cmd.Bool("force")); err != nil {
 					return err
 				}
 				fmt.Printf("Example configuration written to %s.\n", output)

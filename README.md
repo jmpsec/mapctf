@@ -22,7 +22,7 @@ mapctf/
 2. Copy env defaults: `cp .env.example .env`.
 3. Adjust `.env` as needed (DB creds, ports).
 4. Run everything: `docker compose -f docker-compose-dev.yml up` or use `make docker_dev`.
-5. Visit [http://localhost:3000](http://localhost:3000) (frontend) or [http://localhost:9001](http://localhost:9001) (API).
+5. Visit [http://localhost:3000](http://localhost:3000) (frontend) or [http://localhost:8081](http://localhost:8081) (API).
 
 ### Work on individual services
 
@@ -31,7 +31,7 @@ mapctf/
 cd frontend && npm install && npm run dev    # serves on :3000
 
 # Backend
-cd backend && go mod download && make run    # serves on :8080
+cd backend && go mod download && make run    # serves on :8081
 ```
 
 ## Feature set

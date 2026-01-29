@@ -45,6 +45,13 @@ tidy:
 	make clean
 	go mod tidy
 
+# Keep dependencies up to date
+deps-update:
+ifeq (,$(wildcard go.mod))
+	$(error Missing go.mod file)
+endif
+	go get -u ./...
+
 # Run linter
 lint:
 	golangci-lint run

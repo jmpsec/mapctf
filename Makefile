@@ -4,6 +4,7 @@ export GOPROXY=https://proxy.golang.org,direct
 SHELL := /bin/bash
 
 API_DIR = backend
+UI_DIR = frontend
 
 .PHONY: build static clean api run_api
 

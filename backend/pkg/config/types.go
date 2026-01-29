@@ -1,5 +1,6 @@
 package config
 
+// Types of logging
 const (
 	// log levels
 	LogLevelDebug string = "debug"
@@ -13,12 +14,8 @@ const (
 
 // Types of authentication
 const (
-	AuthNone  string = "none"
-	AuthDB    string = "db"
-	AuthSAML  string = "saml"
-	AuthJWT   string = "jwt"
-	AuthOAuth string = "oauth"
-	AuthOIDC  string = "oidc"
+	AuthNone string = "none"
+	AuthDB   string = "db"
 )
 
 // Types of backend
@@ -87,24 +84,6 @@ type ConfigurationTLS struct {
 	Termination     bool   `yaml:"termination"`
 	CertificateFile string `yaml:"certificateFile"`
 	KeyFile         string `yaml:"keyFile"`
-}
-
-// ConfigurationJWT to hold all JWT configuration values
-type ConfigurationJWT struct {
-	JWTSecret     string `yaml:"jwtSecret"`
-	HoursToExpire int    `yaml:"hoursToExpire"`
-}
-
-// ConfigurationSAML to keep all SAML details for auth
-type ConfigurationSAML struct {
-	CertPath     string `yaml:"certPath"`
-	KeyPath      string `yaml:"keyPath"`
-	MetaDataURL  string `yaml:"metadataUrl"`
-	RootURL      string `yaml:"rootUrl"`
-	LoginURL     string `yaml:"loginUrl"`
-	LogoutURL    string `yaml:"logoutUrl"`
-	JITProvision bool   `yaml:"jitProvision"`
-	SPInitiated  bool   `yaml:"spInitiated"`
 }
 
 // ConfigurationDebugHTTP to hold all HTTP debug configuration values

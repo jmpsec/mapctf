@@ -17,9 +17,9 @@ const (
 	// Default service configuration file
 	defServiceConfigurationFile string = "config/mapctf.yaml"
 	// Default TLS certificate file
-	defTLSCertificateFile string = "config/tls.crt"
+	defTLSCertificateFile string = "config/certs/tls.crt"
 	// Default TLS private key file
-	defTLSKeyFile string = "config/tls.key"
+	defTLSKeyFile string = "config/certs/tls.key"
 	// Default db filepath for sqlite
 	defSQLiteDBFile string = "./mapctf.db"
 	// Default debug HTTP file
@@ -116,7 +116,7 @@ func initServiceFlags(params *ServiceFlagParams) []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:        "log-format",
-			Value:       LogFormatJSON,
+			Value:       LogFormatConsole,
 			Usage:       "Log format for the service",
 			Sources:     cli.EnvVars("SERVICE_LOG_FORMAT"),
 			Destination: &params.ConfigValues.Service.LogFormat,

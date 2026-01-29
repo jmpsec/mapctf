@@ -1,0 +1,39 @@
+service:
+    listener: 0.0.0.0
+    port: "9000"
+    logLevel: info
+    logFormat: console
+    host: 0.0.0.0
+    auth: none
+db:
+    type: postgres
+    host: 127.0.0.1
+    port: "5432"
+    name: mapctf
+    username: mapctf-user
+    password: mapctf-pass
+    sslmode: disable
+    maxIdleConns: 20
+    maxOpenConns: 100
+    connMaxLifetime: 30
+    connRetry: 10
+    filePath: ./mapctf.db
+redis:
+    host: 127.0.0.1
+    port: "6379"
+    password: ""
+    connectionString: ""
+    db: 0
+    connRetry: 10
+metrics:
+    enabled: false
+    listener: 0.0.0.0
+    port: "9090"
+tls:
+    termination: false
+    certificateFile: config/certs/tls.crt
+    keyFile: config/certs/tls.key
+debughttp:
+    enabled: false
+    file: debug-http-mapctf.log
+    showBody: false

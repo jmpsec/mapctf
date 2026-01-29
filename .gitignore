@@ -20,6 +20,7 @@ tmp
 # Configuration files except Docker env
 *.json
 *.yaml
+!mapctf.example.yaml
 *.yml
 !docker-compose-dev.yml
 
