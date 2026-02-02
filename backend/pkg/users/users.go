@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -42,13 +41,16 @@ type UserManager struct {
 }
 
 // CreateUserManager to initialize the users struct and tables
-func CreateUserManager(backend *gorm.DB) *UserManager {
+func CreateUserManager(backend *gorm.DB) (*UserManager, error) {
+	if backend == nil {
+		return nil, fmt.Errorf("database connection cannot be nil")
+	}
 	u := &UserManager{DB: backend}
 	// table platform_users
 	if err := backend.AutoMigrate(&PlatformUser{}); err != nil {
-		log.Fatal().Msgf("Failed to AutoMigrate table (platform_users): %v", err)
+		return nil, fmt.Errorf("failed to AutoMigrate table (platform_users): %w", err)
 	}
-	return u
+	return u, nil
 }
 
 // Create new user

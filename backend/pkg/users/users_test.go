@@ -25,7 +25,10 @@ func setupTestDB(t *testing.T) *gorm.DB {
 func TestCreateUserManager(t *testing.T) {
 	db := setupTestDB(t)
 
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	if manager == nil {
 		t.Fatal("Expected non-nil UserManager")
@@ -38,6 +41,32 @@ func TestCreateUserManager(t *testing.T) {
 	// Verify table was created
 	if !db.Migrator().HasTable(&PlatformUser{}) {
 		t.Error("Expected platform_users table to be created")
+	}
+}
+
+// TestCreateUserManagerWithNilDB tests CreateUserManager with nil database
+func TestCreateUserManagerWithNilDB(t *testing.T) {
+	_, err := CreateUserManager(nil)
+	if err == nil {
+		t.Error("Expected error when creating UserManager with nil database")
+	}
+}
+
+// TestCreateUserManagerAutoMigrateError tests AutoMigrate error handling
+func TestCreateUserManagerAutoMigrateError(t *testing.T) {
+	db := setupTestDB(t)
+
+	// Close the database connection to cause AutoMigrate error
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("Failed to get underlying DB: %v", err)
+	}
+	sqlDB.Close()
+
+	// Now try to create user manager - should fail on AutoMigrate
+	_, err = CreateUserManager(db)
+	if err == nil {
+		t.Error("Expected error when AutoMigrate fails")
 	}
 }
 
@@ -77,7 +106,10 @@ func TestPlatformUserStructure(t *testing.T) {
 // TestCreate tests creating a new user
 func TestCreate(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	user := PlatformUser{
 		Username: "newuser",
@@ -91,7 +123,7 @@ func TestCreate(t *testing.T) {
 		EntID:    1,
 	}
 
-	err := manager.Create(user)
+	err = manager.Create(user)
 	if err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
@@ -115,7 +147,10 @@ func TestCreate(t *testing.T) {
 // TestHashTextWithSalt tests text hashing functionality
 func TestHashTextWithSalt(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	text := "mySecretText"
 	hash, err := manager.HashTextWithSalt(text)
@@ -142,7 +177,10 @@ func TestHashTextWithSalt(t *testing.T) {
 // TestHashTextWithSaltDifferentHashes tests that same text produces different hashes
 func TestHashTextWithSaltDifferentHashes(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	text := "sameText"
 	hash1, err := manager.HashTextWithSalt(text)
@@ -164,7 +202,10 @@ func TestHashTextWithSaltDifferentHashes(t *testing.T) {
 // TestHashPasswordWithSalt tests password hashing
 func TestHashPasswordWithSalt(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	password := "mySecurePassword123!"
 	hash, err := manager.HashPasswordWithSalt(password)
@@ -191,7 +232,10 @@ func TestHashPasswordWithSalt(t *testing.T) {
 // TestExists tests checking if a user exists
 func TestExists(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// User should not exist initially
 	if manager.Exists("nonexistent") {
@@ -206,7 +250,7 @@ func TestExists(t *testing.T) {
 		EntID:    1,
 	}
 
-	err := manager.Create(user)
+	err = manager.Create(user)
 	if err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
@@ -225,7 +269,10 @@ func TestExists(t *testing.T) {
 // TestGet tests retrieving a user by username
 func TestGet(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Create a user
 	user := PlatformUser{
@@ -238,7 +285,7 @@ func TestGet(t *testing.T) {
 		EntID:    1,
 	}
 
-	err := manager.Create(user)
+	err = manager.Create(user)
 	if err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
@@ -269,9 +316,12 @@ func TestGet(t *testing.T) {
 // TestGetNonExistent tests getting a non-existent user
 func TestGetNonExistent(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
-	_, err := manager.Get("nonexistent")
+	_, err = manager.Get("nonexistent")
 	if err == nil {
 		t.Error("Expected error when getting non-existent user")
 	}
@@ -280,7 +330,10 @@ func TestGetNonExistent(t *testing.T) {
 // TestGetByTenantID tests retrieving a user by username and tenant ID
 func TestGetByTenantID(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Create users with different tenant IDs
 	user1 := PlatformUser{
@@ -297,7 +350,7 @@ func TestGetByTenantID(t *testing.T) {
 		EntID:    2,
 	}
 
-	err := manager.Create(user1)
+	err = manager.Create(user1)
 	if err != nil {
 		t.Fatalf("Failed to create user1: %v", err)
 	}
@@ -339,9 +392,12 @@ func TestGetByTenantID(t *testing.T) {
 // TestGetByTenantIDNonExistent tests getting a non-existent user by tenant ID
 func TestGetByTenantIDNonExistent(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
-	_, err := manager.GetByTenantID("nonexistent", 1)
+	_, err = manager.GetByTenantID("nonexistent", 1)
 	if err == nil {
 		t.Error("Expected error when getting non-existent user by tenant ID")
 	}
@@ -350,7 +406,10 @@ func TestGetByTenantIDNonExistent(t *testing.T) {
 // TestExistsGet tests the ExistsGet function
 func TestExistsGet(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Non-existent user
 	exists, user := manager.ExistsGet("nonexistent")
@@ -372,7 +431,7 @@ func TestExistsGet(t *testing.T) {
 		EntID:    1,
 	}
 
-	err := manager.Create(newUser)
+	err = manager.Create(newUser)
 	if err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
@@ -399,7 +458,10 @@ func TestExistsGet(t *testing.T) {
 // TestExistsGetByTenantID tests the ExistsGetByTenantID function
 func TestExistsGetByTenantID(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Non-existent user
 	exists, user := manager.ExistsGetByTenantID("nonexistent", 1)
@@ -426,7 +488,7 @@ func TestExistsGetByTenantID(t *testing.T) {
 		EntID:    2,
 	}
 
-	err := manager.Create(newUser1)
+	err = manager.Create(newUser1)
 	if err != nil {
 		t.Fatalf("Failed to create user1: %v", err)
 	}
@@ -466,7 +528,10 @@ func TestExistsGetByTenantID(t *testing.T) {
 // TestNew tests creating a new user struct without persisting
 func TestNew(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	user, err := manager.New("newuser", "password123", "new@example.com", "New User", true, false, 1, 5)
 	if err != nil {
@@ -523,7 +588,10 @@ func TestNew(t *testing.T) {
 // TestNewExistingUser tests creating a new user that already exists
 func TestNewExistingUser(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Create a user first
 	existingUser := PlatformUser{
@@ -533,7 +601,7 @@ func TestNewExistingUser(t *testing.T) {
 		EntID:    1,
 	}
 
-	err := manager.Create(existingUser)
+	err = manager.Create(existingUser)
 	if err != nil {
 		t.Fatalf("Failed to create existing user: %v", err)
 	}
@@ -553,7 +621,10 @@ func TestNewExistingUser(t *testing.T) {
 // TestNewServiceUser tests creating a service user
 func TestNewServiceUser(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	user, err := manager.New("serviceuser", "servicepass", "service@example.com", "Service User", false, true, 1, 0)
 	if err != nil {
@@ -572,7 +643,10 @@ func TestNewServiceUser(t *testing.T) {
 // TestHashEmptyString tests hashing an empty string
 func TestHashEmptyString(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	hash, err := manager.HashTextWithSalt("")
 	if err != nil {
@@ -593,7 +667,10 @@ func TestHashEmptyString(t *testing.T) {
 // TestCreateMultipleUsers tests creating multiple users
 func TestCreateMultipleUsers(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	users := []PlatformUser{
 		{Username: "user1", Email: "user1@example.com", PassHash: "hash1", EntID: 1},
@@ -602,7 +679,7 @@ func TestCreateMultipleUsers(t *testing.T) {
 	}
 
 	for _, user := range users {
-		err := manager.Create(user)
+		err = manager.Create(user)
 		if err != nil {
 			t.Fatalf("Failed to create user %s: %v", user.Username, err)
 		}
@@ -619,7 +696,10 @@ func TestCreateMultipleUsers(t *testing.T) {
 // TestCreateDuplicateUser tests creating a user with duplicate username (for error coverage)
 func TestCreateDuplicateUser(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Add unique constraint to username
 	db.Exec("CREATE UNIQUE INDEX idx_username ON platform_users(username)")
@@ -632,7 +712,7 @@ func TestCreateDuplicateUser(t *testing.T) {
 	}
 
 	// First creation should succeed
-	err := manager.Create(user)
+	err = manager.Create(user)
 	if err != nil {
 		t.Fatalf("Failed to create first user: %v", err)
 	}
@@ -654,11 +734,14 @@ func TestCreateDuplicateUser(t *testing.T) {
 // TestHashTextWithSaltError tests hash error handling
 func TestHashTextWithSaltError(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Test with very long string (edge case)
 	longString := string(make([]byte, 100000))
-	_, err := manager.HashTextWithSalt(longString)
+	_, err = manager.HashTextWithSalt(longString)
 	if err != nil {
 		// bcrypt has a 72 byte limit, but we're handling it
 		t.Logf("Long string hashing error (expected): %v", err)
@@ -668,7 +751,10 @@ func TestHashTextWithSaltError(t *testing.T) {
 // TestNewWithHashError tests New function error handling
 func TestNewWithHashError(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Create a user with very long password that may cause bcrypt error
 	longPassword := string(make([]byte, 100))
@@ -705,7 +791,10 @@ func TestPlatformUserJSONTags(t *testing.T) {
 // TestUserWorkflow tests a complete user workflow
 func TestUserWorkflow(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Step 1: Verify user doesn't exist
 	if manager.Exists("workflowuser") {
@@ -754,7 +843,10 @@ func TestUserWorkflow(t *testing.T) {
 // TestMultiTenantIsolation tests that users are properly isolated by tenant
 func TestMultiTenantIsolation(t *testing.T) {
 	db := setupTestDB(t)
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Create same username in different tenants
 	tenant1Users := []PlatformUser{
@@ -800,7 +892,10 @@ func TestMultiTenantIsolation(t *testing.T) {
 // BenchmarkHashPassword benchmarks password hashing
 func BenchmarkHashPassword(b *testing.B) {
 	db := setupTestDB(&testing.T{})
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		b.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -811,7 +906,10 @@ func BenchmarkHashPassword(b *testing.B) {
 // BenchmarkExists benchmarks the Exists check
 func BenchmarkExists(b *testing.B) {
 	db := setupTestDB(&testing.T{})
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		b.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Create a test user
 	user := PlatformUser{
@@ -831,7 +929,10 @@ func BenchmarkExists(b *testing.B) {
 // BenchmarkGet benchmarks the Get operation
 func BenchmarkGet(b *testing.B) {
 	db := setupTestDB(&testing.T{})
-	manager := CreateUserManager(db)
+	manager, err := CreateUserManager(db)
+	if err != nil {
+		b.Fatalf("Failed to create UserManager: %v", err)
+	}
 
 	// Create a test user
 	user := PlatformUser{

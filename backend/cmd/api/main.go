@@ -177,10 +177,16 @@ func mapCTFService() {
 	}
 	// Team Manager
 	log.Info().Msg("Initialize teams")
-	teamsMgr := teams.CreateTeams(db.Conn)
+	teamsMgr, err := teams.CreateTeams(db.Conn)
+	if err != nil {
+		log.Fatal().Msgf("Failed to initialize teams: %v", err)
+	}
 	// User Manager
 	log.Info().Msg("Initialize users")
-	usersMgr := users.CreateUserManager(db.Conn)
+	usersMgr, err := users.CreateUserManager(db.Conn)
+	if err != nil {
+		log.Fatal().Msgf("Failed to initialize users: %v", err)
+	}
 	// Handlers
 	log.Info().Msg("Initializing handlers")
 	handlersCTF := handlers.CreateHandlersAPI(
@@ -188,7 +194,7 @@ func mapCTFService() {
 		handlers.WithRedisCache(redis),
 		handlers.WithConfig(flagParams.ConfigValues),
 		handlers.WithTeams(teamsMgr),
-		handlers.WithUsers(usersMgr), // User manager to be added
+		handlers.WithUsers(usersMgr),
 		handlers.WithDebugHTTP(&flagParams.ConfigValues.DebugHTTP),
 	)
 	// Router

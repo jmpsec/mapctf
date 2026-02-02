@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -45,23 +44,26 @@ type TeamScore struct {
 }
 
 // CreateTeams to initialize the teams struct and its tables
-func CreateTeams(backend *gorm.DB) *TeamManager {
+func CreateTeams(backend *gorm.DB) (*TeamManager, error) {
+	if backend == nil {
+		return nil, fmt.Errorf("database connection cannot be nil")
+	}
 	t := &TeamManager{
 		DB: backend,
 	}
 	// table platform_teams
 	if err := backend.AutoMigrate(&PlatformTeam{}); err != nil {
-		log.Fatal().Msgf("Failed to AutoMigrate table (platform_teams): %v", err)
+		return nil, fmt.Errorf("Failed to AutoMigrate table (platform_teams): %w", err)
 	}
 	// table team_memberships
 	if err := backend.AutoMigrate(&TeamMembership{}); err != nil {
-		log.Fatal().Msgf("Failed to AutoMigrate table (team_memberships): %v", err)
+		return nil, fmt.Errorf("Failed to AutoMigrate table (team_memberships): %w", err)
 	}
 	// table team_scores
 	if err := backend.AutoMigrate(&TeamScore{}); err != nil {
-		log.Fatal().Msgf("Failed to AutoMigrate table (team_scores): %v", err)
+		return nil, fmt.Errorf("Failed to AutoMigrate table (team_scores): %w", err)
 	}
-	return t
+	return t, nil
 }
 
 // Create new team
