@@ -15,6 +15,8 @@ import (
 	"github.com/jmpsec/mapctf/pkg/backend"
 	"github.com/jmpsec/mapctf/pkg/cache"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/teams"
+	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/jmpsec/mapctf/pkg/version"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -35,6 +37,8 @@ const (
 	LoggerTimeFormat string = "2006-01-02T15:04:05.999Z07:00"
 	// Default path used when generating example configs
 	defaultExampleConfigPath = "config/mapctf.example.yaml"
+	// Default path for service configuration file
+	defaultConfigPath = "config/mapctf.yaml"
 )
 
 // Paths
@@ -64,6 +68,8 @@ const (
 	apiStatsPath = "/stats"
 	// API teams path
 	apiTeamsPath = "/teams"
+	// API users path
+	apiUsersPath = "/users"
 	// API challenges path
 	apiChallengesPath = "/challenges"
 )
@@ -109,7 +115,7 @@ func configFileFromCommand(cmd *cli.Command) string {
 	if flagParams.ConfigFile != "" {
 		return flagParams.ConfigFile
 	}
-	return "config/mapctf.yaml"
+	return defaultConfigPath
 }
 
 // Initialization code
@@ -135,7 +141,7 @@ DELETE /api/admin/challenges/:id - Delete challenge
 
 // Let's go!
 func mapCTFService() {
-	// ////////////////////////////// Backend
+	// Backend
 	log.Info().Msg("Initializing backend...")
 	for {
 		db, err = backend.CreateDBManager(flagParams.ConfigValues.DB)
@@ -152,7 +158,7 @@ func mapCTFService() {
 		log.Debug().Msgf("Backend NOT ready! Retrying in %d seconds...\n", flagParams.ConfigValues.DB.ConnRetry)
 		time.Sleep(time.Duration(flagParams.ConfigValues.DB.ConnRetry) * time.Second)
 	}
-	// ////////////////////////////// Cache
+	// Cache
 	log.Info().Msg("Initializing cache...")
 	for {
 		redis, err = cache.CreateRedisManager(flagParams.ConfigValues.Redis)
@@ -169,15 +175,23 @@ func mapCTFService() {
 		log.Debug().Msgf("Cache NOT ready! Retrying in %d seconds...\n", flagParams.ConfigValues.Redis.ConnRetry)
 		time.Sleep(time.Duration(flagParams.ConfigValues.Redis.ConnRetry) * time.Second)
 	}
-	// ////////////////////////////// Handlers
+	// Team Manager
+	log.Info().Msg("Initialize teams")
+	teamsMgr := teams.CreateTeams(db.Conn)
+	// User Manager
+	log.Info().Msg("Initialize users")
+	usersMgr := users.CreateUserManager(db.Conn)
+	// Handlers
 	log.Info().Msg("Initializing handlers")
 	handlersCTF := handlers.CreateHandlersAPI(
 		handlers.WithDB(db.Conn),
 		handlers.WithRedisCache(redis),
 		handlers.WithConfig(flagParams.ConfigValues),
+		handlers.WithTeams(teamsMgr),
+		handlers.WithUsers(usersMgr), // User manager to be added
 		handlers.WithDebugHTTP(&flagParams.ConfigValues.DebugHTTP),
 	)
-	// ////////////////////////////// Router
+	// Router
 	log.Info().Msg("Initializing router")
 	// Create router for API
 	muxAPI := http.NewServeMux()

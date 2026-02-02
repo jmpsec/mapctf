@@ -55,3 +55,9 @@ endif
 # Run linter
 lint:
 	golangci-lint run
+
+# Test with coverage
+test:
+	go test ./pkg/version -v -cover
+	go test ./pkg/users -v -cover
+	go test ./pkg/teams -v -cover

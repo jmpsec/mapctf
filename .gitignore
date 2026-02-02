@@ -17,6 +17,9 @@ tmp
 # Logs
 *.log
 
+# Tests
+coverage.out
+
 # Configuration files except Docker env
 *.json
 *.yaml

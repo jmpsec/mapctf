@@ -3,6 +3,8 @@ package handlers
 import (
 	"github.com/jmpsec/mapctf/pkg/cache"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/teams"
+	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/rs/zerolog"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gorm.io/gorm"
@@ -25,6 +27,8 @@ const (
 type HandlersAPI struct {
 	DB         *gorm.DB
 	RedisCache *cache.RedisManager
+	Teams      *teams.TeamManager
+	Users      *users.UserManager
 	Config     config.MapCTFConfiguration
 	DebugHTTP  *zerolog.Logger
 }
@@ -58,6 +62,18 @@ func WithRedisCache(redis *cache.RedisManager) HandlersOption {
 func WithConfig(cfg config.MapCTFConfiguration) HandlersOption {
 	return func(h *HandlersAPI) {
 		h.Config = cfg
+	}
+}
+
+func WithTeams(teams *teams.TeamManager) HandlersOption {
+	return func(h *HandlersAPI) {
+		h.Teams = teams
+	}
+}
+
+func WithUsers(users *users.UserManager) HandlersOption {
+	return func(h *HandlersAPI) {
+		h.Users = users
 	}
 }
 
