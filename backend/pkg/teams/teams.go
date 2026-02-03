@@ -37,10 +37,11 @@ type TeamMembership struct {
 // TeamScore to hold all team scores over time
 type TeamScore struct {
 	gorm.Model
-	TeamID   uint `gorm:"index"`
-	Points   int
-	EntID    uint
-	ScoredBy uint
+	TeamID      uint `gorm:"index"`
+	ChallengeID uint
+	Points      int
+	EntID       uint
+	ScoredBy    uint
 }
 
 // CreateTeams to initialize the teams struct and its tables
@@ -90,10 +91,10 @@ func (m *TeamManager) Get(name string) (PlatformTeam, error) {
 	return team, nil
 }
 
-// Get user by username and by tenant ID, including service users
-func (m *TeamManager) GetByTenantID(name string, tenantID uint) (PlatformTeam, error) {
+// Get user by username and by entity ID, including service users
+func (m *TeamManager) GetByEntID(name string, entID uint) (PlatformTeam, error) {
 	var team PlatformTeam
-	if err := m.DB.Where("name = ? AND ent_id = ?", name, tenantID).First(&team).Error; err != nil {
+	if err := m.DB.Where("name = ? AND ent_id = ?", name, entID).First(&team).Error; err != nil {
 		return team, err
 	}
 	return team, nil
@@ -108,9 +109,9 @@ func (m *TeamManager) ExistsGet(name string) (bool, PlatformTeam) {
 	return true, team
 }
 
-// ExistsGetByTenantID checks if user exists and returns the user
-func (m *TeamManager) ExistsGetByTenantID(name string, tenantID uint) (bool, PlatformTeam) {
-	team, err := m.GetByTenantID(name, tenantID)
+// ExistsGetByEntID checks if user exists and returns the user
+func (m *TeamManager) ExistsGetByEntID(name string, entID uint) (bool, PlatformTeam) {
+	team, err := m.GetByEntID(name, entID)
 	if err != nil {
 		return false, PlatformTeam{}
 	}

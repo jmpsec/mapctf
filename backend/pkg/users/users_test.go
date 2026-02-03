@@ -327,15 +327,15 @@ func TestGetNonExistent(t *testing.T) {
 	}
 }
 
-// TestGetByTenantID tests retrieving a user by username and tenant ID
-func TestGetByTenantID(t *testing.T) {
+// TestGetByEntID tests retrieving a user by username and entity ID
+func TestGetByEntID(t *testing.T) {
 	db := setupTestDB(t)
 	manager, err := CreateUserManager(db)
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
 
-	// Create users with different tenant IDs
+	// Create users with different entity IDs
 	user1 := PlatformUser{
 		Username: "multiuser",
 		Email:    "user1@example.com",
@@ -360,10 +360,10 @@ func TestGetByTenantID(t *testing.T) {
 		t.Fatalf("Failed to create user2: %v", err)
 	}
 
-	// Get user by tenant ID 1
-	retrievedUser1, err := manager.GetByTenantID("multiuser", 1)
+	// Get user by entity ID 1
+	retrievedUser1, err := manager.GetByEntID("multiuser", 1)
 	if err != nil {
-		t.Fatalf("Failed to get user by tenant ID 1: %v", err)
+		t.Fatalf("Failed to get user by entity ID 1: %v", err)
 	}
 
 	if retrievedUser1.Email != "user1@example.com" {
@@ -374,10 +374,10 @@ func TestGetByTenantID(t *testing.T) {
 		t.Errorf("Expected EntID 1, got %d", retrievedUser1.EntID)
 	}
 
-	// Get user by tenant ID 2
-	retrievedUser2, err := manager.GetByTenantID("multiuser", 2)
+	// Get user by entity ID 2
+	retrievedUser2, err := manager.GetByEntID("multiuser", 2)
 	if err != nil {
-		t.Fatalf("Failed to get user by tenant ID 2: %v", err)
+		t.Fatalf("Failed to get user by entity ID 2: %v", err)
 	}
 
 	if retrievedUser2.Email != "user2@example.com" {
@@ -389,17 +389,17 @@ func TestGetByTenantID(t *testing.T) {
 	}
 }
 
-// TestGetByTenantIDNonExistent tests getting a non-existent user by tenant ID
-func TestGetByTenantIDNonExistent(t *testing.T) {
+// TestGetByEntIDNonExistent tests getting a non-existent user by entity ID
+func TestGetByEntIDNonExistent(t *testing.T) {
 	db := setupTestDB(t)
 	manager, err := CreateUserManager(db)
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
 
-	_, err = manager.GetByTenantID("nonexistent", 1)
+	_, err = manager.GetByEntID("nonexistent", 1)
 	if err == nil {
-		t.Error("Expected error when getting non-existent user by tenant ID")
+		t.Error("Expected error when getting non-existent user by entity ID")
 	}
 }
 
@@ -455,8 +455,8 @@ func TestExistsGet(t *testing.T) {
 	}
 }
 
-// TestExistsGetByTenantID tests the ExistsGetByTenantID function
-func TestExistsGetByTenantID(t *testing.T) {
+// TestExistsGetByEntID tests the ExistsGetByEntID function
+func TestExistsGetByEntID(t *testing.T) {
 	db := setupTestDB(t)
 	manager, err := CreateUserManager(db)
 	if err != nil {
@@ -464,7 +464,7 @@ func TestExistsGetByTenantID(t *testing.T) {
 	}
 
 	// Non-existent user
-	exists, user := manager.ExistsGetByTenantID("nonexistent", 1)
+	exists, user := manager.ExistsGetByEntID("nonexistent", 1)
 	if exists {
 		t.Error("Expected user to not exist")
 	}
@@ -473,17 +473,17 @@ func TestExistsGetByTenantID(t *testing.T) {
 		t.Error("Expected empty user struct for non-existent user")
 	}
 
-	// Create users with different tenant IDs
+	// Create users with different entity IDs
 	newUser1 := PlatformUser{
-		Username: "tenantuser",
-		Email:    "tenant1@example.com",
+		Username: "entityuser",
+		Email:    "entity1@example.com",
 		PassHash: "hash",
 		EntID:    1,
 	}
 
 	newUser2 := PlatformUser{
-		Username: "tenantuser",
-		Email:    "tenant2@example.com",
+		Username: "entityuser",
+		Email:    "entity2@example.com",
 		PassHash: "hash",
 		EntID:    2,
 	}
@@ -498,30 +498,30 @@ func TestExistsGetByTenantID(t *testing.T) {
 		t.Fatalf("Failed to create user2: %v", err)
 	}
 
-	// Check tenant 1
-	exists, user = manager.ExistsGetByTenantID("tenantuser", 1)
+	// Check entity 1
+	exists, user = manager.ExistsGetByEntID("entityuser", 1)
 	if !exists {
-		t.Error("Expected user to exist for tenant 1")
+		t.Error("Expected user to exist for entity 1")
 	}
 
-	if user.Email != "tenant1@example.com" {
-		t.Errorf("Expected email 'tenant1@example.com', got '%s'", user.Email)
+	if user.Email != "entity1@example.com" {
+		t.Errorf("Expected email 'entity1@example.com', got '%s'", user.Email)
 	}
 
-	// Check tenant 2
-	exists, user = manager.ExistsGetByTenantID("tenantuser", 2)
+	// Check entity 2
+	exists, user = manager.ExistsGetByEntID("entityuser", 2)
 	if !exists {
-		t.Error("Expected user to exist for tenant 2")
+		t.Error("Expected user to exist for entity 2")
 	}
 
-	if user.Email != "tenant2@example.com" {
-		t.Errorf("Expected email 'tenant2@example.com', got '%s'", user.Email)
+	if user.Email != "entity2@example.com" {
+		t.Errorf("Expected email 'entity2@example.com', got '%s'", user.Email)
 	}
 
-	// Check non-existent tenant
-	exists, user = manager.ExistsGetByTenantID("tenantuser", 999)
+	// Check non-existent entity
+	exists, user = manager.ExistsGetByEntID("entityuser", 999)
 	if exists {
-		t.Error("Expected user to not exist for tenant 999")
+		t.Error("Expected user to not exist for entity 999")
 	}
 }
 
@@ -840,52 +840,52 @@ func TestUserWorkflow(t *testing.T) {
 	}
 }
 
-// TestMultiTenantIsolation tests that users are properly isolated by tenant
-func TestMultiTenantIsolation(t *testing.T) {
+// TestMultiEntityIsolation tests that users are properly isolated by entity
+func TestMultiEntityIsolation(t *testing.T) {
 	db := setupTestDB(t)
 	manager, err := CreateUserManager(db)
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
 
-	// Create same username in different tenants
-	tenant1Users := []PlatformUser{
-		{Username: "admin", Email: "admin@tenant1.com", PassHash: "hash1", EntID: 1, TeamID: 1},
-		{Username: "user", Email: "user@tenant1.com", PassHash: "hash2", EntID: 1, TeamID: 2},
+	// Create same username in different entities
+	entity1Users := []PlatformUser{
+		{Username: "admin", Email: "admin@entity1.com", PassHash: "hash1", EntID: 1, TeamID: 1},
+		{Username: "user", Email: "user@entity1.com", PassHash: "hash2", EntID: 1, TeamID: 2},
 	}
 
-	tenant2Users := []PlatformUser{
-		{Username: "admin", Email: "admin@tenant2.com", PassHash: "hash3", EntID: 2, TeamID: 3},
-		{Username: "user", Email: "user@tenant2.com", PassHash: "hash4", EntID: 2, TeamID: 4},
+	entity2Users := []PlatformUser{
+		{Username: "admin", Email: "admin@entity2.com", PassHash: "hash3", EntID: 2, TeamID: 3},
+		{Username: "user", Email: "user@entity2.com", PassHash: "hash4", EntID: 2, TeamID: 4},
 	}
 
 	// Create all users
-	for _, user := range append(tenant1Users, tenant2Users...) {
+	for _, user := range append(entity1Users, entity2Users...) {
 		if err := manager.Create(user); err != nil {
-			t.Fatalf("Failed to create user %s for tenant %d: %v", user.Username, user.EntID, err)
+			t.Fatalf("Failed to create user %s for entity %d: %v", user.Username, user.EntID, err)
 		}
 	}
 
-	// Verify tenant isolation
-	tenant1Admin, err := manager.GetByTenantID("admin", 1)
+	// Verify entity isolation
+	entity1Admin, err := manager.GetByEntID("admin", 1)
 	if err != nil {
-		t.Fatalf("Failed to get admin for tenant 1: %v", err)
+		t.Fatalf("Failed to get admin for entity 1: %v", err)
 	}
-	if tenant1Admin.Email != "admin@tenant1.com" {
-		t.Errorf("Expected tenant 1 admin email, got '%s'", tenant1Admin.Email)
+	if entity1Admin.Email != "admin@entity1.com" {
+		t.Errorf("Expected entity 1 admin email, got '%s'", entity1Admin.Email)
 	}
 
-	tenant2Admin, err := manager.GetByTenantID("admin", 2)
+	entity2Admin, err := manager.GetByEntID("admin", 2)
 	if err != nil {
-		t.Fatalf("Failed to get admin for tenant 2: %v", err)
+		t.Fatalf("Failed to get admin for entity 2: %v", err)
 	}
-	if tenant2Admin.Email != "admin@tenant2.com" {
-		t.Errorf("Expected tenant 2 admin email, got '%s'", tenant2Admin.Email)
+	if entity2Admin.Email != "admin@entity2.com" {
+		t.Errorf("Expected entity 2 admin email, got '%s'", entity2Admin.Email)
 	}
 
 	// Ensure they're different users
-	if tenant1Admin.ID == tenant2Admin.ID {
-		t.Error("Tenant 1 and Tenant 2 admins should have different IDs")
+	if entity1Admin.ID == entity2Admin.ID {
+		t.Error("Entity 1 and Entity 2 admins should have different IDs")
 	}
 }
 

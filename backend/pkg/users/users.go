@@ -93,10 +93,10 @@ func (m *UserManager) Get(username string) (PlatformUser, error) {
 	return user, nil
 }
 
-// Get user by username and by tenant ID, including service users
-func (m *UserManager) GetByTenantID(username string, tenantID uint) (PlatformUser, error) {
+// Get user by username and by entity ID, including service users
+func (m *UserManager) GetByEntID(username string, entID uint) (PlatformUser, error) {
 	var user PlatformUser
-	if err := m.DB.Where("username = ? AND ent_id = ?", username, tenantID).First(&user).Error; err != nil {
+	if err := m.DB.Where("username = ? AND ent_id = ?", username, entID).First(&user).Error; err != nil {
 		return user, err
 	}
 	return user, nil
@@ -111,9 +111,9 @@ func (m *UserManager) ExistsGet(username string) (bool, PlatformUser) {
 	return true, user
 }
 
-// ExistsGetByTenantID checks if user exists and returns the user
-func (m *UserManager) ExistsGetByTenantID(username string, tenantID uint) (bool, PlatformUser) {
-	user, err := m.GetByTenantID(username, tenantID)
+// ExistsGetByEntID checks if user exists and returns the user
+func (m *UserManager) ExistsGetByEntID(username string, entID uint) (bool, PlatformUser) {
+	user, err := m.GetByEntID(username, entID)
 	if err != nil {
 		return false, PlatformUser{}
 	}

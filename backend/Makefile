@@ -61,3 +61,6 @@ test:
 	go test ./pkg/version -v -cover
 	go test ./pkg/users -v -cover
 	go test ./pkg/teams -v -cover
+	go test ./pkg/cache -v -cover
+	go test ./pkg/backend -v -cover
+	go test ./pkg/challenges -v -cover

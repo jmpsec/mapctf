@@ -47,8 +47,8 @@ func TestCreateRedisManager(t *testing.T) {
 
 func TestCreateRedisManagerWithInvalidConfig(t *testing.T) {
 	cfg := config.ConfigurationRedis{
-		Host:     "invalid-host.example.com",
-		Port:     "6379",
+		Host: "invalid-host.example.com",
+		Port: "6379",
 	}
 
 	_, err := CreateRedisManager(cfg)
