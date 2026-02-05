@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/jmpsec/mapctf/pkg/cache"
+	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
@@ -29,6 +30,7 @@ type HandlersAPI struct {
 	RedisCache *cache.RedisManager
 	Teams      *teams.TeamManager
 	Users      *users.UserManager
+	Challenges *challenges.ChallengeManager
 	Config     config.MapCTFConfiguration
 	DebugHTTP  *zerolog.Logger
 }
@@ -74,6 +76,12 @@ func WithTeams(teams *teams.TeamManager) HandlersOption {
 func WithUsers(users *users.UserManager) HandlersOption {
 	return func(h *HandlersAPI) {
 		h.Users = users
+	}
+}
+
+func WithChallenges(challenges *challenges.ChallengeManager) HandlersOption {
+	return func(h *HandlersAPI) {
+		h.Challenges = challenges
 	}
 }
 

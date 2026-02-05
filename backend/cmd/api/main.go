@@ -14,6 +14,7 @@ import (
 	"github.com/jmpsec/mapctf/cmd/api/handlers"
 	"github.com/jmpsec/mapctf/pkg/backend"
 	"github.com/jmpsec/mapctf/pkg/cache"
+	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
@@ -129,7 +130,6 @@ POST   /api/auth/login          - User login
 GET    /api/auth/logout         - User logout
 GET    /api/teams               - List teams
 GET    /api/challenges          - List challenges
-GET    /api/admin/stats         - Admin stats
 GET    /api/admin/teams         - Manage teams
 POST   /api/admin/teams         - Create team
 DELETE /api/admin/teams/:id     - Delete team
@@ -187,6 +187,12 @@ func mapCTFService() {
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize users: %v", err)
 	}
+	// Challenge Manager
+	log.Info().Msg("Initialize challenges")
+	challengesMgr, err := challenges.CreateChallengeManager(db.Conn)
+	if err != nil {
+		log.Fatal().Msgf("Failed to initialize challenges: %v", err)
+	}
 	// Handlers
 	log.Info().Msg("Initializing handlers")
 	handlersCTF := handlers.CreateHandlersAPI(
@@ -195,6 +201,7 @@ func mapCTFService() {
 		handlers.WithConfig(flagParams.ConfigValues),
 		handlers.WithTeams(teamsMgr),
 		handlers.WithUsers(usersMgr),
+		handlers.WithChallenges(challengesMgr),
 		handlers.WithDebugHTTP(&flagParams.ConfigValues.DebugHTTP),
 	)
 	// Router
