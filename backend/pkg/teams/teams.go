@@ -7,6 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// NoTeamID is the default team ID when no team is assigned
+	NoTeamID uint = 0
+)
+
 // TeamManager to handle all teams of the platform
 type TeamManager struct {
 	DB *gorm.DB
@@ -34,16 +39,6 @@ type TeamMembership struct {
 	AssignedBy uint
 }
 
-// TeamScore to hold all team scores over time
-type TeamScore struct {
-	gorm.Model
-	TeamID      uint `gorm:"index"`
-	ChallengeID uint
-	Points      int
-	EntID       uint
-	ScoredBy    uint
-}
-
 // CreateTeams to initialize the teams struct and its tables
 func CreateTeams(backend *gorm.DB) (*TeamManager, error) {
 	if backend == nil {
@@ -64,6 +59,10 @@ func CreateTeams(backend *gorm.DB) (*TeamManager, error) {
 	if err := backend.AutoMigrate(&TeamScore{}); err != nil {
 		return nil, fmt.Errorf("Failed to AutoMigrate table (team_scores): %w", err)
 	}
+	// table team_logos
+	if err := backend.AutoMigrate(&TeamLogo{}); err != nil {
+		return nil, fmt.Errorf("Failed to AutoMigrate table (team_logos): %w", err)
+	}
 	return t, nil
 }
 
@@ -75,23 +74,23 @@ func (m *TeamManager) Create(team PlatformTeam) error {
 	return nil
 }
 
-// Exists checks if user exists
-func (m *TeamManager) Exists(name string) bool {
+// Exists checks if team exists
+func (m *TeamManager) Exists(name string, entID uint) bool {
 	var results int64
-	m.DB.Model(&PlatformTeam{}).Where("name = ?", name).Count(&results)
+	m.DB.Model(&PlatformTeam{}).Where("name = ? AND ent_id = ?", name, entID).Count(&results)
 	return (results > 0)
 }
 
-// Get user by username including service users
-func (m *TeamManager) Get(name string) (PlatformTeam, error) {
+// Get team by name
+func (m *TeamManager) Get(name string, entID uint) (PlatformTeam, error) {
 	var team PlatformTeam
-	if err := m.DB.Where("name = ?", name).First(&team).Error; err != nil {
+	if err := m.DB.Where("name = ? AND ent_id = ?", name, entID).First(&team).Error; err != nil {
 		return team, err
 	}
 	return team, nil
 }
 
-// Get user by username and by entity ID, including service users
+// Get user by name and by entity ID
 func (m *TeamManager) GetByEntID(name string, entID uint) (PlatformTeam, error) {
 	var team PlatformTeam
 	if err := m.DB.Where("name = ? AND ent_id = ?", name, entID).First(&team).Error; err != nil {
@@ -100,16 +99,16 @@ func (m *TeamManager) GetByEntID(name string, entID uint) (PlatformTeam, error) 
 	return team, nil
 }
 
-// ExistsGet checks if user exists and returns the user
-func (m *TeamManager) ExistsGet(name string) (bool, PlatformTeam) {
-	team, err := m.Get(name)
+// ExistsGet checks if user exists and returns the team
+func (m *TeamManager) ExistsGet(name string, entID uint) (bool, PlatformTeam) {
+	team, err := m.Get(name, entID)
 	if err != nil {
 		return false, PlatformTeam{}
 	}
 	return true, team
 }
 
-// ExistsGetByEntID checks if user exists and returns the user
+// ExistsGetByEntID checks if team exists and returns the team by name and by entity ID
 func (m *TeamManager) ExistsGetByEntID(name string, entID uint) (bool, PlatformTeam) {
 	team, err := m.GetByEntID(name, entID)
 	if err != nil {
@@ -118,9 +117,9 @@ func (m *TeamManager) ExistsGetByEntID(name string, entID uint) (bool, PlatformT
 	return true, team
 }
 
-// New empty user
+// New empty team
 func (m *TeamManager) New(name, logo, email string, protected, visible bool, eID uint) (PlatformTeam, error) {
-	if !m.Exists(name) {
+	if !m.Exists(name, eID) {
 		return PlatformTeam{
 			Name:      name,
 			Logo:      logo,

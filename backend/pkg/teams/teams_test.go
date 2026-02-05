@@ -235,7 +235,7 @@ func TestExists(t *testing.T) {
 	}
 
 	// Team should not exist initially
-	if manager.Exists("nonexistent") {
+	if manager.Exists("nonexistent", 1) {
 		t.Error("Expected team 'nonexistent' to not exist")
 	}
 
@@ -253,12 +253,12 @@ func TestExists(t *testing.T) {
 	}
 
 	// Now team should exist
-	if !manager.Exists("Existing Team") {
+	if !manager.Exists("Existing Team", 1) {
 		t.Error("Expected team 'Existing Team' to exist")
 	}
 
 	// Different team name should not exist
-	if manager.Exists("Different Team") {
+	if manager.Exists("Different Team", 1) {
 		t.Error("Expected team 'Different Team' to not exist")
 	}
 }
@@ -288,7 +288,7 @@ func TestGet(t *testing.T) {
 	}
 
 	// Get the team
-	retrievedTeam, err := manager.Get("Get Team")
+	retrievedTeam, err := manager.Get("Get Team", 1)
 	if err != nil {
 		t.Fatalf("Failed to get team: %v", err)
 	}
@@ -318,7 +318,7 @@ func TestGetNonExistent(t *testing.T) {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
-	_, err = manager.Get("nonexistent")
+	_, err = manager.Get("nonexistent", 1)
 	if err == nil {
 		t.Error("Expected error when getting non-existent team")
 	}
@@ -419,7 +419,7 @@ func TestExistsGet(t *testing.T) {
 	}
 
 	// Non-existent team
-	exists, team := manager.ExistsGet("nonexistent")
+	exists, team := manager.ExistsGet("nonexistent", 1)
 	if exists {
 		t.Error("Expected team to not exist")
 	}
@@ -445,7 +445,7 @@ func TestExistsGet(t *testing.T) {
 	}
 
 	// Existing team
-	exists, team = manager.ExistsGet("ExistsGet Team")
+	exists, team = manager.ExistsGet("ExistsGet Team", 1)
 	if !exists {
 		t.Error("Expected team to exist")
 	}
@@ -659,7 +659,7 @@ func TestCreateMultipleTeams(t *testing.T) {
 
 	// Verify all teams exist
 	for _, team := range teams {
-		if !manager.Exists(team.Name) {
+		if !manager.Exists(team.Name, team.EntID) {
 			t.Errorf("Expected team %s to exist", team.Name)
 		}
 	}
@@ -712,7 +712,7 @@ func TestTeamWorkflow(t *testing.T) {
 	}
 
 	// Step 1: Verify team doesn't exist
-	if manager.Exists("Workflow Team") {
+	if manager.Exists("Workflow Team", 1) {
 		t.Error("Team should not exist initially")
 	}
 
@@ -729,12 +729,12 @@ func TestTeamWorkflow(t *testing.T) {
 	}
 
 	// Step 4: Verify team exists
-	if !manager.Exists("Workflow Team") {
+	if !manager.Exists("Workflow Team", 1) {
 		t.Error("Team should exist after creation")
 	}
 
 	// Step 5: Retrieve team
-	exists, retrievedTeam := manager.ExistsGet("Workflow Team")
+	exists, retrievedTeam := manager.ExistsGet("Workflow Team", 1)
 	if !exists {
 		t.Error("Team should exist")
 	}
@@ -830,7 +830,7 @@ func TestTeamWithMembership(t *testing.T) {
 	}
 
 	// Get the created team to get its ID
-	createdTeam, err := manager.Get("Membership Team")
+	createdTeam, err := manager.Get("Membership Team", 1)
 	if err != nil {
 		t.Fatalf("Failed to get team: %v", err)
 	}
@@ -889,7 +889,7 @@ func TestTeamWithScores(t *testing.T) {
 	}
 
 	// Get the created team to get its ID
-	createdTeam, err := manager.Get("Score Team")
+	createdTeam, err := manager.Get("Score Team", 1)
 	if err != nil {
 		t.Fatalf("Failed to get team: %v", err)
 	}
@@ -948,7 +948,7 @@ func TestTeamPointsTracking(t *testing.T) {
 	db.Model(&updatedTeam).Where("name = ?", "Points Team").Update("points", 100)
 
 	// Retrieve and verify
-	retrievedTeam, err := manager.Get("Points Team")
+	retrievedTeam, err := manager.Get("Points Team", 1)
 	if err != nil {
 		t.Fatalf("Failed to get team: %v", err)
 	}
@@ -997,7 +997,7 @@ func BenchmarkExists(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = manager.Exists("Bench Team")
+		_ = manager.Exists("Bench Team", 1)
 	}
 }
 
@@ -1020,6 +1020,6 @@ func BenchmarkGet(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = manager.Get("Bench Team")
+		_, _ = manager.Get("Bench Team", 1)
 	}
 }
