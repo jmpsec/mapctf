@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/jmpsec/mapctf/pkg/config"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -35,17 +37,24 @@ type PlatformUser struct {
 	EntID         uint
 }
 
+// TokenClaims to hold user claims when using JWT
+type TokenClaims struct {
+	Username string `json:"username"`
+	jwt.RegisteredClaims
+}
+
 // UserManager have all users of the system
 type UserManager struct {
-	DB *gorm.DB
+	DB        *gorm.DB
+	JWTConfig *config.ConfigurationJWT
 }
 
 // CreateUserManager to initialize the users struct and tables
-func CreateUserManager(backend *gorm.DB) (*UserManager, error) {
+func CreateUserManager(backend *gorm.DB, jwtConfig *config.ConfigurationJWT) (*UserManager, error) {
 	if backend == nil {
 		return nil, fmt.Errorf("database connection cannot be nil")
 	}
-	u := &UserManager{DB: backend}
+	u := &UserManager{DB: backend, JWTConfig: jwtConfig}
 	// table platform_users
 	if err := backend.AutoMigrate(&PlatformUser{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (platform_users): %w", err)
@@ -143,3 +152,55 @@ func (m *UserManager) New(username, password, email, display string, admin, serv
 }
 
 // Update
+
+// CheckLoginCredentials to check provided login credentials by matching hashes
+func (m *UserManager) CheckLoginCredentials(username, password string) (bool, PlatformUser) {
+	user, err := m.Get(username)
+	if err != nil {
+		return false, PlatformUser{}
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PassHash), []byte(password)); err != nil {
+		return false, PlatformUser{}
+	}
+	return true, user
+}
+
+// CreateToken to create a new JWT token for a given user
+func (m *UserManager) CreateToken(username, issuer string, expHours int) (string, time.Time, error) {
+	tDuration := time.Duration(expHours)
+	if expHours == 0 {
+		tDuration = time.Duration(m.JWTConfig.HoursToExpire)
+	}
+	expirationTime := time.Now().Add(time.Hour * tDuration)
+	// Create the JWT claims, which includes the username, level and expiry time
+	claims := &TokenClaims{
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			Issuer:    issuer,
+		},
+	}
+	// Declare the token with the algorithm used for signing, and the claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// Create the JWT string
+	tokenString, err := token.SignedString([]byte(m.JWTConfig.Secret))
+	if err != nil {
+		return "", time.Now(), err
+	}
+	return tokenString, expirationTime, nil
+}
+
+// CheckToken to verify if a token used is valid
+func (m *UserManager) CheckToken(jwtSecret, tokenStr string) (TokenClaims, error) {
+	claims := &TokenClaims{}
+	tkn, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(jwtSecret), nil
+	})
+	if err != nil {
+		return *claims, fmt.Errorf("error parsing token claims: %w", err)
+	}
+	if !tkn.Valid {
+		return *claims, fmt.Errorf("invalid token")
+	}
+	return *claims, nil
+}

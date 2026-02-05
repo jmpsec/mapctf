@@ -41,6 +41,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.36.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/viper v1.21.0

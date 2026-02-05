@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jmpsec/mapctf/pkg/config"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -25,7 +26,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 func TestCreateUserManager(t *testing.T) {
 	db := setupTestDB(t)
 
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -46,7 +47,7 @@ func TestCreateUserManager(t *testing.T) {
 
 // TestCreateUserManagerWithNilDB tests CreateUserManager with nil database
 func TestCreateUserManagerWithNilDB(t *testing.T) {
-	_, err := CreateUserManager(nil)
+	_, err := CreateUserManager(nil, &config.ConfigurationJWT{})
 	if err == nil {
 		t.Error("Expected error when creating UserManager with nil database")
 	}
@@ -64,7 +65,7 @@ func TestCreateUserManagerAutoMigrateError(t *testing.T) {
 	sqlDB.Close()
 
 	// Now try to create user manager - should fail on AutoMigrate
-	_, err = CreateUserManager(db)
+	_, err = CreateUserManager(db, &config.ConfigurationJWT{})
 	if err == nil {
 		t.Error("Expected error when AutoMigrate fails")
 	}
@@ -106,7 +107,7 @@ func TestPlatformUserStructure(t *testing.T) {
 // TestCreate tests creating a new user
 func TestCreate(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -147,7 +148,7 @@ func TestCreate(t *testing.T) {
 // TestHashTextWithSalt tests text hashing functionality
 func TestHashTextWithSalt(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -177,7 +178,7 @@ func TestHashTextWithSalt(t *testing.T) {
 // TestHashTextWithSaltDifferentHashes tests that same text produces different hashes
 func TestHashTextWithSaltDifferentHashes(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -202,7 +203,7 @@ func TestHashTextWithSaltDifferentHashes(t *testing.T) {
 // TestHashPasswordWithSalt tests password hashing
 func TestHashPasswordWithSalt(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -232,7 +233,7 @@ func TestHashPasswordWithSalt(t *testing.T) {
 // TestExists tests checking if a user exists
 func TestExists(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -269,7 +270,7 @@ func TestExists(t *testing.T) {
 // TestGet tests retrieving a user by username
 func TestGet(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -316,7 +317,7 @@ func TestGet(t *testing.T) {
 // TestGetNonExistent tests getting a non-existent user
 func TestGetNonExistent(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -330,7 +331,7 @@ func TestGetNonExistent(t *testing.T) {
 // TestGetByEntID tests retrieving a user by username and entity ID
 func TestGetByEntID(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -392,7 +393,7 @@ func TestGetByEntID(t *testing.T) {
 // TestGetByEntIDNonExistent tests getting a non-existent user by entity ID
 func TestGetByEntIDNonExistent(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -406,7 +407,7 @@ func TestGetByEntIDNonExistent(t *testing.T) {
 // TestExistsGet tests the ExistsGet function
 func TestExistsGet(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -458,7 +459,7 @@ func TestExistsGet(t *testing.T) {
 // TestExistsGetByEntID tests the ExistsGetByEntID function
 func TestExistsGetByEntID(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -528,7 +529,7 @@ func TestExistsGetByEntID(t *testing.T) {
 // TestNew tests creating a new user struct without persisting
 func TestNew(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -588,7 +589,7 @@ func TestNew(t *testing.T) {
 // TestNewExistingUser tests creating a new user that already exists
 func TestNewExistingUser(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -621,7 +622,7 @@ func TestNewExistingUser(t *testing.T) {
 // TestNewServiceUser tests creating a service user
 func TestNewServiceUser(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -643,7 +644,7 @@ func TestNewServiceUser(t *testing.T) {
 // TestHashEmptyString tests hashing an empty string
 func TestHashEmptyString(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -667,7 +668,7 @@ func TestHashEmptyString(t *testing.T) {
 // TestCreateMultipleUsers tests creating multiple users
 func TestCreateMultipleUsers(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -696,7 +697,7 @@ func TestCreateMultipleUsers(t *testing.T) {
 // TestCreateDuplicateUser tests creating a user with duplicate username (for error coverage)
 func TestCreateDuplicateUser(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -734,7 +735,7 @@ func TestCreateDuplicateUser(t *testing.T) {
 // TestHashTextWithSaltError tests hash error handling
 func TestHashTextWithSaltError(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -751,7 +752,7 @@ func TestHashTextWithSaltError(t *testing.T) {
 // TestNewWithHashError tests New function error handling
 func TestNewWithHashError(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -791,7 +792,7 @@ func TestPlatformUserJSONTags(t *testing.T) {
 // TestUserWorkflow tests a complete user workflow
 func TestUserWorkflow(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -843,7 +844,7 @@ func TestUserWorkflow(t *testing.T) {
 // TestMultiEntityIsolation tests that users are properly isolated by entity
 func TestMultiEntityIsolation(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -889,10 +890,419 @@ func TestMultiEntityIsolation(t *testing.T) {
 	}
 }
 
+// TestCheckLoginCredentials tests verifying login credentials
+func TestCheckLoginCredentials(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Create a user with hashed password
+	password := "securePassword123!"
+	passHash, err := manager.HashPasswordWithSalt(password)
+	if err != nil {
+		t.Fatalf("Failed to hash password: %v", err)
+	}
+
+	user := PlatformUser{
+		Username: "loginuser",
+		Email:    "login@example.com",
+		PassHash: passHash,
+		EntID:    1,
+		Active:   true,
+	}
+
+	err = manager.Create(user)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	// Test valid credentials
+	valid, retrievedUser := manager.CheckLoginCredentials("loginuser", password)
+	if !valid {
+		t.Error("Expected valid credentials")
+	}
+	if retrievedUser.Username != "loginuser" {
+		t.Errorf("Expected username 'loginuser', got '%s'", retrievedUser.Username)
+	}
+	if retrievedUser.Email != "login@example.com" {
+		t.Errorf("Expected email 'login@example.com', got '%s'", retrievedUser.Email)
+	}
+
+	// Test invalid password
+	valid, _ = manager.CheckLoginCredentials("loginuser", "wrongpassword")
+	if valid {
+		t.Error("Expected invalid credentials for wrong password")
+	}
+
+	// Test non-existent user
+	valid, _ = manager.CheckLoginCredentials("nonexistent", password)
+	if valid {
+		t.Error("Expected invalid credentials for non-existent user")
+	}
+}
+
+// TestCheckLoginCredentialsEmptyPassword tests login with empty password
+func TestCheckLoginCredentialsEmptyPassword(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Create a user with empty password hash
+	passHash, _ := manager.HashPasswordWithSalt("")
+	user := PlatformUser{
+		Username: "emptypassuser",
+		Email:    "empty@example.com",
+		PassHash: passHash,
+		EntID:    1,
+	}
+
+	err = manager.Create(user)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	// Login with empty password should work
+	valid, _ := manager.CheckLoginCredentials("emptypassuser", "")
+	if !valid {
+		t.Error("Expected valid credentials for empty password")
+	}
+
+	// Login with non-empty password should fail
+	valid, _ = manager.CheckLoginCredentials("emptypassuser", "notEmpty")
+	if valid {
+		t.Error("Expected invalid credentials for non-empty password on empty-password user")
+	}
+}
+
+// TestCreateToken tests JWT token creation
+func TestCreateToken(t *testing.T) {
+	db := setupTestDB(t)
+	jwtConfig := &config.ConfigurationJWT{
+		Secret:       "test-secret-key-12345",
+		HoursToExpire: 24,
+	}
+	manager, err := CreateUserManager(db, jwtConfig)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Test token creation with custom expiration
+	token, expTime, err := manager.CreateToken("testuser", "mapctf", 2)
+	if err != nil {
+		t.Fatalf("Failed to create token: %v", err)
+	}
+
+	if token == "" {
+		t.Error("Expected non-empty token")
+	}
+
+	// Verify expiration time is approximately 2 hours from now
+	expectedExpiry := time.Now().Add(2 * time.Hour)
+	timeDiff := expTime.Sub(expectedExpiry)
+	if timeDiff > time.Minute || timeDiff < -time.Minute {
+		t.Errorf("Expected expiration time around %v, got %v", expectedExpiry, expTime)
+	}
+}
+
+// TestCreateTokenDefaultExpiration tests token creation with default expiration
+func TestCreateTokenDefaultExpiration(t *testing.T) {
+	db := setupTestDB(t)
+	jwtConfig := &config.ConfigurationJWT{
+		Secret:       "test-secret-key-12345",
+		HoursToExpire: 48,
+	}
+	manager, err := CreateUserManager(db, jwtConfig)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Test token creation with 0 expHours (should use default from config)
+	token, expTime, err := manager.CreateToken("testuser", "mapctf", 0)
+	if err != nil {
+		t.Fatalf("Failed to create token: %v", err)
+	}
+
+	if token == "" {
+		t.Error("Expected non-empty token")
+	}
+
+	// Verify expiration time is approximately 48 hours from now (config default)
+	expectedExpiry := time.Now().Add(48 * time.Hour)
+	timeDiff := expTime.Sub(expectedExpiry)
+	if timeDiff > time.Minute || timeDiff < -time.Minute {
+		t.Errorf("Expected expiration time around %v, got %v", expectedExpiry, expTime)
+	}
+}
+
+// TestCreateTokenDifferentIssuers tests token creation with different issuers
+func TestCreateTokenDifferentIssuers(t *testing.T) {
+	db := setupTestDB(t)
+	jwtConfig := &config.ConfigurationJWT{
+		Secret:       "test-secret-key-12345",
+		HoursToExpire: 24,
+	}
+	manager, err := CreateUserManager(db, jwtConfig)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	token1, _, err := manager.CreateToken("user1", "issuer1", 1)
+	if err != nil {
+		t.Fatalf("Failed to create token1: %v", err)
+	}
+
+	token2, _, err := manager.CreateToken("user1", "issuer2", 1)
+	if err != nil {
+		t.Fatalf("Failed to create token2: %v", err)
+	}
+
+	// Tokens should be different due to different issuers
+	if token1 == token2 {
+		t.Error("Expected different tokens for different issuers")
+	}
+}
+
+// TestCheckToken tests JWT token validation
+func TestCheckToken(t *testing.T) {
+	db := setupTestDB(t)
+	jwtSecret := "test-secret-key-12345"
+	jwtConfig := &config.ConfigurationJWT{
+		Secret:       jwtSecret,
+		HoursToExpire: 24,
+	}
+	manager, err := CreateUserManager(db, jwtConfig)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Create a valid token
+	token, _, err := manager.CreateToken("testuser", "mapctf", 1)
+	if err != nil {
+		t.Fatalf("Failed to create token: %v", err)
+	}
+
+	// Verify the token
+	claims, err := manager.CheckToken(jwtSecret, token)
+	if err != nil {
+		t.Fatalf("Failed to verify token: %v", err)
+	}
+
+	if claims.Username != "testuser" {
+		t.Errorf("Expected username 'testuser', got '%s'", claims.Username)
+	}
+
+	if claims.Issuer != "mapctf" {
+		t.Errorf("Expected issuer 'mapctf', got '%s'", claims.Issuer)
+	}
+}
+
+// TestCheckTokenInvalidSecret tests token validation with wrong secret
+func TestCheckTokenInvalidSecret(t *testing.T) {
+	db := setupTestDB(t)
+	jwtConfig := &config.ConfigurationJWT{
+		Secret:       "correct-secret-key",
+		HoursToExpire: 24,
+	}
+	manager, err := CreateUserManager(db, jwtConfig)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Create a token with one secret
+	token, _, err := manager.CreateToken("testuser", "mapctf", 1)
+	if err != nil {
+		t.Fatalf("Failed to create token: %v", err)
+	}
+
+	// Try to verify with different secret
+	_, err = manager.CheckToken("wrong-secret-key", token)
+	if err == nil {
+		t.Error("Expected error when verifying token with wrong secret")
+	}
+}
+
+// TestCheckTokenInvalidToken tests validation of invalid token string
+func TestCheckTokenInvalidToken(t *testing.T) {
+	db := setupTestDB(t)
+	jwtConfig := &config.ConfigurationJWT{
+		Secret:       "test-secret",
+		HoursToExpire: 24,
+	}
+	manager, err := CreateUserManager(db, jwtConfig)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Try to verify an invalid token string
+	_, err = manager.CheckToken("test-secret", "invalid.token.string")
+	if err == nil {
+		t.Error("Expected error when verifying invalid token")
+	}
+}
+
+// TestCheckTokenMalformedToken tests validation of malformed token
+func TestCheckTokenMalformedToken(t *testing.T) {
+	db := setupTestDB(t)
+	jwtConfig := &config.ConfigurationJWT{
+		Secret:       "test-secret",
+		HoursToExpire: 24,
+	}
+	manager, err := CreateUserManager(db, jwtConfig)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Try to verify completely malformed token
+	_, err = manager.CheckToken("test-secret", "not-a-jwt-at-all")
+	if err == nil {
+		t.Error("Expected error when verifying malformed token")
+	}
+
+	// Try empty token
+	_, err = manager.CheckToken("test-secret", "")
+	if err == nil {
+		t.Error("Expected error when verifying empty token")
+	}
+}
+
+// TestTokenRoundTrip tests full token creation and verification cycle
+func TestTokenRoundTrip(t *testing.T) {
+	db := setupTestDB(t)
+	jwtSecret := "round-trip-secret-key"
+	jwtConfig := &config.ConfigurationJWT{
+		Secret:       jwtSecret,
+		HoursToExpire: 24,
+	}
+	manager, err := CreateUserManager(db, jwtConfig)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	testCases := []struct {
+		username string
+		issuer   string
+		expHours int
+	}{
+		{"user1", "issuer1", 1},
+		{"user2", "issuer2", 24},
+		{"admin", "mapctf", 168},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.username, func(t *testing.T) {
+			token, _, err := manager.CreateToken(tc.username, tc.issuer, tc.expHours)
+			if err != nil {
+				t.Fatalf("Failed to create token: %v", err)
+			}
+
+			claims, err := manager.CheckToken(jwtSecret, token)
+			if err != nil {
+				t.Fatalf("Failed to verify token: %v", err)
+			}
+
+			if claims.Username != tc.username {
+				t.Errorf("Expected username '%s', got '%s'", tc.username, claims.Username)
+			}
+
+			if claims.Issuer != tc.issuer {
+				t.Errorf("Expected issuer '%s', got '%s'", tc.issuer, claims.Issuer)
+			}
+		})
+	}
+}
+
+// TestLoginAndTokenWorkflow tests complete login and token workflow
+func TestLoginAndTokenWorkflow(t *testing.T) {
+	db := setupTestDB(t)
+	jwtSecret := "workflow-secret-key"
+	jwtConfig := &config.ConfigurationJWT{
+		Secret:       jwtSecret,
+		HoursToExpire: 24,
+	}
+	manager, err := CreateUserManager(db, jwtConfig)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Step 1: Create a new user
+	password := "securePass123!"
+	user, err := manager.New("workflowuser", password, "workflow@example.com", "Workflow User", false, false, 1, 1)
+	if err != nil {
+		t.Fatalf("Failed to create new user: %v", err)
+	}
+
+	err = manager.Create(user)
+	if err != nil {
+		t.Fatalf("Failed to persist user: %v", err)
+	}
+
+	// Step 2: Verify login credentials
+	valid, retrievedUser := manager.CheckLoginCredentials("workflowuser", password)
+	if !valid {
+		t.Fatal("Expected valid login credentials")
+	}
+
+	// Step 3: Create token for authenticated user
+	token, expTime, err := manager.CreateToken(retrievedUser.Username, "mapctf", 1)
+	if err != nil {
+		t.Fatalf("Failed to create token: %v", err)
+	}
+
+	if token == "" {
+		t.Error("Expected non-empty token")
+	}
+
+	if expTime.Before(time.Now()) {
+		t.Error("Token expiration should be in the future")
+	}
+
+	// Step 4: Verify the token
+	claims, err := manager.CheckToken(jwtSecret, token)
+	if err != nil {
+		t.Fatalf("Failed to verify token: %v", err)
+	}
+
+	if claims.Username != "workflowuser" {
+		t.Errorf("Expected username 'workflowuser', got '%s'", claims.Username)
+	}
+
+	// Step 5: Verify wrong password fails
+	valid, _ = manager.CheckLoginCredentials("workflowuser", "wrongpassword")
+	if valid {
+		t.Error("Expected invalid login with wrong password")
+	}
+}
+
+// TestTokenClaims tests the TokenClaims struct
+func TestTokenClaims(t *testing.T) {
+	claims := TokenClaims{
+		Username: "testuser",
+	}
+
+	if claims.Username != "testuser" {
+		t.Errorf("Expected username 'testuser', got '%s'", claims.Username)
+	}
+}
+
+// TestConstants tests the package constants
+func TestConstants(t *testing.T) {
+	if NoTeamID != 0 {
+		t.Errorf("Expected NoTeamID to be 0, got %d", NoTeamID)
+	}
+
+	if NoEntID != 0 {
+		t.Errorf("Expected NoEntID to be 0, got %d", NoEntID)
+	}
+}
+
 // BenchmarkHashPassword benchmarks password hashing
 func BenchmarkHashPassword(b *testing.B) {
 	db := setupTestDB(&testing.T{})
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		b.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -906,7 +1316,7 @@ func BenchmarkHashPassword(b *testing.B) {
 // BenchmarkExists benchmarks the Exists check
 func BenchmarkExists(b *testing.B) {
 	db := setupTestDB(&testing.T{})
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		b.Fatalf("Failed to create UserManager: %v", err)
 	}
@@ -929,7 +1339,7 @@ func BenchmarkExists(b *testing.B) {
 // BenchmarkGet benchmarks the Get operation
 func BenchmarkGet(b *testing.B) {
 	db := setupTestDB(&testing.T{})
-	manager, err := CreateUserManager(db)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		b.Fatalf("Failed to create UserManager: %v", err)
 	}

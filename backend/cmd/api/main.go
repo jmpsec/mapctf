@@ -183,7 +183,7 @@ func mapCTFService() {
 	}
 	// User Manager
 	log.Info().Msg("Initialize users")
-	usersMgr, err := users.CreateUserManager(db.Conn)
+	usersMgr, err := users.CreateUserManager(db.Conn, &flagParams.ConfigValues.JWT)
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize users: %v", err)
 	}

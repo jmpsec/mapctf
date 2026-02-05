@@ -33,6 +33,7 @@ type MapCTFConfiguration struct {
 	Redis             ConfigurationRedis     `mapstructure:"redis"`
 	Metrics           ConfigurationMetrics   `mapstructure:"metrics"`
 	TLS               ConfigurationTLS       `mapstructure:"tls"`
+	JWT               ConfigurationJWT       `mapstructure:"jwt"`
 	DebugHTTP         ConfigurationDebugHTTP `mapstructure:"debugHttp"`
 }
 
@@ -84,6 +85,12 @@ type ConfigurationTLS struct {
 	Termination     bool   `yaml:"termination"`
 	CertificateFile string `yaml:"certificateFile"`
 	KeyFile         string `yaml:"keyFile"`
+}
+
+// ConfigurationJWT to hold the JWT configuration values
+type ConfigurationJWT struct {
+	Secret        string `yaml:"secret"`
+	HoursToExpire int    `yaml:"hoursToExpire"`
 }
 
 // ConfigurationDebugHTTP to hold all HTTP debug configuration values

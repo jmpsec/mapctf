@@ -46,6 +46,7 @@ func InitMapFlags(params *ServiceFlagParams) []cli.Flag {
 	allFlags = append(allFlags, initRedisFlags(params)...)
 	allFlags = append(allFlags, initDBFlags(params)...)
 	allFlags = append(allFlags, initTLSSecurityFlags(params)...)
+	allFlags = append(allFlags, initJWTFlags(params)...)
 	allFlags = append(allFlags, initDebugFlags(params)...)
 	return allFlags
 }
@@ -315,6 +316,26 @@ func initTLSSecurityFlags(params *ServiceFlagParams) []cli.Flag {
 			Usage:       "TLS termination private key from `FILE`",
 			Sources:     cli.EnvVars("TLS_KEY"),
 			Destination: &params.ConfigValues.TLS.KeyFile,
+		},
+	}
+}
+
+// initJWTFlags initializes JWT-related flags
+func initJWTFlags(params *ServiceFlagParams) []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Name:        "jwt-secret",
+			Value:       "",
+			Usage:       "Secret key to be used for JWT",
+			Sources:     cli.EnvVars("JWT_SECRET"),
+			Destination: &params.ConfigValues.JWT.Secret,
+		},
+		&cli.IntFlag{
+			Name:        "jwt-expiration",
+			Value:       3600,
+			Usage:       "Expiration time in seconds for JWT",
+			Sources:     cli.EnvVars("JWT_EXPIRATION"),
+			Destination: &params.ConfigValues.JWT.HoursToExpire,
 		},
 	}
 }
