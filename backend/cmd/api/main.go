@@ -1,5 +1,22 @@
 package main
 
+// @title           mapCTF API
+// @version         1.0
+// @description     API service for mapCTF - a map-based CTF platform
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @schemes   http https
+
 import (
 	"context"
 	"crypto/tls"
@@ -11,6 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jmpsec/mapctf/cmd/api/handlers"
 	"github.com/jmpsec/mapctf/pkg/backend"
 	"github.com/jmpsec/mapctf/pkg/cache"
@@ -196,6 +215,7 @@ func mapCTFService() {
 	// Handlers
 	log.Info().Msg("Initializing handlers")
 	handlersCTF := handlers.CreateHandlersAPI(
+		handlers.WithServiceName(serviceName),
 		handlers.WithDB(db.Conn),
 		handlers.WithRedisCache(redis),
 		handlers.WithConfig(flagParams.ConfigValues),
@@ -206,22 +226,28 @@ func mapCTFService() {
 	)
 	// Router
 	log.Info().Msg("Initializing router")
-	// Create router for API
-	muxAPI := http.NewServeMux()
+	// Create chi router for API
+	muxAPI := chi.NewRouter()
+	// Middleware
+	muxAPI.Use(middleware.RequestID)
+	muxAPI.Use(middleware.RealIP)
+	muxAPI.Use(middleware.Recoverer)
 	// Root
-	muxAPI.HandleFunc("GET /", handlersCTF.RootHandler)
-	// Testing
-	muxAPI.HandleFunc("GET "+healthPath, handlersCTF.HealthHandler)
+	muxAPI.Get(rootPath, handlersCTF.RootHandler)
+	// Health
+	muxAPI.Get(healthPath, handlersCTF.HealthHandler)
 	// Error
-	muxAPI.HandleFunc("GET "+errorPath, handlersCTF.ErrorHandler)
+	muxAPI.Get(errorPath, handlersCTF.ErrorHandler)
 	// Forbidden
-	muxAPI.HandleFunc("GET "+forbiddenPath, handlersCTF.ForbiddenHandler)
-	// Check status
-	muxAPI.HandleFunc("GET "+_apiPath(checksNoAuthPath), handlersCTF.CheckHandlerNoAuth)
-	// Login
-	muxAPI.HandleFunc("POST "+_apiPath(loginPath), handlersCTF.LoginHandler)
-	// Logout
-	muxAPI.HandleFunc("GET "+_apiPath(logoutPath), handlersCTF.LogoutHandler)
+	muxAPI.Get(forbiddenPath, handlersCTF.ForbiddenHandler)
+	// API routes
+	muxAPI.Route(apiPrefixPath+apiVersionPath, func(r chi.Router) {
+		// Check status (no auth)
+		r.Get(checksNoAuthPath, handlersCTF.CheckHandlerNoAuth)
+		// Auth
+		r.Post(loginPath, handlersCTF.LoginHandler)
+		r.Get(logoutPath, handlersCTF.LogoutHandler)
+	})
 	// Launch HTTP server for api
 	serviceListener := flagParams.ConfigValues.Service.Listener + ":" + flagParams.ConfigValues.Service.Port
 	if flagParams.ConfigValues.TLS.Termination {

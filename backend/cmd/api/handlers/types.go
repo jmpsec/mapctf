@@ -1,5 +1,7 @@
 package handlers
 
+import "time"
+
 // ApiLoginRequest to receive login requests
 type ApiLoginRequest struct {
 	Email    string `json:"email"`
@@ -13,8 +15,10 @@ type ApiErrorResponse struct {
 
 // ApiLoginResponse to be returned for login requests
 type ApiLoginResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
+	Success bool      `json:"success"`
+	Message string    `json:"message,omitempty"`
+	Token   string    `json:"token"`
+	ExpTime time.Time `json:"expTime"`
 }
 
 // Team represents a team in the gameboard

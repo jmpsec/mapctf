@@ -8,6 +8,17 @@ import (
 )
 
 // LoginHandler - Handle login requests
+// @Summary      User login
+// @Description  Authenticate user with email and password, returns JWT token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      ApiLoginRequest  true  "Login credentials"
+// @Success      200      {object}  ApiLoginResponse  "Login successful"
+// @Failure      400      {object}  ApiErrorResponse  "Bad request - invalid input"
+// @Failure      401      {object}  ApiErrorResponse  "Unauthorized - invalid credentials"
+// @Failure      500      {object}  ApiErrorResponse  "Internal server error"
+// @Router       /api/v1/auth/login [post]
 func (h *HandlersAPI) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
@@ -20,22 +31,35 @@ func (h *HandlersAPI) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "error parsing POST body"})
 		return
 	}
-
-	// Mock authentication - accept any email/password for development
-	// In production, this would check against the database
 	if l.Email == "" || l.Password == "" {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "email and password are required"})
 		return
 	}
-
-	// Mock successful login
+	valid, user := h.Users.CheckLoginCredentials(l.Email, l.Password)
+	if !valid {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, ApiErrorResponse{Error: "invalid credentials"})
+		return
+	}
+	token, expTime, err := h.Users.CreateToken(user.Username, h.ServiceName, h.Config.JWT.HoursToExpire)
+	if err != nil {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, ApiErrorResponse{Error: "error creating token"})
+		return
+	}
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, ApiLoginResponse{
 		Success: true,
 		Message: "Login successful",
+		Token:   token,
+		ExpTime: expTime,
 	})
 }
 
 // LogoutHandler - Handle logout requests
+// @Summary      User logout
+// @Description  Logout user session
+// @Tags         auth
+// @Produce      text/plain
+// @Success      200  {string}  string  "Logout successful"
+// @Router       /api/v1/auth/logout [get]
 func (h *HandlersAPI) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {

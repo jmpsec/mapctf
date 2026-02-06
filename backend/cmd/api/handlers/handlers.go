@@ -26,13 +26,14 @@ const (
 
 // HandlersAPI to keep all handlers for the API service
 type HandlersAPI struct {
-	DB         *gorm.DB
-	RedisCache *cache.RedisManager
-	Teams      *teams.TeamManager
-	Users      *users.UserManager
-	Challenges *challenges.ChallengeManager
-	Config     config.MapCTFConfiguration
-	DebugHTTP  *zerolog.Logger
+	ServiceName string
+	DB          *gorm.DB
+	RedisCache  *cache.RedisManager
+	Teams       *teams.TeamManager
+	Users       *users.UserManager
+	Challenges  *challenges.ChallengeManager
+	Config      config.MapCTFConfiguration
+	DebugHTTP   *zerolog.Logger
 }
 
 // LumberjackConfig to keep configuration for rotating logs
@@ -48,6 +49,12 @@ type LumberjackConfig struct {
 }
 
 type HandlersOption func(*HandlersAPI)
+
+func WithServiceName(name string) HandlersOption {
+	return func(h *HandlersAPI) {
+		h.ServiceName = name
+	}
+}
 
 func WithDB(db *gorm.DB) HandlersOption {
 	return func(h *HandlersAPI) {
