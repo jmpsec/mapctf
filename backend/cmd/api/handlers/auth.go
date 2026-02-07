@@ -68,3 +68,22 @@ func (h *HandlersAPI) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Send response
 	HTTPResponse(w, "Checked", http.StatusOK, []byte(okContent))
 }
+
+// Middleware to check access to a resource based on the authentication enabled
+func (h *HandlersAPI) checkAuth(handler http.Handler, auth, jwtSecret string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := extractHeaderToken(r)
+		if token == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		_, err := h.Users.CheckToken(jwtSecret, token)
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		// Access granted
+		// TODO: Add context with claims
+		handler.ServeHTTP(w, r.WithContext(nil))
+	})
+}

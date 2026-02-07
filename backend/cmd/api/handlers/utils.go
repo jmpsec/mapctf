@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"strings"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -65,4 +66,35 @@ func HTTPResponse(w http.ResponseWriter, cType string, code int, data interface{
 	}
 	w.WriteHeader(code)
 	_, _ = w.Write(content)
+}
+
+// Helper to extract token from header
+func extractHeaderToken(r *http.Request) string {
+	reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer")
+	if len(splitToken) != 2 {
+		return ""
+	}
+	return strings.TrimSpace(splitToken[1])
+}
+
+// getRealIP extracts the real client IP from the request
+// Works with chi's middleware.RealIP middleware which processes X-Real-Ip and X-Forwarded-For headers
+func getRealIP(r *http.Request) string {
+	// Check X-Real-Ip header (set by nginx, load balancers, etc.)
+	if ip := r.Header.Get("X-Real-Ip"); ip != "" {
+		return strings.TrimSpace(ip)
+	}
+	// Check X-Forwarded-For header (can contain multiple IPs: "client, proxy1, proxy2")
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		// X-Forwarded-For can contain multiple IPs, the first one is the original client IP
+		ips := strings.Split(xff, ",")
+		return strings.TrimSpace(ips[0])
+	}
+	// Fallback to RemoteAddr (already processed by chi's RealIP middleware)
+	ip := r.RemoteAddr
+	if idx := strings.LastIndex(ip, ":"); idx != -1 {
+		ip = ip[:idx]
+	}
+	return ip
 }

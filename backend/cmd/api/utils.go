@@ -17,8 +17,3 @@ OPTIONS:{{template "visibleFlagCategoryTemplate" .}}{{else if .VisibleFlags}}
 
 OPTIONS:{{template "visibleFlagTemplate" .}}{{end}}
 `
-
-// Helper to compose paths for API
-func _apiPath(target string) string {
-	return apiPrefixPath + apiVersionPath + target
-}
