@@ -80,6 +80,15 @@ func (m *ChallengeManager) GetByID(id uint, entID uint) (Challenge, error) {
 	return challenge, nil
 }
 
+// GetAll to get all challenges for a specific entity ID
+func (m *ChallengeManager) GetAll(entID uint) ([]Challenge, error) {
+	var challenges []Challenge
+	if err := m.DB.Where("ent_id = ?", entID).Find(&challenges).Error; err != nil {
+		return challenges, fmt.Errorf("Get All Challenges by Entity: %w", err)
+	}
+	return challenges, nil
+}
+
 // GetCategoryByID to get a category by id and entity id
 func (m *ChallengeManager) GetCategoryByID(id uint, entID uint) (Category, error) {
 	var category Category

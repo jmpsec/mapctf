@@ -919,7 +919,7 @@ func TestCheckLoginCredentials(t *testing.T) {
 	}
 
 	// Test valid credentials
-	valid, retrievedUser := manager.CheckLoginCredentials("loginuser", password)
+	valid, retrievedUser := manager.CheckLoginCredentials("loginuser", password, 1)
 	if !valid {
 		t.Error("Expected valid credentials")
 	}
@@ -929,17 +929,26 @@ func TestCheckLoginCredentials(t *testing.T) {
 	if retrievedUser.Email != "login@example.com" {
 		t.Errorf("Expected email 'login@example.com', got '%s'", retrievedUser.Email)
 	}
+	if retrievedUser.EntID != 1 {
+		t.Errorf("Expected EntID 1, got %d", retrievedUser.EntID)
+	}
 
 	// Test invalid password
-	valid, _ = manager.CheckLoginCredentials("loginuser", "wrongpassword")
+	valid, _ = manager.CheckLoginCredentials("loginuser", "wrongpassword", 1)
 	if valid {
 		t.Error("Expected invalid credentials for wrong password")
 	}
 
 	// Test non-existent user
-	valid, _ = manager.CheckLoginCredentials("nonexistent", password)
+	valid, _ = manager.CheckLoginCredentials("nonexistent", password, 1)
 	if valid {
 		t.Error("Expected invalid credentials for non-existent user")
+	}
+
+	// Test wrong entity ID
+	valid, _ = manager.CheckLoginCredentials("loginuser", password, 2)
+	if valid {
+		t.Error("Expected invalid credentials for wrong entity ID")
 	}
 }
 
@@ -966,15 +975,110 @@ func TestCheckLoginCredentialsEmptyPassword(t *testing.T) {
 	}
 
 	// Login with empty password should work
-	valid, _ := manager.CheckLoginCredentials("emptypassuser", "")
+	valid, _ := manager.CheckLoginCredentials("emptypassuser", "", 1)
 	if !valid {
 		t.Error("Expected valid credentials for empty password")
 	}
 
 	// Login with non-empty password should fail
-	valid, _ = manager.CheckLoginCredentials("emptypassuser", "notEmpty")
+	valid, _ = manager.CheckLoginCredentials("emptypassuser", "notEmpty", 1)
 	if valid {
 		t.Error("Expected invalid credentials for non-empty password on empty-password user")
+	}
+
+	// Login with wrong entity ID should fail
+	valid, _ = manager.CheckLoginCredentials("emptypassuser", "", 2)
+	if valid {
+		t.Error("Expected invalid credentials for wrong entity ID")
+	}
+}
+
+// TestCheckLoginCredentialsEntityIsolation tests that login credentials are isolated by entity ID
+func TestCheckLoginCredentialsEntityIsolation(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Create users with same username but different entity IDs
+	password1 := "password1"
+	password2 := "password2"
+	passHash1, err := manager.HashPasswordWithSalt(password1)
+	if err != nil {
+		t.Fatalf("Failed to hash password1: %v", err)
+	}
+	passHash2, err := manager.HashPasswordWithSalt(password2)
+	if err != nil {
+		t.Fatalf("Failed to hash password2: %v", err)
+	}
+
+	user1 := PlatformUser{
+		Username: "multientityuser",
+		Email:    "user1@entity1.com",
+		PassHash: passHash1,
+		EntID:    1,
+		Active:   true,
+	}
+
+	user2 := PlatformUser{
+		Username: "multientityuser",
+		Email:    "user2@entity2.com",
+		PassHash: passHash2,
+		EntID:    2,
+		Active:   true,
+	}
+
+	err = manager.Create(user1)
+	if err != nil {
+		t.Fatalf("Failed to create user1: %v", err)
+	}
+
+	err = manager.Create(user2)
+	if err != nil {
+		t.Fatalf("Failed to create user2: %v", err)
+	}
+
+	// Test login with entity ID 1 and correct password
+	valid, retrievedUser := manager.CheckLoginCredentials("multientityuser", password1, 1)
+	if !valid {
+		t.Error("Expected valid credentials for entity 1")
+	}
+	if retrievedUser.EntID != 1 {
+		t.Errorf("Expected EntID 1, got %d", retrievedUser.EntID)
+	}
+	if retrievedUser.Email != "user1@entity1.com" {
+		t.Errorf("Expected email 'user1@entity1.com', got '%s'", retrievedUser.Email)
+	}
+
+	// Test login with entity ID 2 and correct password
+	valid, retrievedUser = manager.CheckLoginCredentials("multientityuser", password2, 2)
+	if !valid {
+		t.Error("Expected valid credentials for entity 2")
+	}
+	if retrievedUser.EntID != 2 {
+		t.Errorf("Expected EntID 2, got %d", retrievedUser.EntID)
+	}
+	if retrievedUser.Email != "user2@entity2.com" {
+		t.Errorf("Expected email 'user2@entity2.com', got '%s'", retrievedUser.Email)
+	}
+
+	// Test login with entity ID 1 but password for entity 2 (should fail)
+	valid, _ = manager.CheckLoginCredentials("multientityuser", password2, 1)
+	if valid {
+		t.Error("Expected invalid credentials when using wrong password for entity 1")
+	}
+
+	// Test login with entity ID 2 but password for entity 1 (should fail)
+	valid, _ = manager.CheckLoginCredentials("multientityuser", password1, 2)
+	if valid {
+		t.Error("Expected invalid credentials when using wrong password for entity 2")
+	}
+
+	// Test login with non-existent entity ID
+	valid, _ = manager.CheckLoginCredentials("multientityuser", password1, 999)
+	if valid {
+		t.Error("Expected invalid credentials for non-existent entity ID")
 	}
 }
 
@@ -1241,7 +1345,7 @@ func TestLoginAndTokenWorkflow(t *testing.T) {
 	}
 
 	// Step 2: Verify login credentials
-	valid, retrievedUser := manager.CheckLoginCredentials("workflowuser", password)
+	valid, retrievedUser := manager.CheckLoginCredentials("workflowuser", password, 1)
 	if !valid {
 		t.Fatal("Expected valid login credentials")
 	}
@@ -1271,9 +1375,15 @@ func TestLoginAndTokenWorkflow(t *testing.T) {
 	}
 
 	// Step 5: Verify wrong password fails
-	valid, _ = manager.CheckLoginCredentials("workflowuser", "wrongpassword")
+	valid, _ = manager.CheckLoginCredentials("workflowuser", "wrongpassword", 1)
 	if valid {
 		t.Error("Expected invalid login with wrong password")
+	}
+
+	// Step 6: Verify wrong entity ID fails
+	valid, _ = manager.CheckLoginCredentials("workflowuser", password, 2)
+	if valid {
+		t.Error("Expected invalid login with wrong entity ID")
 	}
 }
 

@@ -154,8 +154,8 @@ func (m *UserManager) New(username, password, email, display string, admin, serv
 // Update
 
 // CheckLoginCredentials to check provided login credentials by matching hashes
-func (m *UserManager) CheckLoginCredentials(username, password string) (bool, PlatformUser) {
-	user, err := m.Get(username)
+func (m *UserManager) CheckLoginCredentials(username, password string, entID uint) (bool, PlatformUser) {
+	user, err := m.GetByEntID(username, entID)
 	if err != nil {
 		return false, PlatformUser{}
 	}

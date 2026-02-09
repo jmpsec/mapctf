@@ -84,8 +84,6 @@ const (
 	apiVersionPath = "/v1"
 	// API admin path
 	apiAdminPath = "/admin"
-	// API stats path
-	apiStatsPath = "/stats"
 	// API teams path
 	apiTeamsPath = "/teams"
 	// API users path
@@ -242,11 +240,32 @@ func mapCTFService() {
 	muxAPI.Get(forbiddenPath, handlersCTF.ForbiddenHandler)
 	// API routes
 	muxAPI.Route(apiPrefixPath+apiVersionPath, func(r chi.Router) {
-		// Check status (no auth)
+		// Public routes (no authentication required)
 		r.Get(checksNoAuthPath, handlersCTF.CheckHandlerNoAuth)
-		// Auth
 		r.Post(loginPath, handlersCTF.LoginHandler)
 		r.Get(logoutPath, handlersCTF.LogoutHandler)
+
+		// Protected routes group (require JWT authentication)
+		r.Group(func(r chi.Router) {
+			// Add authentication middleware
+			r.Use(handlersCTF.AuthMiddleware)
+
+			// Protected gameboard routes
+			r.Get(apiTeamsPath+"/{entID}", handlersCTF.TeamsHandler)           // GET /api/v1/teams/{entID}
+			r.Get(apiChallengesPath+"/{entID}", handlersCTF.ChallengesHandler) // GET /api/v1/challenges/{entID}
+
+			// Protected admin routes
+			r.Route(apiAdminPath, func(r chi.Router) {
+				r.Get(apiTeamsPath+"/{entID}", handlersCTF.AdminTeamsHandler)  // GET /api/v1/admin/teams/{entID}
+				r.Post(apiTeamsPath+"/{entID}", handlersCTF.CreateTeamHandler) // POST /api/v1/admin/teams/{entID}
+				//r.Delete(apiTeamsPath+"/{entID}/{id}", handlersCTF.DeleteTeamHandler) // DELETE /api/v1/admin/teams/{entID}/{id}
+
+				r.Get(apiChallengesPath+"/{entID}", handlersCTF.AdminChallengesHandler)  // GET /api/v1/admin/challenges/{entID}
+				r.Post(apiChallengesPath+"/{entID}", handlersCTF.CreateChallengeHandler) // POST /api/v1/admin/challenges/{entID}
+				//r.Patch(apiChallengesPath+"/{entID}/{id}", handlersCTF.UpdateChallengeHandler) // PATCH /api/v1/admin/challenges/{entID}/{id}
+				//r.Delete(apiChallengesPath+"/{entID}/{id}", handlersCTF.DeleteChallengeHandler) // DELETE /api/v1/admin/challenges/{entID}/{id}
+			})
+		})
 	})
 	// Launch HTTP server for api
 	serviceListener := flagParams.ConfigValues.Service.Listener + ":" + flagParams.ConfigValues.Service.Port

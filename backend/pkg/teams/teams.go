@@ -90,6 +90,15 @@ func (m *TeamManager) Get(name string, entID uint) (PlatformTeam, error) {
 	return team, nil
 }
 
+// Get all teams
+func (m *TeamManager) GetAll(entID uint) ([]PlatformTeam, error) {
+	var teams []PlatformTeam
+	if err := m.DB.Where("ent_id = ?", entID).Find(&teams).Error; err != nil {
+		return teams, err
+	}
+	return teams, nil
+}
+
 // Get user by name and by entity ID
 func (m *TeamManager) GetByEntID(name string, entID uint) (PlatformTeam, error) {
 	var team PlatformTeam

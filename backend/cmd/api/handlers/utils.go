@@ -21,8 +21,10 @@ const JSONApplication string = "application/json"
 const JSONApplicationUTF8 string = JSONApplication + "; charset=UTF-8"
 
 // Default content
+const rootContent = "🌍"
 const errorContent = "❌"
 const okContent = "✅"
+const forbiddenContent = "🚫"
 
 // DebugHTTP - Helper for debugging purposes and dump a full HTTP request
 func DebugHTTP(r *http.Request, showBody bool) string {

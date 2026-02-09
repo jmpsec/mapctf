@@ -29,7 +29,7 @@ func (h *HandlersAPI) ForbiddenHandler(w http.ResponseWriter, r *http.Request) {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
 	// Send response
-	HTTPResponse(w, "", http.StatusForbidden, errorContent)
+	HTTPResponse(w, "", http.StatusForbidden, forbiddenContent)
 }
 
 // RootHandler - Handler for the root path
@@ -42,7 +42,8 @@ func (h *HandlersAPI) RootHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	http.Redirect(w, r, "/dashboard", http.StatusFound)
+	// Send response
+	HTTPResponse(w, "", http.StatusForbidden, rootContent)
 }
 
 // HealthHandler - Handle health requests
@@ -76,4 +77,3 @@ func (h *HandlersAPI) CheckHandlerNoAuth(w http.ResponseWriter, r *http.Request)
 	// Send response
 	HTTPResponse(w, "Checked", http.StatusOK, []byte(okContent))
 }
-
