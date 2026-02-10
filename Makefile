@@ -95,7 +95,7 @@ docker_dev_down:
 
 # Deletes all mapctf docker images
 docker_dev_clean:
-	docker images | grep mapctf | awk '{print $$3}' | xargs -rI {} docker rmi -f {}
+	docker images --format table | grep mapctf | awk '{print $$3}' | xargs -rI {} docker rmi -f {}
 
 # Rebuild only the API server
 docker_dev_rebuild_api:

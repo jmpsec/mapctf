@@ -27,7 +27,7 @@ RUN mkdir -p /opt/mapctf/config
 RUN go build -o /opt/mapctf/bin/mapctf-api cmd/api/*.go
 
 # Set password for MapCTF user
-RUN /opt/mapctf/bin/mapctf-api create-admin-user -u ${MAPCTF_USERNAME} -p ${MAPCTF_PASSWORD}
+#RUN /opt/mapctf/bin/mapctf-api create-admin-user -u ${MAPCTF_USERNAME} -p ${MAPCTF_PASSWORD}
 
 EXPOSE 8081
 

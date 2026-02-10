@@ -1,20 +1,20 @@
 # mapctf-ui-dev
 ARG NODE_VERSION=${NODE_VERSION:-18}
-FROM node:${NODE_VERSION}-alpine
+FROM node:${NODE_VERSION}-alpine AS mapctf-ui-dev
 
 WORKDIR /app
 
 # Install dependencies for node-gyp if needed
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from frontend directory
+COPY frontend/package*.json ./
 
 # Install dependencies (use npm install for dev to handle missing deps)
 RUN npm install
 
-# Copy source code
-COPY . .
+# Copy source code from frontend directory
+COPY frontend/ .
 
 # Expose Vite dev server port
 EXPOSE 3000

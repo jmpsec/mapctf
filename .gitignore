@@ -37,3 +37,7 @@ notes.txt
 frontend
 static
 
+# Markdown files
+*.md
+!README.md
+
