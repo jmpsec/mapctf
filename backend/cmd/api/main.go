@@ -3,19 +3,11 @@ package main
 // @title           mapCTF API
 // @version         1.0
 // @description     API service for mapCTF - a map-based CTF platform
-// @termsOfService  http://swagger.io/terms/
-
-// @contact.name   API Support
-// @contact.url    http://www.swagger.io/support
-// @contact.email  support@swagger.io
-
-// @license.name  Apache 2.0
-// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @host      localhost:8080
 // @BasePath  /api/v1
 
-// @schemes   http https
+// @schemes   https
 
 import (
 	"context"
@@ -141,20 +133,6 @@ func init() {
 	// Initialize CLI flags using the config package
 	flags = config.InitMapFlags(&flagParams)
 }
-
-/*
-POST   /api/auth/login          - User login
-GET    /api/auth/logout         - User logout
-GET    /api/teams               - List teams
-GET    /api/challenges          - List challenges
-GET    /api/admin/teams         - Manage teams
-POST   /api/admin/teams         - Create team
-DELETE /api/admin/teams/:id     - Delete team
-GET    /api/admin/challenges    - Manage challenges
-POST   /api/admin/challenges    - Create challenge
-PATCH  /api/admin/challenges/:id - Update challenge
-DELETE /api/admin/challenges/:id - Delete challenge
-*/
 
 // Let's go!
 func mapCTFService() {
@@ -428,6 +406,109 @@ func main() {
 					return err
 				}
 				fmt.Printf("Example configuration written to %s.\n", output)
+				return nil
+			},
+		},
+		{
+			Name:     "create-admin-user",
+			Category: "configuration",
+			Usage:    "Create or reset password for an admin user for the specified entity ID",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "username",
+					Aliases: []string{"u"},
+					Usage:   "Username for the admin user. If the user already exists, the password will be reset",
+					Value:   "admin",
+				},
+				&cli.StringFlag{
+					Name:    "password",
+					Aliases: []string{"p"},
+					Usage:   "Password for the admin user. If not provided, a random password will be generated",
+					Value:   "",
+				},
+				&cli.UintFlag{
+					Name:    "entID",
+					Aliases: []string{"i"},
+					Usage:   "Entity ID for the admin user",
+					Value:   uint(users.NoEntID),
+				},
+			},
+			Action: func(ctx context.Context, cmd *cli.Command) error {
+				// Load configuration
+				if err := cliAction(); err != nil {
+					return err
+				}
+				// Initialize service logger
+				initializeLoggers(flagParams.ConfigValues)
+				// Initialize database connection
+				for {
+					db, err = backend.CreateDBManager(flagParams.ConfigValues.DB)
+					if db != nil {
+						log.Info().Msg("Connection to backend successful!")
+						break
+					}
+					if err != nil {
+						log.Err(err).Msg("Failed to connect to backend")
+						if flagParams.ConfigValues.DB.ConnRetry == 0 {
+							log.Fatal().Msg("Connection to backend failed and no retry was set")
+						}
+					}
+					log.Debug().Msgf("Backend NOT ready! Retrying in %d seconds...\n", flagParams.ConfigValues.DB.ConnRetry)
+					time.Sleep(time.Duration(flagParams.ConfigValues.DB.ConnRetry) * time.Second)
+				}
+				// Initialize users manager
+				usersMgr, err := users.CreateUserManager(db.Conn, &flagParams.ConfigValues.JWT)
+				if err != nil {
+					return fmt.Errorf("failed to initialize users manager: %w", err)
+				}
+				username := cmd.String("username")
+				password := cmd.String("password")
+				entID := cmd.Uint("entID")
+				// Generate random password if not provided
+				if password == "" {
+					password = GenerateRandomPassword(12)
+				}
+				// Check if user exists
+				exists, _ := usersMgr.ExistsGetByEntID(username, entID)
+				if exists {
+					// User exists, reset password
+					log.Info().Msgf("User '%s' already exists for entity %d, resetting password...", username, entID)
+					// Hash the new password
+					passHash, err := usersMgr.HashPasswordWithSalt(password)
+					if err != nil {
+						return fmt.Errorf("failed to hash password: %w", err)
+					}
+					// Update password in database
+					if err := db.Conn.Model(&users.PlatformUser{}).
+						Where("username = ? AND ent_id = ?", username, entID).
+						Update("pass_hash", passHash).Error; err != nil {
+						return fmt.Errorf("failed to update password: %w", err)
+					}
+					// Ensure user is admin and active
+					if err := db.Conn.Model(&users.PlatformUser{}).
+						Where("username = ? AND ent_id = ?", username, entID).
+						Updates(map[string]interface{}{
+							"admin":  true,
+							"active": true,
+						}).Error; err != nil {
+						return fmt.Errorf("failed to update user flags: %w", err)
+					}
+					fmt.Printf("Password reset successfully for admin user '%s' (entity %d).\n", username, entID)
+				} else {
+					// User doesn't exist, create it
+					log.Info().Msgf("Creating new admin user '%s' for entity %d...", username, entID)
+					user, err := usersMgr.New(username, password, "", username, true, false, entID, users.NoTeamID)
+					if err != nil {
+						return fmt.Errorf("failed to create admin user: %w", err)
+					}
+					// Save user to database
+					if err := usersMgr.Create(user); err != nil {
+						return fmt.Errorf("failed to save admin user: %w", err)
+					}
+					fmt.Printf("Admin user '%s' created successfully for entity %d.\n", username, entID)
+				}
+				// Print password
+				fmt.Printf("\nPassword: %s\n", password)
 				return nil
 			},
 		},
