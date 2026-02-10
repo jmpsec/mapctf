@@ -239,7 +239,7 @@ func TestExists(t *testing.T) {
 	}
 
 	// User should not exist initially
-	if manager.Exists("nonexistent") {
+	if manager.Exists("nonexistent", 1) {
 		t.Error("Expected user 'nonexistent' to not exist")
 	}
 
@@ -257,13 +257,18 @@ func TestExists(t *testing.T) {
 	}
 
 	// Now user should exist
-	if !manager.Exists("existinguser") {
+	if !manager.Exists("existinguser", 1) {
 		t.Error("Expected user 'existinguser' to exist")
 	}
 
 	// Different username should not exist
-	if manager.Exists("differentuser") {
+	if manager.Exists("differentuser", 1) {
 		t.Error("Expected user 'differentuser' to not exist")
+	}
+
+	// Same username but different entity ID should not exist
+	if manager.Exists("existinguser", 2) {
+		t.Error("Expected user 'existinguser' with entity 2 to not exist")
 	}
 }
 
@@ -292,7 +297,7 @@ func TestGet(t *testing.T) {
 	}
 
 	// Get the user
-	retrievedUser, err := manager.Get("getuser")
+	retrievedUser, err := manager.Get("getuser", 1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -312,6 +317,10 @@ func TestGet(t *testing.T) {
 	if !retrievedUser.Admin {
 		t.Error("Expected Admin to be true")
 	}
+
+	if retrievedUser.EntID != 1 {
+		t.Errorf("Expected EntID 1, got %d", retrievedUser.EntID)
+	}
 }
 
 // TestGetNonExistent tests getting a non-existent user
@@ -322,7 +331,7 @@ func TestGetNonExistent(t *testing.T) {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
 
-	_, err = manager.Get("nonexistent")
+	_, err = manager.Get("nonexistent", 1)
 	if err == nil {
 		t.Error("Expected error when getting non-existent user")
 	}
@@ -413,7 +422,7 @@ func TestExistsGet(t *testing.T) {
 	}
 
 	// Non-existent user
-	exists, user := manager.ExistsGet("nonexistent")
+	exists, user := manager.ExistsGet("nonexistent", 1)
 	if exists {
 		t.Error("Expected user to not exist")
 	}
@@ -438,7 +447,7 @@ func TestExistsGet(t *testing.T) {
 	}
 
 	// Existing user
-	exists, user = manager.ExistsGet("existsgetuser")
+	exists, user = manager.ExistsGet("existsgetuser", 1)
 	if !exists {
 		t.Error("Expected user to exist")
 	}
@@ -453,6 +462,10 @@ func TestExistsGet(t *testing.T) {
 
 	if user.TeamID != 3 {
 		t.Errorf("Expected TeamID 3, got %d", user.TeamID)
+	}
+
+	if user.EntID != 1 {
+		t.Errorf("Expected EntID 1, got %d", user.EntID)
 	}
 }
 
@@ -688,8 +701,8 @@ func TestCreateMultipleUsers(t *testing.T) {
 
 	// Verify all users exist
 	for _, user := range users {
-		if !manager.Exists(user.Username) {
-			t.Errorf("Expected user %s to exist", user.Username)
+		if !manager.Exists(user.Username, user.EntID) {
+			t.Errorf("Expected user %s to exist for entity %d", user.Username, user.EntID)
 		}
 	}
 }
@@ -798,7 +811,7 @@ func TestUserWorkflow(t *testing.T) {
 	}
 
 	// Step 1: Verify user doesn't exist
-	if manager.Exists("workflowuser") {
+	if manager.Exists("workflowuser", 1) {
 		t.Error("User should not exist initially")
 	}
 
@@ -815,12 +828,12 @@ func TestUserWorkflow(t *testing.T) {
 	}
 
 	// Step 4: Verify user exists
-	if !manager.Exists("workflowuser") {
+	if !manager.Exists("workflowuser", 1) {
 		t.Error("User should exist after creation")
 	}
 
 	// Step 5: Retrieve user
-	exists, retrievedUser := manager.ExistsGet("workflowuser")
+	exists, retrievedUser := manager.ExistsGet("workflowuser", 1)
 	if !exists {
 		t.Error("User should exist")
 	}
@@ -1442,7 +1455,7 @@ func BenchmarkExists(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = manager.Exists("benchuser")
+		_ = manager.Exists("benchuser", 1)
 	}
 }
 
@@ -1465,6 +1478,318 @@ func BenchmarkGet(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = manager.Get("benchuser")
+		_, _ = manager.Get("benchuser", 1)
+	}
+}
+
+// TestSetPassword tests setting a password for a user
+func TestSetPassword(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Create a user
+	password := "originalPassword123!"
+	user, err := manager.New("setpassuser", password, "setpass@example.com", "Set Pass User", false, false, 1, 0)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+	err = manager.Create(user)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	// Set a new password
+	newPassword := "newPassword456!"
+	err = manager.SetPassword("setpassuser", newPassword, 1)
+	if err != nil {
+		t.Fatalf("Failed to set password: %v", err)
+	}
+
+	// Verify old password doesn't work
+	valid, _ := manager.CheckLoginCredentials("setpassuser", password, 1)
+	if valid {
+		t.Error("Old password should not work after password change")
+	}
+
+	// Verify new password works
+	valid, retrievedUser := manager.CheckLoginCredentials("setpassuser", newPassword, 1)
+	if !valid {
+		t.Error("New password should work after password change")
+	}
+	if retrievedUser.Username != "setpassuser" {
+		t.Errorf("Expected username 'setpassuser', got '%s'", retrievedUser.Username)
+	}
+
+	// Test setting password for non-existent user (GORM Update doesn't fail, just affects 0 rows)
+	err = manager.SetPassword("nonexistent", "password", 1)
+	// This won't error, but won't affect any rows either - that's GORM behavior
+	if err != nil {
+		t.Logf("SetPassword for non-existent user returned error: %v", err)
+	}
+
+	// Test setting password for wrong entity ID (should not affect the user)
+	err = manager.SetPassword("setpassuser", "wrongEntityPassword", 2)
+	if err != nil {
+		t.Logf("SetPassword for wrong entity returned error: %v", err)
+	}
+	// Verify original user's password still works (wasn't affected)
+	valid, _ = manager.CheckLoginCredentials("setpassuser", newPassword, 1)
+	if !valid {
+		t.Error("User's password should not be affected by SetPassword with wrong entity ID")
+	}
+}
+
+// TestSetAdmin tests setting the admin flag for a user
+func TestSetAdmin(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Create a non-admin user
+	user, err := manager.New("adminuser", "password123", "admin@example.com", "Admin User", false, false, 1, 0)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+	err = manager.Create(user)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	// Verify user is not admin initially
+	retrievedUser, err := manager.Get("adminuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to get user: %v", err)
+	}
+	if retrievedUser.Admin {
+		t.Error("User should not be admin initially")
+	}
+
+	// Set admin flag to true
+	err = manager.SetAdmin(true, "adminuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to set admin flag: %v", err)
+	}
+
+	// Verify admin flag is set
+	retrievedUser, err = manager.Get("adminuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to get user: %v", err)
+	}
+	if !retrievedUser.Admin {
+		t.Error("User should be admin after setting admin flag")
+	}
+
+	// Set admin flag to false
+	err = manager.SetAdmin(false, "adminuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to set admin flag: %v", err)
+	}
+
+	// Verify admin flag is unset
+	retrievedUser, err = manager.Get("adminuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to get user: %v", err)
+	}
+	if retrievedUser.Admin {
+		t.Error("User should not be admin after unsetting admin flag")
+	}
+
+	// Test setting admin for non-existent user (GORM Update doesn't fail, just affects 0 rows)
+	err = manager.SetAdmin(true, "nonexistent", 1)
+	// This won't error, but won't affect any rows either - that's GORM behavior
+	if err != nil {
+		t.Logf("SetAdmin for non-existent user returned error: %v", err)
+	}
+}
+
+// TestSetActive tests setting the active flag for a user
+func TestSetActive(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Create an active user
+	user, err := manager.New("activeuser", "password123", "active@example.com", "Active User", false, false, 1, 0)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+	err = manager.Create(user)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	// Verify user is active initially
+	retrievedUser, err := manager.Get("activeuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to get user: %v", err)
+	}
+	if !retrievedUser.Active {
+		t.Error("User should be active initially")
+	}
+
+	// Set active flag to false
+	err = manager.SetActive(false, "activeuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to set active flag: %v", err)
+	}
+
+	// Verify active flag is unset
+	retrievedUser, err = manager.Get("activeuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to get user: %v", err)
+	}
+	if retrievedUser.Active {
+		t.Error("User should not be active after setting active flag to false")
+	}
+
+	// Set active flag to true
+	err = manager.SetActive(true, "activeuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to set active flag: %v", err)
+	}
+
+	// Verify active flag is set
+	retrievedUser, err = manager.Get("activeuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to get user: %v", err)
+	}
+	if !retrievedUser.Active {
+		t.Error("User should be active after setting active flag to true")
+	}
+
+	// Test setting active for non-existent user (GORM Update doesn't fail, just affects 0 rows)
+	err = manager.SetActive(false, "nonexistent", 1)
+	// This won't error, but won't affect any rows either - that's GORM behavior
+	if err != nil {
+		t.Logf("SetActive for non-existent user returned error: %v", err)
+	}
+}
+
+// TestSetService tests setting the service flag for a user
+func TestSetService(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Create a non-service user
+	user, err := manager.New("serviceuser", "password123", "service@example.com", "Service User", false, false, 1, 0)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+	err = manager.Create(user)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+
+	// Verify user is not service initially
+	retrievedUser, err := manager.Get("serviceuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to get user: %v", err)
+	}
+	if retrievedUser.Service {
+		t.Error("User should not be service initially")
+	}
+
+	// Set service flag to true
+	err = manager.SetService(true, "serviceuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to set service flag: %v", err)
+	}
+
+	// Verify service flag is set
+	retrievedUser, err = manager.Get("serviceuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to get user: %v", err)
+	}
+	if !retrievedUser.Service {
+		t.Error("User should be service after setting service flag")
+	}
+
+	// Set service flag to false
+	err = manager.SetService(false, "serviceuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to set service flag: %v", err)
+	}
+
+	// Verify service flag is unset
+	retrievedUser, err = manager.Get("serviceuser", 1)
+	if err != nil {
+		t.Fatalf("Failed to get user: %v", err)
+	}
+	if retrievedUser.Service {
+		t.Error("User should not be service after unsetting service flag")
+	}
+
+	// Test setting service for non-existent user (GORM Update doesn't fail, just affects 0 rows)
+	err = manager.SetService(true, "nonexistent", 1)
+	// This won't error, but won't affect any rows either - that's GORM behavior
+	if err != nil {
+		t.Logf("SetService for non-existent user returned error: %v", err)
+	}
+}
+
+// TestSetPasswordEntityIsolation tests that SetPassword respects entity ID isolation
+func TestSetPasswordEntityIsolation(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	// Create users with same username but different entity IDs
+	password1 := "password1"
+	password2 := "password2"
+	user1, err := manager.New("multientitypass", password1, "user1@entity1.com", "User 1", false, false, 1, 0)
+	if err != nil {
+		t.Fatalf("Failed to create user1: %v", err)
+	}
+	err = manager.Create(user1)
+	if err != nil {
+		t.Fatalf("Failed to create user1: %v", err)
+	}
+
+	user2, err := manager.New("multientitypass", password2, "user2@entity2.com", "User 2", false, false, 2, 0)
+	if err != nil {
+		t.Fatalf("Failed to create user2: %v", err)
+	}
+	err = manager.Create(user2)
+	if err != nil {
+		t.Fatalf("Failed to create user2: %v", err)
+	}
+
+	// Set password for entity 1
+	newPassword1 := "newPassword1"
+	err = manager.SetPassword("multientitypass", newPassword1, 1)
+	if err != nil {
+		t.Fatalf("Failed to set password for entity 1: %v", err)
+	}
+
+	// Verify entity 1 password changed
+	valid, _ := manager.CheckLoginCredentials("multientitypass", password1, 1)
+	if valid {
+		t.Error("Old password should not work for entity 1")
+	}
+	valid, _ = manager.CheckLoginCredentials("multientitypass", newPassword1, 1)
+	if !valid {
+		t.Error("New password should work for entity 1")
+	}
+
+	// Verify entity 2 password unchanged
+	valid, _ = manager.CheckLoginCredentials("multientitypass", password2, 2)
+	if !valid {
+		t.Error("Entity 2 password should remain unchanged")
+	}
+	valid, _ = manager.CheckLoginCredentials("multientitypass", newPassword1, 2)
+	if valid {
+		t.Error("Entity 1's new password should not work for entity 2")
 	}
 }

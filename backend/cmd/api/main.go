@@ -469,30 +469,10 @@ func main() {
 					password = GenerateRandomPassword(12)
 				}
 				// Check if user exists
-				exists, _ := usersMgr.ExistsGetByEntID(username, entID)
-				if exists {
+				if usersMgr.Exists(username, entID) {
 					// User exists, reset password
 					log.Info().Msgf("User '%s' already exists for entity %d, resetting password...", username, entID)
-					// Hash the new password
-					passHash, err := usersMgr.HashPasswordWithSalt(password)
-					if err != nil {
-						return fmt.Errorf("failed to hash password: %w", err)
-					}
-					// Update password in database
-					if err := db.Conn.Model(&users.PlatformUser{}).
-						Where("username = ? AND ent_id = ?", username, entID).
-						Update("pass_hash", passHash).Error; err != nil {
-						return fmt.Errorf("failed to update password: %w", err)
-					}
-					// Ensure user is admin and active
-					if err := db.Conn.Model(&users.PlatformUser{}).
-						Where("username = ? AND ent_id = ?", username, entID).
-						Updates(map[string]interface{}{
-							"admin":  true,
-							"active": true,
-						}).Error; err != nil {
-						return fmt.Errorf("failed to update user flags: %w", err)
-					}
+					usersMgr.SetPassword(username, password, entID)
 					fmt.Printf("Password reset successfully for admin user '%s' (entity %d).\n", username, entID)
 				} else {
 					// User doesn't exist, create it

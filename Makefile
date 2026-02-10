@@ -104,3 +104,8 @@ docker_dev_rebuild_api:
 # Run linter
 lint:
 	golangci-lint run
+
+
+# Test with coverage
+test:
+	$(MAKE) -C $(API_DIR) test

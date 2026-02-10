@@ -87,16 +87,16 @@ func (m *UserManager) HashPasswordWithSalt(password string) (string, error) {
 }
 
 // Exists checks if user exists
-func (m *UserManager) Exists(username string) bool {
+func (m *UserManager) Exists(username string, entID uint) bool {
 	var results int64
-	m.DB.Model(&PlatformUser{}).Where("username = ?", username).Count(&results)
+	m.DB.Model(&PlatformUser{}).Where("username = ? AND ent_id = ?", username, entID).Count(&results)
 	return (results > 0)
 }
 
 // Get user by username including service users
-func (m *UserManager) Get(username string) (PlatformUser, error) {
+func (m *UserManager) Get(username string, entID uint) (PlatformUser, error) {
 	var user PlatformUser
-	if err := m.DB.Where("username = ?", username).First(&user).Error; err != nil {
+	if err := m.DB.Where("username = ? AND ent_id = ?", username, entID).First(&user).Error; err != nil {
 		return user, err
 	}
 	return user, nil
@@ -112,8 +112,8 @@ func (m *UserManager) GetByEntID(username string, entID uint) (PlatformUser, err
 }
 
 // ExistsGet checks if user exists and returns the user
-func (m *UserManager) ExistsGet(username string) (bool, PlatformUser) {
-	user, err := m.Get(username)
+func (m *UserManager) ExistsGet(username string, entID uint) (bool, PlatformUser) {
+	user, err := m.Get(username, entID)
 	if err != nil {
 		return false, PlatformUser{}
 	}
@@ -131,7 +131,7 @@ func (m *UserManager) ExistsGetByEntID(username string, entID uint) (bool, Platf
 
 // New empty user
 func (m *UserManager) New(username, password, email, display string, admin, service bool, eID, teamID uint) (PlatformUser, error) {
-	if !m.Exists(username) {
+	if !m.Exists(username, eID) {
 		passhash, err := m.HashPasswordWithSalt(password)
 		if err != nil {
 			return PlatformUser{}, err
@@ -155,7 +155,7 @@ func (m *UserManager) New(username, password, email, display string, admin, serv
 
 // CheckLoginCredentials to check provided login credentials by matching hashes
 func (m *UserManager) CheckLoginCredentials(username, password string, entID uint) (bool, PlatformUser) {
-	user, err := m.GetByEntID(username, entID)
+	user, err := m.Get(username, entID)
 	if err != nil {
 		return false, PlatformUser{}
 	}
@@ -203,4 +203,48 @@ func (m *UserManager) CheckToken(jwtSecret, tokenStr string) (TokenClaims, error
 		return *claims, fmt.Errorf("invalid token")
 	}
 	return *claims, nil
+}
+
+// SetPassword to set a new password for a given user by username and entity ID
+func (m *UserManager) SetPassword(username, password string, entID uint) error {
+	passHash, err := m.HashPasswordWithSalt(password)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+	if err := m.DB.Model(&PlatformUser{}).
+		Where("username = ? AND ent_id = ?", username, entID).
+		Update("pass_hash", passHash).Error; err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+	return nil
+}
+
+// SetAdmin to set the admin flag for a given user by username and entity ID
+func (m *UserManager) SetAdmin(admin bool, username string, entID uint) error {
+	if err := m.DB.Model(&PlatformUser{}).
+		Where("username = ? AND ent_id = ?", username, entID).
+		Update("admin", admin).Error; err != nil {
+		return fmt.Errorf("failed to update admin flag: %w", err)
+	}
+	return nil
+}
+
+// SetActive to set the active flag for a given user by username and entity ID
+func (m *UserManager) SetActive(active bool, username string, entID uint) error {
+	if err := m.DB.Model(&PlatformUser{}).
+		Where("username = ? AND ent_id = ?", username, entID).
+		Update("active", active).Error; err != nil {
+		return fmt.Errorf("failed to update active flag: %w", err)
+	}
+	return nil
+}
+
+// SetService to set the service flag for a given user by username and entity ID
+func (m *UserManager) SetService(service bool, username string, entID uint) error {
+	if err := m.DB.Model(&PlatformUser{}).
+		Where("username = ? AND ent_id = ?", username, entID).
+		Update("service", service).Error; err != nil {
+		return fmt.Errorf("failed to update service flag: %w", err)
+	}
+	return nil
 }

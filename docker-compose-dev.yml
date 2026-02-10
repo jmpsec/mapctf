@@ -23,6 +23,9 @@ services:
       #### Redis settings ####
       - REDIS_HOST=mapctf-redis-dev
       - REDIS_PORT=${REDIS_PORT}
+      # MapCTF settings
+      - MAPCTF_USERNAME=${MAPCTF_USERNAME}
+      - MAPCTF_PASSWORD=${MAPCTF_PASSWORD}
     networks:
       - mapctf-dev-backend
     ports:
