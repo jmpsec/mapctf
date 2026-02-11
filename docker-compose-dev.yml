@@ -36,6 +36,43 @@ services:
       - mapctf-postgres
       - mapctf-redis
 
+   ########################################## mapctf-map ############################################
+  mapctf-map:
+    container_name: 'mapctf-map-dev'
+    image: 'mapctf-map-dev:${MAPCTF_VERSION}'
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: deploy/docker/dockerfiles/Dockerfile-dev-map
+      args:
+        GOLANG_VERSION: ${GOLANG_VERSION}
+    environment:
+      # mapctf-map configuration settings
+      - SERVICE_LISTENER=0.0.0.0
+      - SERVICE_PORT=8081
+      - SERVICE_LOG_FORMAT=console
+      # Database settings
+      - DB_HOST=mapctf-postgres
+      - DB_NAME=${POSTGRES_DB_NAME}
+      - DB_PORT=${POSTGRES_DB_PORT}
+      - DB_USER=${POSTGRES_DB_USERNAME}
+      - DB_PASS=${POSTGRES_DB_PASSWORD}
+      #### Redis settings ####
+      - REDIS_HOST=mapctf-redis
+      - REDIS_PORT=${REDIS_PORT}
+      # MapCTF settings
+      - MAPCTF_USERNAME=${MAPCTF_USERNAME}
+      - MAPCTF_PASSWORD=${MAPCTF_PASSWORD}
+    networks:
+      - mapctf-dev-backend
+    ports:
+      - 127.0.0.1:8082:8082
+    volumes:
+      - .:/usr/src/app:rw,delegated
+    depends_on:
+      - mapctf-postgres
+      - mapctf-redis
+
    ########################################## mapctf-ui #############################################
   mapctf-ui:
     container_name: 'mapctf-ui-dev'

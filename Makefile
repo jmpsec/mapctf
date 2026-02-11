@@ -3,30 +3,45 @@ export GOPROXY=https://proxy.golang.org,direct
 
 SHELL := /bin/bash
 
-API_DIR = backend
-UI_DIR = frontend
+BACKEND_DIR = backend
 
-.PHONY: build static clean api run_api
+API_NAME = mapctf-api
+MAP_NAME = mapctf-map
+
+.PHONY: build static clean api run_api map run_map
 
 # Build code according to caller OS and architecture
 build:
-	make api
+	make api map
 
 # Build API
 api:
-	$(MAKE) -C $(API_DIR) api
+	$(MAKE) -C $(BACKEND_DIR) api
+
+# Build map
+map:
+	$(MAKE) -C $(MAP_DIR) api
 
 # Run API server locally
 run_api:
-	$(MAKE) -C $(API_DIR) run
+	$(MAKE) -C $(BACKEND_DIR) run
 
 # Clean API
 clean-api:
-	$(MAKE) -C $(API_DIR) clean
+	$(MAKE) -C $(BACKEND_DIR) clean
+
+# Run map server locally
+run_map:
+	$(MAKE) -C $(MAP_DIR) run
+
+# Clean map
+clean-map:
+	$(MAKE) -C $(MAP_DIR) clean
 
 # Delete all compiled binaries
 clean:
 	make clean-api
+	make clean-map
 
 # Display systemd logs for API server
 logs_api:
@@ -38,6 +53,7 @@ install:
 	make clean
 	make build
 	make install_api
+	make install_map
 
 # Install API server and restart service
 # optional DEST=destination_path
@@ -45,6 +61,13 @@ install_api:
 	sudo systemctl stop $(API_NAME)
 	sudo cp $(OUTPUT)/$(API_NAME) $(DEST)
 	sudo systemctl start $(API_NAME)
+
+# Install map server and restart service
+# optional DEST=destination_path
+install_map:
+	sudo systemctl stop $(MAP_NAME)
+	sudo cp $(OUTPUT)/$(MAP_NAME) $(DEST)
+	sudo systemctl start $(MAP_NAME)
 
 # Display docker logs for API server
 docker_dev_logs_api:
@@ -108,4 +131,4 @@ lint:
 
 # Test with coverage
 test:
-	$(MAKE) -C $(API_DIR) test
+	$(MAKE) -C $(BACKEND_DIR) test

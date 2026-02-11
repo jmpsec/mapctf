@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -72,7 +73,7 @@ func TestGetRedisWithHostPort(t *testing.T) {
 		t.Fatal("Expected non-nil Redis client")
 	}
 
-	if err := client.Ping(client.Context()).Err(); err != nil {
+	if err := client.Ping(context.TODO()).Err(); err != nil {
 		t.Errorf("Failed to ping Redis: %v", err)
 	}
 }
@@ -87,7 +88,7 @@ func TestGetRedisWithConnectionString(t *testing.T) {
 	manager := &RedisManager{Config: &cfg}
 	client := manager.GetRedis()
 
-	if client == nil || client.Ping(client.Context()).Err() != nil {
+	if client == nil || client.Ping(context.TODO()).Err() != nil {
 		t.Fatal("Expected valid Redis client with connection string")
 	}
 }
@@ -131,7 +132,7 @@ func TestRedisOperations(t *testing.T) {
 		Port: mr.Port(),
 	})
 
-	ctx := manager.Client.Context()
+	ctx := context.TODO()
 
 	if err := manager.Client.Set(ctx, "key", "value", 0).Err(); err != nil {
 		t.Errorf("Failed to set: %v", err)

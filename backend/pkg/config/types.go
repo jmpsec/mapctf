@@ -34,6 +34,7 @@ type MapCTFConfiguration struct {
 	Metrics           ConfigurationMetrics   `mapstructure:"metrics"`
 	TLS               ConfigurationTLS       `mapstructure:"tls"`
 	JWT               ConfigurationJWT       `mapstructure:"jwt"`
+	Map               ConfigurationMap       `mapstructure:"map"`
 	DebugHTTP         ConfigurationDebugHTTP `mapstructure:"debugHttp"`
 }
 
@@ -89,6 +90,12 @@ type ConfigurationTLS struct {
 
 // ConfigurationJWT to hold the JWT configuration values
 type ConfigurationJWT struct {
+	Secret        string `yaml:"secret"`
+	HoursToExpire int    `yaml:"hoursToExpire"`
+}
+
+// ConfigurationMap to hold the map configuration values
+type ConfigurationMap struct {
 	Secret        string `yaml:"secret"`
 	HoursToExpire int    `yaml:"hoursToExpire"`
 }
