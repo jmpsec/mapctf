@@ -26,7 +26,7 @@ class Colors:
 class APITester:
     """Test all API routes"""
 
-    def __init__(self, base_url: str, username: str, password: str, ent_id: int = 1):
+    def __init__(self, base_url: str, username: str, password: str, ent_id: int = 0):
         self.base_url = base_url.rstrip('/')
         self.username = username
         self.password = password

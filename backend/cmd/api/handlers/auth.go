@@ -46,10 +46,7 @@ func (h *HandlersAPI) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "username and password are required"})
 		return
 	}
-	if l.EntID == 0 {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "entity ID is required"})
-		return
-	}
+	// Entity ID defaults to 0, which is valid
 	valid, user := h.Users.CheckLoginCredentials(l.Username, l.Password, l.EntID)
 	if !valid {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, ApiErrorResponse{Error: "invalid credentials"})

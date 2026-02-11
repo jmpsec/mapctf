@@ -48,7 +48,7 @@ services:
         NODE_VERSION: ${NODE_VERSION:-18}
     environment:
       # Frontend configuration settings
-      - VITE_API_URL=http://mapctf-api-dev:8081
+      - VITE_API_URL=http://127.0.0.1:8081
     networks:
        - mapctf-dev-backend
     ports:

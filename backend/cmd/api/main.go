@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/jmpsec/mapctf/cmd/api/handlers"
 	"github.com/jmpsec/mapctf/pkg/backend"
 	"github.com/jmpsec/mapctf/pkg/cache"
@@ -204,6 +205,15 @@ func mapCTFService() {
 	log.Info().Msg("Initializing router")
 	// Create chi router for API
 	muxAPI := chi.NewRouter()
+	// CORS middleware - must be first
+	muxAPI.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
 	// Middleware
 	muxAPI.Use(middleware.RequestID)
 	muxAPI.Use(middleware.RealIP)

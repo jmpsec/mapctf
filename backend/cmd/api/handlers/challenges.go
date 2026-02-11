@@ -30,11 +30,34 @@ func (h *HandlersAPI) ChallengesHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	// Get challenges from database filtered by entity ID
-	challenges, err := h.Challenges.GetAll(uint(entID))
+	dbChallenges, err := h.Challenges.GetAll(uint(entID))
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, ApiErrorResponse{Error: "error getting challenges"})
 		return
 	}
+	// Convert internal Challenge structs to API Challenge structs
+	apiChallenges := make([]Challenge, 0, len(dbChallenges))
+	for _, dbChallenge := range dbChallenges {
+		// Get category name (placeholder for now - will need to fetch from Category table)
+		categoryName := "Uncategorized"
+		if dbChallenge.CategoryID > 0 {
+			category, err := h.Challenges.GetCategoryByID(dbChallenge.CategoryID, uint(entID))
+			if err == nil {
+				categoryName = category.Name
+			}
+		}
+		
+		apiChallenge := Challenge{
+			ID:          strconv.FormatUint(uint64(dbChallenge.ID), 10),
+			Title:       dbChallenge.Title,
+			Category:    categoryName,
+			Points:      dbChallenge.Points,
+			Solved:      false, // TODO: Check if current user/team solved this challenge
+			Country:     "",    // TODO: Add country field to Challenge model
+			CountryCode: "",    // TODO: Add countryCode field to Challenge model
+		}
+		apiChallenges = append(apiChallenges, apiChallenge)
+	}
 	// Send response
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, challenges)
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, apiChallenges)
 }

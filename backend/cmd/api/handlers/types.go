@@ -64,3 +64,14 @@ type CreateChallengeRequest struct {
 	Hint        string `json:"hint"`
 	Penalty     int    `json:"penalty"`
 }
+
+// Challenge represents a challenge in the gameboard (public API)
+type Challenge struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Category    string `json:"category"`
+	Points      int    `json:"points"`
+	Solved      bool   `json:"solved"`
+	Country     string `json:"country,omitempty"`
+	CountryCode string `json:"countryCode,omitempty"`
+}
