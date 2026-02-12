@@ -227,7 +227,7 @@ func mapCTFService() {
 	// Forbidden
 	muxAPI.Get(forbiddenPath, handlersCTF.ForbiddenHandler)
 	// API routes
-	muxAPI.Route(apiPrefixPath+apiVersionPath, func(r chi.Router) {
+	muxAPI.Route(apiPrefixPath+apiVersionPath+"/{uuid}", func(r chi.Router) {
 		// Public routes (no authentication required)
 		r.Get(checksNoAuthPath, handlersCTF.CheckHandlerNoAuth)
 		r.Post(loginPath, handlersCTF.LoginHandler)
@@ -238,20 +238,20 @@ func mapCTFService() {
 			// Add authentication middleware
 			r.Use(handlersCTF.AuthMiddleware)
 
-			r.Get(checksAuthPath, handlersCTF.CheckHandlerAuth) // GET /api/v1/checks-auth
+			r.Get(checksAuthPath, handlersCTF.CheckHandlerAuth) // GET /api/v1/{uuid}/checks-auth
 
 			// Protected gameboard routes
-			r.Get(apiTeamsPath+"/{entID}", handlersCTF.TeamsHandler)           // GET /api/v1/teams/{entID}
-			r.Get(apiChallengesPath+"/{entID}", handlersCTF.ChallengesHandler) // GET /api/v1/challenges/{entID}
+			r.Get(apiTeamsPath, handlersCTF.TeamsHandler)           // GET /api/v1/{uuid}/teams
+			r.Get(apiChallengesPath, handlersCTF.ChallengesHandler) // GET /api/v1/{uuid}/challenges
 
 			// Protected admin routes
 			r.Route(apiAdminPath, func(r chi.Router) {
-				r.Get(apiTeamsPath+"/{entID}", handlersCTF.AdminTeamsHandler)  // GET /api/v1/admin/teams/{entID}
-				r.Post(apiTeamsPath+"/{entID}", handlersCTF.CreateTeamHandler) // POST /api/v1/admin/teams/{entID}
+				r.Get(apiTeamsPath, handlersCTF.AdminTeamsHandler)  // GET /api/v1/admin/{uuid}/teams
+				r.Post(apiTeamsPath, handlersCTF.CreateTeamHandler) // POST /api/v1/admin/{uuid}/teams
 				//r.Delete(apiTeamsPath+"/{entID}/{id}", handlersCTF.DeleteTeamHandler) // DELETE /api/v1/admin/teams/{entID}/{id}
 
-				r.Get(apiChallengesPath+"/{entID}", handlersCTF.AdminChallengesHandler)  // GET /api/v1/admin/challenges/{entID}
-				r.Post(apiChallengesPath+"/{entID}", handlersCTF.CreateChallengeHandler) // POST /api/v1/admin/challenges/{entID}
+				r.Get(apiChallengesPath, handlersCTF.AdminChallengesHandler)  // GET /api/v1/admin/{uuid}/challenges
+				r.Post(apiChallengesPath, handlersCTF.CreateChallengeHandler) // POST /api/v1/admin/{uuid}/challenges
 				//r.Patch(apiChallengesPath+"/{entID}/{id}", handlersCTF.UpdateChallengeHandler) // PATCH /api/v1/admin/challenges/{entID}/{id}
 				//r.Delete(apiChallengesPath+"/{entID}/{id}", handlersCTF.DeleteChallengeHandler) // DELETE /api/v1/admin/challenges/{entID}/{id}
 			})

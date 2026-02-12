@@ -33,7 +33,7 @@ const (
 	// Project name
 	projectName = "mapCTF"
 	// Service name
-	serviceName = projectName + "-web"
+	serviceName = projectName + "-map"
 	// Service description
 	serviceDescription = "Map service for " + projectName
 	// Application description
@@ -426,6 +426,7 @@ func main() {
 				if err := cliAction(); err != nil {
 					return err
 				}
+
 				// Initialize service logger
 				initializeLoggers(flagParams.ConfigValues)
 				// Initialize database connection

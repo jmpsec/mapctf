@@ -46,6 +46,7 @@ type ConfigurationService struct {
 	LogFormat string `yaml:"logFormat"`
 	Host      string `yaml:"host"`
 	Auth      string `yaml:"auth"`
+	UUID      string `yaml:"uuid"`
 }
 
 // ConfigurationDB to hold all backend configuration values

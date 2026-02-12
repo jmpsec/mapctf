@@ -12,25 +12,24 @@ import (
 // @Description  Get all challenges for a specific entity ID
 // @Tags         challenges
 // @Produce      json
-// @Param        entID  path      int  true  "Entity ID"
+// @Param        uuid  path      string  true  "UUID"
 // @Success      200    {array}   Challenge  "Challenges"
-// @Failure      400    {object}  ApiErrorResponse  "Bad request - invalid entity ID"
+// @Failure      400    {object}  ApiErrorResponse  "Bad request - invalid UUID"
 // @Failure      500    {object}  ApiErrorResponse  "Internal server error"
-// @Router       /api/v1/challenges/{entID} [get]
+// @Router       /api/v1/challenges/{uuid} [get]
 func (h *HandlersAPI) ChallengesHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	// Extract entID from path
-	entIDStr := chi.URLParam(r, "entID")
-	entID, err := strconv.ParseUint(entIDStr, 10, 32)
-	if err != nil {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid entity ID"})
+	// Extract UUID from path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid UUID"})
 		return
 	}
-	// Get challenges from database filtered by entity ID
-	dbChallenges, err := h.Challenges.GetAll(uint(entID))
+	// Get challenges from database filtered by UUID
+	dbChallenges, err := h.Challenges.GetAll(uuid)
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, ApiErrorResponse{Error: "error getting challenges"})
 		return
@@ -41,12 +40,12 @@ func (h *HandlersAPI) ChallengesHandler(w http.ResponseWriter, r *http.Request) 
 		// Get category name (placeholder for now - will need to fetch from Category table)
 		categoryName := "Uncategorized"
 		if dbChallenge.CategoryID > 0 {
-			category, err := h.Challenges.GetCategoryByID(dbChallenge.CategoryID, uint(entID))
+			category, err := h.Challenges.GetCategoryByID(dbChallenge.CategoryID, uuid)
 			if err == nil {
 				categoryName = category.Name
 			}
 		}
-		
+
 		apiChallenge := Challenge{
 			ID:          strconv.FormatUint(uint64(dbChallenge.ID), 10),
 			Title:       dbChallenge.Title,

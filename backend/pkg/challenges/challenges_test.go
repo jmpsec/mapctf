@@ -8,6 +8,12 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// Test UUID constants
+const (
+	testUUID1 = "test-uuid-1"
+	testUUID2 = "test-uuid-2"
+)
+
 // setupTestDB creates an in-memory SQLite database for testing
 func setupTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
@@ -91,7 +97,7 @@ func TestCreate(t *testing.T) {
 		Flag:        "flag{test}",
 		Hint:        "Test hint",
 		Penalty:     5,
-		EntID:       1,
+		UUID:        testUUID1,
 	}
 
 	err = manager.Create(challenge)
@@ -125,7 +131,7 @@ func TestCreateCategory(t *testing.T) {
 		Name:        "Web",
 		Description: "Web challenges",
 		Logo:        "web.png",
-		EntID:       1,
+		UUID:        testUUID1,
 	}
 
 	err = manager.CreateCategory(category)
@@ -156,14 +162,14 @@ func TestGetByID(t *testing.T) {
 	challenge := Challenge{
 		Title:  "Test Challenge",
 		Points: 100,
-		EntID:  1,
+		UUID:   testUUID1,
 	}
 	if err := manager.Create(challenge); err != nil {
 		t.Fatalf("Failed to create challenge: %v", err)
 	}
 
 	// Retrieve by ID
-	retrieved, err := manager.GetByID(1, 1)
+	retrieved, err := manager.GetByID(1, testUUID1)
 	if err != nil {
 		t.Errorf("Failed to get challenge by ID: %v", err)
 	}
@@ -181,18 +187,18 @@ func TestGetByIDWrongEntity(t *testing.T) {
 		t.Fatalf("Failed to create ChallengeManager: %v", err)
 	}
 
-	// Create a challenge with entity ID 1
+	// Create a challenge with UUID 1
 	challenge := Challenge{
 		Title:  "Test Challenge",
 		Points: 100,
-		EntID:  1,
+		UUID:   testUUID1,
 	}
 	if err := manager.Create(challenge); err != nil {
 		t.Fatalf("Failed to create challenge: %v", err)
 	}
 
-	// Try to retrieve with different entity ID
-	_, err = manager.GetByID(1, 2)
+	// Try to retrieve with different UUID
+	_, err = manager.GetByID(1, testUUID2)
 	if err == nil {
 		t.Error("Expected error when retrieving challenge with wrong entity ID")
 	}
@@ -206,7 +212,7 @@ func TestGetByIDNotFound(t *testing.T) {
 		t.Fatalf("Failed to create ChallengeManager: %v", err)
 	}
 
-	_, err = manager.GetByID(999, 1)
+	_, err = manager.GetByID(999, testUUID1)
 	if err == nil {
 		t.Error("Expected error when retrieving non-existent challenge")
 	}
@@ -223,14 +229,14 @@ func TestGetCategoryByID(t *testing.T) {
 	// Create a category
 	category := Category{
 		Name:  "Crypto",
-		EntID: 1,
+		UUID:  testUUID1,
 	}
 	if err := manager.CreateCategory(category); err != nil {
 		t.Fatalf("Failed to create category: %v", err)
 	}
 
 	// Retrieve by ID
-	retrieved, err := manager.GetCategoryByID(1, 1)
+	retrieved, err := manager.GetCategoryByID(1, testUUID1)
 	if err != nil {
 		t.Errorf("Failed to get category by ID: %v", err)
 	}
@@ -248,17 +254,17 @@ func TestGetCategoryByIDWrongEntity(t *testing.T) {
 		t.Fatalf("Failed to create ChallengeManager: %v", err)
 	}
 
-	// Create a category with entity ID 1
+	// Create a category with UUID 1
 	category := Category{
 		Name:  "Reversing",
-		EntID: 1,
+		UUID:  testUUID1,
 	}
 	if err := manager.CreateCategory(category); err != nil {
 		t.Fatalf("Failed to create category: %v", err)
 	}
 
-	// Try to retrieve with different entity ID
-	_, err = manager.GetCategoryByID(1, 2)
+	// Try to retrieve with different UUID
+	_, err = manager.GetCategoryByID(1, testUUID2)
 	if err == nil {
 		t.Error("Expected error when retrieving category with wrong entity ID")
 	}
@@ -272,7 +278,7 @@ func TestGetCategoryByIDNotFound(t *testing.T) {
 		t.Fatalf("Failed to create ChallengeManager: %v", err)
 	}
 
-	_, err = manager.GetCategoryByID(999, 1)
+	_, err = manager.GetCategoryByID(999, testUUID1)
 	if err == nil {
 		t.Error("Expected error when retrieving non-existent category")
 	}
@@ -287,27 +293,27 @@ func TestExistCategory(t *testing.T) {
 	}
 
 	// Category should not exist initially
-	if manager.ExistCategory("Forensics", 1) {
+	if manager.ExistCategory("Forensics", testUUID1) {
 		t.Error("Expected category 'Forensics' to not exist")
 	}
 
 	// Create a category
 	category := Category{
 		Name:  "Forensics",
-		EntID: 1,
+		UUID:  testUUID1,
 	}
 	if err := manager.CreateCategory(category); err != nil {
 		t.Fatalf("Failed to create category: %v", err)
 	}
 
 	// Now it should exist
-	if !manager.ExistCategory("Forensics", 1) {
+	if !manager.ExistCategory("Forensics", testUUID1) {
 		t.Error("Expected category 'Forensics' to exist")
 	}
 
-	// Should not exist for different entity
-	if manager.ExistCategory("Forensics", 2) {
-		t.Error("Expected category 'Forensics' to not exist for entity 2")
+	// Should not exist for different UUID
+	if manager.ExistCategory("Forensics", testUUID2) {
+		t.Error("Expected category 'Forensics' to not exist for UUID 2")
 	}
 }
 
@@ -330,7 +336,7 @@ func TestNew(t *testing.T) {
 		5,
 		"flag{sql_injection}",
 		"Check the login form",
-		1,
+		testUUID1,
 	)
 
 	if challenge.Title != "SQL Injection" {
@@ -363,8 +369,8 @@ func TestNew(t *testing.T) {
 	if challenge.Hint != "Check the login form" {
 		t.Errorf("Expected hint 'Check the login form', got '%s'", challenge.Hint)
 	}
-	if challenge.EntID != 1 {
-		t.Errorf("Expected entity ID 1, got %d", challenge.EntID)
+	if challenge.UUID != testUUID1 {
+		t.Errorf("Expected UUID '%s', got '%s'", testUUID1, challenge.UUID)
 	}
 }
 
@@ -376,7 +382,7 @@ func TestNewCategory(t *testing.T) {
 		t.Fatalf("Failed to create ChallengeManager: %v", err)
 	}
 
-	category, err := manager.NewCategory("Binary", "Binary exploitation", "binary.png", 1)
+	category, err := manager.NewCategory("Binary", "Binary exploitation", "binary.png", testUUID1)
 	if err != nil {
 		t.Errorf("Failed to create new category: %v", err)
 	}
@@ -390,8 +396,8 @@ func TestNewCategory(t *testing.T) {
 	if category.Logo != "binary.png" {
 		t.Errorf("Expected logo 'binary.png', got '%s'", category.Logo)
 	}
-	if category.EntID != 1 {
-		t.Errorf("Expected entity ID 1, got %d", category.EntID)
+	if category.UUID != testUUID1 {
+		t.Errorf("Expected UUID '%s', got '%s'", testUUID1, category.UUID)
 	}
 }
 
@@ -406,14 +412,14 @@ func TestNewCategoryDuplicate(t *testing.T) {
 	// Create first category
 	category := Category{
 		Name:  "Pwn",
-		EntID: 1,
+		UUID:  testUUID1,
 	}
 	if err := manager.CreateCategory(category); err != nil {
 		t.Fatalf("Failed to create category: %v", err)
 	}
 
 	// Try to create duplicate
-	_, err = manager.NewCategory("Pwn", "Pwning challenges", "pwn.png", 1)
+	_, err = manager.NewCategory("Pwn", "Pwning challenges", "pwn.png", testUUID1)
 	if err == nil {
 		t.Error("Expected error when creating duplicate category")
 	}
@@ -427,23 +433,23 @@ func TestNewCategorySameNameDifferentEntity(t *testing.T) {
 		t.Fatalf("Failed to create ChallengeManager: %v", err)
 	}
 
-	// Create category for entity 1
+	// Create category for UUID 1
 	category1 := Category{
 		Name:  "Misc",
-		EntID: 1,
+		UUID:  testUUID1,
 	}
 	if err := manager.CreateCategory(category1); err != nil {
-		t.Fatalf("Failed to create category for entity 1: %v", err)
+		t.Fatalf("Failed to create category for UUID 1: %v", err)
 	}
 
-	// Create same-named category for entity 2 should succeed
-	category2, err := manager.NewCategory("Misc", "Miscellaneous", "misc.png", 2)
+	// Create same-named category for UUID 2 should succeed
+	category2, err := manager.NewCategory("Misc", "Miscellaneous", "misc.png", testUUID2)
 	if err != nil {
-		t.Errorf("Expected to create category with same name for different entity, got error: %v", err)
+		t.Errorf("Expected to create category with same name for different UUID, got error: %v", err)
 	}
 
-	if category2.Name != "Misc" || category2.EntID != 2 {
-		t.Error("Expected category to be created for entity 2")
+	if category2.Name != "Misc" || category2.UUID != testUUID2 {
+		t.Error("Expected category to be created for UUID 2")
 	}
 }
 
@@ -455,15 +461,15 @@ func TestMultiEntityChallengeIsolation(t *testing.T) {
 		t.Fatalf("Failed to create ChallengeManager: %v", err)
 	}
 
-	// Create challenges for different entities
+	// Create challenges for different UUIDs
 	challenge1 := Challenge{
-		Title:  "Entity 1 Challenge",
-		EntID:  1,
+		Title:  "UUID 1 Challenge",
+		UUID:   testUUID1,
 		Points: 100,
 	}
 	challenge2 := Challenge{
-		Title:  "Entity 2 Challenge",
-		EntID:  2,
+		Title:  "UUID 2 Challenge",
+		UUID:   testUUID2,
 		Points: 200,
 	}
 
@@ -474,28 +480,28 @@ func TestMultiEntityChallengeIsolation(t *testing.T) {
 		t.Fatalf("Failed to create challenge 2: %v", err)
 	}
 
-	// Entity 1 should only see its challenge
-	c1, err := manager.GetByID(1, 1)
+	// UUID 1 should only see its challenge
+	c1, err := manager.GetByID(1, testUUID1)
 	if err != nil {
-		t.Errorf("Failed to get challenge for entity 1: %v", err)
+		t.Errorf("Failed to get challenge for UUID 1: %v", err)
 	}
-	if c1.Title != "Entity 1 Challenge" {
-		t.Errorf("Expected 'Entity 1 Challenge', got '%s'", c1.Title)
+	if c1.Title != "UUID 1 Challenge" {
+		t.Errorf("Expected 'UUID 1 Challenge', got '%s'", c1.Title)
 	}
 
-	// Entity 2 should only see its challenge
-	c2, err := manager.GetByID(2, 2)
+	// UUID 2 should only see its challenge
+	c2, err := manager.GetByID(2, testUUID2)
 	if err != nil {
-		t.Errorf("Failed to get challenge for entity 2: %v", err)
+		t.Errorf("Failed to get challenge for UUID 2: %v", err)
 	}
-	if c2.Title != "Entity 2 Challenge" {
-		t.Errorf("Expected 'Entity 2 Challenge', got '%s'", c2.Title)
+	if c2.Title != "UUID 2 Challenge" {
+		t.Errorf("Expected 'UUID 2 Challenge', got '%s'", c2.Title)
 	}
 
-	// Entity 1 should not see entity 2's challenge
-	_, err = manager.GetByID(2, 1)
+	// UUID 1 should not see UUID 2's challenge
+	_, err = manager.GetByID(2, testUUID1)
 	if err == nil {
-		t.Error("Expected error when entity 1 tries to access entity 2's challenge")
+		t.Error("Expected error when UUID 1 tries to access UUID 2's challenge")
 	}
 }
 
@@ -507,14 +513,14 @@ func TestMultiEntityCategoryIsolation(t *testing.T) {
 		t.Fatalf("Failed to create ChallengeManager: %v", err)
 	}
 
-	// Create categories for different entities
+	// Create categories for different UUIDs
 	category1 := Category{
-		Name:  "Entity 1 Category",
-		EntID: 1,
+		Name:  "UUID 1 Category",
+		UUID:  testUUID1,
 	}
 	category2 := Category{
-		Name:  "Entity 2 Category",
-		EntID: 2,
+		Name:  "UUID 2 Category",
+		UUID:  testUUID2,
 	}
 
 	if err := manager.CreateCategory(category1); err != nil {
@@ -524,27 +530,27 @@ func TestMultiEntityCategoryIsolation(t *testing.T) {
 		t.Fatalf("Failed to create category 2: %v", err)
 	}
 
-	// Entity 1 should only see its category
-	cat1, err := manager.GetCategoryByID(1, 1)
+	// UUID 1 should only see its category
+	cat1, err := manager.GetCategoryByID(1, testUUID1)
 	if err != nil {
-		t.Errorf("Failed to get category for entity 1: %v", err)
+		t.Errorf("Failed to get category for UUID 1: %v", err)
 	}
-	if cat1.Name != "Entity 1 Category" {
-		t.Errorf("Expected 'Entity 1 Category', got '%s'", cat1.Name)
+	if cat1.Name != "UUID 1 Category" {
+		t.Errorf("Expected 'UUID 1 Category', got '%s'", cat1.Name)
 	}
 
-	// Entity 2 should only see its category
-	cat2, err := manager.GetCategoryByID(2, 2)
+	// UUID 2 should only see its category
+	cat2, err := manager.GetCategoryByID(2, testUUID2)
 	if err != nil {
-		t.Errorf("Failed to get category for entity 2: %v", err)
+		t.Errorf("Failed to get category for UUID 2: %v", err)
 	}
-	if cat2.Name != "Entity 2 Category" {
-		t.Errorf("Expected 'Entity 2 Category', got '%s'", cat2.Name)
+	if cat2.Name != "UUID 2 Category" {
+		t.Errorf("Expected 'UUID 2 Category', got '%s'", cat2.Name)
 	}
 
-	// Entity 1 should not see entity 2's category
-	_, err = manager.GetCategoryByID(2, 1)
+	// UUID 1 should not see UUID 2's category
+	_, err = manager.GetCategoryByID(2, testUUID1)
 	if err == nil {
-		t.Error("Expected error when entity 1 tries to access entity 2's category")
+		t.Error("Expected error when UUID 1 tries to access UUID 2's category")
 	}
 }

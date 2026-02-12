@@ -126,6 +126,13 @@ func initServiceFlags(params *ServiceFlagParams) []cli.Flag {
 			Sources:     cli.EnvVars("SERVICE_LOG_FORMAT"),
 			Destination: &params.ConfigValues.Service.LogFormat,
 		},
+		&cli.StringFlag{
+			Name:        "uuid",
+			Value:       "",
+			Usage:       "UUID to be used for the service",
+			Sources:     cli.EnvVars("SERVICE_UUID"),
+			Destination: &params.ConfigValues.Service.UUID,
+		},
 	}
 }
 

@@ -10,55 +10,54 @@ import (
 
 // AdminChallengesHandler - Handle admin challenges requests
 // @Summary      Admin Challenges
-// @Description  Get all challenges for admin panel for a specific entity ID
+// @Description  Get all challenges for admin panel for a specific UUID
 // @Tags         admin
 // @Produce      json
-// @Param        entID  path      int  true  "Entity ID"
+// @Param        uuid   path      string  true  "UUID"
 // @Success      200    {array}   AdminChallenge  "Admin Challenges"
-// @Failure      400    {object}  ApiErrorResponse  "Bad request - invalid entity ID"
+// @Failure      400    {object}  ApiErrorResponse  "Bad request - invalid UUID"
 // @Failure      500    {object}  ApiErrorResponse  "Internal server error"
-// @Router       /api/v1/admin/challenges/{entID} [get]
+// @Router       /api/v1/admin/challenges/{uuid} [get]
 func (h *HandlersAPI) AdminChallengesHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
 
-	// Extract entID from path
-	entIDStr := chi.URLParam(r, "entID")
-	entID, err := strconv.ParseUint(entIDStr, 10, 32)
-	if err != nil {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid entity ID"})
+	// Extract UUID from path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid UUID"})
 		return
 	}
 
-	// Get challenges from database filtered by entity ID
-	challenges, err := h.Challenges.GetAll(uint(entID))
+	// Get challenges from database filtered by UUID
+	dbChallenges, err := h.Challenges.GetAll(uuid)
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, ApiErrorResponse{Error: "error getting challenges"})
 		return
 	}
 
 	// Convert internal Challenge structs to AdminChallenge structs
-	adminChallenges := make([]AdminChallenge, 0, len(challenges))
-	for _, ch := range challenges {
+	adminChallenges := make([]AdminChallenge, 0, len(dbChallenges))
+	for _, dbChallenge := range dbChallenges {
 		// Get category name if category ID exists
 		categoryName := ""
-		if ch.CategoryID > 0 {
-			category, catErr := h.Challenges.GetCategoryByID(ch.CategoryID, uint(entID))
+		if dbChallenge.CategoryID > 0 {
+			category, catErr := h.Challenges.GetCategoryByID(dbChallenge.CategoryID, uuid)
 			if catErr == nil {
 				categoryName = category.Name
 			}
 		}
 
 		adminChallenges = append(adminChallenges, AdminChallenge{
-			ID:          strconv.FormatUint(uint64(ch.ID), 10),
-			Title:       ch.Title,
-			Description: ch.Description,
+			ID:          strconv.FormatUint(uint64(dbChallenge.ID), 10),
+			Title:       dbChallenge.Title,
+			Description: dbChallenge.Description,
 			Category:    categoryName,
-			Points:      ch.Points,
-			Flag:        ch.Flag,
-			Active:      ch.Active,
+			Points:      dbChallenge.Points,
+			Flag:        dbChallenge.Flag,
+			Active:      dbChallenge.Active,
 		})
 	}
 
@@ -68,27 +67,26 @@ func (h *HandlersAPI) AdminChallengesHandler(w http.ResponseWriter, r *http.Requ
 
 // CreateChallengeHandler - Handle create challenge requests
 // @Summary      Create Challenge
-// @Description  Create a new challenge for a specific entity ID
+// @Description  Create a new challenge for a specific UUID
 // @Tags         admin
 // @Accept       json
 // @Produce      json
-// @Param        entID     path      int                     true  "Entity ID"
+// @Param        uuid      path      string                    true  "UUID"
 // @Param        request   body      CreateChallengeRequest  true  "Challenge data"
 // @Success      201       {object}  AdminChallenge          "Challenge created"
 // @Failure      400       {object}  ApiErrorResponse        "Bad request - invalid input"
 // @Failure      500       {object}  ApiErrorResponse        "Internal server error"
-// @Router       /api/v1/admin/challenges/{entID} [post]
+// @Router       /api/v1/admin/challenges/{uuid} [post]
 func (h *HandlersAPI) CreateChallengeHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
 
-	// Extract entID from path
-	entIDStr := chi.URLParam(r, "entID")
-	entID, err := strconv.ParseUint(entIDStr, 10, 32)
-	if err != nil {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid entity ID"})
+	// Extract UUID from path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid UUID"})
 		return
 	}
 
@@ -121,7 +119,7 @@ func (h *HandlersAPI) CreateChallengeHandler(w http.ResponseWriter, r *http.Requ
 		req.Penalty,
 		req.Flag,
 		req.Hint,
-		uint(entID),
+		uuid,
 	)
 
 	// Save challenge to database
@@ -133,7 +131,7 @@ func (h *HandlersAPI) CreateChallengeHandler(w http.ResponseWriter, r *http.Requ
 	// Get category name if category ID exists
 	categoryName := ""
 	if challenge.CategoryID > 0 {
-		category, catErr := h.Challenges.GetCategoryByID(challenge.CategoryID, uint(entID))
+		category, catErr := h.Challenges.GetCategoryByID(challenge.CategoryID, uuid)
 		if catErr == nil {
 			categoryName = category.Name
 		}

@@ -19,7 +19,7 @@ type Challenge struct {
 	Flag        string
 	Hint        string
 	Penalty     int
-	EntID       uint `gorm:"index"`
+	UUID        string `gorm:"unique;index"`
 }
 
 // Category to hold all challenge categories
@@ -28,7 +28,7 @@ type Category struct {
 	Name        string `gorm:"index"`
 	Description string
 	Logo        string
-	EntID       uint `gorm:"index"`
+	UUID        string `gorm:"unique;index"`
 }
 
 // ChallengeManager to handle all challenges of the platform
@@ -72,43 +72,43 @@ func (m *ChallengeManager) CreateCategory(category Category) error {
 }
 
 // GetByID to get a challenge by id and entity
-func (m *ChallengeManager) GetByID(id uint, entID uint) (Challenge, error) {
+func (m *ChallengeManager) GetByID(id uint, uuid string) (Challenge, error) {
 	var challenge Challenge
-	if err := m.DB.Where("id = ? AND ent_id = ?", id, entID).First(&challenge).Error; err != nil {
+	if err := m.DB.Where("id = ? AND uuid = ?", id, uuid).First(&challenge).Error; err != nil {
 		return Challenge{}, fmt.Errorf("Get Challenge by ID and Entity: %w", err)
 	}
 	return challenge, nil
 }
 
 // GetAll to get all challenges for a specific entity ID
-func (m *ChallengeManager) GetAll(entID uint) ([]Challenge, error) {
+func (m *ChallengeManager) GetAll(uuid string) ([]Challenge, error) {
 	var challenges []Challenge
-	if err := m.DB.Where("ent_id = ?", entID).Find(&challenges).Error; err != nil {
+	if err := m.DB.Where("uuid = ?", uuid).Find(&challenges).Error; err != nil {
 		return challenges, fmt.Errorf("Get All Challenges by Entity: %w", err)
 	}
 	return challenges, nil
 }
 
 // GetCategoryByID to get a category by id and entity id
-func (m *ChallengeManager) GetCategoryByID(id uint, entID uint) (Category, error) {
+func (m *ChallengeManager) GetCategoryByID(id uint, uuid string) (Category, error) {
 	var category Category
-	if err := m.DB.Where("id = ? AND ent_id = ?", id, entID).First(&category).Error; err != nil {
+	if err := m.DB.Where("id = ? AND uuid = ?", id, uuid).First(&category).Error; err != nil {
 		return Category{}, fmt.Errorf("Get Category by ID and Entity: %w", err)
 	}
 	return category, nil
 }
 
 // ExistCategory to check if a category exists name
-func (m *ChallengeManager) ExistCategory(name string, entID uint) bool {
+func (m *ChallengeManager) ExistCategory(name string, uuid string) bool {
 	var count int64
-	if err := m.DB.Model(&Category{}).Where("name = ? AND ent_id = ?", name, entID).Count(&count).Error; err != nil {
+	if err := m.DB.Model(&Category{}).Where("name = ? AND uuid = ?", name, uuid).Count(&count).Error; err != nil {
 		return false
 	}
 	return count > 0
 }
 
 // New empty challenge
-func (m *ChallengeManager) New(title, description string, categoryID uint, active bool, points, bonus, bonusDecay, penalty int, flag, hint string, entID uint) Challenge {
+func (m *ChallengeManager) New(title, description string, categoryID uint, active bool, points, bonus, bonusDecay, penalty int, flag, hint string, uuid string) Challenge {
 	return Challenge{
 		Title:       title,
 		Description: description,
@@ -120,18 +120,18 @@ func (m *ChallengeManager) New(title, description string, categoryID uint, activ
 		Flag:        flag,
 		Hint:        hint,
 		Penalty:     penalty,
-		EntID:       entID,
+		UUID:        uuid,
 	}
 }
 
 // New empty category
-func (m *ChallengeManager) NewCategory(name, description, logo string, entID uint) (Category, error) {
-	if !m.ExistCategory(name, entID) {
+func (m *ChallengeManager) NewCategory(name, description, logo string, uuid string) (Category, error) {
+	if !m.ExistCategory(name, uuid) {
 		return Category{
 			Name:        name,
 			Description: description,
 			Logo:        logo,
-			EntID:       entID,
+			UUID:        uuid,
 		}, nil
 	}
 	return Category{}, fmt.Errorf("Category with name '%s' already exists", name)

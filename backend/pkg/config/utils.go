@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -36,4 +37,9 @@ func GenConfigFile(path string, cfg MapCTFConfiguration, overwrite bool) error {
 		return fmt.Errorf("failed to write configuration to %s: %w", path, err)
 	}
 	return nil
+}
+
+// Helper to generate a UUID
+func GenUUID() string {
+	return uuid.New().String()
 }
