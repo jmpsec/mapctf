@@ -7,32 +7,31 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmpsec/mapctf/pkg/teams"
+	"github.com/jmpsec/mapctf/pkg/users"
 )
 
 // AdminTeamsHandler - Handle admin teams requests
 // @Summary      Admin Teams
-// @Description  Get all teams for admin panel with member counts for a specific entity ID
+// @Description  Get all teams for admin panel with member counts for a specific UUID
 // @Tags         admin
 // @Produce      json
-// @Param        entID  path      int  true  "Entity ID"
+// @Param        uuid  path      string  true  "UUID"
 // @Success      200    {array}   AdminTeam  "Admin Teams"
-// @Failure      400    {object}  ApiErrorResponse  "Bad request - invalid entity ID"
+// @Failure      400    {object}  ApiErrorResponse  "Bad request - invalid UUID"
 // @Failure      500    {object}  ApiErrorResponse  "Internal server error"
-// @Router       /api/v1/admin/teams/{entID} [get]
+// @Router       /api/v1/admin/teams/{uuid} [get]
 func (h *HandlersAPI) AdminTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	// Extract entID from path
-	entIDStr := chi.URLParam(r, "entID")
-	entID, err := strconv.ParseUint(entIDStr, 10, 32)
-	if err != nil {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid entity ID"})
-		return
+	// Extract UUID from path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		uuid = users.NoUUID
 	}
-	// Get teams from database filtered by entity ID
-	teamsList, err := h.Teams.GetAll(uint(entID))
+	// Get teams from database filtered by UUID
+	teamsList, err := h.Teams.GetAll(uuid)
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, ApiErrorResponse{Error: "error getting teams"})
 		return
@@ -59,27 +58,25 @@ func (h *HandlersAPI) AdminTeamsHandler(w http.ResponseWriter, r *http.Request) 
 
 // CreateTeamHandler - Handle create team requests
 // @Summary      Create Team
-// @Description  Create a new team for a specific entity ID
+// @Description  Create a new team for a specific UUID
 // @Tags         admin
 // @Accept       json
 // @Produce      json
-// @Param        entID    path      int                true  "Entity ID"
+// @Param        uuid    path      string                true  "UUID"
 // @Param        request  body      CreateTeamRequest true  "Team data"
 // @Success      201      {object}  AdminTeam         "Team created"
 // @Failure      400      {object}  ApiErrorResponse   "Bad request - invalid input"
 // @Failure      500      {object}  ApiErrorResponse   "Internal server error"
-// @Router       /api/v1/admin/teams/{entID} [post]
+// @Router       /api/v1/admin/teams/{uuid} [post]
 func (h *HandlersAPI) CreateTeamHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	// Extract entID from path
-	entIDStr := chi.URLParam(r, "entID")
-	entID, err := strconv.ParseUint(entIDStr, 10, 32)
-	if err != nil {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid entity ID"})
-		return
+	// Extract UUID from path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		uuid = users.NoUUID
 	}
 	// Parse request body
 	var req CreateTeamRequest
@@ -93,12 +90,12 @@ func (h *HandlersAPI) CreateTeamHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	// Check if team already exists
-	if h.Teams.Exists(req.Name, uint(entID)) {
+	if h.Teams.Exists(req.Name, uuid) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "team already exists"})
 		return
 	}
 	// Create team using the New method
-	team, err := h.Teams.New(req.Name, req.Logo, "", req.Protected, req.Visible, uint(entID))
+	team, err := h.Teams.New(req.Name, req.Logo, "", req.Protected, req.Visible, uuid)
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: err.Error()})
 		return

@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
 )
 
@@ -19,6 +21,13 @@ func (h *HandlersMap) LoginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		log.Err(errors.New("UUID is required")).Msg("UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+		return
+	}
 	var l MapLoginRequest
 	// Parse request JSON body
 	if err := json.NewDecoder(r.Body).Decode(&l); err != nil {
@@ -30,8 +39,7 @@ func (h *HandlersMap) LoginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "username and password are required"})
 		return
 	}
-	// Entity ID defaults to 0, which is valid
-	valid, user := h.Users.CheckLoginCredentials(l.Username, l.Password, l.EntID)
+	valid, user := h.Users.CheckLoginCredentials(l.Username, l.Password, uuid)
 	if !valid {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "invalid credentials"})
 		return
@@ -46,7 +54,7 @@ func (h *HandlersMap) LoginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapLoginResponse{
 		Success:  true,
 		Message:  "Login successful",
-		Redirect: "/gameboard",
+		Redirect: "/" + uuid + "/gameboard",
 	})
 }
 
@@ -54,6 +62,13 @@ func (h *HandlersMap) LogoutPOSTHandler(w http.ResponseWriter, r *http.Request) 
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		log.Err(errors.New("UUID is required")).Msg("UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+		return
 	}
 	if err := h.Sessions.Destroy(r.Context()); err != nil {
 		log.Err(err).Msg("error destroying session")
@@ -64,7 +79,7 @@ func (h *HandlersMap) LogoutPOSTHandler(w http.ResponseWriter, r *http.Request) 
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapLogoutResponse{
 		Success:  true,
 		Message:  "Logout successful",
-		Redirect: "/login",
+		Redirect: "/" + uuid + "/login",
 	})
 }
 

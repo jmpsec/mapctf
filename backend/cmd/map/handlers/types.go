@@ -4,7 +4,6 @@ package handlers
 type MapLoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-	EntID    uint   `json:"entID"`
 }
 
 // MapLoginResponse to be returned to map requests after a successful login

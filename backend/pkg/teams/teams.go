@@ -27,15 +27,15 @@ type PlatformTeam struct {
 	Protected bool
 	Visible   bool
 	Active    bool
-	EntID     uint
+	UUID      string `gorm:"index"`
 }
 
 // TeamMembership to link users to teams
 type TeamMembership struct {
 	gorm.Model
-	TeamID     uint `gorm:"index"`
-	UserID     uint `gorm:"index"`
-	EntID      uint
+	TeamID     uint   `gorm:"index"`
+	UserID     uint   `gorm:"index"`
+	UUID       string `gorm:"index"`
 	AssignedBy uint
 }
 
@@ -75,51 +75,47 @@ func (m *TeamManager) Create(team PlatformTeam) error {
 }
 
 // Exists checks if team exists
-func (m *TeamManager) Exists(name string, entID uint) bool {
+func (m *TeamManager) Exists(name string, uuid string) bool {
 	var results int64
-	m.DB.Model(&PlatformTeam{}).Where("name = ? AND ent_id = ?", name, entID).Count(&results)
+	m.DB.Model(&PlatformTeam{}).Where("name = ? AND uuid = ?", name, uuid).Count(&results)
 	return (results > 0)
 }
 
 // Get team by name
-func (m *TeamManager) Get(name string, entID uint) (PlatformTeam, error) {
+func (m *TeamManager) Get(name string, uuid string) (PlatformTeam, error) {
 	var team PlatformTeam
-	if err := m.DB.Where("name = ? AND ent_id = ?", name, entID).First(&team).Error; err != nil {
+	if err := m.DB.Where("name = ? AND uuid = ?", name, uuid).First(&team).Error; err != nil {
 		return team, err
 	}
 	return team, nil
 }
 
 // Get all teams
-func (m *TeamManager) GetAll(entID uint) ([]PlatformTeam, error) {
+func (m *TeamManager) GetAll(uuid string) ([]PlatformTeam, error) {
 	var teams []PlatformTeam
-	if err := m.DB.Where("ent_id = ?", entID).Find(&teams).Error; err != nil {
+	if err := m.DB.Where("uuid = ?", uuid).Find(&teams).Error; err != nil {
 		return teams, err
 	}
 	return teams, nil
 }
 
-// Get user by name and by entity ID
-func (m *TeamManager) GetByEntID(name string, entID uint) (PlatformTeam, error) {
-	var team PlatformTeam
-	if err := m.DB.Where("name = ? AND ent_id = ?", name, entID).First(&team).Error; err != nil {
-		return team, err
-	}
-	return team, nil
+// GetByUUID gets team by name and UUID (alias for Get)
+func (m *TeamManager) GetByUUID(name string, uuid string) (PlatformTeam, error) {
+	return m.Get(name, uuid)
 }
 
-// ExistsGet checks if user exists and returns the team
-func (m *TeamManager) ExistsGet(name string, entID uint) (bool, PlatformTeam) {
-	team, err := m.Get(name, entID)
+// ExistsGet checks if team exists and returns the team
+func (m *TeamManager) ExistsGet(name string, uuid string) (bool, PlatformTeam) {
+	team, err := m.Get(name, uuid)
 	if err != nil {
 		return false, PlatformTeam{}
 	}
 	return true, team
 }
 
-// ExistsGetByEntID checks if team exists and returns the team by name and by entity ID
-func (m *TeamManager) ExistsGetByEntID(name string, entID uint) (bool, PlatformTeam) {
-	team, err := m.GetByEntID(name, entID)
+// ExistsGetByUUID checks if team exists and returns the team by name and UUID
+func (m *TeamManager) ExistsGetByUUID(name string, uuid string) (bool, PlatformTeam) {
+	team, err := m.Get(name, uuid)
 	if err != nil {
 		return false, PlatformTeam{}
 	}
@@ -127,15 +123,15 @@ func (m *TeamManager) ExistsGetByEntID(name string, entID uint) (bool, PlatformT
 }
 
 // New empty team
-func (m *TeamManager) New(name, logo, email string, protected, visible bool, eID uint) (PlatformTeam, error) {
-	if !m.Exists(name, eID) {
+func (m *TeamManager) New(name, logo, email string, protected, visible bool, uuid string) (PlatformTeam, error) {
+	if !m.Exists(name, uuid) {
 		return PlatformTeam{
 			Name:      name,
 			Logo:      logo,
 			Protected: protected,
 			Visible:   visible,
 			Active:    true,
-			EntID:     eID,
+			UUID:      uuid,
 		}, nil
 	}
 	return PlatformTeam{}, fmt.Errorf("%s already exists", name)

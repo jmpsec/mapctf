@@ -438,11 +438,11 @@ func main() {
 					Usage:   "Password for the admin user. If not provided, a random password will be generated",
 					Value:   "",
 				},
-				&cli.UintFlag{
-					Name:    "entID",
-					Aliases: []string{"i"},
-					Usage:   "Entity ID for the admin user",
-					Value:   uint(users.NoEntID),
+				&cli.StringFlag{
+					Name:    "uuid",
+					Aliases: []string{"u"},
+					Usage:   "UUID for the admin user",
+					Value:   users.NoUUID,
 				},
 			},
 			Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -475,21 +475,24 @@ func main() {
 				}
 				username := cmd.String("username")
 				password := cmd.String("password")
-				entID := cmd.Uint("entID")
+				uuid := cmd.String("uuid")
+				if uuid == "" {
+					uuid = users.NoUUID
+				}
 				// Generate random password if not provided
 				if password == "" {
 					password = GenerateRandomPassword(12)
 				}
 				// Check if user exists
-				if usersMgr.Exists(username, entID) {
+				if usersMgr.Exists(username, uuid) {
 					// User exists, reset password
-					log.Info().Msgf("User '%s' already exists for entity %d, resetting password...", username, entID)
-					usersMgr.SetPassword(username, password, entID)
-					fmt.Printf("Password reset successfully for admin user '%s' (entity %d).\n", username, entID)
+					log.Info().Msgf("User '%s' already exists for UUID %s, resetting password...", username, uuid)
+					usersMgr.SetPassword(username, password, uuid)
+					fmt.Printf("Password reset successfully for admin user '%s' (UUID %s).\n", username, uuid)
 				} else {
 					// User doesn't exist, create it
-					log.Info().Msgf("Creating new admin user '%s' for entity %d...", username, entID)
-					user, err := usersMgr.New(username, password, "", username, true, false, entID, users.NoTeamID)
+					log.Info().Msgf("Creating new admin user '%s' for UUID %s...", username, uuid)
+					user, err := usersMgr.New(username, password, "", username, true, false, uuid, users.NoTeamID)
 					if err != nil {
 						return fmt.Errorf("failed to create admin user: %w", err)
 					}
@@ -497,7 +500,7 @@ func main() {
 					if err := usersMgr.Create(user); err != nil {
 						return fmt.Errorf("failed to save admin user: %w", err)
 					}
-					fmt.Printf("Admin user '%s' created successfully for entity %d.\n", username, entID)
+					fmt.Printf("Admin user '%s' created successfully for UUID %s.\n", username, uuid)
 				}
 				// Print password
 				fmt.Printf("\nPassword: %s\n", password)

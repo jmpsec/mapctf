@@ -13,8 +13,8 @@ import (
 const (
 	// NoTeamID is the default team ID when no team is assigned
 	NoTeamID uint = 0
-	// NoEntID is the default entity ID when no entity is assigned
-	NoEntID uint = 0
+	// NoUUID is the default UUID when no entity is specified
+	NoUUID string = ""
 )
 
 // User to hold all platform users
@@ -34,7 +34,7 @@ type PlatformUser struct {
 	LastUserAgent string
 	LastAccess    time.Time
 	LastTokenUse  time.Time
-	EntID         uint
+	UUID          string `gorm:"index"`
 }
 
 // TokenClaims to hold user claims when using JWT
@@ -87,42 +87,38 @@ func (m *UserManager) HashPasswordWithSalt(password string) (string, error) {
 }
 
 // Exists checks if user exists
-func (m *UserManager) Exists(username string, entID uint) bool {
+func (m *UserManager) Exists(username string, uuid string) bool {
 	var results int64
-	m.DB.Model(&PlatformUser{}).Where("username = ? AND ent_id = ?", username, entID).Count(&results)
+	m.DB.Model(&PlatformUser{}).Where("username = ? AND uuid = ?", username, uuid).Count(&results)
 	return (results > 0)
 }
 
 // Get user by username including service users
-func (m *UserManager) Get(username string, entID uint) (PlatformUser, error) {
+func (m *UserManager) Get(username string, uuid string) (PlatformUser, error) {
 	var user PlatformUser
-	if err := m.DB.Where("username = ? AND ent_id = ?", username, entID).First(&user).Error; err != nil {
-		return user, err
-	}
-	return user, nil
-}
-
-// Get user by username and by entity ID, including service users
-func (m *UserManager) GetByEntID(username string, entID uint) (PlatformUser, error) {
-	var user PlatformUser
-	if err := m.DB.Where("username = ? AND ent_id = ?", username, entID).First(&user).Error; err != nil {
+	if err := m.DB.Where("username = ? AND uuid = ?", username, uuid).First(&user).Error; err != nil {
 		return user, err
 	}
 	return user, nil
 }
 
 // ExistsGet checks if user exists and returns the user
-func (m *UserManager) ExistsGet(username string, entID uint) (bool, PlatformUser) {
-	user, err := m.Get(username, entID)
+func (m *UserManager) ExistsGet(username string, uuid string) (bool, PlatformUser) {
+	user, err := m.Get(username, uuid)
 	if err != nil {
 		return false, PlatformUser{}
 	}
 	return true, user
 }
 
-// ExistsGetByEntID checks if user exists and returns the user
-func (m *UserManager) ExistsGetByEntID(username string, entID uint) (bool, PlatformUser) {
-	user, err := m.GetByEntID(username, entID)
+// GetByUUID gets user by username and UUID (alias for Get)
+func (m *UserManager) GetByUUID(username string, uuid string) (PlatformUser, error) {
+	return m.Get(username, uuid)
+}
+
+// ExistsGetByUUID checks if user exists and returns the user
+func (m *UserManager) ExistsGetByUUID(username string, uuid string) (bool, PlatformUser) {
+	user, err := m.Get(username, uuid)
 	if err != nil {
 		return false, PlatformUser{}
 	}
@@ -130,8 +126,8 @@ func (m *UserManager) ExistsGetByEntID(username string, entID uint) (bool, Platf
 }
 
 // New empty user
-func (m *UserManager) New(username, password, email, display string, admin, service bool, eID, teamID uint) (PlatformUser, error) {
-	if !m.Exists(username, eID) {
+func (m *UserManager) New(username, password, email, display string, admin, service bool, uuid string, teamID uint) (PlatformUser, error) {
+	if !m.Exists(username, uuid) {
 		passhash, err := m.HashPasswordWithSalt(password)
 		if err != nil {
 			return PlatformUser{}, err
@@ -145,7 +141,7 @@ func (m *UserManager) New(username, password, email, display string, admin, serv
 			Display:  display,
 			TeamID:   teamID,
 			Active:   true,
-			EntID:    eID,
+			UUID:     uuid,
 		}, nil
 	}
 	return PlatformUser{}, fmt.Errorf("%s already exists", username)
@@ -154,8 +150,8 @@ func (m *UserManager) New(username, password, email, display string, admin, serv
 // Update
 
 // CheckLoginCredentials to check provided login credentials by matching hashes
-func (m *UserManager) CheckLoginCredentials(username, password string, entID uint) (bool, PlatformUser) {
-	user, err := m.Get(username, entID)
+func (m *UserManager) CheckLoginCredentials(username, password string, uuid string) (bool, PlatformUser) {
+	user, err := m.Get(username, uuid)
 	if err != nil {
 		return false, PlatformUser{}
 	}
@@ -205,44 +201,44 @@ func (m *UserManager) CheckToken(jwtSecret, tokenStr string) (TokenClaims, error
 	return *claims, nil
 }
 
-// SetPassword to set a new password for a given user by username and entity ID
-func (m *UserManager) SetPassword(username, password string, entID uint) error {
+// SetPassword to set a new password for a given user by username and UUID
+func (m *UserManager) SetPassword(username, password string, uuid string) error {
 	passHash, err := m.HashPasswordWithSalt(password)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 	if err := m.DB.Model(&PlatformUser{}).
-		Where("username = ? AND ent_id = ?", username, entID).
+		Where("username = ? AND uuid = ?", username, uuid).
 		Update("pass_hash", passHash).Error; err != nil {
 		return fmt.Errorf("failed to update password: %w", err)
 	}
 	return nil
 }
 
-// SetAdmin to set the admin flag for a given user by username and entity ID
-func (m *UserManager) SetAdmin(admin bool, username string, entID uint) error {
+// SetAdmin to set the admin flag for a given user by username and UUID
+func (m *UserManager) SetAdmin(admin bool, username string, uuid string) error {
 	if err := m.DB.Model(&PlatformUser{}).
-		Where("username = ? AND ent_id = ?", username, entID).
+		Where("username = ? AND uuid = ?", username, uuid).
 		Update("admin", admin).Error; err != nil {
 		return fmt.Errorf("failed to update admin flag: %w", err)
 	}
 	return nil
 }
 
-// SetActive to set the active flag for a given user by username and entity ID
-func (m *UserManager) SetActive(active bool, username string, entID uint) error {
+// SetActive to set the active flag for a given user by username and UUID
+func (m *UserManager) SetActive(active bool, username string, uuid string) error {
 	if err := m.DB.Model(&PlatformUser{}).
-		Where("username = ? AND ent_id = ?", username, entID).
+		Where("username = ? AND uuid = ?", username, uuid).
 		Update("active", active).Error; err != nil {
 		return fmt.Errorf("failed to update active flag: %w", err)
 	}
 	return nil
 }
 
-// SetService to set the service flag for a given user by username and entity ID
-func (m *UserManager) SetService(service bool, username string, entID uint) error {
+// SetService to set the service flag for a given user by username and UUID
+func (m *UserManager) SetService(service bool, username string, uuid string) error {
 	if err := m.DB.Model(&PlatformUser{}).
-		Where("username = ? AND ent_id = ?", username, entID).
+		Where("username = ? AND uuid = ?", username, uuid).
 		Update("service", service).Error; err != nil {
 		return fmt.Errorf("failed to update service flag: %w", err)
 	}

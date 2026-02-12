@@ -11,6 +11,12 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// Test UUID constants
+const (
+	testUUID1 = "test-uuid-1"
+	testUUID2 = "test-uuid-2"
+)
+
 // setupTestDB creates an in-memory SQLite database for testing
 func setupTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
@@ -88,7 +94,7 @@ func TestPlatformUserStructure(t *testing.T) {
 		LastUserAgent: "TestAgent",
 		LastAccess:    time.Now(),
 		LastTokenUse:  time.Now(),
-		EntID:         1,
+		UUID:         testUUID1,
 	}
 
 	if user.Username != "testuser" {
@@ -121,7 +127,7 @@ func TestCreate(t *testing.T) {
 		Admin:    false,
 		Service:  false,
 		Active:   true,
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 
 	err = manager.Create(user)
@@ -239,7 +245,7 @@ func TestExists(t *testing.T) {
 	}
 
 	// User should not exist initially
-	if manager.Exists("nonexistent", 1) {
+	if manager.Exists("nonexistent", testUUID1) {
 		t.Error("Expected user 'nonexistent' to not exist")
 	}
 
@@ -248,7 +254,7 @@ func TestExists(t *testing.T) {
 		Username: "existinguser",
 		Email:    "existing@example.com",
 		PassHash: "hash",
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 
 	err = manager.Create(user)
@@ -257,17 +263,17 @@ func TestExists(t *testing.T) {
 	}
 
 	// Now user should exist
-	if !manager.Exists("existinguser", 1) {
+	if !manager.Exists("existinguser", testUUID1) {
 		t.Error("Expected user 'existinguser' to exist")
 	}
 
 	// Different username should not exist
-	if manager.Exists("differentuser", 1) {
+	if manager.Exists("differentuser", testUUID1) {
 		t.Error("Expected user 'differentuser' to not exist")
 	}
 
 	// Same username but different entity ID should not exist
-	if manager.Exists("existinguser", 2) {
+	if manager.Exists("existinguser", testUUID2) {
 		t.Error("Expected user 'existinguser' with entity 2 to not exist")
 	}
 }
@@ -288,7 +294,7 @@ func TestGet(t *testing.T) {
 		PassHash: "hash",
 		TeamID:   5,
 		Admin:    true,
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 
 	err = manager.Create(user)
@@ -297,7 +303,7 @@ func TestGet(t *testing.T) {
 	}
 
 	// Get the user
-	retrievedUser, err := manager.Get("getuser", 1)
+	retrievedUser, err := manager.Get("getuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -318,8 +324,8 @@ func TestGet(t *testing.T) {
 		t.Error("Expected Admin to be true")
 	}
 
-	if retrievedUser.EntID != 1 {
-		t.Errorf("Expected EntID 1, got %d", retrievedUser.EntID)
+	if retrievedUser.UUID != testUUID1 {
+		t.Errorf("Expected UUID '%s', got '%s'", testUUID1, retrievedUser.UUID)
 	}
 }
 
@@ -331,14 +337,14 @@ func TestGetNonExistent(t *testing.T) {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
 
-	_, err = manager.Get("nonexistent", 1)
+	_, err = manager.Get("nonexistent", testUUID1)
 	if err == nil {
 		t.Error("Expected error when getting non-existent user")
 	}
 }
 
-// TestGetByEntID tests retrieving a user by username and entity ID
-func TestGetByEntID(t *testing.T) {
+// TestGetByUUID tests retrieving a user by username and UUID
+func TestGetByUUID(t *testing.T) {
 	db := setupTestDB(t)
 	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
@@ -350,14 +356,14 @@ func TestGetByEntID(t *testing.T) {
 		Username: "multiuser",
 		Email:    "user1@example.com",
 		PassHash: "hash1",
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 
 	user2 := PlatformUser{
 		Username: "multiuser",
 		Email:    "user2@example.com",
 		PassHash: "hash2",
-		EntID:    2,
+		UUID:     testUUID2,
 	}
 
 	err = manager.Create(user1)
@@ -371,7 +377,7 @@ func TestGetByEntID(t *testing.T) {
 	}
 
 	// Get user by entity ID 1
-	retrievedUser1, err := manager.GetByEntID("multiuser", 1)
+	retrievedUser1, err := manager.GetByUUID("multiuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user by entity ID 1: %v", err)
 	}
@@ -380,12 +386,12 @@ func TestGetByEntID(t *testing.T) {
 		t.Errorf("Expected email 'user1@example.com', got '%s'", retrievedUser1.Email)
 	}
 
-	if retrievedUser1.EntID != 1 {
-		t.Errorf("Expected EntID 1, got %d", retrievedUser1.EntID)
+	if retrievedUser1.UUID != testUUID1 {
+		t.Errorf("Expected UUID '%s', got '%s'", testUUID1, retrievedUser1.UUID)
 	}
 
 	// Get user by entity ID 2
-	retrievedUser2, err := manager.GetByEntID("multiuser", 2)
+	retrievedUser2, err := manager.GetByUUID("multiuser", testUUID2)
 	if err != nil {
 		t.Fatalf("Failed to get user by entity ID 2: %v", err)
 	}
@@ -394,20 +400,20 @@ func TestGetByEntID(t *testing.T) {
 		t.Errorf("Expected email 'user2@example.com', got '%s'", retrievedUser2.Email)
 	}
 
-	if retrievedUser2.EntID != 2 {
-		t.Errorf("Expected EntID 2, got %d", retrievedUser2.EntID)
+	if retrievedUser2.UUID != testUUID2 {
+		t.Errorf("Expected UUID '%s', got '%s'", testUUID2, retrievedUser2.UUID)
 	}
 }
 
-// TestGetByEntIDNonExistent tests getting a non-existent user by entity ID
-func TestGetByEntIDNonExistent(t *testing.T) {
+// TestGetByUUIDNonExistent tests getting a non-existent user by UUID
+func TestGetByUUIDNonExistent(t *testing.T) {
 	db := setupTestDB(t)
 	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
 
-	_, err = manager.GetByEntID("nonexistent", 1)
+	_, err = manager.GetByUUID("nonexistent", testUUID1)
 	if err == nil {
 		t.Error("Expected error when getting non-existent user by entity ID")
 	}
@@ -422,7 +428,7 @@ func TestExistsGet(t *testing.T) {
 	}
 
 	// Non-existent user
-	exists, user := manager.ExistsGet("nonexistent", 1)
+	exists, user := manager.ExistsGet("nonexistent", testUUID1)
 	if exists {
 		t.Error("Expected user to not exist")
 	}
@@ -438,7 +444,7 @@ func TestExistsGet(t *testing.T) {
 		Email:    "existsget@example.com",
 		PassHash: "hash",
 		TeamID:   3,
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 
 	err = manager.Create(newUser)
@@ -447,7 +453,7 @@ func TestExistsGet(t *testing.T) {
 	}
 
 	// Existing user
-	exists, user = manager.ExistsGet("existsgetuser", 1)
+	exists, user = manager.ExistsGet("existsgetuser", testUUID1)
 	if !exists {
 		t.Error("Expected user to exist")
 	}
@@ -464,13 +470,13 @@ func TestExistsGet(t *testing.T) {
 		t.Errorf("Expected TeamID 3, got %d", user.TeamID)
 	}
 
-	if user.EntID != 1 {
-		t.Errorf("Expected EntID 1, got %d", user.EntID)
+	if user.UUID != testUUID1 {
+		t.Errorf("Expected UUID '%s', got '%s'", testUUID1, user.UUID)
 	}
 }
 
-// TestExistsGetByEntID tests the ExistsGetByEntID function
-func TestExistsGetByEntID(t *testing.T) {
+// TestExistsGetByUUID tests the ExistsGetByUUID function
+func TestExistsGetByUUID(t *testing.T) {
 	db := setupTestDB(t)
 	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
@@ -478,7 +484,7 @@ func TestExistsGetByEntID(t *testing.T) {
 	}
 
 	// Non-existent user
-	exists, user := manager.ExistsGetByEntID("nonexistent", 1)
+	exists, user := manager.ExistsGetByUUID("nonexistent", testUUID1)
 	if exists {
 		t.Error("Expected user to not exist")
 	}
@@ -492,14 +498,14 @@ func TestExistsGetByEntID(t *testing.T) {
 		Username: "entityuser",
 		Email:    "entity1@example.com",
 		PassHash: "hash",
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 
 	newUser2 := PlatformUser{
 		Username: "entityuser",
 		Email:    "entity2@example.com",
 		PassHash: "hash",
-		EntID:    2,
+		UUID:     testUUID2,
 	}
 
 	err = manager.Create(newUser1)
@@ -513,7 +519,7 @@ func TestExistsGetByEntID(t *testing.T) {
 	}
 
 	// Check entity 1
-	exists, user = manager.ExistsGetByEntID("entityuser", 1)
+	exists, user = manager.ExistsGetByUUID("entityuser", testUUID1)
 	if !exists {
 		t.Error("Expected user to exist for entity 1")
 	}
@@ -523,7 +529,7 @@ func TestExistsGetByEntID(t *testing.T) {
 	}
 
 	// Check entity 2
-	exists, user = manager.ExistsGetByEntID("entityuser", 2)
+	exists, user = manager.ExistsGetByUUID("entityuser", testUUID2)
 	if !exists {
 		t.Error("Expected user to exist for entity 2")
 	}
@@ -533,7 +539,7 @@ func TestExistsGetByEntID(t *testing.T) {
 	}
 
 	// Check non-existent entity
-	exists, user = manager.ExistsGetByEntID("entityuser", 999)
+	exists, user = manager.ExistsGetByUUID("entityuser", "non-existent-uuid")
 	if exists {
 		t.Error("Expected user to not exist for entity 999")
 	}
@@ -547,7 +553,7 @@ func TestNew(t *testing.T) {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
 
-	user, err := manager.New("newuser", "password123", "new@example.com", "New User", true, false, 1, 5)
+	user, err := manager.New("newuser", "password123", "new@example.com", "New User", true, false, testUUID1, 5)
 	if err != nil {
 		t.Fatalf("Failed to create new user: %v", err)
 	}
@@ -576,8 +582,8 @@ func TestNew(t *testing.T) {
 		t.Error("Expected Active to be true")
 	}
 
-	if user.EntID != 1 {
-		t.Errorf("Expected EntID 1, got %d", user.EntID)
+	if user.UUID != testUUID1 {
+		t.Errorf("Expected UUID '%s', got '%s'", testUUID1, user.UUID)
 	}
 
 	if user.TeamID != 5 {
@@ -612,7 +618,7 @@ func TestNewExistingUser(t *testing.T) {
 		Username: "existing",
 		Email:    "existing@example.com",
 		PassHash: "hash",
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 
 	err = manager.Create(existingUser)
@@ -621,7 +627,7 @@ func TestNewExistingUser(t *testing.T) {
 	}
 
 	// Try to create a new user with the same username
-	_, err = manager.New("existing", "password", "new@example.com", "New", false, false, 1, 1)
+	_, err = manager.New("existing", "password", "new@example.com", "New", false, false, testUUID1, 1)
 	if err == nil {
 		t.Error("Expected error when creating user with existing username")
 	}
@@ -640,7 +646,7 @@ func TestNewServiceUser(t *testing.T) {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
 
-	user, err := manager.New("serviceuser", "servicepass", "service@example.com", "Service User", false, true, 1, 0)
+	user, err := manager.New("serviceuser", "servicepass", "service@example.com", "Service User", false, true, testUUID1, 0)
 	if err != nil {
 		t.Fatalf("Failed to create service user: %v", err)
 	}
@@ -687,9 +693,9 @@ func TestCreateMultipleUsers(t *testing.T) {
 	}
 
 	users := []PlatformUser{
-		{Username: "user1", Email: "user1@example.com", PassHash: "hash1", EntID: 1},
-		{Username: "user2", Email: "user2@example.com", PassHash: "hash2", EntID: 1},
-		{Username: "user3", Email: "user3@example.com", PassHash: "hash3", EntID: 2},
+		{Username: "user1", Email: "user1@example.com", PassHash: "hash1", UUID: testUUID1},
+		{Username: "user2", Email: "user2@example.com", PassHash: "hash2", UUID: testUUID1},
+		{Username: "user3", Email: "user3@example.com", PassHash: "hash3", UUID: testUUID2},
 	}
 
 	for _, user := range users {
@@ -701,8 +707,8 @@ func TestCreateMultipleUsers(t *testing.T) {
 
 	// Verify all users exist
 	for _, user := range users {
-		if !manager.Exists(user.Username, user.EntID) {
-			t.Errorf("Expected user %s to exist for entity %d", user.Username, user.EntID)
+		if !manager.Exists(user.Username, user.UUID) {
+			t.Errorf("Expected user %s to exist for UUID %s", user.Username, user.UUID)
 		}
 	}
 }
@@ -722,7 +728,7 @@ func TestCreateDuplicateUser(t *testing.T) {
 		Username: "duplicate",
 		Email:    "user@example.com",
 		PassHash: "hash",
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 
 	// First creation should succeed
@@ -736,7 +742,7 @@ func TestCreateDuplicateUser(t *testing.T) {
 		Username: "duplicate",
 		Email:    "user2@example.com",
 		PassHash: "hash2",
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 
 	err = manager.Create(user2)
@@ -772,7 +778,7 @@ func TestNewWithHashError(t *testing.T) {
 
 	// Create a user with very long password that may cause bcrypt error
 	longPassword := string(make([]byte, 100))
-	user, err := manager.New("longpassuser", longPassword, "test@example.com", "Test", false, false, 1, 1)
+	user, err := manager.New("longpassuser", longPassword, "test@example.com", "Test", false, false, testUUID1, 1)
 
 	// bcrypt should handle this, but if it fails we should get an error
 	if err == nil {
@@ -811,12 +817,12 @@ func TestUserWorkflow(t *testing.T) {
 	}
 
 	// Step 1: Verify user doesn't exist
-	if manager.Exists("workflowuser", 1) {
+	if manager.Exists("workflowuser", testUUID1) {
 		t.Error("User should not exist initially")
 	}
 
 	// Step 2: Create new user struct
-	user, err := manager.New("workflowuser", "password123", "workflow@example.com", "Workflow User", false, false, 1, 10)
+	user, err := manager.New("workflowuser", "password123", "workflow@example.com", "Workflow User", false, false, testUUID1, 10)
 	if err != nil {
 		t.Fatalf("Failed to create new user: %v", err)
 	}
@@ -828,12 +834,12 @@ func TestUserWorkflow(t *testing.T) {
 	}
 
 	// Step 4: Verify user exists
-	if !manager.Exists("workflowuser", 1) {
+	if !manager.Exists("workflowuser", testUUID1) {
 		t.Error("User should exist after creation")
 	}
 
 	// Step 5: Retrieve user
-	exists, retrievedUser := manager.ExistsGet("workflowuser", 1)
+	exists, retrievedUser := manager.ExistsGet("workflowuser", testUUID1)
 	if !exists {
 		t.Error("User should exist")
 	}
@@ -862,26 +868,26 @@ func TestMultiEntityIsolation(t *testing.T) {
 		t.Fatalf("Failed to create UserManager: %v", err)
 	}
 
-	// Create same username in different entities
+	// Create same username in different UUIDs
 	entity1Users := []PlatformUser{
-		{Username: "admin", Email: "admin@entity1.com", PassHash: "hash1", EntID: 1, TeamID: 1},
-		{Username: "user", Email: "user@entity1.com", PassHash: "hash2", EntID: 1, TeamID: 2},
+		{Username: "admin", Email: "admin@entity1.com", PassHash: "hash1", UUID: testUUID1, TeamID: 1},
+		{Username: "user", Email: "user@entity1.com", PassHash: "hash2", UUID: testUUID1, TeamID: 2},
 	}
 
 	entity2Users := []PlatformUser{
-		{Username: "admin", Email: "admin@entity2.com", PassHash: "hash3", EntID: 2, TeamID: 3},
-		{Username: "user", Email: "user@entity2.com", PassHash: "hash4", EntID: 2, TeamID: 4},
+		{Username: "admin", Email: "admin@entity2.com", PassHash: "hash3", UUID: testUUID2, TeamID: 3},
+		{Username: "user", Email: "user@entity2.com", PassHash: "hash4", UUID: testUUID2, TeamID: 4},
 	}
 
 	// Create all users
 	for _, user := range append(entity1Users, entity2Users...) {
 		if err := manager.Create(user); err != nil {
-			t.Fatalf("Failed to create user %s for entity %d: %v", user.Username, user.EntID, err)
+			t.Fatalf("Failed to create user %s for UUID %s: %v", user.Username, user.UUID, err)
 		}
 	}
 
 	// Verify entity isolation
-	entity1Admin, err := manager.GetByEntID("admin", 1)
+	entity1Admin, err := manager.GetByUUID("admin", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get admin for entity 1: %v", err)
 	}
@@ -889,7 +895,7 @@ func TestMultiEntityIsolation(t *testing.T) {
 		t.Errorf("Expected entity 1 admin email, got '%s'", entity1Admin.Email)
 	}
 
-	entity2Admin, err := manager.GetByEntID("admin", 2)
+	entity2Admin, err := manager.GetByUUID("admin", testUUID2)
 	if err != nil {
 		t.Fatalf("Failed to get admin for entity 2: %v", err)
 	}
@@ -922,7 +928,7 @@ func TestCheckLoginCredentials(t *testing.T) {
 		Username: "loginuser",
 		Email:    "login@example.com",
 		PassHash: passHash,
-		EntID:    1,
+		UUID:     testUUID1,
 		Active:   true,
 	}
 
@@ -932,7 +938,7 @@ func TestCheckLoginCredentials(t *testing.T) {
 	}
 
 	// Test valid credentials
-	valid, retrievedUser := manager.CheckLoginCredentials("loginuser", password, 1)
+	valid, retrievedUser := manager.CheckLoginCredentials("loginuser", password, testUUID1)
 	if !valid {
 		t.Error("Expected valid credentials")
 	}
@@ -942,24 +948,24 @@ func TestCheckLoginCredentials(t *testing.T) {
 	if retrievedUser.Email != "login@example.com" {
 		t.Errorf("Expected email 'login@example.com', got '%s'", retrievedUser.Email)
 	}
-	if retrievedUser.EntID != 1 {
-		t.Errorf("Expected EntID 1, got %d", retrievedUser.EntID)
+	if retrievedUser.UUID != testUUID1 {
+		t.Errorf("Expected UUID '%s', got '%s'", testUUID1, retrievedUser.UUID)
 	}
 
 	// Test invalid password
-	valid, _ = manager.CheckLoginCredentials("loginuser", "wrongpassword", 1)
+	valid, _ = manager.CheckLoginCredentials("loginuser", "wrongpassword", testUUID1)
 	if valid {
 		t.Error("Expected invalid credentials for wrong password")
 	}
 
 	// Test non-existent user
-	valid, _ = manager.CheckLoginCredentials("nonexistent", password, 1)
+	valid, _ = manager.CheckLoginCredentials("nonexistent", password, testUUID1)
 	if valid {
 		t.Error("Expected invalid credentials for non-existent user")
 	}
 
 	// Test wrong entity ID
-	valid, _ = manager.CheckLoginCredentials("loginuser", password, 2)
+	valid, _ = manager.CheckLoginCredentials("loginuser", password, testUUID2)
 	if valid {
 		t.Error("Expected invalid credentials for wrong entity ID")
 	}
@@ -979,7 +985,7 @@ func TestCheckLoginCredentialsEmptyPassword(t *testing.T) {
 		Username: "emptypassuser",
 		Email:    "empty@example.com",
 		PassHash: passHash,
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 
 	err = manager.Create(user)
@@ -988,19 +994,19 @@ func TestCheckLoginCredentialsEmptyPassword(t *testing.T) {
 	}
 
 	// Login with empty password should work
-	valid, _ := manager.CheckLoginCredentials("emptypassuser", "", 1)
+	valid, _ := manager.CheckLoginCredentials("emptypassuser", "", testUUID1)
 	if !valid {
 		t.Error("Expected valid credentials for empty password")
 	}
 
 	// Login with non-empty password should fail
-	valid, _ = manager.CheckLoginCredentials("emptypassuser", "notEmpty", 1)
+	valid, _ = manager.CheckLoginCredentials("emptypassuser", "notEmpty", testUUID1)
 	if valid {
 		t.Error("Expected invalid credentials for non-empty password on empty-password user")
 	}
 
 	// Login with wrong entity ID should fail
-	valid, _ = manager.CheckLoginCredentials("emptypassuser", "", 2)
+	valid, _ = manager.CheckLoginCredentials("emptypassuser", "", testUUID2)
 	if valid {
 		t.Error("Expected invalid credentials for wrong entity ID")
 	}
@@ -1030,7 +1036,7 @@ func TestCheckLoginCredentialsEntityIsolation(t *testing.T) {
 		Username: "multientityuser",
 		Email:    "user1@entity1.com",
 		PassHash: passHash1,
-		EntID:    1,
+		UUID:     testUUID1,
 		Active:   true,
 	}
 
@@ -1038,7 +1044,7 @@ func TestCheckLoginCredentialsEntityIsolation(t *testing.T) {
 		Username: "multientityuser",
 		Email:    "user2@entity2.com",
 		PassHash: passHash2,
-		EntID:    2,
+		UUID:     testUUID2,
 		Active:   true,
 	}
 
@@ -1053,43 +1059,43 @@ func TestCheckLoginCredentialsEntityIsolation(t *testing.T) {
 	}
 
 	// Test login with entity ID 1 and correct password
-	valid, retrievedUser := manager.CheckLoginCredentials("multientityuser", password1, 1)
+	valid, retrievedUser := manager.CheckLoginCredentials("multientityuser", password1, testUUID1)
 	if !valid {
 		t.Error("Expected valid credentials for entity 1")
 	}
-	if retrievedUser.EntID != 1 {
-		t.Errorf("Expected EntID 1, got %d", retrievedUser.EntID)
+	if retrievedUser.UUID != testUUID1 {
+		t.Errorf("Expected UUID '%s', got '%s'", testUUID1, retrievedUser.UUID)
 	}
 	if retrievedUser.Email != "user1@entity1.com" {
 		t.Errorf("Expected email 'user1@entity1.com', got '%s'", retrievedUser.Email)
 	}
 
 	// Test login with entity ID 2 and correct password
-	valid, retrievedUser = manager.CheckLoginCredentials("multientityuser", password2, 2)
+	valid, retrievedUser = manager.CheckLoginCredentials("multientityuser", password2, testUUID2)
 	if !valid {
 		t.Error("Expected valid credentials for entity 2")
 	}
-	if retrievedUser.EntID != 2 {
-		t.Errorf("Expected EntID 2, got %d", retrievedUser.EntID)
+	if retrievedUser.UUID != testUUID2 {
+		t.Errorf("Expected UUID '%s', got '%s'", testUUID2, retrievedUser.UUID)
 	}
 	if retrievedUser.Email != "user2@entity2.com" {
 		t.Errorf("Expected email 'user2@entity2.com', got '%s'", retrievedUser.Email)
 	}
 
 	// Test login with entity ID 1 but password for entity 2 (should fail)
-	valid, _ = manager.CheckLoginCredentials("multientityuser", password2, 1)
+	valid, _ = manager.CheckLoginCredentials("multientityuser", password2, testUUID1)
 	if valid {
 		t.Error("Expected invalid credentials when using wrong password for entity 1")
 	}
 
 	// Test login with entity ID 2 but password for entity 1 (should fail)
-	valid, _ = manager.CheckLoginCredentials("multientityuser", password1, 2)
+	valid, _ = manager.CheckLoginCredentials("multientityuser", password1, testUUID2)
 	if valid {
 		t.Error("Expected invalid credentials when using wrong password for entity 2")
 	}
 
 	// Test login with non-existent entity ID
-	valid, _ = manager.CheckLoginCredentials("multientityuser", password1, 999)
+	valid, _ = manager.CheckLoginCredentials("multientityuser", password1, "non-existent-uuid")
 	if valid {
 		t.Error("Expected invalid credentials for non-existent entity ID")
 	}
@@ -1347,7 +1353,7 @@ func TestLoginAndTokenWorkflow(t *testing.T) {
 
 	// Step 1: Create a new user
 	password := "securePass123!"
-	user, err := manager.New("workflowuser", password, "workflow@example.com", "Workflow User", false, false, 1, 1)
+	user, err := manager.New("workflowuser", password, "workflow@example.com", "Workflow User", false, false, testUUID1, 1)
 	if err != nil {
 		t.Fatalf("Failed to create new user: %v", err)
 	}
@@ -1358,7 +1364,7 @@ func TestLoginAndTokenWorkflow(t *testing.T) {
 	}
 
 	// Step 2: Verify login credentials
-	valid, retrievedUser := manager.CheckLoginCredentials("workflowuser", password, 1)
+	valid, retrievedUser := manager.CheckLoginCredentials("workflowuser", password, testUUID1)
 	if !valid {
 		t.Fatal("Expected valid login credentials")
 	}
@@ -1388,13 +1394,13 @@ func TestLoginAndTokenWorkflow(t *testing.T) {
 	}
 
 	// Step 5: Verify wrong password fails
-	valid, _ = manager.CheckLoginCredentials("workflowuser", "wrongpassword", 1)
+	valid, _ = manager.CheckLoginCredentials("workflowuser", "wrongpassword", testUUID1)
 	if valid {
 		t.Error("Expected invalid login with wrong password")
 	}
 
 	// Step 6: Verify wrong entity ID fails
-	valid, _ = manager.CheckLoginCredentials("workflowuser", password, 2)
+	valid, _ = manager.CheckLoginCredentials("workflowuser", password, testUUID2)
 	if valid {
 		t.Error("Expected invalid login with wrong entity ID")
 	}
@@ -1417,8 +1423,8 @@ func TestConstants(t *testing.T) {
 		t.Errorf("Expected NoTeamID to be 0, got %d", NoTeamID)
 	}
 
-	if NoEntID != 0 {
-		t.Errorf("Expected NoEntID to be 0, got %d", NoEntID)
+	if NoUUID != "" {
+		t.Errorf("Expected NoUUID to be empty string, got '%s'", NoUUID)
 	}
 }
 
@@ -1449,13 +1455,13 @@ func BenchmarkExists(b *testing.B) {
 		Username: "benchuser",
 		Email:    "bench@example.com",
 		PassHash: "hash",
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 	_ = manager.Create(user)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = manager.Exists("benchuser", 1)
+		_ = manager.Exists("benchuser", testUUID1)
 	}
 }
 
@@ -1472,13 +1478,13 @@ func BenchmarkGet(b *testing.B) {
 		Username: "benchuser",
 		Email:    "bench@example.com",
 		PassHash: "hash",
-		EntID:    1,
+		UUID:     testUUID1,
 	}
 	_ = manager.Create(user)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = manager.Get("benchuser", 1)
+		_, _ = manager.Get("benchuser", testUUID1)
 	}
 }
 
@@ -1492,7 +1498,7 @@ func TestSetPassword(t *testing.T) {
 
 	// Create a user
 	password := "originalPassword123!"
-	user, err := manager.New("setpassuser", password, "setpass@example.com", "Set Pass User", false, false, 1, 0)
+	user, err := manager.New("setpassuser", password, "setpass@example.com", "Set Pass User", false, false, testUUID1, 0)
 	if err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
@@ -1503,19 +1509,19 @@ func TestSetPassword(t *testing.T) {
 
 	// Set a new password
 	newPassword := "newPassword456!"
-	err = manager.SetPassword("setpassuser", newPassword, 1)
+	err = manager.SetPassword("setpassuser", newPassword, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to set password: %v", err)
 	}
 
 	// Verify old password doesn't work
-	valid, _ := manager.CheckLoginCredentials("setpassuser", password, 1)
+	valid, _ := manager.CheckLoginCredentials("setpassuser", password, testUUID1)
 	if valid {
 		t.Error("Old password should not work after password change")
 	}
 
 	// Verify new password works
-	valid, retrievedUser := manager.CheckLoginCredentials("setpassuser", newPassword, 1)
+	valid, retrievedUser := manager.CheckLoginCredentials("setpassuser", newPassword, testUUID1)
 	if !valid {
 		t.Error("New password should work after password change")
 	}
@@ -1524,19 +1530,19 @@ func TestSetPassword(t *testing.T) {
 	}
 
 	// Test setting password for non-existent user (GORM Update doesn't fail, just affects 0 rows)
-	err = manager.SetPassword("nonexistent", "password", 1)
+	err = manager.SetPassword("nonexistent", "password", testUUID1)
 	// This won't error, but won't affect any rows either - that's GORM behavior
 	if err != nil {
 		t.Logf("SetPassword for non-existent user returned error: %v", err)
 	}
 
 	// Test setting password for wrong entity ID (should not affect the user)
-	err = manager.SetPassword("setpassuser", "wrongEntityPassword", 2)
+	err = manager.SetPassword("setpassuser", "wrongEntityPassword", testUUID2)
 	if err != nil {
 		t.Logf("SetPassword for wrong entity returned error: %v", err)
 	}
 	// Verify original user's password still works (wasn't affected)
-	valid, _ = manager.CheckLoginCredentials("setpassuser", newPassword, 1)
+	valid, _ = manager.CheckLoginCredentials("setpassuser", newPassword, testUUID1)
 	if !valid {
 		t.Error("User's password should not be affected by SetPassword with wrong entity ID")
 	}
@@ -1551,7 +1557,7 @@ func TestSetAdmin(t *testing.T) {
 	}
 
 	// Create a non-admin user
-	user, err := manager.New("adminuser", "password123", "admin@example.com", "Admin User", false, false, 1, 0)
+	user, err := manager.New("adminuser", "password123", "admin@example.com", "Admin User", false, false, testUUID1, 0)
 	if err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
@@ -1561,7 +1567,7 @@ func TestSetAdmin(t *testing.T) {
 	}
 
 	// Verify user is not admin initially
-	retrievedUser, err := manager.Get("adminuser", 1)
+	retrievedUser, err := manager.Get("adminuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -1570,13 +1576,13 @@ func TestSetAdmin(t *testing.T) {
 	}
 
 	// Set admin flag to true
-	err = manager.SetAdmin(true, "adminuser", 1)
+	err = manager.SetAdmin(true, "adminuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to set admin flag: %v", err)
 	}
 
 	// Verify admin flag is set
-	retrievedUser, err = manager.Get("adminuser", 1)
+	retrievedUser, err = manager.Get("adminuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -1585,13 +1591,13 @@ func TestSetAdmin(t *testing.T) {
 	}
 
 	// Set admin flag to false
-	err = manager.SetAdmin(false, "adminuser", 1)
+	err = manager.SetAdmin(false, "adminuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to set admin flag: %v", err)
 	}
 
 	// Verify admin flag is unset
-	retrievedUser, err = manager.Get("adminuser", 1)
+	retrievedUser, err = manager.Get("adminuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -1600,7 +1606,7 @@ func TestSetAdmin(t *testing.T) {
 	}
 
 	// Test setting admin for non-existent user (GORM Update doesn't fail, just affects 0 rows)
-	err = manager.SetAdmin(true, "nonexistent", 1)
+	err = manager.SetAdmin(true, "nonexistent", testUUID1)
 	// This won't error, but won't affect any rows either - that's GORM behavior
 	if err != nil {
 		t.Logf("SetAdmin for non-existent user returned error: %v", err)
@@ -1616,7 +1622,7 @@ func TestSetActive(t *testing.T) {
 	}
 
 	// Create an active user
-	user, err := manager.New("activeuser", "password123", "active@example.com", "Active User", false, false, 1, 0)
+	user, err := manager.New("activeuser", "password123", "active@example.com", "Active User", false, false, testUUID1, 0)
 	if err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
@@ -1626,7 +1632,7 @@ func TestSetActive(t *testing.T) {
 	}
 
 	// Verify user is active initially
-	retrievedUser, err := manager.Get("activeuser", 1)
+	retrievedUser, err := manager.Get("activeuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -1635,13 +1641,13 @@ func TestSetActive(t *testing.T) {
 	}
 
 	// Set active flag to false
-	err = manager.SetActive(false, "activeuser", 1)
+	err = manager.SetActive(false, "activeuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to set active flag: %v", err)
 	}
 
 	// Verify active flag is unset
-	retrievedUser, err = manager.Get("activeuser", 1)
+	retrievedUser, err = manager.Get("activeuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -1650,13 +1656,13 @@ func TestSetActive(t *testing.T) {
 	}
 
 	// Set active flag to true
-	err = manager.SetActive(true, "activeuser", 1)
+	err = manager.SetActive(true, "activeuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to set active flag: %v", err)
 	}
 
 	// Verify active flag is set
-	retrievedUser, err = manager.Get("activeuser", 1)
+	retrievedUser, err = manager.Get("activeuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -1665,7 +1671,7 @@ func TestSetActive(t *testing.T) {
 	}
 
 	// Test setting active for non-existent user (GORM Update doesn't fail, just affects 0 rows)
-	err = manager.SetActive(false, "nonexistent", 1)
+	err = manager.SetActive(false, "nonexistent", testUUID1)
 	// This won't error, but won't affect any rows either - that's GORM behavior
 	if err != nil {
 		t.Logf("SetActive for non-existent user returned error: %v", err)
@@ -1681,7 +1687,7 @@ func TestSetService(t *testing.T) {
 	}
 
 	// Create a non-service user
-	user, err := manager.New("serviceuser", "password123", "service@example.com", "Service User", false, false, 1, 0)
+	user, err := manager.New("serviceuser", "password123", "service@example.com", "Service User", false, false, testUUID1, 0)
 	if err != nil {
 		t.Fatalf("Failed to create user: %v", err)
 	}
@@ -1691,7 +1697,7 @@ func TestSetService(t *testing.T) {
 	}
 
 	// Verify user is not service initially
-	retrievedUser, err := manager.Get("serviceuser", 1)
+	retrievedUser, err := manager.Get("serviceuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -1700,13 +1706,13 @@ func TestSetService(t *testing.T) {
 	}
 
 	// Set service flag to true
-	err = manager.SetService(true, "serviceuser", 1)
+	err = manager.SetService(true, "serviceuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to set service flag: %v", err)
 	}
 
 	// Verify service flag is set
-	retrievedUser, err = manager.Get("serviceuser", 1)
+	retrievedUser, err = manager.Get("serviceuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -1715,13 +1721,13 @@ func TestSetService(t *testing.T) {
 	}
 
 	// Set service flag to false
-	err = manager.SetService(false, "serviceuser", 1)
+	err = manager.SetService(false, "serviceuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to set service flag: %v", err)
 	}
 
 	// Verify service flag is unset
-	retrievedUser, err = manager.Get("serviceuser", 1)
+	retrievedUser, err = manager.Get("serviceuser", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get user: %v", err)
 	}
@@ -1730,15 +1736,15 @@ func TestSetService(t *testing.T) {
 	}
 
 	// Test setting service for non-existent user (GORM Update doesn't fail, just affects 0 rows)
-	err = manager.SetService(true, "nonexistent", 1)
+	err = manager.SetService(true, "nonexistent", testUUID1)
 	// This won't error, but won't affect any rows either - that's GORM behavior
 	if err != nil {
 		t.Logf("SetService for non-existent user returned error: %v", err)
 	}
 }
 
-// TestSetPasswordEntityIsolation tests that SetPassword respects entity ID isolation
-func TestSetPasswordEntityIsolation(t *testing.T) {
+// TestSetPasswordUUIDIsolation tests that SetPassword respects UUID isolation
+func TestSetPasswordUUIDIsolation(t *testing.T) {
 	db := setupTestDB(t)
 	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
 	if err != nil {
@@ -1748,7 +1754,7 @@ func TestSetPasswordEntityIsolation(t *testing.T) {
 	// Create users with same username but different entity IDs
 	password1 := "password1"
 	password2 := "password2"
-	user1, err := manager.New("multientitypass", password1, "user1@entity1.com", "User 1", false, false, 1, 0)
+	user1, err := manager.New("multientitypass", password1, "user1@entity1.com", "User 1", false, false, testUUID1, 0)
 	if err != nil {
 		t.Fatalf("Failed to create user1: %v", err)
 	}
@@ -1757,7 +1763,7 @@ func TestSetPasswordEntityIsolation(t *testing.T) {
 		t.Fatalf("Failed to create user1: %v", err)
 	}
 
-	user2, err := manager.New("multientitypass", password2, "user2@entity2.com", "User 2", false, false, 2, 0)
+	user2, err := manager.New("multientitypass", password2, "user2@entity2.com", "User 2", false, false, testUUID2, 0)
 	if err != nil {
 		t.Fatalf("Failed to create user2: %v", err)
 	}
@@ -1768,27 +1774,27 @@ func TestSetPasswordEntityIsolation(t *testing.T) {
 
 	// Set password for entity 1
 	newPassword1 := "newPassword1"
-	err = manager.SetPassword("multientitypass", newPassword1, 1)
+	err = manager.SetPassword("multientitypass", newPassword1, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to set password for entity 1: %v", err)
 	}
 
 	// Verify entity 1 password changed
-	valid, _ := manager.CheckLoginCredentials("multientitypass", password1, 1)
+	valid, _ := manager.CheckLoginCredentials("multientitypass", password1, testUUID1)
 	if valid {
 		t.Error("Old password should not work for entity 1")
 	}
-	valid, _ = manager.CheckLoginCredentials("multientitypass", newPassword1, 1)
+	valid, _ = manager.CheckLoginCredentials("multientitypass", newPassword1, testUUID1)
 	if !valid {
 		t.Error("New password should work for entity 1")
 	}
 
 	// Verify entity 2 password unchanged
-	valid, _ = manager.CheckLoginCredentials("multientitypass", password2, 2)
+	valid, _ = manager.CheckLoginCredentials("multientitypass", password2, testUUID2)
 	if !valid {
 		t.Error("Entity 2 password should remain unchanged")
 	}
-	valid, _ = manager.CheckLoginCredentials("multientitypass", newPassword1, 2)
+	valid, _ = manager.CheckLoginCredentials("multientitypass", newPassword1, testUUID2)
 	if valid {
 		t.Error("Entity 1's new password should not work for entity 2")
 	}

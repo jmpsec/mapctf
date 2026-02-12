@@ -6,7 +6,6 @@ import "time"
 type ApiLoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-	EntID    uint   `json:"entID"`
 }
 
 // ApiErrorResponse to be returned to API requests with the error message

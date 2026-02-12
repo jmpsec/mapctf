@@ -9,7 +9,7 @@ import (
 
 // ChallengesHandler - Handle challenges requests
 // @Summary      Challenges
-// @Description  Get all challenges for a specific entity ID
+// @Description  Get all challenges for a specific UUID
 // @Tags         challenges
 // @Produce      json
 // @Param        uuid  path      string  true  "UUID"

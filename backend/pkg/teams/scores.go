@@ -5,29 +5,29 @@ import "gorm.io/gorm"
 // TeamScore to hold all team scores over time
 type TeamScore struct {
 	gorm.Model
-	TeamID      uint `gorm:"index"`
+	TeamID      uint   `gorm:"index"`
 	ChallengeID uint
 	Points      int
-	EntID       uint
+	UUID        string `gorm:"index"`
 	ScoredBy    uint
 }
 
-// GetScores to get all scores for a team and entity ID
-func (m *TeamManager) GetScores(teamID, eID uint) ([]TeamScore, error) {
+// GetScores to get all scores for a team and UUID
+func (m *TeamManager) GetScores(teamID uint, uuid string) ([]TeamScore, error) {
 	var scores []TeamScore
-	if err := m.DB.Where("team_id = ? AND ent_id = ?", teamID, eID).Find(&scores).Error; err != nil {
+	if err := m.DB.Where("team_id = ? AND uuid = ?", teamID, uuid).Find(&scores).Error; err != nil {
 		return scores, err
 	}
 	return scores, nil
 }
 
 // NewScore to create a new team score
-func (m *TeamManager) NewScore(teamID, challengeID uint, points int, eID, scoredBy uint) (TeamScore, error) {
+func (m *TeamManager) NewScore(teamID, challengeID uint, points int, uuid string, scoredBy uint) (TeamScore, error) {
 	return TeamScore{
 		TeamID:      teamID,
 		ChallengeID: challengeID,
 		Points:      points,
-		EntID:       eID,
+		UUID:        uuid,
 		ScoredBy:    scoredBy,
 	}, nil
 }
@@ -40,10 +40,10 @@ func (m *TeamManager) CreateScore(score TeamScore) error {
 	return nil
 }
 
-// GetScoreTotal to get the total score for a team and entity ID
-func (m *TeamManager) GetScoreTotal(teamID, eID uint) (int, error) {
+// GetScoreTotal to get the total score for a team and UUID
+func (m *TeamManager) GetScoreTotal(teamID uint, uuid string) (int, error) {
 	var total int
-	if err := m.DB.Model(&TeamScore{}).Where("team_id = ? AND ent_id = ?", teamID, eID).Select("SUM(points)").Scan(&total).Error; err != nil {
+	if err := m.DB.Model(&TeamScore{}).Where("team_id = ? AND uuid = ?", teamID, uuid).Select("SUM(points)").Scan(&total).Error; err != nil {
 		return 0, err
 	}
 	return total, nil

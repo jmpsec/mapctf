@@ -3,8 +3,10 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
 )
 
@@ -24,7 +26,7 @@ const (
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param        request  body      ApiLoginRequest  true  "Login credentials (username, password, entID)"
+// @Param        request  body      ApiLoginRequest  true  "Login credentials (username, password, uuid)"
 // @Success      200      {object}  ApiLoginResponse  "Login successful"
 // @Failure      400      {object}  ApiErrorResponse  "Bad request - invalid input"
 // @Failure      401      {object}  ApiErrorResponse  "Unauthorized - invalid credentials"
@@ -34,6 +36,13 @@ func (h *HandlersAPI) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		log.Err(errors.New("UUID is required")).Msg("UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "UUID is required"})
+		return
 	}
 	var l ApiLoginRequest
 	// Parse request JSON body
@@ -46,8 +55,7 @@ func (h *HandlersAPI) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "username and password are required"})
 		return
 	}
-	// Entity ID defaults to 0, which is valid
-	valid, user := h.Users.CheckLoginCredentials(l.Username, l.Password, l.EntID)
+	valid, user := h.Users.CheckLoginCredentials(l.Username, l.Password, uuid)
 	if !valid {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, ApiErrorResponse{Error: "invalid credentials"})
 		return
@@ -76,6 +84,13 @@ func (h *HandlersAPI) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		log.Err(errors.New("UUID is required")).Msg("UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "UUID is required"})
+		return
 	}
 	// Send response
 	HTTPResponse(w, "Checked", http.StatusOK, []byte(okContent))
