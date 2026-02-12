@@ -40,7 +40,7 @@ type ServiceFlagParams struct {
 	ConfigValues MapCTFConfiguration
 }
 
-// InitMapFlags initializes all the flags needed for the TLS service
+// InitMapFlags initializes all the flags needed for the service
 func InitMapFlags(params *ServiceFlagParams) []cli.Flag {
 	var allFlags []cli.Flag
 	// Add flags by category
@@ -51,6 +51,7 @@ func InitMapFlags(params *ServiceFlagParams) []cli.Flag {
 	allFlags = append(allFlags, initDBFlags(params)...)
 	allFlags = append(allFlags, initTLSSecurityFlags(params)...)
 	allFlags = append(allFlags, initJWTFlags(params)...)
+	allFlags = append(allFlags, initMapFlags(params)...)
 	allFlags = append(allFlags, initDebugFlags(params)...)
 	return allFlags
 }
@@ -343,8 +344,8 @@ func initJWTFlags(params *ServiceFlagParams) []cli.Flag {
 		},
 		&cli.IntFlag{
 			Name:        "jwt-expiration",
-			Value:       3600,
-			Usage:       "Expiration time in seconds for JWT",
+			Value:       2,
+			Usage:       "Expiration time in hours for JWT tokens, if set to 0 the token will never expire",
 			Sources:     cli.EnvVars("JWT_EXPIRATION"),
 			Destination: &params.ConfigValues.JWT.HoursToExpire,
 		},

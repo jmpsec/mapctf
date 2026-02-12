@@ -5,6 +5,7 @@ service:
     logFormat: console
     host: 0.0.0.0
     auth: none
+    uuid: ""
 db:
     type: postgres
     host: 127.0.0.1
@@ -33,6 +34,13 @@ tls:
     termination: false
     certificateFile: config/certs/tls.crt
     keyFile: config/certs/tls.key
+jwt:
+    secret: ""
+    hoursToExpire: 2
+map:
+    sessionKey: ""
+    staticDir: ./static
+    templatesDir: ./templates
 debughttp:
     enabled: false
     file: debug-http-mapctf.log
