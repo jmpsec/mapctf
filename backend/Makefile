@@ -3,10 +3,11 @@ export GOPROXY=https://proxy.golang.org,direct
 
 SHELL := /bin/bash
 
+
 API_DIR = cmd/api
 API_NAME = mapctf-api
 MAP_DIR = cmd/map
-MAP_NAME = mapctf-ui
+MAP_NAME = mapctf-map
 API_CODE = ${API_DIR:=/*.go}
 MAP_CODE = ${MAP_DIR:=/*.go}
 

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Cache-control" content="no-cache" />
+    <meta http-equiv="Expires" content="-1" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FBCTF CTF</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    <link rel="stylesheet" href="/static/css/fb-ctf.css" />
+  </head>
+  <body data-section="pages">
+    <div class="fb-sprite" id="fb-svg-sprite"></div>
+    <div class="fb-viewport">
+      <div id="fb-main-nav">
+        <nav class="fb-main-nav fb-navigation">
+          <ul class="nav-left">
+            <li><a href="/index.php?page=countdown" data-active="countdown">Play CTF</a></li>
+            <li></li>
+            <li><a href="/index.php?page=rules" data-active="rules">Rules</a></li>
+          </ul>
+          <div class="branding">
+            <a href="/"
+              ><div class="branding-rules"><span>Capture The Flag</span></div></a
+            >
+          </div>
+          <ul class="nav-right">
+            <li><a href="/index.php?page=registration" data-active="registration">Registration</a></li>
+            <li></li>
+            <li><a href="/index.php?page=login" data-active="login">Login</a></li>
+          </ul>
+        </nav>
+      </div>
+      <div id="fb-main-content" class="fb-page">
+        <main role="main" class="fb-main page--login full-height fb-scroll">
+          <header class="fb-section-header fb-container">
+            <h1 class="fb-glitch" data-text="Admin Login">Admin Login</h1>
+            <p class="inner-container">Team login is disabled. Only admins can login at this time.</p>
+          </header>
+          <div class="fb-login">
+            <form class="fb-form">
+              <input type="hidden" name="action" value="login_team" />
+              <input type="hidden" name="login_select" value="off" />
+              <input type="hidden" name="csrf_token" value="85adfebf08abfa5faf3136c7fb005156423d5cb3da4a9385df174569b630f786" />
+              <fieldset class="form-set fb-container container--small">
+                <div class="form-el el--text">
+                  <label for="">Team Name</label>
+                  <input autocomplete="off" name="team_name" type="text" maxlength="20" />
+                </div>
+                <div class="form-el el--text">
+                  <label for="">Password</label>
+                  <input autocomplete="off" name="password" type="password" />
+                </div>
+              </fieldset>
+              <div class="form-el--actions">
+                <button id="login_button" class="fb-cta cta--yellow" type="button">Login</button>
+              </div>
+            </form>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script type="text/javascript" src="/static/js/app.js"></script>
+  </body>
+</html>

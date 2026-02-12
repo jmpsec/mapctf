@@ -20,6 +20,10 @@ const (
 	defTLSCertificateFile string = "config/certs/tls.crt"
 	// Default TLS private key file
 	defTLSKeyFile string = "config/certs/tls.key"
+	// Static files folder
+	defStaticFilesFolder string = "./static"
+	// Default templates folder
+	defTemplatesFolder string = "./templates"
 	// Default db filepath for sqlite
 	defSQLiteDBFile string = "./mapctf.db"
 	// Default debug HTTP file
@@ -336,6 +340,34 @@ func initJWTFlags(params *ServiceFlagParams) []cli.Flag {
 			Usage:       "Expiration time in seconds for JWT",
 			Sources:     cli.EnvVars("JWT_EXPIRATION"),
 			Destination: &params.ConfigValues.JWT.HoursToExpire,
+		},
+	}
+}
+
+// initMapFlags initializes map-related flags
+func initMapFlags(params *ServiceFlagParams) []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Name:        "session-key",
+			Value:       "",
+			Usage:       "Session key to generate cookies from it",
+			Sources:     cli.EnvVars("SESSION_KEY"),
+			Destination: &params.ConfigValues.Map.SessionKey,
+		},
+		&cli.StringFlag{
+			Name:        "static",
+			Aliases:     []string{"s"},
+			Value:       defStaticFilesFolder,
+			Usage:       "Directory with all the static files needed for the osctrl-admin UI",
+			Sources:     cli.EnvVars("STATIC_FILES"),
+			Destination: &params.ConfigValues.Map.StaticDir,
+		},
+		&cli.StringFlag{
+			Name:        "templates",
+			Value:       defTemplatesFolder,
+			Usage:       "Directory with all the templates needed for the osctrl-admin UI",
+			Sources:     cli.EnvVars("TEMPLATES_DIR"),
+			Destination: &params.ConfigValues.Map.TemplatesDir,
 		},
 	}
 }

@@ -20,7 +20,7 @@ api:
 
 # Build map
 map:
-	$(MAKE) -C $(MAP_DIR) api
+	$(MAKE) -C $(BACKEND_DIR) api
 
 # Run API server locally
 run_api:
@@ -32,11 +32,11 @@ clean-api:
 
 # Run map server locally
 run_map:
-	$(MAKE) -C $(MAP_DIR) run
+	$(MAKE) -C $(BACKEND_DIR) run
 
 # Clean map
 clean-map:
-	$(MAKE) -C $(MAP_DIR) clean
+	$(MAKE) -C $(BACKEND_DIR) clean
 
 # Delete all compiled binaries
 clean:
@@ -46,6 +46,10 @@ clean:
 # Display systemd logs for API server
 logs_api:
 	sudo journalctl -f -t $(API_NAME)
+
+# Display systemd logs for map server
+logs_map:
+	sudo journalctl -f -t $(MAP_NAME)
 
 # Install API
 # optional DEST=destination_path
@@ -73,6 +77,10 @@ install_map:
 docker_dev_logs_api:
 	docker logs -f $(API_NAME)-dev
 
+# Display docker logs for map server
+docker_dev_logs_map:
+	docker logs -f $(MAP_NAME)-dev
+
 # Display docker logs for postgresql server
 docker_dev_logs_postgresql:
 	docker logs -f mapctf-postgres-dev
@@ -84,6 +92,10 @@ docker_dev_logs_redis:
 # Docker shell into API server
 docker_dev_shell_api:
 	docker exec -it $(API_NAME)-dev /bin/bash
+
+# Docker shell into map server
+docker_dev_shell_map:
+	docker exec -it $(MAP_NAME)-dev /bin/bash
 
 # Docker shell into postgresql server
 docker_dev_shell_postgres:
@@ -124,10 +136,13 @@ docker_dev_clean:
 docker_dev_rebuild_api:
 	docker-compose -f docker-compose-dev.yml up --force-recreate --no-deps -d --build $(API_NAME)
 
+# Rebuild only the map server
+docker_dev_rebuild_map:
+	docker-compose -f docker-compose-dev.yml up --force-recreate --no-deps -d --build $(MAP_NAME)
+
 # Run linter
 lint:
 	golangci-lint run
-
 
 # Test with coverage
 test:

@@ -75,5 +75,21 @@ func (h *HandlersAPI) CheckHandlerNoAuth(w http.ResponseWriter, r *http.Request)
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
 	// Send response
-	HTTPResponse(w, "Checked", http.StatusOK, []byte(okContent))
+	HTTPResponse(w, "Checked", http.StatusOK, []byte(checkedNoAuthContent))
+}
+
+// CheckHandlerAuth - Handle authenticated check requests
+// @Summary      Authenticated check
+// @Description  Check endpoint that requires authentication
+// @Tags         system
+// @Produce      text/plain
+// @Success      200  {string}  string  "Check successful"
+// @Router       /api/v1/checks-auth [get]
+func (h *HandlersAPI) CheckHandlerAuth(w http.ResponseWriter, r *http.Request) {
+	// Debug HTTP if enabled
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Send response
+	HTTPResponse(w, "Checked", http.StatusOK, []byte(checkedAuthContent))
 }

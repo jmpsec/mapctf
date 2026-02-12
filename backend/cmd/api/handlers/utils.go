@@ -24,6 +24,8 @@ const JSONApplicationUTF8 string = JSONApplication + "; charset=UTF-8"
 const rootContent = "🌍"
 const errorContent = "❌"
 const okContent = "✅"
+const checkedAuthContent = okContent + " authenticated"
+const checkedNoAuthContent = okContent + " unauthenticated"
 const forbiddenContent = "🚫"
 
 // DebugHTTP - Helper for debugging purposes and dump a full HTTP request

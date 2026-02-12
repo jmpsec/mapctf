@@ -238,6 +238,8 @@ func mapCTFService() {
 			// Add authentication middleware
 			r.Use(handlersCTF.AuthMiddleware)
 
+			r.Get(checksAuthPath, handlersCTF.CheckHandlerAuth) // GET /api/v1/checks-auth
+
 			// Protected gameboard routes
 			r.Get(apiTeamsPath+"/{entID}", handlersCTF.TeamsHandler)           // GET /api/v1/teams/{entID}
 			r.Get(apiChallengesPath+"/{entID}", handlersCTF.ChallengesHandler) // GET /api/v1/challenges/{entID}

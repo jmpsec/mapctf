@@ -96,8 +96,9 @@ type ConfigurationJWT struct {
 
 // ConfigurationMap to hold the map configuration values
 type ConfigurationMap struct {
-	Secret        string `yaml:"secret"`
-	HoursToExpire int    `yaml:"hoursToExpire"`
+	SessionKey   string `yaml:"sessionKey"`
+	StaticDir    string `yaml:"staticDir"`
+	TemplatesDir string `yaml:"templatesDir"`
 }
 
 // ConfigurationDebugHTTP to hold all HTTP debug configuration values

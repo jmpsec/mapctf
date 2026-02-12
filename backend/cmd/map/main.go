@@ -217,15 +217,14 @@ func mapCTFService() {
 		// Public routes (no authentication required)
 		r.Post(loginPath, handlersMap.LoginPOSTHandler)
 		r.Post(logoutPath, handlersMap.LogoutPOSTHandler)
-
 		// Protected routes group (require authentication)
 		r.Group(func(r chi.Router) {
 			// SCS middleware
 			r.Use(sessionManager.LoadAndSave)
 			r.Use(handlersMap.RequireAuth)
-
 			// Protected admin routes
 			r.Route(mapAdminPath, func(r chi.Router) {
+				r.Use(handlersMap.RequireAdmin)
 			})
 		})
 	})
