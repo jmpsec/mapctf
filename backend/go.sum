@@ -1,5 +1,5 @@
-filippo.io/edwards25519 v1.1.0 h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=
-filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
+filippo.io/edwards25519 v1.1.1 h1:YpjwWWlNmGIDyXOn8zLzqiD+9TyIlPhGFG96P39uBpw=
+filippo.io/edwards25519 v1.1.1/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
 github.com/alexedwards/scs/goredisstore v0.0.0-20251002162104-209de6e426de h1:DGAYeKmY1cUjNbNe1Fu4VG1Sxz+CtC3ahudm6c19NyM=
 github.com/alexedwards/scs/goredisstore v0.0.0-20251002162104-209de6e426de/go.mod h1:ovMqA1cbRPYuGLSeyFGmD8HbbfzN5hXG4WahAmkf/5A=
 github.com/alexedwards/scs/v2 v2.9.0 h1:xa05mVpwTBm1iLeTMNFfAWpKUm4fXAW7CeAViqBVS90=
