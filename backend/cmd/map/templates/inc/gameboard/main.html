@@ -1,0 +1,83 @@
+<div id="mctf-gameboard" class="mctf-gameboard">
+  <div class="gameboard-header">
+    <nav class="mctf-main-nav mctf-navigation">
+      <ul class="nav-left">
+        <li>
+          <a href="/countdown" data-active="countdown">Play CTF</a>
+        </li>
+        <li></li>
+        <li>
+          <a href="/rules" data-active="rules">Rules</a>
+        </li>
+      </ul>
+      <div class="branding">
+        <a href="/">
+          <div class="branding-rules">
+            <span>POWERED BY MAPCTF</span>
+          </div>
+        </a>
+      </div>
+      <ul class="nav-right">
+        <li>
+          <a href="/registration" data-active="registration">Registration</a>
+        </li>
+        <li></li>
+        <li>
+          <a href="/login" data-active="login">Login</a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="radio-tabs mctf-map-select">
+      <input type="radio" name="mctf--map-select" id="mctf--map-select--you" value="your-team" />
+      <label for="mctf--map-select--you" class="click-effect">
+        <span class="your-name">
+          <svg class="icon icon--team-indicator your-team"><use xlink:href="#icon--team-indicator"></use></svg>
+          You
+        </span>
+      </label>
+
+      <input type="radio" name="mctf--map-select" id="mctf--map-select--enemy" value="opponent-team" />
+      <label for="mctf--map-select--enemy" class="click-effect">
+        <span class="opponent-name">
+          <svg class="icon icon--team-indicator opponent-team"><use xlink:href="#icon--team-indicator"></use></svg>
+          Enemy
+        </span>
+      </label>
+
+      <input type="radio" name="mctf--map-select" id="mctf--map-select--need-help" value="need-help" />
+      <label for="mctf--map-select--need-help" class="click-effect listview-only">
+        <span><span class="mctf-status status--incoming-help">Help</span></span>
+      </label>
+
+      <input type="radio" name="mctf--map-select" id="mctf--map-select--give-help" value="give-help" />
+      <label for="mctf--map-select--give-help" class="click-effect listview-only">
+        <span><span class="mctf-status status--give-help">Help</span></span>
+      </label>
+
+      <input type="radio" name="mctf--map-select" id="mctf--map-select--all" value="all" checked="" />
+      <label for="mctf--map-select--all" class="click-effect"><span>All</span></label>
+    </div>
+  </div>
+  <!-- .gameboard-header -->
+
+  <div class="mctf-map"></div>
+  <!-- .mctf-map -->
+
+  <div class="mctf-listview"></div>
+  <!-- .mctf-listmode -->
+
+  <div class="mctf-module-container container--column column-left">
+    <aside data-name="Leaderboard" data-module="leaderboard"></aside>
+    <aside data-name="Activity" data-module="activity"></aside>
+  </div>
+  <div class="mctf-module-container container--column column-right">
+    <aside data-name="Teams" data-module="teams"></aside>
+    <aside data-name="Filter" data-module="filter"></aside>
+  </div>
+  <div class="mctf-module-container container--row">
+    <aside data-name="World Domination" class="module--outer-left" data-module="world-domination"></aside>
+    <aside data-name="World Chat" class="module--inner" data-module="world-chat"></aside>
+    <aside data-name="Game Clock" class="module--outer-right" data-module="game-clock"></aside>
+  </div>
+</div>

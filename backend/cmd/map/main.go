@@ -60,12 +60,16 @@ const (
 	errorPath string = "/error"
 	// Default endpoint to handle Forbidden(403) errors
 	forbiddenPath string = "/forbidden"
+	// Default endpoint for favicon
+	faviconPath string = "/favicon.ico"
 	// Map gameboard path
 	mapGameboardPath = "/gameboard"
-	// Map admin path
-	mapAdminPath = "/admin"
-	// Map JSON data path
-	mapJSONPath = "/json"
+	// Registration path
+	registrationPath = "/registration"
+	// Admin path
+	adminPath = "/admin"
+	// JSON data path
+	jsonPath = "/json"
 )
 
 // Build-time metadata (overridden via -ldflags "-X main.buildVersion=... -X main.buildCommit=... -X main.buildDate=...")
@@ -212,18 +216,27 @@ func mapCTFService() {
 	muxMap.Get(errorPath, handlersMap.ErrorHandler)
 	// Forbidden
 	muxMap.Get(forbiddenPath, handlersMap.ForbiddenHandler)
+	// Favicon
+	muxMap.Get(faviconPath, handlersMap.FaviconHandler)
+	// Static files
+	muxMap.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir(flagParams.ConfigValues.Map.TemplatesDir))))
 	// HTTP map routes
 	muxMap.Route("/{uuid}", func(r chi.Router) {
 		// Public routes (no authentication required)
+		r.Get(loginPath, handlersMap.LoginHandler)
+		r.Get(registrationPath, handlersMap.RegistrationHandler)
 		r.Post(loginPath, handlersMap.LoginPOSTHandler)
+		r.Post(registrationPath, handlersMap.RegistrationPOSTHandler)
 		r.Post(logoutPath, handlersMap.LogoutPOSTHandler)
 		// Protected routes group (require authentication)
 		r.Group(func(r chi.Router) {
 			// SCS middleware
 			r.Use(sessionManager.LoadAndSave)
 			r.Use(handlersMap.RequireAuth)
+			// Protected gameboard routes
+			r.Get(mapGameboardPath, handlersMap.GameboardHandler)
 			// Protected admin routes
-			r.Route(mapAdminPath, func(r chi.Router) {
+			r.Route(adminPath, func(r chi.Router) {
 				r.Use(handlersMap.RequireAdmin)
 			})
 		})

@@ -1,0 +1,76 @@
+<div class="mctf-modal-content">
+  <div class="modal-title">
+    <h4>
+      capture_
+      <span class="country-name highlighted"></span>
+    </h4>
+    <a href="#" class="js-close-modal">
+      <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
+    </a>
+  </div>
+
+  <form class="mctf-form country-capture-form">
+    <div class="capture-text"></div>
+
+    <fieldset class="form-set">
+      <div class="form-el el--text">
+        <textarea placeholder="Enter your response" rows="4"></textarea>
+      </div>
+    </fieldset>
+    <div class="form-el--multiple-actions mctf-column-container">
+      <div class="col col-1-2">
+        <!--
+                * ALTERNATE HOVERS
+                *
+                * To enable a link that has different content on hover, add a
+                *  "data-hover" addribute to the <a> tag and wrap the default
+                *  text in a span. On hover, the browser will hide the default
+                *  text and show the value of the data-hover attribute
+                -->
+        <a class="mctf-cta cta--blue js-trigger-hint" data-hover="-10 Pts"><span>Hint</span></a>
+        <a class="mctf-cta cta--red js-trigger-help" data-hover="-30 Pts"><span>Help</span></a>
+      </div>
+      <div class="col col-1-2 actions--right">
+        <button class="mctf-cta cta--yellow" type="submit">Submit</button>
+        <span class="mctf-numbers help--time-left">00:00:25:47</span>
+      </div>
+    </div>
+  </form>
+
+  <div class="capture-hints-and-help">
+    <div class="capture-help">
+      <h4>help_</h4>
+      <div>
+        You have requested help from another team. You will ba able to capture_
+        <span class="country-name"></span>
+        in 10 minutes. You may close this window and continue playing CTF.
+      </div>
+    </div>
+    <div class="capture-hint">
+      <h4>hint_</h4>
+      <div></div>
+    </div>
+  </div>
+
+  <footer class="modal-footer mctf-column-container">
+    <div class="col col-1-2 country-capture-stats mctf-column-container">
+      <div class="points-display">
+        <span class="points-number mctf-numbers"></span>
+        <span class="points-label">PTS</span>
+      </div>
+      <div class="country-stats">
+        <dl>
+          <dt>category</dt>
+          <dd class="country-category"></dd>
+
+          <dt>flag_owner</dt>
+          <dd class="opponent-name country-owner"></dd>
+        </dl>
+      </div>
+    </div>
+    <div class="col col-1-2 country-capture-completed mctf-column-container">
+      <span>completed_by &gt;</span>
+      <ul class="completed-list"></ul>
+    </div>
+  </footer>
+</div>

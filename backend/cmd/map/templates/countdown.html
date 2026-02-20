@@ -42,28 +42,42 @@
         </nav>
       </div>
       <div id="mctf-main-content" class="mctf-page">
-        <main role="main" class="mctf-main page--login page--landing mctf-img-glitch full-height mctf-scroll">
-          <header class="mctf-section-header mctf-container">
-            <h1 class="mctf-glitch" data-text="Admin Login">Admin Login</h1>
-            <p class="inner-container">Team login is disabled. Only admins can login at this time.</p>
-          </header>
-          <div class="mctf-login">
-            <form class="mctf-form">
-              <input type="hidden" name="action" value="login_team" />
-              <input type="hidden" name="login_select" value="off" />
-              <input type="hidden" name="csrf_token" value="85adfebf08abfa5faf3136c7fb005156423d5cb3da4a9385df174569b630f786" />
-              <fieldset class="form-set mctf-container container--small">
-                <div class="form-el el--text">
-                  <label for="">Team Name</label>
-                  <input autocomplete="off" name="team_name" type="text" maxlength="20" />
-                </div>
-                <div class="form-el el--text">
-                  <label for="">Password</label>
-                  <input autocomplete="off" name="password" type="password" />
+        <main role="main" class="mctf-main page--game-status row-fluid no-shrink center-vertically mctf-img-glitch full-height">
+          <div class="mctf-container mctf-centered-main">
+            <h3 class="title-lead">Upcoming Game</h3>
+            <h1 class="mctf-glitch" data-text="July 30, 2015">July 30, 2015</h1>
+
+            <ul class="upcoming-game-countdown">
+              <li>
+                <span class="count-number">03</span>
+                _days
+              </li>
+              <li>
+                <span class="count-number">06</span>
+                _hours
+              </li>
+              <li>
+                <span class="count-number">20</span>
+                _minutes
+              </li>
+              <li>
+                <span class="count-number">39</span>
+                _seconds
+              </li>
+            </ul>
+
+            <form class="mctf-form inner-container">
+              <p>Please wait for your CTF competition to commence. Unitl then, stay informed and sign up for our newsletter!</p>
+
+              <fieldset class="form-set">
+                <div class="form-el el--text el--single">
+                  <label for="">Email</label>
+                  <input type="email" />
                 </div>
               </fieldset>
+
               <div class="form-el--actions">
-                <button id="login_button" class="mctf-cta cta--yellow" type="button">Login</button>
+                <button class="mctf-cta cta--yellow" type="submit">Sign Up</button>
               </div>
             </form>
           </div>

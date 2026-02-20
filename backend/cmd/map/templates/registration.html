@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Cache-control" content="no-cache" />
+    <meta http-equiv="Expires" content="-1" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MAPCTF</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    <link rel="stylesheet" href="/static/css/mapctf.css" />
+  </head>
+  <body data-section="pages">
+    <div class="mctf-sprite" id="mctf-svg-sprite"></div>
+    <div class="mctf-viewport">
+      <div id="mctf-main-nav">
+        <nav class="mctf-main-nav mctf-navigation">
+          <ul class="nav-left">
+            <li>
+              <a href="/countdown" data-active="countdown">Play CTF</a>
+            </li>
+            <li></li>
+            <li>
+              <a href="/rules" data-active="rules">Rules</a>
+            </li>
+          </ul>
+          <div class="branding">
+            <a href="/">
+              <div class="branding-rules">
+                <span>POWERED BY MAPCTF</span>
+              </div>
+            </a>
+          </div>
+          <ul class="nav-right">
+            <li>
+              <a href="/registration" data-active="registration">Registration</a>
+            </li>
+            <li></li>
+            <li>
+              <a href="/login" data-active="login">Login</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+      <div id="mctf-main-content" class="mctf-page">
+        <main role="main" class="mctf-main page--solo-registration page--landing mctf-img-glitch full-height mctf-scroll">
+          <header class="mctf-section-header mctf-container">
+            <h1 class="mctf-glitch" data-text="Solo Registration">Solo Registration</h1>
+            <p class="inner-container">Register to play Capture The Flag here. Once you have registered, simply login for future site visits.</p>
+          </header>
+
+          <div class="mctf-registration">
+            <form class="mctf-form">
+              <fieldset class="form-set mctf-container container--small">
+                <div class="form-el el--text">
+                  <label for="">Name</label>
+                  <input type="text" />
+                </div>
+                <div class="form-el el--text">
+                  <label for="">Alias</label>
+                  <input type="text" />
+                </div>
+                <div class="form-el el--text">
+                  <label for="">Email</label>
+                  <input type="email" />
+                </div>
+                <div class="form-el el--text">
+                  <label for="">Team Name</label>
+                  <input type="text" />
+                </div>
+                <div class="form-el el--text">
+                  <label for="">Password</label>
+                  <input type="password" />
+                </div>
+              </fieldset>
+
+              <div class="mctf-choose-emblem">
+                <h6>Choose an Emblem</h6>
+
+                <div class="emblem-carousel">
+                  <div class="mctf-slider mctf-container container--large">
+                    <div class="mctf-slider-viewport" style="overflow: hidden; position: relative">
+                      <ul class="slides" style="width: 40000%; transition-duration: 0s; transform: translate3d(0px, 0px, 0px)">
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-4chan-2"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-4chan"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-8ball"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-alien-2"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-alien-3"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-alien"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-anchor"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-apple"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-atom"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-ax"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-b"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-bar-graph"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-barking"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-baseball"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-basketball-hoop"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-basketball"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-bat"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-batman"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-battery"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-beaker"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-bike"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-bluetooth"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-boba-fett"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-bomb"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-bone"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-boomerang"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-bow-arrow"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-bowling-ball"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-bowling-pin"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-bowtie"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-box"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-boxing-glove"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-broomstick"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-burger"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-c3po"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-cactus"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-california"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-camera"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-captain-america"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-car"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-cat"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-centaur"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-checkmark"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-cherry"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-chess-knight"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-chess-rook"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-chevron-corporal"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-chevron-flag"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-cloud"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-coffee"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-command"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-compass"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-computer-mouse"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-cone"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-corndog"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-crown"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-cupcake"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-cursor"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-darth-vader"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-deadpool"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-deal-with-it"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-deathly-hollows"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-diamond"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-dirtbike"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-dog"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-double-ax"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-drop"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-dumbell"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-egg"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-elephant"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-eye"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-face-cloud"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-face-helmeted"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-face-sad"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-face-star"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-face-toast"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-face-tongue"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-feather"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-flag"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-flower-2"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-flower"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-football"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-fork"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-fries"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-game-controller"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-glasses"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-green-lantern"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-guy-fawkes"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-hat-viking"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-hat-witch"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-head-lego"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-headphones"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-heart"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-high-heel"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-home"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-hook"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-hotdog"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-html-file"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-html"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-ice-cream"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-infinity"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-invader-2"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-invader"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-iron-man"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-jack-o-lantern"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-jeep"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-kangaroo"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-kanye-glasses"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-key"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-kite"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-knife"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-lightbulb"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-lightning"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-location"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-man-newspaper"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-marker"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-monkey"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-monopoly-man"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-moon"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-moustache"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-music"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-mystery-man"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-nascar"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-pacman-ghost"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-pacman"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-paperclip"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-peace-sign"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-peace"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-pencil-sharpener"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-penguin"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-penrose-triangle"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-pi"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-picasa"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-plane"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-plasma-gun"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-plug"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-pokemon"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-puma"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-pyramid"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-r2d2"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-radiation"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-rainbow"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-reset"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-revolver"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-robber"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-robot"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-rocker"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-rocket"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-rollerblade"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-sailboat"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-saturn"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-sauron"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-sharethis"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-shark"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-shirt"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-shoe"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-skateboard"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-skateboarder"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-skiier"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-skull-crossbones"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-snowboarder"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-soccerball"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-sock"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-spaceship-2"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-spaceship"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-speech-bubble"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-speeding-ball"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-spiderweb"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-stars"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-stereo"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-stormtrooper"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-swimmer"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-swords"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-tank"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-tennis"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-tetris-j"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-tetris-t"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-tetris-z"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-thors-hammer"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-throwing-star"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-thumbsup"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-tooth"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-tophat"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-traffic-cone"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-trophy"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-turkey-leg"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-umbrella"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-unicorn"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-unicycle"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-vampire"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-venn-diagram"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-volleyball"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-vulcan-salute"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-watch"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-watergun"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-whale"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-whistle"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-wifi"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-x-and-o"></use></svg>
+                        </li>
+                        <li style="width: 146.571px; float: left; display: block">
+                          <svg class="icon--badge"><use xlink:href="#icon--badge-x-men"></use></svg>
+                        </li>
+                      </ul>
+                    </div>
+                    <ul class="mctf-slider-direction-nav">
+                      <li class="mctf-slider-nav-prev"><a class="mctf-slider-prev" href="#">Previous</a></li>
+                      <li class="mctf-slider-nav-next"><a class="mctf-slider-next" href="#">Next</a></li>
+                    </ul>
+                  </div>
+                </div>
+                <!-- .emblem-carousel -->
+              </div>
+
+              <div class="form-el--actions mctf-container container--small">
+                <p><button class="mctf-cta cta--yellow" type="submit">Sign Up</button></p>
+              </div>
+            </form>
+          </div>
+          <!-- .mctf-registration -->
+        </main>
+      </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flexslider/2.7.2/jquery.flexslider.min.js" integrity="sha512-DMVsZXgX4yFXz69Stig0g783PuBnl245OQV2qj5gSHTVUAuSeqRolBbaqiungKghnEPYee081WTTN6WA4BPYww==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" src="/static/js/plugins.js"></script>
+    <script type="text/javascript" src="/static/js/mapctf.js"></script>
+  </body>
+</html>

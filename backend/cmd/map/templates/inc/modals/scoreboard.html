@@ -1,0 +1,171 @@
+<div class="mctf-modal-content mctf-row-container">
+  <div class="modal-title row-fixed">
+    <h4>scoreboard_</h4>
+    <a href="#" class="js-close-modal">
+      <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
+    </a>
+  </div>
+
+  <div class="scorboard-graphic scoreboard-graphic-container">
+    <svg class="mctf-graphic" data-file="data/scores.json" width="820" height="220"></svg>
+  </div>
+
+  <div class="game-progress mctf-progress-bar mctf-cf row-fixed">
+    <div class="indicator game-progress-indicator">
+      <span class="indicator-cell active"></span>
+      <span class="indicator-cell active"></span>
+      <span class="indicator-cell active"></span>
+      <span class="indicator-cell"></span>
+      <span class="indicator-cell"></span>
+      <span class="indicator-cell"></span>
+      <span class="indicator-cell"></span>
+      <span class="indicator-cell"></span>
+      <span class="indicator-cell"></span>
+      <span class="indicator-cell"></span>
+    </div>
+    <span class="label label--left">[Start]</span>
+    <span class="label label--right">[End]</span>
+  </div>
+
+  <div class="game-scoreboard mctf-row-container">
+    <table class="row-fixed">
+      <thead>
+        <tr>
+          <th width="10%">filter_</th>
+          <th width="10%">rank_</th>
+          <th width="40%">team_name_</th>
+          <th width="10%">base_pts_</th>
+          <th width="10%">quiz_pts_</th>
+          <th width="10%">flag_pts_</th>
+          <th width="10%">total_</th>
+        </tr>
+      </thead>
+    </table>
+    <div class="row-fluid main-data">
+      <table class="row-fixed">
+        <tbody>
+          <tr>
+            <td width="10%" class="el--radio">
+              <input type="checkbox" name="mctf-scoreboard-filter" id="mctf-scoreboard--tank-sf" value="Tank SF" checked="checked" />
+              <label class="click-effect" for="mctf-scoreboard--tank-sf"><span></span></label>
+            </td>
+            <td width="10%">01</td>
+            <td width="40%">Tank SF</td>
+            <td width="10%">50</td>
+            <td width="10%">50</td>
+            <td width="10%">200</td>
+            <td width="10%">300</td>
+          </tr>
+          <tr>
+            <td class="el--radio">
+              <input type="checkbox" name="mctf-scoreboard-filter" id="mctf-scoreboard--da-invaderz" value="Da Invaderz" checked="checked" />
+              <label class="click-effect" for="mctf-scoreboard--da-invaderz"><span></span></label>
+            </td>
+            <td>02</td>
+            <td>Da Invaderz</td>
+            <td>52</td>
+            <td>54</td>
+            <td>180</td>
+            <td>280</td>
+          </tr>
+          <tr>
+            <td class="el--radio">
+              <input type="checkbox" name="mctf-scoreboard-filter" id="mctf-scoreboard--death-haxx" value="DEATH HAXX" checked="checked" />
+              <label class="click-effect" for="mctf-scoreboard--death-haxx"><span></span></label>
+            </td>
+            <td>03</td>
+            <td>DEATH HAXX</td>
+            <td>0</td>
+            <td>0</td>
+            <td>262</td>
+            <td>262</td>
+          </tr>
+          <tr>
+            <td class="el--radio">
+              <input type="checkbox" name="mctf-scoreboard-filter" id="mctf-scoreboard--robocop-squad" value="Robocop Squad" checked="checked" />
+              <label class="click-effect" for="mctf-scoreboard--robocop-squad"><span></span></label>
+            </td>
+            <td>04</td>
+            <td>Robocop Squad</td>
+            <td>63</td>
+            <td>65</td>
+            <td>128</td>
+            <td>248</td>
+          </tr>
+          <tr>
+            <td class="el--radio">
+              <input type="checkbox" name="mctf-scoreboard-filter" id="mctf-scoreboard--tank-nyc" value="Tank NYC" checked="checked" />
+              <label class="click-effect" for="mctf-scoreboard--tank-nyc"><span></span></label>
+            </td>
+            <td>05</td>
+            <td>Tank NYC</td>
+            <td>52</td>
+            <td>54</td>
+            <td>180</td>
+            <td>280</td>
+          </tr>
+          <tr>
+            <td class="el--radio">
+              <input type="checkbox" name="mctf-scoreboard-filter" id="mctf-scoreboard--rebelz" value="Rebelz" checked="checked" />
+              <label class="click-effect" for="mctf-scoreboard--rebelz"><span></span></label>
+            </td>
+            <td>06</td>
+            <td>Rebelz</td>
+            <td>38</td>
+            <td>38</td>
+            <td>144</td>
+            <td>220</td>
+          </tr>
+          <tr>
+            <td class="el--radio">
+              <input type="checkbox" name="mctf-scoreboard-filter" id="mctf-scoreboard--dominationstation" value="DominationStation" checked="checked" />
+              <label class="click-effect" for="mctf-scoreboard--dominationstation"><span></span></label>
+            </td>
+            <td>07</td>
+            <td>Dominationstation</td>
+            <td>83</td>
+            <td>83</td>
+            <td>50</td>
+            <td>216</td>
+          </tr>
+          <tr>
+            <td class="el--radio">
+              <input type="checkbox" name="mctf-scoreboard-filter" id="mctf-scoreboard--for-the-win" value="For the Win" checked="checked" />
+              <label class="click-effect" for="mctf-scoreboard--for-the-win"><span></span></label>
+            </td>
+            <td>08</td>
+            <td>For the Win</td>
+            <td>41</td>
+            <td>59</td>
+            <td>109</td>
+            <td>209</td>
+          </tr>
+          <tr>
+            <td class="el--radio">
+              <input type="checkbox" name="mctf-scoreboard-filter" id="mctf-scoreboard--monkey-town" value="Monkey Town" checked="checked" />
+              <label class="click-effect" for="mctf-scoreboard--monkey-town"><span></span></label>
+            </td>
+            <td>09</td>
+            <td>Monkey Town</td>
+            <td>102</td>
+            <td>0</td>
+            <td>100</td>
+            <td>202</td>
+          </tr>
+          <tr>
+            <td class="el--radio">
+              <input type="checkbox" name="mctf-scoreboard-filter" id="mctf-scoreboard--heavy-hitterz" value="Heavy Hitterz" checked="checked" />
+              <label class="click-effect" for="mctf-scoreboard--heavy-hitterz"><span></span></label>
+            </td>
+            <td>10</td>
+            <td>Heavy Hitterz</td>
+            <td>0</td>
+            <td>60</td>
+            <td>128</td>
+            <td>188</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
