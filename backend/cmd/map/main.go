@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -66,6 +67,8 @@ const (
 	mapGameboardPath = "/gameboard"
 	// Registration path
 	registrationPath = "/registration"
+	// Countdown path
+	countdownPath = "/countdown"
 	// Admin path
 	adminPath = "/admin"
 	// JSON data path
@@ -219,12 +222,14 @@ func mapCTFService() {
 	// Favicon
 	muxMap.Get(faviconPath, handlersMap.FaviconHandler)
 	// Static files
-	muxMap.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir(flagParams.ConfigValues.Map.TemplatesDir))))
+	muxMap.Handle("/static/*", http.StripPrefix("/static/", withContentTypeByExtension(http.FileServer(http.Dir(flagParams.ConfigValues.Map.StaticDir)))))
 	// HTTP map routes
 	muxMap.Route("/{uuid}", func(r chi.Router) {
 		// Public routes (no authentication required)
+		r.Get(rootPath, handlersMap.IndexTemplateHandler)
 		r.Get(loginPath, handlersMap.LoginHandler)
-		r.Get(registrationPath, handlersMap.RegistrationHandler)
+		r.Get(registrationPath, handlersMap.RegistrationTemplateHandler)
+		r.Get(countdownPath, handlersMap.CountdownTemplateHandler)
 		r.Post(loginPath, handlersMap.LoginPOSTHandler)
 		r.Post(registrationPath, handlersMap.RegistrationPOSTHandler)
 		r.Post(logoutPath, handlersMap.LogoutPOSTHandler)
@@ -234,7 +239,7 @@ func mapCTFService() {
 			r.Use(sessionManager.LoadAndSave)
 			r.Use(handlersMap.RequireAuth)
 			// Protected gameboard routes
-			r.Get(mapGameboardPath, handlersMap.GameboardHandler)
+			r.Get(mapGameboardPath, handlersMap.GameboardTemplateHandler)
 			// Protected admin routes
 			r.Route(adminPath, func(r chi.Router) {
 				r.Use(handlersMap.RequireAdmin)
@@ -278,6 +283,18 @@ func mapCTFService() {
 			log.Fatal().Msgf("ListenAndServe: %v", err)
 		}
 	}
+}
+
+// Middleware to set Content-Type header based on file extension for static files
+func withContentTypeByExtension(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if ext := filepath.Ext(r.URL.Path); ext != "" {
+			if contentType := mime.TypeByExtension(ext); contentType != "" {
+				w.Header().Set("Content-Type", contentType)
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // Action to run when no flags are provided to run checks and prepare data

@@ -23,6 +23,10 @@ RUN go mod verify
 RUN mkdir -p /opt/mapctf/bin
 RUN mkdir -p /opt/mapctf/config
 
+# Copy templates and static files
+COPY backend/cmd/map/templates/ /opt/mapctf/templates
+COPY backend/cmd/map/templates/static/ /opt/mapctf/static
+
 # Build API server
 RUN go build -o /opt/mapctf/bin/mapctf-map cmd/map/*.go
 

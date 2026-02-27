@@ -7,6 +7,7 @@ tmp_dir = "/tmp"
 
 [build]
   bin = "./bin/mapctf-map"
+  pre_cmd = ["cp -R /usr/src/app/backend/cmd/map/templates/ /opt/mapctf/templates", "cp -R /usr/src/app/backend/cmd/map/static/ /opt/mapctf/static"]
   cmd = "go build -ldflags \"-s -w -X main.buildCommit=$(git rev-parse HEAD) -X main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)\" -o /opt/mapctf/bin/mapctf-map /usr/src/app/backend/cmd/map/*.go"
   # It's not necessary to trigger build each time file changes if it's too frequent.
   delay = 1000
