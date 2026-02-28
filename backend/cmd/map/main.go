@@ -122,7 +122,11 @@ func configFileFromCommand(cmd *cli.Command) string {
 // Initialization code
 func init() {
 	// Initialize CLI flags using the config package
-	flags = config.InitMapFlags(&flagParams)
+	flags = config.InitGameFlags(&flagParams)
+	// Check if UUID was set, otherwise generate a random one for this instance
+	if flagParams.ConfigValues.Map.UUID == "" {
+		flagParams.ConfigValues.Map.UUID = config.GenUUID()
+	}
 }
 
 // Let's go!
@@ -222,7 +226,7 @@ func mapCTFService() {
 	// Favicon
 	muxMap.Get(faviconPath, handlersMap.FaviconHandler)
 	// Static files
-	muxMap.Handle("/static/*", http.StripPrefix("/static/", withContentTypeByExtension(http.FileServer(http.Dir(flagParams.ConfigValues.Map.StaticDir)))))
+	muxMap.Handle("/static/*", http.StripPrefix("/static/", ContentTypeByExtension(http.FileServer(http.Dir(flagParams.ConfigValues.Map.StaticDir)))))
 	// HTTP map routes
 	muxMap.Route("/{uuid}", func(r chi.Router) {
 		// Public routes (no authentication required)
@@ -271,13 +275,13 @@ func mapCTFService() {
 			TLSConfig:         cfg,
 			TLSNextProto:      make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 		}
-		log.Info().Msgf("%s v%s - HTTPS listening %s", serviceName, buildVersion, serviceListener)
+		log.Info().Msgf("%s v%s - HTTPS listening %s/%s/", serviceName, buildVersion, serviceListener, flagParams.ConfigValues.Map.UUID)
 		log.Info().Msgf("%s - commit=%s - build date=%s", serviceName, buildCommit, buildDate)
 		if err := srv.ListenAndServeTLS(flagParams.ConfigValues.TLS.CertificateFile, flagParams.ConfigValues.TLS.KeyFile); err != nil {
 			log.Fatal().Msgf("ListenAndServeTLS: %v", err)
 		}
 	} else {
-		log.Info().Msgf("%s v%s - HTTP listening %s", serviceName, buildVersion, serviceListener)
+		log.Info().Msgf("%s v%s - HTTP listening %s/%s/", serviceName, buildVersion, serviceListener, flagParams.ConfigValues.Map.UUID)
 		log.Info().Msgf("%s - commit=%s - build date=%s", serviceName, buildCommit, buildDate)
 		if err := http.ListenAndServe(serviceListener, muxMap); err != nil {
 			log.Fatal().Msgf("ListenAndServe: %v", err)
@@ -286,7 +290,7 @@ func mapCTFService() {
 }
 
 // Middleware to set Content-Type header based on file extension for static files
-func withContentTypeByExtension(next http.Handler) http.Handler {
+func ContentTypeByExtension(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if ext := filepath.Ext(r.URL.Path); ext != "" {
 			if contentType := mime.TypeByExtension(ext); contentType != "" {

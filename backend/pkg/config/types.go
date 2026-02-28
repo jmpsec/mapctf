@@ -97,7 +97,7 @@ type ConfigurationJWT struct {
 
 // ConfigurationMap to hold the map configuration values
 type ConfigurationMap struct {
-	SessionKey   string `yaml:"sessionKey"`
+	UUID         string `yaml:"uuid"`
 	StaticDir    string `yaml:"staticDir"`
 	TemplatesDir string `yaml:"templatesDir"`
 }

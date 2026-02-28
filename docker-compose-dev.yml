@@ -63,6 +63,7 @@ services:
       # MapCTF settings
       - MAPCTF_USERNAME=${MAPCTF_USERNAME}
       - MAPCTF_PASSWORD=${MAPCTF_PASSWORD}
+      - MAP_UUID=${MAP_UUID}
     networks:
       - mapctf-dev-backend
     ports:

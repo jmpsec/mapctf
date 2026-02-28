@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"text/template"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
 )
 
@@ -11,6 +13,13 @@ import (
 func (h *HandlersMap) IndexTemplateHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Valid UUID is required")).Msg("Valid UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "Valid UUID is required"})
+		return
 	}
 	// Prepare template
 	t, err := template.ParseFiles(
@@ -22,6 +31,7 @@ func (h *HandlersMap) IndexTemplateHandler(w http.ResponseWriter, r *http.Reques
 	// Prepare template data
 	templateData := IndexTemplateData{
 		Title: "Welcome to mapctf",
+		UUID:  uuid,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -34,6 +44,13 @@ func (h *HandlersMap) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Valid UUID is required")).Msg("Valid UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "Valid UUID is required"})
+		return
+	}
 	// Prepare template
 	t, err := template.ParseFiles(
 		h.Config.Map.TemplatesDir + "/login.html")
@@ -44,6 +61,7 @@ func (h *HandlersMap) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Prepare template data
 	templateData := LoginTemplateData{
 		Title: "Login to mapctf",
+		UUID:  uuid,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -56,6 +74,13 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Valid UUID is required")).Msg("Valid UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "Valid UUID is required"})
+		return
+	}
 	// Prepare template
 	t, err := template.ParseFiles(
 		h.Config.Map.TemplatesDir + "/registration.html")
@@ -66,6 +91,7 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 	// Prepare template data
 	templateData := RegistrationTemplateData{
 		Title: "Register to mapctf",
+		UUID:  uuid,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -78,6 +104,13 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Valid UUID is required")).Msg("Valid UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "Valid UUID is required"})
+		return
+	}
 	// Prepare template
 	t, err := template.ParseFiles(
 		h.Config.Map.TemplatesDir + "/countdown.html")
@@ -88,6 +121,7 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 	// Prepare template data
 	templateData := CountdownTemplateData{
 		Title: "Countdown to mapctf",
+		UUID:  uuid,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -100,6 +134,13 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Valid UUID is required")).Msg("Valid UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "Valid UUID is required"})
+		return
+	}
 	// Prepare template
 	t, err := template.ParseFiles(
 		h.Config.Map.TemplatesDir + "/gameboard.html")
@@ -110,6 +151,7 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	// Prepare template data
 	templateData := GameboardTemplateData{
 		Title: "Gameboard of mapctf",
+		UUID:  uuid,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")

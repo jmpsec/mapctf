@@ -40,8 +40,8 @@ type ServiceFlagParams struct {
 	ConfigValues MapCTFConfiguration
 }
 
-// InitMapFlags initializes all the flags needed for the service
-func InitMapFlags(params *ServiceFlagParams) []cli.Flag {
+// InitGameFlags initializes all the flags needed for the service
+func InitGameFlags(params *ServiceFlagParams) []cli.Flag {
 	var allFlags []cli.Flag
 	// Add flags by category
 	allFlags = append(allFlags, initConfigFlags(params)...)
@@ -356,13 +356,6 @@ func initJWTFlags(params *ServiceFlagParams) []cli.Flag {
 func initMapFlags(params *ServiceFlagParams) []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
-			Name:        "session-key",
-			Value:       "",
-			Usage:       "Session key to generate cookies from it",
-			Sources:     cli.EnvVars("SESSION_KEY"),
-			Destination: &params.ConfigValues.Map.SessionKey,
-		},
-		&cli.StringFlag{
 			Name:        "static",
 			Aliases:     []string{"s"},
 			Value:       defStaticFilesFolder,
@@ -376,6 +369,13 @@ func initMapFlags(params *ServiceFlagParams) []cli.Flag {
 			Usage:       "Directory with all the templates needed for the osctrl-admin UI",
 			Sources:     cli.EnvVars("TEMPLATES_DIR"),
 			Destination: &params.ConfigValues.Map.TemplatesDir,
+		},
+		&cli.StringFlag{
+			Name:        "uuid",
+			Value:       "",
+			Usage:       "UUID for the mapctf instance. If empty, a random UUID will be generated at startup",
+			Sources:     cli.EnvVars("MAP_UUID"),
+			Destination: &params.ConfigValues.Map.UUID,
 		},
 	}
 }

@@ -16,9 +16,9 @@ func (h *HandlersMap) RegistrationPOSTHandler(w http.ResponseWriter, r *http.Req
 	}
 	// Get UUID from URL path
 	uuid := chi.URLParam(r, "uuid")
-	if uuid == "" {
-		log.Err(errors.New("UUID is required")).Msg("UUID is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Valid UUID is required")).Msg("Valid UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "Valid UUID is required"})
 		return
 	}
 	// Parse request body

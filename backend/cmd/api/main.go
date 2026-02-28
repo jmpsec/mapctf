@@ -132,7 +132,7 @@ func configFileFromCommand(cmd *cli.Command) string {
 // Initialization code
 func init() {
 	// Initialize CLI flags using the config package
-	flags = config.InitMapFlags(&flagParams)
+	flags = config.InitGameFlags(&flagParams)
 }
 
 // Let's go!

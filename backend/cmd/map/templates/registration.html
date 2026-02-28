@@ -16,15 +16,15 @@
         <nav class="mctf-main-nav mctf-navigation">
           <ul class="nav-left">
             <li>
-              <a href="/countdown" data-active="countdown">Play CTF</a>
+              <a href="/{{ .UUID }}/countdown" data-active="countdown">Play CTF</a>
             </li>
             <li></li>
             <li>
-              <a href="/rules" data-active="rules">Rules</a>
+              <a href="/{{ .UUID }}/rules" data-active="rules">Rules</a>
             </li>
           </ul>
           <div class="branding">
-            <a href="/">
+            <a href="/{{ .UUID }}/">
               <div class="branding-rules">
                 <span>POWERED BY MAPCTF</span>
               </div>
@@ -32,11 +32,11 @@
           </div>
           <ul class="nav-right">
             <li>
-              <a href="/registration" data-active="registration">Registration</a>
+              <a href="/{{ .UUID }}/registration" data-active="registration">Registration</a>
             </li>
             <li></li>
             <li>
-              <a href="/login" data-active="login">Login</a>
+              <a href="/{{ .UUID }}/login" data-active="login">Login</a>
             </li>
           </ul>
         </nav>
