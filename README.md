@@ -1,69 +1,165 @@
 # MapCTF
 
-Lean, map-based CTF and cyber-range platform built with a modern React UI and a Go backend.
+<p align="center">
+  <img alt="mapctf" src="mapctf.png" width="180" />
+  <p align="center">
+    Map-based CTF/cyber-range platform.
+  </p>
+  <p align="center">
+    <a href="https://github.com/jmpsec/mapctf/blob/master/LICENSE">
+      <img alt="Software License" src="https://img.shields.io/badge/license-MIT-green?style=flat-square&fuckgithubcache=1">
+    </a>
+    <a href="https://github.com/jmpsec/mapctf">
+      <img alt="Build Status" src="https://github.com/jmpsec/mapctf/actions/workflows/build_and_test_main_merge.yml/badge.svg?branch=main&fuckgithubcache=1">
+    </a>
+    <a href="https://goreportcard.com/report/github.com/jmpsec/mapctf">
+      <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/jmpsec/mapctf?style=flat-square&fuckgithubcache=1">
+    </a>
+  </p>
+</p>
 
-## Highlights
+MapCTF is a map-based CTF/cyber-range platform with:
 
-- React 18 + TypeScript frontend reusing the familiar FBCTF look.
-- Go 1.21 API with PostgreSQL and Redis backing stores.
-- Docker-first workflow plus opt-in local development for each service.
+- A Go backend (API + map service)
+- A React + TypeScript frontend
+- PostgreSQL and Redis for state/session storage
+
+> [!WARNING]
+> MapCTF is under active development. Review configuration and deployment settings before running in production.
+
+## Architecture
+
+The development stack is split into four main runtime components:
+
+- `mapctf-api` on `:8081` (REST/API workflows)
+- `mapctf-map` on `:8082` (map/gameboard and template/static serving)
+- `mapctf-postgres` on `:5432` (persistent relational data)
+- `mapctf-redis` on `:6379` (cache and session store)
+
+In this repository, frontend development runs separately with Vite (default `:3000`).
+
+## Project Structure
 
 ```text
 mapctf/
-├── frontend/   React UI
-├── backend/    Go API + services
-├── deploy/     Docker + scripts
-└── static/     Shared assets
+├── backend/
+│   ├── cmd/
+│   │   ├── api/            # API service entrypoint
+│   │   ├── map/            # Map service entrypoint + handlers/templates
+│   │   └── cli/            # CLI utilities
+│   ├── pkg/
+│   │   ├── backend/        # DB layer
+│   │   ├── cache/          # Redis/cache primitives
+│   │   ├── challenges/     # Challenge domain logic
+│   │   ├── config/         # Config types/flags/validation
+│   │   ├── teams/          # Team domain logic
+│   │   ├── users/          # User/auth domain logic
+│   │   └── version/        # Version metadata
+│   └── Makefile            # Backend build/run/test targets
+├── frontend/
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   ├── pages/          # Route/page components
+│   │   ├── services/       # API client calls
+│   │   ├── contexts/       # React context state
+│   │   ├── styles/         # SCSS/CSS modules
+│   │   ├── types/          # TS models/types
+│   │   └── utils/          # UI helpers
+│   ├── public/             # Public assets
+│   └── htmls/              # Legacy/static map HTML assets
+├── deploy/
+│   ├── config/             # Example configuration files
+│   └── docker/
+│       ├── conf/
+│       └── dockerfiles/    # Dev Dockerfiles for api/map/frontend
+├── docker-compose-dev.yml  # Dev services (api, map, postgres, redis)
+├── Makefile                # Root convenience targets
+└── ARCHITECTURE.md         # Deeper architecture notes
 ```
 
-## Quick start
+## Quick Start (Docker)
 
-1. Install Docker, Node.js 18+, and Go 1.21+.
-2. Copy env defaults: `cp .env.example .env`.
-3. Adjust `.env` as needed (DB creds, ports).
-4. Run everything: `docker compose -f docker-compose-dev.yml up` or use `make docker_dev`.
-5. Visit [http://localhost:3000](http://localhost:3000) (frontend) or [http://localhost:8081](http://localhost:8081) (API).
-
-### Work on individual services
-
+1. Copy environment defaults:
 ```bash
-# Frontend
-cd frontend && npm install && npm run dev    # serves on :3000
+cp .env.example .env
+```
+2. Start backend services:
+```bash
+docker compose -f docker-compose-dev.yml up --build
+```
+3. Start frontend (separate terminal):
+```bash
+cd frontend
+npm install
+npm run dev
+```
+4. Open:
+- Frontend: `http://localhost:3000`
+- API: `http://localhost:8081`
+- Map service: `http://localhost:8082`
 
-# Backend
-cd backend && go mod download && make run    # serves on :8081
+## Local Development (No Docker for Go Services)
+
+Start only DB/Redis with Docker:
+```bash
+make up-backend
 ```
 
-## Feature set
+Run services locally:
+```bash
+# API
+cd backend
+make run_api
 
-- Players: interactive map, team play, live scoreboard, category filters, progress tracking.
-- Admins: browser-based control panel for challenges, teams, stats, and data import/export.
+# Map service
+cd backend
+make run_map
 
-## Tech stack
+# Frontend
+cd frontend
+npm install
+npm run dev
+```
 
-| Layer    | Tools                                   |
-|----------|-----------------------------------------|
-| Frontend | React 18, TypeScript, Vite, React Router |
-| Backend  | Go 1.21, REST API, PostgreSQL 15, Redis 7 |
+## Useful Commands
+
+Root `Makefile`:
+
+- `make docker_dev_build` build dev images
+- `make docker_dev_up` run compose stack
+- `make docker_dev_down` stop compose stack
+- `make docker_dev_logs_api` tail API logs
+- `make docker_dev_logs_map` tail map logs
+
+Backend `Makefile` (`backend/`):
+
+- `make build` build API + map binaries
+- `make run_api` run API with `go run`
+- `make run_map` run map service with `go run`
+- `make test` run backend package tests
+
+Frontend (`frontend/`):
+
+- `npm run dev` start Vite dev server
+- `npm run build` production build
+- `npm run lint` lint TS/React code
 
 ## Configuration
 
-Most knobs live in `.env` (versions, DB creds, Redis). Start from `.env.example` and adjust as needed. Backend-specific flags are documented in `backend/README.md`.
+Primary development variables are in `.env` (see `.env.example`), including:
 
-## API
+- Toolchain/image versions (`GOLANG_VERSION`, `NODE_VERSION`)
+- Database credentials/ports
+- Redis settings
+- Bootstrap admin credentials
+- Map UUID (`MAP_UUID`)
 
-Core endpoints cover auth, team/challenge listings, submissions, and admin stats. Full details and request/response schemas live in `backend/README.md`.
+Backend also supports CLI flags and YAML configuration (example: `deploy/config/mapctf.example.yaml`).
 
-## Development helpers
+## Additional Docs
 
-```bash
-# Frontend scripts
-npm run dev | build | preview | lint
+- [ARCHITECTURE.md](ARCHITECTURE.md) deeper dives into design decisions, data models, and service interactions.
 
-# Backend make targets
-make build | run_api | clean
-```
+## License
 
-## Contributing & license
-
-Fork, branch, commit, push, and open a PR. MapCTF ships under GPL-3.0; see `LICENSE`. Questions or bugs? Open an issue. Design inspiration courtesy of Facebook's archived FBCTF project.
+GPL-3.0. See [LICENSE](LICENSE).

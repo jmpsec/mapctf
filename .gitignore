@@ -40,4 +40,5 @@ static
 # Markdown files
 *.md
 !README.md
+!ARCHITECTURE.md
 
