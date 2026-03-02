@@ -14,11 +14,11 @@ func (h *HandlersMap) RegistrationPOSTHandler(w http.ResponseWriter, r *http.Req
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	// Get UUID from URL path
+	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Valid UUID is required")).Msg("Valid UUID is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "Valid UUID is required"})
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
 		return
 	}
 	// Parse request body

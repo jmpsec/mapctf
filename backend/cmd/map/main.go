@@ -231,6 +231,7 @@ func mapCTFService() {
 	muxMap.Route("/{uuid}", func(r chi.Router) {
 		// Public routes (no authentication required)
 		r.Get(rootPath, handlersMap.IndexTemplateHandler)
+		r.Get(errorPath, handlersMap.ErrorHandler)
 		r.Get(loginPath, handlersMap.LoginHandler)
 		r.Get(registrationPath, handlersMap.RegistrationTemplateHandler)
 		r.Get(countdownPath, handlersMap.CountdownTemplateHandler)

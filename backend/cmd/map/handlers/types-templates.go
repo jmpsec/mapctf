@@ -29,3 +29,9 @@ type RegistrationTemplateData struct {
 	Title string
 	UUID  string
 }
+
+// ErrorTemplateData for passing data to the error template
+type ErrorTemplateData struct {
+	Title string
+	Error string
+}
