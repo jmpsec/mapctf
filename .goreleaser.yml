@@ -62,11 +62,6 @@ archives:
     ids:
       - mapctf-api
       - mapctf-map
-    files:
-      - src: ../README.md
-        dst: README.md
-      - src: ../LICENSE
-        dst: LICENSE
 
 checksum:
   name_template: "checksums.txt"
