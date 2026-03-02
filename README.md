@@ -7,7 +7,7 @@
   </p>
   <p align="center">
     <a href="https://github.com/jmpsec/mapctf/blob/master/LICENSE">
-      <img alt="Software License" src="https://img.shields.io/badge/license-MIT-green?style=flat-square&fuckgithubcache=1">
+      <img alt="Software License" src="https://img.shields.io/badge/license-%20%20GNU%20GPLv3%20-green?style=plastic&fuckgithubcache=1">
     </a>
     <a href="https://github.com/jmpsec/mapctf">
       <img alt="Build Status" src="https://github.com/jmpsec/mapctf/actions/workflows/build_and_test_main_merge.yml/badge.svg?branch=main&fuckgithubcache=1">
