@@ -1,0 +1,40 @@
+name: Build and test mapctf
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  GOLANG_VERSION: 1.25.4
+
+concurrency:
+  group: main-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@8e57b58e57be52ac95949151e2777ffda8501267 # v5.5.0
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+
+      - name: Run GoReleaser snapshot build
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
+        with:
+          distribution: goreleaser
+          version: latest
+          workdir: backend
+          args: release --snapshot --clean --config ../.goreleaser.yml --skip=docker --skip=nfpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

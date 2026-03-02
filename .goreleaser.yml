@@ -1,0 +1,146 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+dist: "./dist"
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+
+builds:
+  - id: mapctf-api
+    main: ./cmd/api
+    binary: "mapctf-api-{{ .Os }}-{{ .Arch }}"
+    no_unique_dist_dir: true
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.buildVersion={{.Version}}
+      - -X main.buildCommit={{.Commit}}
+      - -X main.buildDate={{.Date}}
+
+  - id: mapctf-map
+    main: ./cmd/map
+    binary: "mapctf-map-{{ .Os }}-{{ .Arch }}"
+    no_unique_dist_dir: true
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.buildVersion={{.Version}}
+      - -X main.buildCommit={{.Commit}}
+      - -X main.buildDate={{.Date}}
+
+archives:
+  - id: mapctf
+    allow_different_binary_count: true
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- title .Os }}-
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [ 'zip' ]
+    ids:
+      - mapctf-api
+      - mapctf-map
+    files:
+      - ../README.md
+      - ../LICENSE
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot: {}
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - Merge pull request
+      - Merge branch
+
+dockers:
+  - image_templates:
+      - "{{ .Env.DOCKER_HUB_ORG }}/mapctf-api:{{ .Version }}"
+      - "{{ .Env.DOCKER_HUB_ORG }}/mapctf-api:latest"
+    dockerfile: deploy/cicd/docker/Dockerfile-mapctf-api
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--platform=linux/arm64"
+    extra_files:
+      - mapctf-api-linux-amd64
+      - mapctf-api-linux-arm64
+
+  - image_templates:
+      - "{{ .Env.DOCKER_HUB_ORG }}/mapctf-map:{{ .Version }}"
+      - "{{ .Env.DOCKER_HUB_ORG }}/mapctf-map:latest"
+    dockerfile: deploy/cicd/docker/Dockerfile-mapctf-map
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--platform=linux/arm64"
+    extra_files:
+      - mapctf-map-linux-amd64
+      - mapctf-map-linux-arm64
+
+nfpms:
+  - id: mapctf-api
+    maintainer: jmpsec/mapctf
+    description: mapctf API component
+    homepage: https://github.com/jmpsec/mapctf
+    license: GPL-3.0
+    formats:
+      - deb
+    bindir: /opt/mapctf/bin
+    contents:
+      - src: ./dist/mapctf-api-{{ .Os }}-{{ .Arch }}
+        dst: /opt/mapctf/bin/mapctf-api
+    overrides:
+      deb:
+        scripts:
+          postinstall: deploy/cicd/deb/post-install.sh
+          preremove: deploy/cicd/deb/pre-remove.sh
+
+  - id: mapctf-map
+    maintainer: jmpsec/mapctf
+    description: mapctf Map component
+    homepage: https://github.com/jmpsec/mapctf
+    license: GPL-3.0
+    formats:
+      - deb
+    bindir: /opt/mapctf/bin
+    contents:
+      - src: ./dist/mapctf-map-{{ .Os }}-{{ .Arch }}
+        dst: /opt/mapctf/bin/mapctf-map
+    overrides:
+      deb:
+        scripts:
+          postinstall: deploy/cicd/deb/post-install.sh
+          preremove: deploy/cicd/deb/pre-remove.sh
+
+release:
+  draft: false
+  prerelease: false

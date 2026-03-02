@@ -12,6 +12,7 @@
 bin
 build
 .vscode
+dist
 tmp
 
 # Logs
@@ -20,12 +21,16 @@ tmp
 # Tests
 coverage.out
 
-# Configuration files except Docker env
+# Configuration files except Docker env and goreleaser
 *.json
 *.yaml
 !mapctf.example.yaml
 *.yml
 !docker-compose-dev.yml
+!.goreleaser.yml
+!.golangci.yml
+!.github/workflows/*.yml
+!.github/workflows/*.yaml
 
 # Docker files
 .env
@@ -41,4 +46,3 @@ static
 *.md
 !README.md
 !ARCHITECTURE.md
-
