@@ -60,8 +60,11 @@ func (h *HandlersMap) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// Prepare template data
 	templateData := LoginTemplateData{
-		Title: "Login to mapctf",
-		UUID:  uuid,
+		Title:     "Login to mapctf",
+		LoginType: "Admin Login",
+		LoginMsg:  "Team login is disabled. Only admins can login at this time.",
+		LoginURL:  "/" + uuid + "/login",
+		UUID:      uuid,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")

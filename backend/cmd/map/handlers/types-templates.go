@@ -2,8 +2,11 @@ package handlers
 
 // LoginTemplateData for passing data to the login template
 type LoginTemplateData struct {
-	Title string
-	UUID  string
+	Title     string
+	LoginType string
+	LoginMsg  string
+	LoginURL  string
+	UUID      string
 }
 
 // IndexTemplateData for passing data to the index template

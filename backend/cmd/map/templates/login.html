@@ -44,23 +44,28 @@
       <div id="mctf-main-content" class="mctf-page">
         <main role="main" class="mctf-main page--login page--landing mctf-img-glitch full-height mctf-scroll">
           <header class="mctf-section-header mctf-container">
-            <h1 class="mctf-glitch" data-text="Admin Login">Admin Login</h1>
-            <p class="inner-container">Team login is disabled. Only admins can login at this time.</p>
+            <h1 class="mctf-glitch" data-text="{{ .LoginType }}">{{ .LoginType }}</h1>
+            <p class="inner-container">{{ .LoginMsg }}</p>
           </header>
           <div class="mctf-login">
             <form class="mctf-form">
               <fieldset class="form-set mctf-container container--small">
-                <div class="form-el el--text">
-                  <label for="">Team Name</label>
-                  <input autocomplete="off" name="team_name" type="text" maxlength="20" />
+                <div class="form-el el--text ajax-message-row">
+                  <label class="ajax-message-label" aria-hidden="true">Message</label>
+                  <div id="ajax-message-box" class="ajax-message" role="alert" aria-live="assertive"></div>
                 </div>
                 <div class="form-el el--text">
-                  <label for="">Password</label>
-                  <input autocomplete="off" name="password" type="password" />
+                  <label for="login_username">Username</label>
+                  <input autocomplete="off" id="login_username" name="username" type="text" maxlength="20" />
                 </div>
+                <div class="form-el el--text">
+                  <label for="login_password">Password</label>
+                  <input autocomplete="off" id="login_password" name="password" type="password" />
+                </div>
+                <input type="hidden" id="login_url" name="login_url" value="{{ .LoginURL }}" />
               </fieldset>
               <div class="form-el--actions">
-                <button id="login_button" class="mctf-cta cta--yellow" type="button">Login</button>
+                <button id="login_button" class="mctf-cta cta--yellow" type="button" onclick="sendLogin();">Login</button>
               </div>
             </form>
           </div>
@@ -73,5 +78,6 @@
     <script type="text/javascript" src="/static/js/plugins.js"></script>
     <script type="text/javascript" src="/static/js/mapctf.js"></script>
     <script type="text/javascript" src="/static/js/functions.js"></script>
+    <script type="text/javascript" src="/static/js/login.js"></script>
   </body>
 </html>
