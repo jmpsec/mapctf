@@ -63,8 +63,8 @@ archives:
       - mapctf-api
       - mapctf-map
     files:
-      - ../README.md
-      - ../LICENSE
+      - README.md
+      - LICENSE
 
 checksum:
   name_template: "checksums.txt"
