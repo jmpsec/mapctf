@@ -63,3 +63,12 @@ func (m *TeamManager) ExistsLogoGet(name string, uuid string) (bool, TeamLogo) {
 	}
 	return true, logo
 }
+
+// Random logo for team
+func (m *TeamManager) RandomLogo(uuid string) (TeamLogo, error) {
+	var logo TeamLogo
+	if err := m.DB.Where("enabled = ? AND uuid = ?", true, uuid).Order("RANDOM()").First(&logo).Error; err != nil {
+		return logo, err
+	}
+	return logo, nil
+}

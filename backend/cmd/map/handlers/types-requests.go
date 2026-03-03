@@ -1,16 +1,18 @@
 package handlers
 
 type MapRegistrationRequest struct {
-	Name     string `json:"name"`
-	Alias    string `json:"alias"`
-	Email    string `json:"email"`
-	Team     string `json:"team"`
+	Username string `json:"username"`
 	Password string `json:"password"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Logo     string `json:"logo"`
+	Team     string `json:"team"`
 }
 
 type MapRegistrationResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
+	Success  bool   `json:"success"`
+	Message  string `json:"message"`
+	Redirect string `json:"redirect,omitempty"`
 }
 
 // MapLoginRequest to receive login requests

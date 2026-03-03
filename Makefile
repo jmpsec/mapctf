@@ -20,7 +20,7 @@ api:
 
 # Build map
 map:
-	$(MAKE) -C $(BACKEND_DIR) api
+	$(MAKE) -C $(BACKEND_DIR) map
 
 # Run API server locally
 run_api:

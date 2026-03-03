@@ -95,7 +95,7 @@ func (h *HandlersAPI) CreateTeamHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	// Create team using the New method
-	team, err := h.Teams.New(req.Name, req.Logo, "", req.Protected, req.Visible, uuid)
+	team, err := h.Teams.New(req.Name, req.Logo, req.Protected, req.Visible, uuid)
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: err.Error()})
 		return

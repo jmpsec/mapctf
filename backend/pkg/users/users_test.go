@@ -81,7 +81,7 @@ func TestCreateUserManagerAutoMigrateError(t *testing.T) {
 func TestPlatformUserStructure(t *testing.T) {
 	user := PlatformUser{
 		Username:      "testuser",
-		Display:       "Test User",
+		Name:          "Test User",
 		Email:         "test@example.com",
 		TeamID:        1,
 		PassHash:      "hashedpassword",
@@ -94,7 +94,7 @@ func TestPlatformUserStructure(t *testing.T) {
 		LastUserAgent: "TestAgent",
 		LastAccess:    time.Now(),
 		LastTokenUse:  time.Now(),
-		UUID:         testUUID1,
+		UUID:          testUUID1,
 	}
 
 	if user.Username != "testuser" {
@@ -120,7 +120,7 @@ func TestCreate(t *testing.T) {
 
 	user := PlatformUser{
 		Username: "newuser",
-		Display:  "New User",
+		Name:     "New User",
 		Email:    "new@example.com",
 		PassHash: "hashedpass",
 		TeamID:   1,
@@ -289,7 +289,7 @@ func TestGet(t *testing.T) {
 	// Create a user
 	user := PlatformUser{
 		Username: "getuser",
-		Display:  "Get User",
+		Name:     "Get User",
 		Email:    "get@example.com",
 		PassHash: "hash",
 		TeamID:   5,
@@ -440,7 +440,7 @@ func TestExistsGet(t *testing.T) {
 	// Create a user
 	newUser := PlatformUser{
 		Username: "existsgetuser",
-		Display:  "Exists Get User",
+		Name:     "Exists Get User",
 		Email:    "existsget@example.com",
 		PassHash: "hash",
 		TeamID:   3,
@@ -566,8 +566,8 @@ func TestNew(t *testing.T) {
 		t.Errorf("Expected email 'new@example.com', got '%s'", user.Email)
 	}
 
-	if user.Display != "New User" {
-		t.Errorf("Expected display 'New User', got '%s'", user.Display)
+	if user.Name != "New User" {
+		t.Errorf("Expected name 'New User', got '%s'", user.Name)
 	}
 
 	if !user.Admin {
@@ -1105,7 +1105,7 @@ func TestCheckLoginCredentialsEntityIsolation(t *testing.T) {
 func TestCreateToken(t *testing.T) {
 	db := setupTestDB(t)
 	jwtConfig := &config.ConfigurationJWT{
-		Secret:       "test-secret-key-12345",
+		Secret:        "test-secret-key-12345",
 		HoursToExpire: 24,
 	}
 	manager, err := CreateUserManager(db, jwtConfig)
@@ -1135,7 +1135,7 @@ func TestCreateToken(t *testing.T) {
 func TestCreateTokenDefaultExpiration(t *testing.T) {
 	db := setupTestDB(t)
 	jwtConfig := &config.ConfigurationJWT{
-		Secret:       "test-secret-key-12345",
+		Secret:        "test-secret-key-12345",
 		HoursToExpire: 48,
 	}
 	manager, err := CreateUserManager(db, jwtConfig)
@@ -1165,7 +1165,7 @@ func TestCreateTokenDefaultExpiration(t *testing.T) {
 func TestCreateTokenDifferentIssuers(t *testing.T) {
 	db := setupTestDB(t)
 	jwtConfig := &config.ConfigurationJWT{
-		Secret:       "test-secret-key-12345",
+		Secret:        "test-secret-key-12345",
 		HoursToExpire: 24,
 	}
 	manager, err := CreateUserManager(db, jwtConfig)
@@ -1194,7 +1194,7 @@ func TestCheckToken(t *testing.T) {
 	db := setupTestDB(t)
 	jwtSecret := "test-secret-key-12345"
 	jwtConfig := &config.ConfigurationJWT{
-		Secret:       jwtSecret,
+		Secret:        jwtSecret,
 		HoursToExpire: 24,
 	}
 	manager, err := CreateUserManager(db, jwtConfig)
@@ -1227,7 +1227,7 @@ func TestCheckToken(t *testing.T) {
 func TestCheckTokenInvalidSecret(t *testing.T) {
 	db := setupTestDB(t)
 	jwtConfig := &config.ConfigurationJWT{
-		Secret:       "correct-secret-key",
+		Secret:        "correct-secret-key",
 		HoursToExpire: 24,
 	}
 	manager, err := CreateUserManager(db, jwtConfig)
@@ -1252,7 +1252,7 @@ func TestCheckTokenInvalidSecret(t *testing.T) {
 func TestCheckTokenInvalidToken(t *testing.T) {
 	db := setupTestDB(t)
 	jwtConfig := &config.ConfigurationJWT{
-		Secret:       "test-secret",
+		Secret:        "test-secret",
 		HoursToExpire: 24,
 	}
 	manager, err := CreateUserManager(db, jwtConfig)
@@ -1271,7 +1271,7 @@ func TestCheckTokenInvalidToken(t *testing.T) {
 func TestCheckTokenMalformedToken(t *testing.T) {
 	db := setupTestDB(t)
 	jwtConfig := &config.ConfigurationJWT{
-		Secret:       "test-secret",
+		Secret:        "test-secret",
 		HoursToExpire: 24,
 	}
 	manager, err := CreateUserManager(db, jwtConfig)
@@ -1297,7 +1297,7 @@ func TestTokenRoundTrip(t *testing.T) {
 	db := setupTestDB(t)
 	jwtSecret := "round-trip-secret-key"
 	jwtConfig := &config.ConfigurationJWT{
-		Secret:       jwtSecret,
+		Secret:        jwtSecret,
 		HoursToExpire: 24,
 	}
 	manager, err := CreateUserManager(db, jwtConfig)
@@ -1343,7 +1343,7 @@ func TestLoginAndTokenWorkflow(t *testing.T) {
 	db := setupTestDB(t)
 	jwtSecret := "workflow-secret-key"
 	jwtConfig := &config.ConfigurationJWT{
-		Secret:       jwtSecret,
+		Secret:        jwtSecret,
 		HoursToExpire: 24,
 	}
 	manager, err := CreateUserManager(db, jwtConfig)

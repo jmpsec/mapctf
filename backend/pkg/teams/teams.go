@@ -74,6 +74,31 @@ func (m *TeamManager) Create(team PlatformTeam) error {
 	return nil
 }
 
+// Register team
+func (m *TeamManager) Register(name, logo string, uuid string) (PlatformTeam, error) {
+	if name == "" {
+		return PlatformTeam{}, fmt.Errorf("team name cannot be empty")
+	}
+	if m.Exists(name, uuid) {
+		return PlatformTeam{}, fmt.Errorf("team %s already exists", name)
+	}
+	if logo == "" {
+		randomLogo, err := m.RandomLogo(uuid)
+		if err != nil {
+			return PlatformTeam{}, fmt.Errorf("failed to get random logo: %w", err)
+		}
+		logo = randomLogo.Logo
+	}
+	newTeam, err := m.New(name, logo, false, false, uuid)
+	if err != nil {
+		return PlatformTeam{}, err
+	}
+	if err := m.Create(newTeam); err != nil {
+		return PlatformTeam{}, err
+	}
+	return newTeam, nil
+}
+
 // Exists checks if team exists
 func (m *TeamManager) Exists(name string, uuid string) bool {
 	var results int64
@@ -99,11 +124,6 @@ func (m *TeamManager) GetAll(uuid string) ([]PlatformTeam, error) {
 	return teams, nil
 }
 
-// GetByUUID gets team by name and UUID (alias for Get)
-func (m *TeamManager) GetByUUID(name string, uuid string) (PlatformTeam, error) {
-	return m.Get(name, uuid)
-}
-
 // ExistsGet checks if team exists and returns the team
 func (m *TeamManager) ExistsGet(name string, uuid string) (bool, PlatformTeam) {
 	team, err := m.Get(name, uuid)
@@ -123,7 +143,7 @@ func (m *TeamManager) ExistsGetByUUID(name string, uuid string) (bool, PlatformT
 }
 
 // New empty team
-func (m *TeamManager) New(name, logo, email string, protected, visible bool, uuid string) (PlatformTeam, error) {
+func (m *TeamManager) New(name, logo string, protected, visible bool, uuid string) (PlatformTeam, error) {
 	if !m.Exists(name, uuid) {
 		return PlatformTeam{
 			Name:      name,

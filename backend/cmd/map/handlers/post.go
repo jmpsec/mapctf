@@ -28,8 +28,35 @@ func (h *HandlersMap) RegistrationPOSTHandler(w http.ResponseWriter, r *http.Req
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid request body"})
 		return
 	}
+	if req.Username == "" || req.Password == "" {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "username and password are required"})
+		return
+	}
+	if req.Email == "" {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "email is required"})
+		return
+	}
+	if req.Team == "" {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "team is required"})
+		return
+	}
+	// Register team
+	nTeam, err := h.Teams.Register(req.Team, req.Logo, uuid)
+	if err != nil {
+		log.Err(err).Msg("error registering team")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to register team"})
+		return
+	}
+	// Register user
+	err = h.Users.Register(req.Username, req.Password, req.Name, req.Email, nTeam.ID, uuid)
+	if err != nil {
+		log.Err(err).Msg("error registering user")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to register user"})
+		return
+	}
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapRegistrationResponse{
-		Success: true,
-		Message: "Registration successful",
+		Success:  true,
+		Message:  "Registration successful",
+		Redirect: "/" + uuid + "/login",
 	})
 }

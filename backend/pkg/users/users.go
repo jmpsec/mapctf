@@ -21,7 +21,7 @@ const (
 type PlatformUser struct {
 	gorm.Model
 	Username      string `gorm:"index"`
-	Display       string
+	Name          string
 	Email         string
 	TeamID        uint
 	PassHash      string `json:"-"`
@@ -126,7 +126,7 @@ func (m *UserManager) ExistsGetByUUID(username string, uuid string) (bool, Platf
 }
 
 // New empty user
-func (m *UserManager) New(username, password, email, display string, admin, service bool, uuid string, teamID uint) (PlatformUser, error) {
+func (m *UserManager) New(username, password, email, name string, admin, service bool, uuid string, teamID uint) (PlatformUser, error) {
 	if !m.Exists(username, uuid) {
 		passhash, err := m.HashPasswordWithSalt(password)
 		if err != nil {
@@ -138,7 +138,7 @@ func (m *UserManager) New(username, password, email, display string, admin, serv
 			Admin:    admin,
 			Service:  service,
 			Email:    email,
-			Display:  display,
+			Name:     name,
 			TeamID:   teamID,
 			Active:   true,
 			UUID:     uuid,
@@ -147,7 +147,22 @@ func (m *UserManager) New(username, password, email, display string, admin, serv
 	return PlatformUser{}, fmt.Errorf("%s already exists", username)
 }
 
-// Update
+// Register a new user with all the required fields and UUID
+func (m *UserManager) Register(username, password, name, email string, teamID uint, uuid string) error {
+	// Check if user already exists
+	if m.Exists(username, uuid) {
+		return fmt.Errorf("user %s already exists", username)
+	}
+	// Create new user
+	user, err := m.New(username, password, email, name, false, false, uuid, teamID)
+	if err != nil {
+		return fmt.Errorf("failed to create user: %w", err)
+	}
+	if err := m.Create(user); err != nil {
+		return fmt.Errorf("failed to save user: %w", err)
+	}
+	return nil
+}
 
 // CheckLoginCredentials to check provided login credentials by matching hashes
 func (m *UserManager) CheckLoginCredentials(username, password string, uuid string) (bool, PlatformUser) {

@@ -366,7 +366,7 @@ func TestGetByUUID(t *testing.T) {
 	}
 
 	// Get team by entity ID 1
-	retrievedTeam1, err := manager.GetByUUID("Multi Team", testUUID1)
+	retrievedTeam1, err := manager.Get("Multi Team", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get team by entity ID 1: %v", err)
 	}
@@ -384,7 +384,7 @@ func TestGetByUUID(t *testing.T) {
 	}
 
 	// Get team by entity ID 2
-	retrievedTeam2, err := manager.GetByUUID("Multi Team", testUUID2)
+	retrievedTeam2, err := manager.Get("Multi Team", testUUID2)
 	if err != nil {
 		t.Fatalf("Failed to get team by entity ID 2: %v", err)
 	}
@@ -410,7 +410,7 @@ func TestGetByUUIDNonExistent(t *testing.T) {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
-	_, err = manager.GetByUUID("nonexistent", testUUID1)
+	_, err = manager.Get("nonexistent", testUUID1)
 	if err == nil {
 		t.Error("Expected error when getting non-existent team by entity ID")
 	}
@@ -557,7 +557,7 @@ func TestNew(t *testing.T) {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
-	team, err := manager.New("New Team", "new-logo.png", "team@example.com", true, true, testUUID1)
+	team, err := manager.New("New Team", "new-logo.png", true, true, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create new team: %v", err)
 	}
@@ -609,7 +609,7 @@ func TestNewExistingTeam(t *testing.T) {
 	}
 
 	// Try to create a new team with the same name
-	_, err = manager.New("Existing", "new-logo.png", "team@example.com", false, true, testUUID1)
+	_, err = manager.New("Existing", "new-logo.png", false, true, testUUID1)
 	if err == nil {
 		t.Error("Expected error when creating team with existing name")
 	}
@@ -628,7 +628,7 @@ func TestNewProtectedTeam(t *testing.T) {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
-	team, err := manager.New("Protected Team", "protected-logo.png", "protected@example.com", true, false, testUUID1)
+	team, err := manager.New("Protected Team", "protected-logo.png", true, false, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create protected team: %v", err)
 	}
@@ -723,7 +723,7 @@ func TestTeamWorkflow(t *testing.T) {
 	}
 
 	// Step 2: Create new team struct
-	team, err := manager.New("Workflow Team", "workflow-logo.png", "workflow@example.com", false, true, testUUID1)
+	team, err := manager.New("Workflow Team", "workflow-logo.png", false, true, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create new team: %v", err)
 	}
@@ -786,7 +786,7 @@ func TestMultiEntityTeamIsolation(t *testing.T) {
 	}
 
 	// Verify entity isolation
-	entity1Admin, err := manager.GetByUUID("Admin Team", testUUID1)
+	entity1Admin, err := manager.Get("Admin Team", testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to get admin team for entity 1: %v", err)
 	}
@@ -797,7 +797,7 @@ func TestMultiEntityTeamIsolation(t *testing.T) {
 		t.Errorf("Expected entity 1 admin points 100, got %d", entity1Admin.Points)
 	}
 
-	entity2Admin, err := manager.GetByUUID("Admin Team", testUUID2)
+	entity2Admin, err := manager.Get("Admin Team", testUUID2)
 	if err != nil {
 		t.Fatalf("Failed to get admin team for entity 2: %v", err)
 	}

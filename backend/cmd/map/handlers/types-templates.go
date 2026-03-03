@@ -29,8 +29,10 @@ type GameboardTemplateData struct {
 
 // RegistrationTemplateData for passing data to the registration template
 type RegistrationTemplateData struct {
-	Title string
-	UUID  string
+	Title            string
+	RegistrationType string
+	RegisterURL      string
+	UUID             string
 }
 
 // ErrorTemplateData for passing data to the error template

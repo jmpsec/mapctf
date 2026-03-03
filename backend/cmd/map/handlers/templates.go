@@ -93,8 +93,10 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 	}
 	// Prepare template data
 	templateData := RegistrationTemplateData{
-		Title: "Register to mapctf",
-		UUID:  uuid,
+		Title:            "Register to mapctf",
+		RegistrationType: "Solo Registration",
+		RegisterURL:      "/" + uuid + "/registration",
+		UUID:             uuid,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
