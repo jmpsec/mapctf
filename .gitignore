@@ -40,7 +40,6 @@ notes.txt
 
 # Not tracking frontend files yet
 frontend
-static
 
 # Markdown files
 *.md
