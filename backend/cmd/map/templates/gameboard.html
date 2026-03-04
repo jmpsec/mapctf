@@ -1911,15 +1911,15 @@
                     <a href="#" class="mctf-init-tutorial">Rules</a>
                   </li>
                   <li>
-                    <a href="{{ .UUID }}/registration">Registration</a>
+                    <a href="/{{ .UUID }}/registration">Registration</a>
                   </li>
-                  <li><a href="/logout">Logout</a></li>
+                  <li><a href="/{{ .UUID }}/logout">Logout</a></li>
                 </ul>
               </li>
             </ul>
 
             <div class="branding">
-              <a href="/">
+              <a href="/{{ .UUID }}">
                 <div class="branding-rules">
                   <span>POWERED BY MAPCTF</span>
                 </div>

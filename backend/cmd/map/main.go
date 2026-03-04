@@ -69,6 +69,8 @@ const (
 	registrationPath = "/registration"
 	// Countdown path
 	countdownPath = "/countdown"
+	// Rules path
+	rulesPath = "/rules"
 	// Admin path
 	adminPath = "/admin"
 	// JSON data path
@@ -213,8 +215,10 @@ func mapCTFService() {
 	// Middleware
 	muxMap.Use(middleware.RequestID)
 	muxMap.Use(middleware.RealIP)
+	muxMap.Use(middleware.Logger)
 	muxMap.Use(middleware.Recoverer)
 	muxMap.Use(middleware.Timeout(30 * time.Second))
+	muxMap.Use(sessionManager.LoadAndSave)
 	// Root
 	muxMap.Get(rootPath, handlersMap.RootHandler)
 	// Health
@@ -235,13 +239,12 @@ func mapCTFService() {
 		r.Get(loginPath, handlersMap.LoginHandler)
 		r.Get(registrationPath, handlersMap.RegistrationTemplateHandler)
 		r.Get(countdownPath, handlersMap.CountdownTemplateHandler)
+		r.Get(rulesPath, handlersMap.CountdownTemplateHandler)
 		r.Post(loginPath, handlersMap.LoginPOSTHandler)
 		r.Post(registrationPath, handlersMap.RegistrationPOSTHandler)
 		r.Post(logoutPath, handlersMap.LogoutPOSTHandler)
 		// Protected routes group (require authentication)
 		r.Group(func(r chi.Router) {
-			// SCS middleware
-			r.Use(sessionManager.LoadAndSave)
 			r.Use(handlersMap.RequireAuth)
 			// Protected gameboard routes
 			r.Get(mapGameboardPath, handlersMap.GameboardTemplateHandler)

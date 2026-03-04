@@ -1025,7 +1025,7 @@
       $modules.each(function () {
         var $self = $(this),
           module = $self.data("module"),
-          modulePath = "inc/gameboard/modules/" + module + ".html";
+          modulePath = "/static/inc/gameboard/modules/" + module + ".html";
 
         var get = $.get(modulePath, function (data, status, jqxhr) {
           $self.html(data);
@@ -1083,7 +1083,7 @@
      * load the list view for the game
      */
     function loadListView() {
-      var listViewPath = "inc/gameboard/listview.html";
+      var listViewPath = "/static/inc/gameboard/listview.html";
 
       return $.get(
         listViewPath,
@@ -1113,7 +1113,7 @@
         return df.resolve(TEAM_DATA);
       }
 
-      var loadPath = "data/teams.json";
+      var loadPath = "/static/data/teams.json";
 
       return $.get(
         loadPath,
@@ -1143,7 +1143,7 @@
         return df.resolve(COUNTRY_DATA);
       }
 
-      var loadPath = "data/country-data.json";
+      var loadPath = "/static/data/country-data.json";
 
       return $.get(
         loadPath,
@@ -1309,7 +1309,7 @@
           var next = $(this).data("nextTutorial");
 
           if (next) {
-            var loadPath = "inc/modals/tutorial--" + next + ".html";
+            var loadPath = "/static/inc/modals/tutorial--" + next + ".html";
             currStepIndex++;
             MAP_CTF.loadComponent("#mctf-modal", loadPath, buildTutorial);
           } else {
@@ -1408,7 +1408,7 @@
       ACTIVE_CLASS = "visible",
       POPUP_CLASSES = "mctf-modal-wrapper modal--popup",
       DEFAULT_CLASSES = "mctf-modal-wrapper modal--default",
-      MODAL_DIR = "inc/modals/",
+      MODAL_DIR = "/static/inc/modals/",
       $modalContainer,
       $modal,
       $countryHover;
@@ -1605,7 +1605,7 @@
      *   - a callback to render the country data in the popup
      */
     function countryHoverPopup(cb) {
-      var loadPath = "inc/modals/country-popup.html";
+      var loadPath = "/static/inc/modals/country-popup.html";
       if ($countryHover.length === 0) {
         $countryHover = $('<div id="mctf-country-popup" class="mctf-popup-content popup--hover mctf-section-border" />').appendTo($modalContainer);
       }
@@ -1620,7 +1620,7 @@
      *   - a callback to render the country data in the popup
      */
     function viewmodePopup(cb) {
-      var loadPath = "inc/modals/country-popup--viewmode.html";
+      var loadPath = "/static/inc/modals/country-popup--viewmode.html";
       if ($countryHover.length === 0) {
         $countryHover = $('<div id="mctf-country-popup" class="mctf-popup-content popup--view-only" />').appendTo($modalContainer);
       }
@@ -1833,7 +1833,7 @@
    * --command line
    */
   MAP_CTF.command_line = (function () {
-    var loadPath = "data/command-line.json",
+    var loadPath = "/static/data/command-line.json",
       modalName = "command-line",
       $cmdPromptList,
       $cmdResultsList,
@@ -2588,10 +2588,7 @@
     //
     $body
       .on("content-loaded", function (event) {
-        // load the sliders
-        MAP_CTF.slider.init();
-
-        // load the grpahics
+        // load the graphics
         MAP_CTF.graphics.init();
       })
       .trigger("content-loaded");

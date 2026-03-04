@@ -21,6 +21,12 @@ type CountdownTemplateData struct {
 	UUID  string
 }
 
+// RulesTemplateData for passing data to the rules template
+type RulesTemplateData struct {
+	Title string
+	UUID  string
+}
+
 // GameboardTemplateData for passing data to the gameboard template
 type GameboardTemplateData struct {
 	Title string

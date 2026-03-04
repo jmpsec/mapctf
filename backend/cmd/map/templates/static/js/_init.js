@@ -82,7 +82,7 @@
    * loads the content in the initkit
    */
   _initkit.load = function (file) {
-    var loadDir = "inc",
+    var loadDir = "/static/inc",
       loadSection = MCTF_SECTION,
       fileExt = ".html",
       loadPath = loadDir + "/" + loadSection + "/" + file + fileExt;

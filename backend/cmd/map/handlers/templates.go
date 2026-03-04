@@ -134,6 +134,36 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// RulesTemplateHandler for rules page for GET requests
+func (h *HandlersMap) RulesTemplateHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	// Prepare template
+	t, err := template.ParseFiles(
+		h.Config.Map.TemplatesDir + "/rules.html")
+	if err != nil {
+		log.Err(err).Msg("error getting rules template")
+		return
+	}
+	// Prepare template data
+	templateData := RulesTemplateData{
+		Title: "Rules of mapctf",
+		UUID:  uuid,
+	}
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("template error")
+		return
+	}
+}
+
 // GameboardTemplateHandler for gameboard page for GET requests
 func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
