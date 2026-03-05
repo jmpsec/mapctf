@@ -2683,12 +2683,19 @@ body {
   color: #cff8fa;
 }
 .branding .branding-rules {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   vertical-align: middle;
   padding-top: 10px;
   padding-bottom: 10px;
   border-top: 1px solid #21b4ba;
   border-bottom: 1px solid #21b4ba;
+}
+.branding .branding-rules .branding-logo {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 .gameboard--viewmode .branding .branding-rules {
   background: rgba(19, 36, 43, 0.8);

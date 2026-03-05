@@ -239,7 +239,7 @@ func mapCTFService() {
 		r.Get(loginPath, handlersMap.LoginHandler)
 		r.Get(registrationPath, handlersMap.RegistrationTemplateHandler)
 		r.Get(countdownPath, handlersMap.CountdownTemplateHandler)
-		r.Get(rulesPath, handlersMap.CountdownTemplateHandler)
+		r.Get(rulesPath, handlersMap.RulesTemplateHandler)
 		r.Post(loginPath, handlersMap.LoginPOSTHandler)
 		r.Post(registrationPath, handlersMap.RegistrationPOSTHandler)
 		r.Post(logoutPath, handlersMap.LogoutPOSTHandler)

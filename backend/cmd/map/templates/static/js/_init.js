@@ -24,21 +24,6 @@
    * -------------------------------------------- */
 
   /**
-   * demo for the viewmode, since there's no interaction there.
-   */
-  _initkit.viewModeDemo = function () {
-    $("body").on("gameboard-loaded", function (event) {
-      setTimeout(function () {
-        MAP_CTF.gameboard.captureCountry("Algeria");
-
-        setTimeout(function () {
-          MAP_CTF.gameboard.captureCountry("Chile");
-        }, 10000);
-      }, 4000);
-    });
-  };
-
-  /**
    * enable the active state on the main nav. This function gets
    *  called since the pages are loaded via ajax.
    */
@@ -103,11 +88,6 @@
         console.error("/end error");
       } else {
         if (MAP_CTF !== undefined) {
-          // Build emblem pickers from SVG sprite for any placeholder containers.
-          $(".emblem-carousel").each(function () {
-            MAP_CTF.buildEmblemCarousel($(this));
-          });
-
           MAP_CTF.init();
 
           if (MCTF_SECTION === "gameboard" || MCTF_SECTION === "viewer-mode") {

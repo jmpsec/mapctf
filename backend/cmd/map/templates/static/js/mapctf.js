@@ -1386,6 +1386,7 @@
       init: init,
       data: getCountryData,
       captureCountry: captureCountry,
+      resetCapture: removeCaptured,
       initTutorial: initTutorial,
       toggleListView: toggleListView,
 
@@ -1446,6 +1447,15 @@
       // close the modal
       //
       $body.on("click", ".js-close-modal", close);
+
+      // Esc should close the active modal via its own close flow.
+      $(window).on("keyup", function (event) {
+        var key = event.which || 0,
+          eventKey = event.key || "";
+        if (key === 27 || eventKey === "Escape") {
+          closeActive(event);
+        }
+      });
     }
 
     /**
@@ -1468,6 +1478,29 @@
       if (_initkit !== undefined) {
         _initkit.enableNavActiveState();
       }
+    }
+
+    /**
+     * close only the active modal, preferring its own close button
+     * so modal-specific cleanup handlers run.
+     */
+    function closeActive(event) {
+      if (event) event.preventDefault();
+
+      var $activeModal = $('div[id^="mctf-modal"].' + ACTIVE_CLASS).last();
+      if ($activeModal.length > 0) {
+        if ($activeModal.hasClass("modal--country-capture") && MAP_CTF.gameboard && typeof MAP_CTF.gameboard.resetCapture === "function") {
+          MAP_CTF.gameboard.resetCapture();
+        }
+
+        var $closeBtn = $(".js-close-modal", $activeModal).first();
+        if ($closeBtn.length > 0) {
+          $closeBtn.trigger("click");
+          return;
+        }
+      }
+
+      close();
     }
 
     /**
@@ -1654,6 +1687,7 @@
 
       // close the regular modal
       close: close,
+      closeActive: closeActive,
     };
   })(); // modal
 
@@ -1880,7 +1914,7 @@
         else if (key === 27) {
           clearCommandPrompt();
           MAP_CTF.gameboard.closeTutorial();
-          $(".js-close-modal").trigger("click");
+          MAP_CTF.modal.closeActive();
         }
       }); // window.on('keyup')
 
@@ -2811,6 +2845,21 @@
   };
 
   /**
+   * Bootstrap section-specific modules when initkit is not in use.
+   */
+  function bootstrapWithoutInitkit() {
+    var section = ($("body").data("section") || "").toString();
+
+    MAP_CTF.init();
+
+    if (section === "gameboard" || section === "viewer-mode") {
+      MAP_CTF.gameboard.init();
+    } else if (section === "admin") {
+      MAP_CTF.admin.init();
+    }
+  }
+
+  /**
    * set up stuff on document ready
    */
   $(document).ready(function () {
@@ -2821,7 +2870,7 @@
     //  if we are using the initkit.
     //
     if (typeof _initkit === "undefined") {
-      MAP_CTF.init();
+      bootstrapWithoutInitkit();
     }
   });
 })((window.MAP_CTF = window.MAP_CTF || {}), jQuery);

@@ -26,6 +26,7 @@
           <div class="branding">
             <a href="/{{ .UUID }}/">
               <div class="branding-rules">
+                <img src="/static/img/favicon.png" alt="MapCTF logo" class="branding-logo" />
                 <span>POWERED BY MAPCTF</span>
               </div>
             </a>
@@ -65,7 +66,7 @@
                 <input type="hidden" id="login_url" name="login_url" value="{{ .LoginURL }}" />
               </fieldset>
               <div class="form-el--actions">
-                <button id="login_button" class="mctf-cta cta--yellow" type="button" onclick="sendLogin();">Login</button>
+                <button id="login_button" class="mctf-cta cta--yellow" type="button" onclick="sendLogin()">Login</button>
               </div>
             </form>
           </div>
