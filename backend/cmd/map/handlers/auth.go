@@ -88,6 +88,10 @@ func (h *HandlersMap) IsAuthenticated(ctx context.Context) bool {
 	return h.Sessions.GetString(ctx, string(ContextKeyUser)) != ""
 }
 
+func (h *HandlersMap) IsAdmin(ctx context.Context) bool {
+	return h.Sessions.GetBool(ctx, string(ContextKeyAdmin))
+}
+
 func (h *HandlersMap) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if h.Sessions.GetString(r.Context(), string(ContextKeyUser)) == "" {

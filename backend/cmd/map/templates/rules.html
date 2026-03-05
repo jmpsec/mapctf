@@ -44,6 +44,10 @@
             <li>
               <a href="/{{ .UUID }}/login" data-active="login">Login</a>
             </li>
+            {{ end }} {{ if .Admin }}
+            <li>
+              <a href="/{{ .UUID }}/admin" data-active="admin">🔐</a>
+            </li>
             {{ end }}
           </ul>
         </nav>

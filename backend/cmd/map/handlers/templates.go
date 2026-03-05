@@ -30,10 +30,12 @@ func (h *HandlersMap) IndexTemplateHandler(w http.ResponseWriter, r *http.Reques
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	isAdmin := h.IsAdmin(r.Context())
 	templateData := IndexTemplateData{
 		Title:         "Welcome to mapctf",
 		UUID:          uuid,
 		Authenticated: authenticated,
+		Admin:         isAdmin,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -62,6 +64,7 @@ func (h *HandlersMap) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	isAdmin := h.IsAdmin(r.Context())
 	templateData := LoginTemplateData{
 		Title:         "Login to mapctf",
 		LoginType:     "Admin Login",
@@ -69,6 +72,7 @@ func (h *HandlersMap) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		LoginURL:      "/" + uuid + "/login",
 		UUID:          uuid,
 		Authenticated: authenticated,
+		Admin:         isAdmin,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -97,12 +101,14 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	isAdmin := h.IsAdmin(r.Context())
 	templateData := RegistrationTemplateData{
 		Title:            "Register to mapctf",
 		RegistrationType: "Solo Registration",
 		RegisterURL:      "/" + uuid + "/registration",
 		UUID:             uuid,
 		Authenticated:    authenticated,
+		Admin:            isAdmin,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -131,10 +137,12 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	isAdmin := h.IsAdmin(r.Context())
 	templateData := CountdownTemplateData{
 		Title:         "Countdown to mapctf",
 		UUID:          uuid,
 		Authenticated: authenticated,
+		Admin:         isAdmin,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -163,10 +171,12 @@ func (h *HandlersMap) RulesTemplateHandler(w http.ResponseWriter, r *http.Reques
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	isAdmin := h.IsAdmin(r.Context())
 	templateData := RulesTemplateData{
 		Title:         "Rules of mapctf",
 		UUID:          uuid,
 		Authenticated: authenticated,
+		Admin:         isAdmin,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -195,10 +205,12 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	isAdmin := h.IsAdmin(r.Context())
 	templateData := GameboardTemplateData{
 		Title:         "Gameboard of mapctf",
 		UUID:          uuid,
 		Authenticated: authenticated,
+		Admin:         isAdmin,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
