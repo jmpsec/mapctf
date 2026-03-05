@@ -36,9 +36,15 @@
               <a href="/{{ .UUID }}/registration" data-active="registration">Registration</a>
             </li>
             <li></li>
+            {{ if .Authenticated }}
+            <li>
+              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">Gameboard</a>
+            </li>
+            {{ else }}
             <li>
               <a href="/{{ .UUID }}/login" data-active="login">Login</a>
             </li>
+            {{ end }}
           </ul>
         </nav>
       </div>

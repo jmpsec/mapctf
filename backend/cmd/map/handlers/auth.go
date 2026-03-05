@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -83,10 +84,14 @@ func (h *HandlersMap) LogoutPOSTHandler(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+func (h *HandlersMap) IsAuthenticated(ctx context.Context) bool {
+	return h.Sessions.GetString(ctx, string(ContextKeyUser)) != ""
+}
+
 func (h *HandlersMap) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if h.Sessions.GetString(r.Context(), string(ContextKeyUser)) == "" {
-			http.Error(w, forbiddenContent, http.StatusUnauthorized)
+			http.Redirect(w, r, "/"+h.Config.Map.UUID+"/login", http.StatusFound)
 			return
 		}
 		next.ServeHTTP(w, r)
