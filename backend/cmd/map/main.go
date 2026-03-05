@@ -251,6 +251,7 @@ func mapCTFService() {
 			// Protected admin routes
 			r.Route(adminPath, func(r chi.Router) {
 				r.Use(handlersMap.RequireAdmin)
+				r.Get("/", handlersMap.AdminTemplateHandler)
 			})
 		})
 	})

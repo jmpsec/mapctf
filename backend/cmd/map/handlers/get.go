@@ -27,9 +27,27 @@ func (h *HandlersMap) ErrorHandler(w http.ResponseWriter, r *http.Request) {
 			msg = raw
 		}
 	}
+	status := "error"
+	if raw := r.URL.Query().Get("status"); raw != "" {
+		if unescaped, decodeErr := url.QueryUnescape(raw); decodeErr == nil && unescaped != "" {
+			status = unescaped
+		} else {
+			status = raw
+		}
+	}
+	header := "Issue detected"
+	if raw := r.URL.Query().Get("header"); raw != "" {
+		if unescaped, decodeErr := url.QueryUnescape(raw); decodeErr == nil && unescaped != "" {
+			header = unescaped
+		} else {
+			header = raw
+		}
+	}
 	templateData := ErrorTemplateData{
 		Title: "Error in mapctf",
 		Error: msg,
+		Status: status,
+		Header: header,
 	}
 	w.WriteHeader(http.StatusInternalServerError)
 	if err := t.Execute(w, templateData); err != nil {
@@ -38,11 +56,22 @@ func (h *HandlersMap) ErrorHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ErrorHandler for error requests
+// ErrorInvalidUUID for invalid UUID error
 func (h *HandlersMap) ErrorInvalidUUID(w http.ResponseWriter, r *http.Request) {
 	rErr := r.Clone(r.Context())
 	q := rErr.URL.Query()
 	q.Set("message", "Valid UUID is required")
+	rErr.URL.RawQuery = q.Encode()
+	h.ErrorHandler(w, rErr)
+}
+
+// ErrorForbidden for forbidden error
+func (h *HandlersMap) ErrorForbidden(w http.ResponseWriter, r *http.Request) {
+	rErr := r.Clone(r.Context())
+	q := rErr.URL.Query()
+	q.Set("message", "You do not have permission to access this resource")
+	q.Set("status", "forbidden")
+	q.Set("header", "Access forbidden")
 	rErr.URL.RawQuery = q.Encode()
 	h.ErrorHandler(w, rErr)
 }

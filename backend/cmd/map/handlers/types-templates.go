@@ -47,8 +47,17 @@ type RegistrationTemplateData struct {
 	Authenticated    bool
 }
 
+// AdminTemplateData for passing data to the admin template
+type AdminTemplateData struct {
+	Title         string
+	UUID          string
+	Authenticated bool
+}
+
 // ErrorTemplateData for passing data to the error template
 type ErrorTemplateData struct {
-	Title string
-	Error string
+	Title  string
+	Error  string
+	Status string
+	Header string
 }

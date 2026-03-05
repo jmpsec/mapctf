@@ -1475,7 +1475,7 @@
       // this is here to re-enable the active state on the nav
       //  in case it was altered when the modal was launched.
       //
-      if (_initkit !== undefined) {
+      if (typeof _initkit !== "undefined") {
         _initkit.enableNavActiveState();
       }
     }

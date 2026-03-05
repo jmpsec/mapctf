@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Cache-control" content="no-cache" />
+    <meta http-equiv="Expires" content="-1" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MAPCTF</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    <link rel="stylesheet" href="/static/css/mapctf.css" />
+  </head>
+  <body data-section="admin">
+    <div class="mctf-sprite" id="mctf-svg-sprite"></div>
+    <div class="mctf-viewport admin-viewport">
+      <div id="mctf-admin-nav">
+        <div class="admin-nav-bar mctf-row-container">
+          <header class="admin-nav-header row-fixed">
+            <div class="branding-el">POWERED BY MAPCTF</div>
+            <h2>Game Admin</h2>
+          </header>
+          <nav class="admin-nav-links row-fluid">
+            <ul>
+              <li class="active"><a href="#configuration">Configuration</a></li>
+              <li><a href="#controls">Controls</a></li>
+              <li><a href="#teams">Teams</a></li>
+            </ul>
+          </nav>
+          <div class="admin-nav-controls row-fixed">
+            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+          </div>
+          <div class="admin-nav--footer row-fixed">
+            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+          </div>
+        </div>
+      </div>
+      <div id="mctf-main-content" class="mctf-page mctf-admin-main">
+        <div class="admin-sections">
+          <header class="admin-page-header">
+            <h3>Configuration</h3>
+            <span class="admin-section--status">status_ <span class="highlighted">OK</span></span>
+          </header>
+
+          <section id="configuration" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Game Configuration</h3>
+            </header>
+
+            <div class="admin-row">
+              <dl>
+                <dt>game</dt>
+                <dd>1</dd>
+                <dt>game_paused</dt>
+                <dd>0</dd>
+                <dt>registration</dt>
+                <dd>1</dd>
+                <dt>login</dt>
+                <dd>1</dd>
+                <dt>custom_org</dt>
+                <dd>MAPCTF</dd>
+              </dl>
+            </div>
+
+            <div class="admin-row admin-buttons">
+              <button class="mctf-cta cta--yellow" type="button">Edit game</button>
+              <button class="mctf-cta cta--yellow" type="button">Edit game_paused</button>
+              <button class="mctf-cta cta--yellow" type="button">Edit registration</button>
+              <button class="mctf-cta cta--yellow" type="button">Edit login</button>
+              <button class="mctf-cta cta--yellow" type="button">Edit custom_org</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" src="/static/js/plugins.js"></script>
+    <script type="text/javascript" src="/static/js/mapctf.js"></script>
+    <script type="text/javascript" src="/static/js/functions.js"></script>
+  </body>
+</html>

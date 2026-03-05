@@ -15,15 +15,17 @@
       <div id="mctf-main-content" class="mctf-page">
         <main role="main" class="mctf-main page--game-status row-fluid no-shrink center-vertically mctf-img-glitch full-height mctf-scroll">
           <div class="mctf-container mctf-centered-main">
-            <h3 class="title-lead">status_<span class="highlighted--red">error</span></h3>
+            <h3 class="title-lead">
+              status_
+              <span class="highlighted--red">{{ .Status }}</span>
+            </h3>
+
+            {{ if .Header }}
+            <h1 class="mctf-glitch" data-text="{{ .Header }}">{{ .Header }}</h1>
+            {{ else }}
             <h1 class="mctf-glitch" data-text="Issue detected">Issue detected</h1>
-            <p class="status-text">
-              {{ if .Error }}
-                {{ .Error }}
-              {{ else }}
-                An unexpected issue occurred while processing your request.
-              {{ end }}
-            </p>
+            {{ end }}
+            <p class="status-text">{{ if .Error }} {{ .Error }} {{ else }} An unexpected issue occurred while processing your request. {{ end }}</p>
             <div class="mctf-actionable">
               <a href="javascript:history.back()" class="mctf-cta cta--yellow">Go Back</a>
             </div>
