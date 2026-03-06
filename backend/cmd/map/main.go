@@ -455,7 +455,7 @@ func main() {
 				},
 				&cli.StringFlag{
 					Name:    "uuid",
-					Aliases: []string{"u"},
+					Aliases: []string{"U"},
 					Usage:   "UUID for the admin user",
 					Value:   users.NoUUID,
 				},

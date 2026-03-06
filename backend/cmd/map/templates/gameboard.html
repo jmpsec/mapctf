@@ -1913,7 +1913,7 @@
                   <li>
                     <a href="/{{ .UUID }}/registration">Registration</a>
                   </li>
-                  <li><a href="/{{ .UUID }}/logout">Logout</a></li>
+                  <li><a href="/{{ .UUID }}/logout" id="gameboard-logout-link" data-logout-url="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a></li>
                 </ul>
               </li>
             </ul>
@@ -4581,5 +4581,63 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>
     <script type="text/javascript" src="/static/js/mapctf.js"></script>
+    <script type="text/javascript">
+      (function () {
+        var logoutLink = document.getElementById("gameboard-logout-link");
+        if (!logoutLink) {
+          return;
+        }
+
+        function doLogout(logoutURL) {
+          fetch(logoutURL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+            credentials: "same-origin",
+          })
+            .then(function (response) {
+              if (!response.ok) {
+                throw new Error("logout failed");
+              }
+              return response.json();
+            })
+            .then(function (data) {
+              if (data && data.redirect) {
+                window.location.replace(data.redirect);
+                return;
+              }
+              window.location.replace(logoutURL.replace("/logout", "/login"));
+            })
+            .catch(function () {
+              window.location.replace(logoutURL.replace("/logout", "/login"));
+            });
+        }
+
+        logoutLink.addEventListener("click", function (event) {
+          event.preventDefault();
+
+          var logoutURL = logoutLink.getAttribute("data-logout-url") || logoutLink.getAttribute("href");
+          if (!logoutURL) {
+            return;
+          }
+
+          if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+            doLogout(logoutURL);
+            return;
+          }
+
+          MAP_CTF.modal.loadPopup("action-logout", function () {
+            var confirmBtn = document.querySelector("#mctf-modal .js-confirm-logout");
+            if (!confirmBtn) {
+              return;
+            }
+            confirmBtn.addEventListener("click", function (confirmEvent) {
+              confirmEvent.preventDefault();
+              doLogout(logoutURL);
+            });
+          });
+        });
+      })();
+    </script>
   </body>
 </html>
