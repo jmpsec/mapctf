@@ -73,6 +73,14 @@ const (
 	rulesPath = "/rules"
 	// Admin path
 	adminPath = "/admin"
+	// Settings path
+	settingsPath = "/settings"
+	// Users path
+	usersPath = "/users"
+	// Challenges path
+	challengesPath = "/challenges"
+	// Teams path
+	teamsPath = "/teams"
 	// JSON data path
 	jsonPath = "/json"
 )
@@ -251,7 +259,8 @@ func mapCTFService() {
 			// Protected admin routes
 			r.Route(adminPath, func(r chi.Router) {
 				r.Use(handlersMap.RequireAdmin)
-				r.Get("/", handlersMap.AdminTemplateHandler)
+				r.Get(rootPath, handlersMap.AdminTemplateHandler)
+				r.Post(rootPath, handlersMap.AdminSettingsPOSTHandler)
 			})
 		})
 	})

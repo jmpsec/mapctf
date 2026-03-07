@@ -40,3 +40,29 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 }
+
+// AdminSettingsPOSTHandler for admin page for POST requests
+func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	// Debug HTTP if enabled
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		log.Err(errors.New("UUID is required")).Msg("UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+		return
+	}
+	if err := h.Sessions.Destroy(r.Context()); err != nil {
+		log.Err(err).Msg("error destroying session")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error destroying session"})
+		return
+	}
+	// Send response
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapLogoutResponse{
+		Success:  true,
+		Message:  "Logout successful",
+		Redirect: "/" + uuid + "/login",
+	})
+}
