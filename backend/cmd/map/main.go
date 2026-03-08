@@ -21,6 +21,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/cache"
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/jmpsec/mapctf/pkg/version"
@@ -193,6 +194,15 @@ func mapCTFService() {
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize challenges: %v", err)
 	}
+	// Settings Manager
+	log.Info().Msg("Initialize settings")
+	settingsMgr, err := settings.CreateSettingsManager(db.Conn, serviceName, flagParams.ConfigValues.Map.UUID)
+	if err != nil {
+		log.Fatal().Msgf("Failed to initialize settings: %v", err)
+	}
+	if err := settingsMgr.Initialization(); err != nil {
+		log.Fatal().Msgf("Failed to initialize default settings: %v", err)
+	}
 	// Session manager
 	sessionManager := scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
@@ -213,6 +223,7 @@ func mapCTFService() {
 		handlers.WithTeams(teamsMgr),
 		handlers.WithUsers(usersMgr),
 		handlers.WithChallenges(challengesMgr),
+		handlers.WithSettings(settingsMgr),
 		handlers.WithSessions(sessionManager),
 		handlers.WithDebugHTTP(&flagParams.ConfigValues.DebugHTTP),
 	)
