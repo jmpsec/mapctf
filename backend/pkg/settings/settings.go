@@ -40,18 +40,6 @@ var StringSettings = map[string]string{
 	CustomOrg: "",
 }
 
-// slice of all setting names for easy reference
-var AllSettings = []string{
-	LoginEnabled,
-	RegistrationEnabled,
-	ScoringEnabled,
-	GamePaused,
-	GameStarted,
-	GameStartTime,
-	GameEndTime,
-	CustomOrg,
-}
-
 const (
 	// TypeString is the string type for settings
 	TypeString string = "string"
@@ -96,15 +84,17 @@ type SettingLog struct {
 
 // SettingsManager have all settings of the system
 type SettingsManager struct {
-	DB *gorm.DB
+	DB      *gorm.DB
+	UUID    string
+	Service string
 }
 
 // CreateSettingsManager to initialize the settings struct and tables
-func CreateSettingsManager(backend *gorm.DB) (*SettingsManager, error) {
+func CreateSettingsManager(backend *gorm.DB, service, uuid string) (*SettingsManager, error) {
 	if backend == nil {
 		return nil, fmt.Errorf("database connection cannot be nil")
 	}
-	s := &SettingsManager{DB: backend}
+	s := &SettingsManager{DB: backend, UUID: uuid, Service: service}
 	// table platform_settings
 	if err := backend.AutoMigrate(&PlatformSetting{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (platform_settings): %w", err)
@@ -116,10 +106,58 @@ func CreateSettingsManager(backend *gorm.DB) (*SettingsManager, error) {
 	return s, nil
 }
 
+// Initialization with default settings if they don't exist
+func (m *SettingsManager) Initialization() error {
+	allSettings, err := m.GetAll(m.UUID)
+	if err != nil {
+		return fmt.Errorf("failed to get all settings: %w", err)
+	}
+	// Convert slice to map for easier lookup
+	existingSettings := make(map[string]PlatformSetting)
+	for _, setting := range allSettings {
+		existingSettings[setting.Name] = setting
+	}
+	// Create default boolean settings if they don't exist
+	for name, defaultValue := range BooleanSettings {
+		if _, exists := existingSettings[name]; !exists {
+			newSetting := PlatformSetting{
+				Name:        name,
+				ValueType:   TypeBool,
+				ValueBool:   defaultValue,
+				UUID:        m.UUID,
+				Description: name + " boolean setting",
+			}
+			if err := m.Create(newSetting); err != nil {
+				return fmt.Errorf("failed to create default boolean setting %s: %w", name, err)
+			}
+		}
+	}
+	// Create default string settings if they don't exist
+	for name, defaultValue := range StringSettings {
+		if _, exists := existingSettings[name]; !exists {
+			newSetting := PlatformSetting{
+				Name:        name,
+				ValueType:   TypeString,
+				ValueString: defaultValue,
+				UUID:        m.UUID,
+				Description: name + " string setting",
+			}
+			if err := m.Create(newSetting); err != nil {
+				return fmt.Errorf("failed to create default string setting %s: %w", name, err)
+			}
+		}
+	}
+	return nil
+}
+
 // Create new setting
 func (m *SettingsManager) Create(setting PlatformSetting) error {
 	if err := m.DB.Create(&setting).Error; err != nil {
 		return fmt.Errorf("Create PlatformSetting %w", err)
+	}
+	// Log the creation event
+	if err := m.LogEvent(setting.ID, EventCreate, m.Service, setting.UUID); err != nil {
+		return fmt.Errorf("LogEvent PlatformSetting %w", err)
 	}
 	return nil
 }
@@ -138,6 +176,15 @@ func (m *SettingsManager) Get(name string, uuid string) (PlatformSetting, error)
 		return setting, err
 	}
 	return setting, nil
+}
+
+// GetAll settings for a given uuid
+func (m *SettingsManager) GetAll(uuid string) ([]PlatformSetting, error) {
+	var settings []PlatformSetting
+	if err := m.DB.Where("uuid = ?", uuid).Find(&settings).Error; err != nil {
+		return nil, err
+	}
+	return settings, nil
 }
 
 // ExistsGet checks if setting exists and returns the setting

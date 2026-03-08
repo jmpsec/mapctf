@@ -26,14 +26,14 @@ func newTestManager(t *testing.T) (*SettingsManager, *sql.DB) {
 	t.Helper()
 
 	db, sqlDB := newTestDB(t)
-	m, err := CreateSettingsManager(db)
+	m, err := CreateSettingsManager(db, "test-service", "tenant-a")
 	require.NoError(t, err)
 	return m, sqlDB
 }
 
 func TestCreateSettingsManager(t *testing.T) {
 	t.Run("nil db returns error", func(t *testing.T) {
-		m, err := CreateSettingsManager(nil)
+		m, err := CreateSettingsManager(nil, "test-service", "tenant-a")
 		require.Nil(t, m)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "database connection cannot be nil")
@@ -43,17 +43,19 @@ func TestCreateSettingsManager(t *testing.T) {
 		db, sqlDB := newTestDB(t)
 		defer func() { _ = sqlDB.Close() }()
 
-		m, err := CreateSettingsManager(db)
+		m, err := CreateSettingsManager(db, "test-service", "tenant-a")
 		require.NoError(t, err)
 		require.NotNil(t, m)
 		require.NotNil(t, m.DB)
+		require.Equal(t, "test-service", m.Service)
+		require.Equal(t, "tenant-a", m.UUID)
 	})
 
 	t.Run("automigrate failure returns error", func(t *testing.T) {
 		db, sqlDB := newTestDB(t)
 		require.NoError(t, sqlDB.Close())
 
-		m, err := CreateSettingsManager(db)
+		m, err := CreateSettingsManager(db, "test-service", "tenant-a")
 		require.Nil(t, m)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to AutoMigrate table")
