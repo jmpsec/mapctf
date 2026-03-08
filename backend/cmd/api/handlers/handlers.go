@@ -4,6 +4,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/cache"
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/rs/zerolog"
@@ -32,6 +33,7 @@ type HandlersAPI struct {
 	Teams       *teams.TeamManager
 	Users       *users.UserManager
 	Challenges  *challenges.ChallengeManager
+	Settings    *settings.SettingsManager
 	Config      config.MapCTFConfiguration
 	DebugHTTP   *zerolog.Logger
 }
@@ -89,6 +91,12 @@ func WithUsers(users *users.UserManager) HandlersOption {
 func WithChallenges(challenges *challenges.ChallengeManager) HandlersOption {
 	return func(h *HandlersAPI) {
 		h.Challenges = challenges
+	}
+}
+
+func WithSettings(settings *settings.SettingsManager) HandlersOption {
+	return func(h *HandlersAPI) {
+		h.Settings = settings
 	}
 }
 

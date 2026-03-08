@@ -28,6 +28,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/cache"
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/jmpsec/mapctf/pkg/version"
@@ -81,6 +82,8 @@ const (
 	apiTeamsPath = "/teams"
 	// API users path
 	apiUsersPath = "/users"
+	// API settings path
+	apiSettingsPath = "/settings"
 	// API challenges path
 	apiChallengesPath = "/challenges"
 )
@@ -189,6 +192,15 @@ func mapCTFService() {
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize challenges: %v", err)
 	}
+	// Settings Manager
+	log.Info().Msg("Initialize settings")
+	settingsMgr, err := settings.CreateSettingsManager(db.Conn, serviceName, flagParams.ConfigValues.Map.UUID)
+	if err != nil {
+		log.Fatal().Msgf("Failed to initialize settings: %v", err)
+	}
+	if err := settingsMgr.Initialization(); err != nil {
+		log.Fatal().Msgf("Failed to initialize default settings: %v", err)
+	}
 	// Handlers
 	log.Info().Msg("Initializing handlers")
 	handlersCTF := handlers.CreateHandlersAPI(
@@ -199,6 +211,7 @@ func mapCTFService() {
 		handlers.WithTeams(teamsMgr),
 		handlers.WithUsers(usersMgr),
 		handlers.WithChallenges(challengesMgr),
+		handlers.WithSettings(settingsMgr),
 		handlers.WithDebugHTTP(&flagParams.ConfigValues.DebugHTTP),
 	)
 	// Router
@@ -249,7 +262,7 @@ func mapCTFService() {
 				r.Get(apiTeamsPath, handlersCTF.AdminTeamsHandler)  // GET /api/v1/admin/{uuid}/teams
 				r.Post(apiTeamsPath, handlersCTF.CreateTeamHandler) // POST /api/v1/admin/{uuid}/teams
 				//r.Delete(apiTeamsPath+"/{entID}/{id}", handlersCTF.DeleteTeamHandler) // DELETE /api/v1/admin/teams/{entID}/{id}
-
+				r.Get(apiSettingsPath, handlersCTF.SettingsHandler)           // GET /api/v1/admin/{uuid}/settings
 				r.Get(apiChallengesPath, handlersCTF.AdminChallengesHandler)  // GET /api/v1/admin/{uuid}/challenges
 				r.Post(apiChallengesPath, handlersCTF.CreateChallengeHandler) // POST /api/v1/admin/{uuid}/challenges
 				//r.Patch(apiChallengesPath+"/{entID}/{id}", handlersCTF.UpdateChallengeHandler) // PATCH /api/v1/admin/challenges/{entID}/{id}
