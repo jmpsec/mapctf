@@ -1,0 +1,78 @@
+name: Telegram Commit Notify
+
+on:
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build rich message + send
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TOPIC_ID: ${{ secrets.TELEGRAM_TOPIC_ID }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          COMPARE_URL: ${{ github.event.compare }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.parse, urllib.request
+
+          event_path = os.environ["GITHUB_EVENT_PATH"]
+          with open(event_path, "r", encoding="utf-8") as f:
+              ev = json.load(f)
+
+          repo = os.environ["REPO"]
+          branch = os.environ["BRANCH"]
+          compare = os.environ.get("COMPARE_URL", "")
+          pusher = ev.get("pusher", {}).get("name", "unknown")
+          commits = ev.get("commits", [])[:8]
+          total = len(ev.get("commits", []))
+
+          lines = []
+          lines.append("🚀 <b>New Push</b>")
+          lines.append(f"📦 <b>Repo:</b> <code>{repo}</code>")
+          lines.append(f"🌿 <b>Branch:</b> <code>{branch}</code>")
+          lines.append(f"👤 <b>Pusher:</b> {pusher}")
+          lines.append(f"🧾 <b>Commits:</b> {total}")
+          lines.append("")
+
+          if commits:
+              lines.append("<b>Changes</b>")
+              for c in commits:
+                  sha = c.get("id", "")[:7]
+                  msg = (c.get("message", "") or "").splitlines()[0].strip()
+                  author = c.get("author", {}).get("name", "unknown")
+                  url = c.get("url", "")
+                  msg = (msg[:120] + "…") if len(msg) > 120 else msg
+                  lines.append(f"• <code>{sha}</code> {msg} — <i>{author}</i>")
+                  if url:
+                      lines.append(f"  🔗 <a href=\"{url}\">open commit</a>")
+
+          if total > 8:
+              lines.append(f"\n…and {total-8} more commits.")
+
+          if compare:
+              lines.append(f"\n📊 <a href=\"{compare}\">View full diff</a>")
+
+          text = "\n".join(lines)
+
+          payload = {
+              "chat_id": os.environ["CHAT_ID"],
+              "text": text,
+              "parse_mode": "HTML",
+              "disable_web_page_preview": "true",
+          }
+          topic_id = (os.environ.get("TOPIC_ID", "") or "").strip()
+          if topic_id:
+              payload["message_thread_id"] = topic_id
+
+          data = urllib.parse.urlencode(payload).encode()
+
+          url = f"https://api.telegram.org/bot{os.environ['BOT_TOKEN']}/sendMessage"
+          req = urllib.request.Request(url, data=data, method="POST")
+          with urllib.request.urlopen(req) as r:
+              print("Telegram status:", r.status)
+          PY
