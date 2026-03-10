@@ -246,8 +246,11 @@ func TestChangeErrors(t *testing.T) {
 		require.NoError(t, m.Create(s))
 
 		err := m.Change("some_setting", TypeString, "tenant-a", "after", "alice")
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to update setting value")
+		require.NoError(t, err)
+
+		updated, getErr := m.Get("some_setting", "tenant-a")
+		require.NoError(t, getErr)
+		require.Equal(t, "after", updated.ValueString)
 	})
 }
 
@@ -262,10 +265,6 @@ func TestChangeSuccessAndLogFailure(t *testing.T) {
 		UUID:        "tenant-a",
 	}
 	require.NoError(t, m.Create(s))
-
-	// Change() updates "value", which is not part of PlatformSetting.
-	// Add it in test DB so we can exercise success and subsequent log branches.
-	require.NoError(t, m.DB.Exec("ALTER TABLE platform_settings ADD COLUMN value TEXT").Error)
 
 	t.Run("successfully changes and logs", func(t *testing.T) {
 		err := m.Change("with_value_column", TypeString, "tenant-a", "after", "alice")
@@ -316,6 +315,76 @@ func TestSaveFailsWhenDBClosed(t *testing.T) {
 	err = m.Save(loaded, "alice")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "Save PlatformSetting")
+}
+
+func TestTypedGettersAndSetters(t *testing.T) {
+	m, sqlDB := newTestManager(t)
+	defer func() { _ = sqlDB.Close() }()
+
+	start := time.Date(2026, 3, 10, 10, 0, 0, 0, time.UTC)
+	end := start.Add(2 * time.Hour)
+
+	require.NoError(t, m.SetLoginEnabled(true, "alice"))
+	loginEnabled, err := m.GetLoginEnabled()
+	require.NoError(t, err)
+	require.True(t, loginEnabled)
+
+	require.NoError(t, m.SetRegistrationEnabled(true, "alice"))
+	registrationEnabled, err := m.GetRegistrationEnabled()
+	require.NoError(t, err)
+	require.True(t, registrationEnabled)
+
+	require.NoError(t, m.SetScoringEnabled(true, "alice"))
+	scoringEnabled, err := m.GetScoringEnabled()
+	require.NoError(t, err)
+	require.True(t, scoringEnabled)
+
+	require.NoError(t, m.SetGamePaused(true, "alice"))
+	gamePaused, err := m.GetGamePaused()
+	require.NoError(t, err)
+	require.True(t, gamePaused)
+
+	require.NoError(t, m.SetGameStarted(true, "alice"))
+	gameStarted, err := m.GetGameStarted()
+	require.NoError(t, err)
+	require.True(t, gameStarted)
+
+	require.NoError(t, m.SetGameStartTime(start, "alice"))
+	gameStartTime, err := m.GetGameStartTime()
+	require.NoError(t, err)
+	require.Equal(t, start, gameStartTime)
+
+	require.NoError(t, m.SetGameEndTime(end, "alice"))
+	gameEndTime, err := m.GetGameEndTime()
+	require.NoError(t, err)
+	require.Equal(t, end, gameEndTime)
+
+	require.NoError(t, m.SetCustomOrg("Acme", "alice"))
+	customOrg, err := m.GetCustomOrg()
+	require.NoError(t, err)
+	require.Equal(t, "Acme", customOrg)
+
+	// update path
+	require.NoError(t, m.SetLoginEnabled(false, "alice"))
+	loginEnabled, err = m.GetLoginEnabled()
+	require.NoError(t, err)
+	require.False(t, loginEnabled)
+}
+
+func TestTypedGettersTypeMismatch(t *testing.T) {
+	m, sqlDB := newTestManager(t)
+	defer func() { _ = sqlDB.Close() }()
+
+	require.NoError(t, m.Create(PlatformSetting{
+		Name:        LoginEnabled,
+		ValueType:   TypeString,
+		ValueString: "not-bool",
+		UUID:        "tenant-a",
+	}))
+
+	_, err := m.GetLoginEnabled()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unexpected type")
 }
 
 func TestSaveFailsWhenLogInsertFails(t *testing.T) {

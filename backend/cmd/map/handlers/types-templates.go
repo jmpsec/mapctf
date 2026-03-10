@@ -7,6 +7,7 @@ type LoginTemplateData struct {
 	LoginMsg      string
 	LoginURL      string
 	UUID          string
+	TeamLogin     bool
 	Authenticated bool
 	Admin         bool
 }
@@ -47,8 +48,10 @@ type GameboardTemplateData struct {
 type RegistrationTemplateData struct {
 	Title            string
 	RegistrationType string
+	RegistrationMsg  string
 	RegisterURL      string
 	UUID             string
+	OpenRegistration bool
 	Authenticated    bool
 	Admin            bool
 }

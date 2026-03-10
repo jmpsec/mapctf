@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -256,9 +257,13 @@ func (m *SettingsManager) Change(name, valueType string, uuid string, value any,
 	if err != nil {
 		return fmt.Errorf("failed to get setting: %w", err)
 	}
+	column, err := valueColumnByType(valueType)
+	if err != nil {
+		return fmt.Errorf("failed to resolve setting value column: %w", err)
+	}
 	if err := m.DB.Model(&PlatformSetting{}).
 		Where("name = ? AND uuid = ?", name, uuid).
-		Update("value", value).Error; err != nil {
+		Update(column, value).Error; err != nil {
 		return fmt.Errorf("failed to update setting value: %w", err)
 	}
 	if err := m.LogEvent(setting.ID, EventUpdate, username, setting.UUID); err != nil {
@@ -266,3 +271,164 @@ func (m *SettingsManager) Change(name, valueType string, uuid string, value any,
 	}
 	return nil
 }
+
+func valueColumnByType(valueType string) (string, error) {
+	switch valueType {
+	case TypeString:
+		return "value_string", nil
+	case TypeInt:
+		return "value_int", nil
+	case TypeBool:
+		return "value_bool", nil
+	case TypeFloat:
+		return "value_float", nil
+	case TypeDate:
+		return "value_date", nil
+	default:
+		return "", fmt.Errorf("invalid value type: %s", valueType)
+	}
+}
+
+func (m *SettingsManager) upsertSetting(name, valueType, description, username string, setValue func(*PlatformSetting)) error {
+	setting, err := m.Get(name, m.UUID)
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("failed to get setting %s: %w", name, err)
+		}
+		newSetting := PlatformSetting{
+			Name:        name,
+			ValueType:   valueType,
+			Description: description,
+			UUID:        m.UUID,
+		}
+		setValue(&newSetting)
+		if err := m.Create(newSetting); err != nil {
+			return fmt.Errorf("failed to create setting %s: %w", name, err)
+		}
+		return nil
+	}
+
+	setting.ValueType = valueType
+	if setting.Description == "" {
+		setting.Description = description
+	}
+	setValue(&setting)
+	if err := m.Save(setting, username); err != nil {
+		return fmt.Errorf("failed to save setting %s: %w", name, err)
+	}
+	return nil
+}
+
+func (m *SettingsManager) getBoolSetting(name string) (bool, error) {
+	setting, err := m.Get(name, m.UUID)
+	if err != nil {
+		return false, fmt.Errorf("failed to get setting %s: %w", name, err)
+	}
+	if setting.ValueType != TypeBool {
+		return false, fmt.Errorf("setting %s has unexpected type %s", name, setting.ValueType)
+	}
+	return setting.ValueBool, nil
+}
+
+func (m *SettingsManager) getStringSetting(name string) (string, error) {
+	setting, err := m.Get(name, m.UUID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get setting %s: %w", name, err)
+	}
+	if setting.ValueType != TypeString {
+		return "", fmt.Errorf("setting %s has unexpected type %s", name, setting.ValueType)
+	}
+	return setting.ValueString, nil
+}
+
+func (m *SettingsManager) getDateSetting(name string) (time.Time, error) {
+	setting, err := m.Get(name, m.UUID)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to get setting %s: %w", name, err)
+	}
+	if setting.ValueType != TypeDate {
+		return time.Time{}, fmt.Errorf("setting %s has unexpected type %s", name, setting.ValueType)
+	}
+	return setting.ValueDate, nil
+}
+
+func (m *SettingsManager) SetLoginEnabled(enabled bool, username string) error {
+	return m.upsertSetting(LoginEnabled, TypeBool, LoginEnabled+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = enabled
+	})
+}
+
+func (m *SettingsManager) GetLoginEnabled() (bool, error) {
+	return m.getBoolSetting(LoginEnabled)
+}
+
+func (m *SettingsManager) SetRegistrationEnabled(enabled bool, username string) error {
+	return m.upsertSetting(RegistrationEnabled, TypeBool, RegistrationEnabled+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = enabled
+	})
+}
+
+func (m *SettingsManager) GetRegistrationEnabled() (bool, error) {
+	return m.getBoolSetting(RegistrationEnabled)
+}
+
+func (m *SettingsManager) SetScoringEnabled(enabled bool, username string) error {
+	return m.upsertSetting(ScoringEnabled, TypeBool, ScoringEnabled+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = enabled
+	})
+}
+
+func (m *SettingsManager) GetScoringEnabled() (bool, error) {
+	return m.getBoolSetting(ScoringEnabled)
+}
+
+func (m *SettingsManager) SetGamePaused(paused bool, username string) error {
+	return m.upsertSetting(GamePaused, TypeBool, GamePaused+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = paused
+	})
+}
+
+func (m *SettingsManager) GetGamePaused() (bool, error) {
+	return m.getBoolSetting(GamePaused)
+}
+
+func (m *SettingsManager) SetGameStarted(started bool, username string) error {
+	return m.upsertSetting(GameStarted, TypeBool, GameStarted+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = started
+	})
+}
+
+func (m *SettingsManager) GetGameStarted() (bool, error) {
+	return m.getBoolSetting(GameStarted)
+}
+
+func (m *SettingsManager) SetGameStartTime(startTime time.Time, username string) error {
+	return m.upsertSetting(GameStartTime, TypeDate, GameStartTime+" date setting", username, func(s *PlatformSetting) {
+		s.ValueDate = startTime
+	})
+}
+
+func (m *SettingsManager) GetGameStartTime() (time.Time, error) {
+	return m.getDateSetting(GameStartTime)
+}
+
+func (m *SettingsManager) SetGameEndTime(endTime time.Time, username string) error {
+	return m.upsertSetting(GameEndTime, TypeDate, GameEndTime+" date setting", username, func(s *PlatformSetting) {
+		s.ValueDate = endTime
+	})
+}
+
+func (m *SettingsManager) GetGameEndTime() (time.Time, error) {
+	return m.getDateSetting(GameEndTime)
+}
+
+func (m *SettingsManager) SetCustomOrg(org string, username string) error {
+	return m.upsertSetting(CustomOrg, TypeString, CustomOrg+" string setting", username, func(s *PlatformSetting) {
+		s.ValueString = org
+	})
+}
+
+func (m *SettingsManager) GetCustomOrg() (string, error) {
+	return m.getStringSetting(CustomOrg)
+}
+

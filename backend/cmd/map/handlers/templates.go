@@ -102,11 +102,22 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
+	rMsg := "Register to play Capture The Flag here. Once you have registered, simply login for future site visits."
+	openReg, err := h.Settings.GetRegistrationEnabled()
+	if err != nil {
+		log.Err(err).Msg("error getting registration enabled setting")
+		openReg = false
+	}
+	if !openReg {
+		rMsg = "Team Registration will be open soon, stay tuned!"
+	}
 	templateData := RegistrationTemplateData{
 		Title:            "Register to mapctf",
-		RegistrationType: "Solo Registration",
+		RegistrationType: "Team Registration",
+		RegistrationMsg:  rMsg,
 		RegisterURL:      "/" + uuid + "/registration",
 		UUID:             uuid,
+		OpenRegistration: openReg,
 		Authenticated:    authenticated,
 		Admin:            isAdmin,
 	}

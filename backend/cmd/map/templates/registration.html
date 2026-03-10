@@ -44,8 +44,7 @@
             <li>
               <a href="/{{ .UUID }}/login" data-active="login">Login</a>
             </li>
-            {{ end }}
-            {{ if .Admin }}
+            {{ end }} {{ if .Admin }}
             <li>
               <a href="/{{ .UUID }}/admin" data-active="admin">🔐</a>
             </li>
@@ -57,11 +56,12 @@
         <main role="main" class="mctf-main page--solo-registration page--landing mctf-img-glitch full-height mctf-scroll">
           <header class="mctf-section-header mctf-container">
             <h1 class="mctf-glitch" data-text="{{ .RegistrationType }}">{{ .RegistrationType }}</h1>
-            <p class="inner-container">Register to play Capture The Flag here. Once you have registered, simply login for future site visits.</p>
+            <p class="inner-container">{{ .RegistrationMsg }}</p>
           </header>
 
           <div class="mctf-registration">
             <form class="mctf-form">
+              {{ if .OpenRegistration }}
               <fieldset class="form-set mctf-container container--small">
                 <div class="form-el el--text ajax-message-row">
                   <label class="ajax-message-label" aria-hidden="true">Message</label>
@@ -103,6 +103,11 @@
               <div class="form-el--actions mctf-container container--small">
                 <p><button class="mctf-cta cta--yellow" type="button" id="register_button" onclick="sendRegistration()">Sign Up</button></p>
               </div>
+              {{ else }}
+              <div class="form-el--actions mctf-container container--small">
+                <p><a class="mctf-cta cta--yellow" href="/{{ .UUID }}/registration">Try Again</a></p>
+              </div>
+              {{ end }}
             </form>
           </div>
           <!-- .mctf-registration -->
