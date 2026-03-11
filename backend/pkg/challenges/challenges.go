@@ -89,6 +89,15 @@ func (m *ChallengeManager) GetAll(uuid string) ([]Challenge, error) {
 	return challenges, nil
 }
 
+// GetAllCategories to get all categories for a specific entity ID
+func (m *ChallengeManager) GetAllCategories(uuid string) ([]Category, error) {
+	var categories []Category
+	if err := m.DB.Where("uuid = ?", uuid).Find(&categories).Error; err != nil {
+		return categories, fmt.Errorf("Get All Categories by Entity: %w", err)
+	}
+	return categories, nil
+}
+
 // GetCategoryByID to get a category by id and entity id
 func (m *ChallengeManager) GetCategoryByID(id uint, uuid string) (Category, error) {
 	var category Category

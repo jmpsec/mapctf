@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// AdminTemplateHandler for admin page for GET requests
+// AdminTemplateHandler for admin dashboard page for GET requests
 func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
@@ -28,7 +28,7 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 	}
 	// Prepare template
 	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin.html")
+		h.Config.Map.TemplatesDir + "/admin/index.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
 		return
@@ -36,6 +36,41 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	templateData := AdminTemplateData{
+		Title:         "Admin",
+		UUID:          uuid,
+		Authenticated: authenticated,
+		Admin:         h.IsAdmin(r.Context()),
+		Status:        r.URL.Query().Get("status"),
+		Message:       r.URL.Query().Get("msg"),
+	}
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("template error")
+		return
+	}
+}
+
+// AdminSettingsTemplateHandler for admin settings page for GET requests
+func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	// Prepare template
+	t, err := template.ParseFiles(
+		h.Config.Map.TemplatesDir + "/admin/settings.html")
+	if err != nil {
+		log.Err(err).Msg("error getting admin template")
+		return
+	}
+	// Prepare template data
+	authenticated := h.IsAuthenticated(r.Context())
+	templateData := AdminSettingsTemplateData{
 		Title:         "Admin",
 		UUID:          uuid,
 		Authenticated: authenticated,
@@ -112,7 +147,7 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// AdminSettingsPOSTHandler for admin page for POST requests
+// AdminSettingsPOSTHandler for admin settings page for POST requests
 func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
@@ -219,4 +254,168 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	http.Redirect(w, r, "/"+uuid+"/admin?status=ok&msg="+url.QueryEscape("Updated "+settingName), http.StatusFound)
+}
+
+// AdminControlsTemplateHandler for admin controls page for GET requests
+func (h *HandlersMap) AdminControlsTemplateHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	// Prepare template
+	t, err := template.ParseFiles(
+		h.Config.Map.TemplatesDir + "/admin/controls.html")
+	if err != nil {
+		log.Err(err).Msg("error getting admin template")
+		return
+	}
+	// Prepare template data
+	authenticated := h.IsAuthenticated(r.Context())
+	templateData := AdminControlsTemplateData{
+		Title:         "Admin",
+		UUID:          uuid,
+		Authenticated: authenticated,
+		Admin:         h.IsAdmin(r.Context()),
+		Status:        r.URL.Query().Get("status"),
+		Message:       r.URL.Query().Get("msg"),
+	}
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("template error")
+		return
+	}
+}
+
+// AdminTeamsTemplateHandler for admin teams page for GET requests
+func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	// Prepare template
+	t, err := template.ParseFiles(
+		h.Config.Map.TemplatesDir + "/admin/teams.html")
+	if err != nil {
+		log.Err(err).Msg("error getting admin template")
+		return
+	}
+	// Prepare template data
+	authenticated := h.IsAuthenticated(r.Context())
+	templateData := AdminTeamsTemplateData{
+		Title:         "Admin",
+		UUID:          uuid,
+		Authenticated: authenticated,
+		Admin:         h.IsAdmin(r.Context()),
+		Status:        r.URL.Query().Get("status"),
+		Message:       r.URL.Query().Get("msg"),
+	}
+	teams, err := h.Teams.GetAll(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading teams")
+	} else {
+		templateData.Teams = teams
+	}
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("template error")
+		return
+	}
+}
+
+// AdminUsersTemplateHandler for admin users page for GET requests
+func (h *HandlersMap) AdminUsersTemplateHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	// Prepare template
+	t, err := template.ParseFiles(
+		h.Config.Map.TemplatesDir + "/admin/users.html")
+	if err != nil {
+		log.Err(err).Msg("error getting admin template")
+		return
+	}
+	// Prepare template data
+	authenticated := h.IsAuthenticated(r.Context())
+	templateData := AdminUsersTemplateData{
+		Title:         "Admin",
+		UUID:          uuid,
+		Authenticated: authenticated,
+		Admin:         h.IsAdmin(r.Context()),
+		Status:        r.URL.Query().Get("status"),
+		Message:       r.URL.Query().Get("msg"),
+	}
+	users, err := h.Users.GetAll(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading users")
+	} else {
+		templateData.Users = users
+	}
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("template error")
+		return
+	}
+}
+
+// AdminChallengesTemplateHandler for admin challenges page for GET requests
+func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	// Prepare template
+	t, err := template.ParseFiles(
+		h.Config.Map.TemplatesDir + "/admin/challenges.html")
+	if err != nil {
+		log.Err(err).Msg("error getting admin template")
+		return
+	}
+	// Prepare template data
+	authenticated := h.IsAuthenticated(r.Context())
+	templateData := AdminChallengesTemplateData{
+		Title:         "Admin",
+		UUID:          uuid,
+		Authenticated: authenticated,
+		Admin:         h.IsAdmin(r.Context()),
+		Status:        r.URL.Query().Get("status"),
+		Message:       r.URL.Query().Get("msg"),
+	}
+	challenges, err := h.Challenges.GetAll(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading challenges")
+	} else {
+		templateData.Challenges = challenges
+	}
+	categories, err := h.Challenges.GetAllCategories(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading categories")
+	} else {
+		templateData.Categories = categories
+	}
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("template error")
+		return
+	}
 }

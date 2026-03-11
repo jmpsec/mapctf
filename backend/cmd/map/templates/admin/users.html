@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Cache-control" content="no-cache" />
+    <meta http-equiv="Expires" content="-1" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MapCTF Admin: Settings</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    <link rel="stylesheet" href="/static/css/mapctf.css" />
+  </head>
+  <body data-section="admin">
+    <div class="mctf-sprite" id="mctf-svg-sprite"></div>
+    <div class="mctf-viewport admin-viewport">
+      <div id="mctf-admin-nav">
+        <div class="admin-nav-bar mctf-row-container">
+          <header class="admin-nav-header row-fixed">
+            <div class="branding">
+              <a href="/{{ .UUID }}/">
+                <div class="branding-rules">
+                  <img src="/static/img/favicon.png" alt="MapCTF logo" class="branding-logo" />
+                  <span>POWERED BY MAPCTF</span>
+                </div>
+              </a>
+            </div>
+            <h2>Game Admin</h2>
+          </header>
+          <nav class="admin-nav-links row-fluid">
+            <ul>
+              <li><a href="/{{ .UUID }}/admin">Dashboard</a></li>
+              <li><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
+              <li><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/users">Users</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
+              <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
+            </ul>
+          </nav>
+          <div class="admin-nav-controls row-fixed">
+            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+          </div>
+          <div class="admin-nav--footer row-fixed">
+            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+          </div>
+        </div>
+      </div>
+      <div id="mctf-main-content" class="mctf-page mctf-admin-main">
+        <div class="admin-sections">
+          <header class="admin-page-header">
+            <h3>User Management</h3>
+            <span class="admin-section--status" data-ready-status="ready">
+              status_
+              <span class="highlighted">ready</span>
+              <span class="admin-section--status-message"></span>
+            </span>
+          </header>
+
+          <section id="users" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Users Management</h3>
+            </header>
+
+            <div class="admin-row">
+              <h4>Create / Invite User (Dummy)</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Field</th>
+                    <th>Input</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Username</td>
+                    <td><input type="text" value="new_user" disabled /></td>
+                  </tr>
+                  <tr>
+                    <td>Email</td>
+                    <td><input type="email" value="user@example.com" disabled /></td>
+                  </tr>
+                  <tr>
+                    <td>Team ID</td>
+                    <td><input type="number" value="1" disabled /></td>
+                  </tr>
+                  <tr>
+                    <td>Role</td>
+                    <td>
+                      <select disabled>
+                        <option selected>Player</option>
+                        <option>Admin</option>
+                        <option>Service</option>
+                      </select>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p>
+                <a href="#" class="mctf-cta">Create User</a>
+                <a href="#" class="mctf-cta cta--yellow">Send Invite</a>
+              </p>
+            </div>
+
+            <div class="admin-row">
+              <h4>Bulk Actions (Dummy)</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Action</th>
+                    <th>Description</th>
+                    <th>Trigger</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Activate Selected</td>
+                    <td>Enable login for selected users</td>
+                    <td><a href="#" class="mctf-cta">Activate</a></td>
+                  </tr>
+                  <tr>
+                    <td>Deactivate Selected</td>
+                    <td>Temporarily lock selected accounts</td>
+                    <td><a href="#" class="mctf-cta cta--yellow">Deactivate</a></td>
+                  </tr>
+                  <tr>
+                    <td>Reset Passwords</td>
+                    <td>Force password reset workflow</td>
+                    <td><a href="#" class="mctf-cta cta--red">Reset</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-row">
+              <h4>User Directory</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Team ID</th>
+                    <th>Admin</th>
+                    <th>Service</th>
+                    <th>Active</th>
+                    <th>Last Access</th>
+                    <th>Last IP</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{ if .Users }}
+                  {{ range .Users }}
+                  <tr>
+                    <td>{{ .ID }}</td>
+                    <td>{{ .Username }}</td>
+                    <td>{{ .Email }}</td>
+                    <td>{{ .TeamID }}</td>
+                    <td>{{ if .Admin }}yes{{ else }}no{{ end }}</td>
+                    <td>{{ if .Service }}yes{{ else }}no{{ end }}</td>
+                    <td>{{ if .Active }}yes{{ else }}no{{ end }}</td>
+                    <td>{{ if .LastAccess.IsZero }}never{{ else }}{{ .LastAccess.Format "2006-01-02 15:04" }}{{ end }}</td>
+                    <td>{{ if .LastIPAddress }}{{ .LastIPAddress }}{{ else }}--{{ end }}</td>
+                    <td>
+                      <a href="#" class="mctf-cta">Edit</a>
+                      <a href="#" class="mctf-cta cta--yellow">Toggle</a>
+                    </td>
+                  </tr>
+                  {{ end }}
+                  {{ else }}
+                  <tr>
+                    <td colspan="10">No users found for this event UUID.</td>
+                  </tr>
+                  {{ end }}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" src="/static/js/plugins.js"></script>
+    <script type="text/javascript" src="/static/js/mapctf.js"></script>
+    <script type="text/javascript" src="/static/js/functions.js"></script>
+    <script type="text/javascript" src="/static/js/admin.js"></script>
+  </body>
+</html>

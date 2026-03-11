@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Cache-control" content="no-cache" />
+    <meta http-equiv="Expires" content="-1" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MapCTF Admin: Settings</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    <link rel="stylesheet" href="/static/css/mapctf.css" />
+  </head>
+  <body data-section="admin">
+    <div class="mctf-sprite" id="mctf-svg-sprite"></div>
+    <div class="mctf-viewport admin-viewport">
+      <div id="mctf-admin-nav">
+        <div class="admin-nav-bar mctf-row-container">
+          <header class="admin-nav-header row-fixed">
+            <div class="branding">
+              <a href="/{{ .UUID }}/">
+                <div class="branding-rules">
+                  <img src="/static/img/favicon.png" alt="MapCTF logo" class="branding-logo" />
+                  <span>POWERED BY MAPCTF</span>
+                </div>
+              </a>
+            </div>
+            <h2>Game Admin</h2>
+          </header>
+          <nav class="admin-nav-links row-fluid">
+            <ul>
+              <li class="active"><a href="/{{ .UUID }}/admin">Dashboard</a></li>
+              <li><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
+              <li><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
+              <li><a href="/{{ .UUID }}/admin/users">Users</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
+              <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
+            </ul>
+          </nav>
+          <div class="admin-nav-controls row-fixed">
+            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+          </div>
+          <div class="admin-nav--footer row-fixed">
+            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+          </div>
+        </div>
+      </div>
+      <div id="mctf-main-content" class="mctf-page mctf-admin-main">
+        <div class="admin-sections">
+          <header class="admin-page-header">
+            <h3>Game Dashboard</h3>
+            <span class="admin-section--status" data-ready-status="ready">
+              status_
+              <span class="highlighted">ready</span>
+              <span class="admin-section--status-message"></span>
+            </span>
+          </header>
+
+          <section id="metrics" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Dashboard Placeholders</h3>
+            </header>
+
+            <div class="admin-row">
+              <h4>Live Match Snapshot</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Current</th>
+                    <th>Target / Alert</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Teams online</td>
+                    <td>--</td>
+                    <td>&lt; 4 triggers onboarding banner</td>
+                  </tr>
+                  <tr>
+                    <td>Flags submitted (last 10m)</td>
+                    <td>--</td>
+                    <td>&gt; 25 suggests high load</td>
+                  </tr>
+                  <tr>
+                    <td>Average solve time</td>
+                    <td>--</td>
+                    <td>Track against challenge difficulty</td>
+                  </tr>
+                  <tr>
+                    <td>Top scoring team</td>
+                    <td>--</td>
+                    <td>Monitor lead changes</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-row">
+              <h4>System Health Widgets</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Widget</th>
+                    <th>Placeholder</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>API latency</td>
+                    <td>Sparkline + p95 counter</td>
+                  </tr>
+                  <tr>
+                    <td>Error rate</td>
+                    <td>Last hour percentage with threshold marker</td>
+                  </tr>
+                  <tr>
+                    <td>Database health</td>
+                    <td>Connection pool usage and slow query count</td>
+                  </tr>
+                  <tr>
+                    <td>Queue depth</td>
+                    <td>Pending jobs by type (scoring, notifications)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-row">
+              <h4>Moderation and Incident Queue</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Priority</th>
+                    <th>Item</th>
+                    <th>Owner</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>High</td>
+                    <td>Suspicious submission burst from same IP block</td>
+                    <td>--</td>
+                    <td>Open</td>
+                  </tr>
+                  <tr>
+                    <td>Medium</td>
+                    <td>Challenge hint request backlog</td>
+                    <td>--</td>
+                    <td>Investigating</td>
+                  </tr>
+                  <tr>
+                    <td>Low</td>
+                    <td>Localization QA pass for scoreboard labels</td>
+                    <td>--</td>
+                    <td>Planned</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-row">
+              <h4>Recent Activity Feed (Placeholder)</h4>
+              <p>[12:03] Team Orion solved <strong>forensics_02</strong> in 00:14:18.</p>
+              <p>[12:05] Rate limiter elevated to profile <strong>balanced</strong>.</p>
+              <p>[12:08] New team registration from region <strong>EU-West</strong>.</p>
+              <p>[12:12] Admin action: challenge <strong>web_04</strong> hint published.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" src="/static/js/plugins.js"></script>
+    <script type="text/javascript" src="/static/js/mapctf.js"></script>
+    <script type="text/javascript" src="/static/js/functions.js"></script>
+    <script type="text/javascript" src="/static/js/admin.js"></script>
+  </body>
+</html>

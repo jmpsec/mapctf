@@ -102,6 +102,15 @@ func (m *UserManager) Get(username string, uuid string) (PlatformUser, error) {
 	return user, nil
 }
 
+// GetAll users by UUID
+func (m *UserManager) GetAll(uuid string) ([]PlatformUser, error) {
+	var users []PlatformUser
+	if err := m.DB.Where("uuid = ?", uuid).Find(&users).Error; err != nil {
+		return users, err
+	}
+	return users, nil
+}
+
 // ExistsGet checks if user exists and returns the user
 func (m *UserManager) ExistsGet(username string, uuid string) (bool, PlatformUser) {
 	user, err := m.Get(username, uuid)

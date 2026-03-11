@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Cache-control" content="no-cache" />
+    <meta http-equiv="Expires" content="-1" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MapCTF Admin: Settings</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    <link rel="stylesheet" href="/static/css/mapctf.css" />
+  </head>
+  <body data-section="admin">
+    <div class="mctf-sprite" id="mctf-svg-sprite"></div>
+    <div class="mctf-viewport admin-viewport">
+      <div id="mctf-admin-nav">
+        <div class="admin-nav-bar mctf-row-container">
+          <header class="admin-nav-header row-fixed">
+            <div class="branding">
+              <a href="/{{ .UUID }}/">
+                <div class="branding-rules">
+                  <img src="/static/img/favicon.png" alt="MapCTF logo" class="branding-logo" />
+                  <span>POWERED BY MAPCTF</span>
+                </div>
+              </a>
+            </div>
+            <h2>Game Admin</h2>
+          </header>
+          <nav class="admin-nav-links row-fluid">
+            <ul>
+              <li><a href="/{{ .UUID }}/admin">Dashboard</a></li>
+              <li><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
+              <li><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
+              <li><a href="/{{ .UUID }}/admin/users">Users</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
+            </ul>
+          </nav>
+          <div class="admin-nav-controls row-fixed">
+            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+          </div>
+          <div class="admin-nav--footer row-fixed">
+            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+          </div>
+        </div>
+      </div>
+      <div id="mctf-main-content" class="mctf-page mctf-admin-main">
+        <div class="admin-sections">
+          <header class="admin-page-header">
+            <h3>Challenges</h3>
+            <span class="admin-section--status" data-ready-status="ready">
+              status_
+              <span class="highlighted">ready</span>
+              <span class="admin-section--status-message"></span>
+            </span>
+          </header>
+
+          <section id="challenges" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Challenge Management</h3>
+            </header>
+
+            <div class="admin-row">
+              <h4>Create Challenge (Dummy)</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Field</th>
+                    <th>Input</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Title</td>
+                    <td><input type="text" value="web_01_injection" disabled /></td>
+                  </tr>
+                  <tr>
+                    <td>Category</td>
+                    <td>
+                      <select disabled>
+                        {{ if .Categories }}
+                        {{ range .Categories }}
+                        <option>{{ .Name }}</option>
+                        {{ end }}
+                        {{ else }}
+                        <option selected>web</option>
+                        <option>crypto</option>
+                        <option>forensics</option>
+                        {{ end }}
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Points / Bonus / Penalty</td>
+                    <td>
+                      <input type="number" value="100" disabled />
+                      <input type="number" value="20" disabled />
+                      <input type="number" value="5" disabled />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Flag</td>
+                    <td><input type="text" value="MAPCTF{example_flag}" disabled /></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p>
+                <a href="#" class="mctf-cta">Create Challenge</a>
+                <a href="#" class="mctf-cta cta--yellow">Import Pack</a>
+              </p>
+            </div>
+
+            <div class="admin-row">
+              <h4>Category Management (Dummy)</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{ if .Categories }}
+                  {{ range .Categories }}
+                  <tr>
+                    <td>{{ .Name }}</td>
+                    <td>{{ .Description }}</td>
+                    <td>
+                      <a href="#" class="mctf-cta">Edit</a>
+                      <a href="#" class="mctf-cta cta--yellow">Hide</a>
+                    </td>
+                  </tr>
+                  {{ end }}
+                  {{ else }}
+                  <tr>
+                    <td colspan="3">No categories found for this event UUID.</td>
+                  </tr>
+                  {{ end }}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-row">
+              <h4>Challenge Inventory</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Category ID</th>
+                    <th>Points</th>
+                    <th>Bonus</th>
+                    <th>Penalty</th>
+                    <th>Active</th>
+                    <th>Updated</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{ if .Challenges }}
+                  {{ range .Challenges }}
+                  <tr>
+                    <td>{{ .ID }}</td>
+                    <td>{{ .Title }}</td>
+                    <td>{{ .CategoryID }}</td>
+                    <td>{{ .Points }}</td>
+                    <td>{{ .Bonus }}</td>
+                    <td>{{ .Penalty }}</td>
+                    <td>{{ if .Active }}yes{{ else }}no{{ end }}</td>
+                    <td>{{ .UpdatedAt.Format "2006-01-02 15:04" }}</td>
+                    <td>
+                      <a href="#" class="mctf-cta">Edit</a>
+                      <a href="#" class="mctf-cta cta--yellow">Toggle</a>
+                    </td>
+                  </tr>
+                  {{ end }}
+                  {{ else }}
+                  <tr>
+                    <td colspan="9">No challenges found for this event UUID.</td>
+                  </tr>
+                  {{ end }}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" src="/static/js/plugins.js"></script>
+    <script type="text/javascript" src="/static/js/mapctf.js"></script>
+    <script type="text/javascript" src="/static/js/functions.js"></script>
+    <script type="text/javascript" src="/static/js/admin.js"></script>
+  </body>
+</html>

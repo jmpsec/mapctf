@@ -76,6 +76,8 @@ const (
 	adminPath = "/admin"
 	// Settings path
 	settingsPath = "/settings"
+	// Controls path
+	controlsPath = "/controls"
 	// Users path
 	usersPath = "/users"
 	// Challenges path
@@ -271,7 +273,12 @@ func mapCTFService() {
 			r.Route(adminPath, func(r chi.Router) {
 				r.Use(handlersMap.RequireAdmin)
 				r.Get(rootPath, handlersMap.AdminTemplateHandler)
+				r.Get(settingsPath, handlersMap.AdminSettingsTemplateHandler)
 				r.Post(settingsPath, handlersMap.AdminSettingsPOSTHandler)
+				r.Get(controlsPath, handlersMap.AdminControlsTemplateHandler)
+				r.Get(challengesPath, handlersMap.AdminChallengesTemplateHandler)
+				r.Get(usersPath, handlersMap.AdminUsersTemplateHandler)
+				r.Get(teamsPath, handlersMap.AdminTeamsTemplateHandler)
 			})
 		})
 	})

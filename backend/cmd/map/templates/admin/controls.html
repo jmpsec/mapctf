@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Cache-control" content="no-cache" />
+    <meta http-equiv="Expires" content="-1" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MapCTF Admin: Settings</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    <link rel="stylesheet" href="/static/css/mapctf.css" />
+  </head>
+  <body data-section="admin">
+    <div class="mctf-sprite" id="mctf-svg-sprite"></div>
+    <div class="mctf-viewport admin-viewport">
+      <div id="mctf-admin-nav">
+        <div class="admin-nav-bar mctf-row-container">
+          <header class="admin-nav-header row-fixed">
+            <div class="branding">
+              <a href="/{{ .UUID }}/">
+                <div class="branding-rules">
+                  <img src="/static/img/favicon.png" alt="MapCTF logo" class="branding-logo" />
+                  <span>POWERED BY MAPCTF</span>
+                </div>
+              </a>
+            </div>
+            <h2>Game Admin</h2>
+          </header>
+          <nav class="admin-nav-links row-fluid">
+            <ul>
+              <li><a href="/{{ .UUID }}/admin">Dashboard</a></li>
+              <li><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
+              <li><a href="/{{ .UUID }}/admin/users">Users</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
+              <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
+            </ul>
+          </nav>
+          <div class="admin-nav-controls row-fixed">
+            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+          </div>
+          <div class="admin-nav--footer row-fixed">
+            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+          </div>
+        </div>
+      </div>
+      <div id="mctf-main-content" class="mctf-page mctf-admin-main">
+        <div class="admin-sections">
+          <header class="admin-page-header">
+            <h3>Game Controls</h3>
+            <span class="admin-section--status" data-ready-status="ready">
+              status_
+              <span class="highlighted">ready</span>
+              <span class="admin-section--status-message"></span>
+            </span>
+          </header>
+
+<section id="controls" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Game Control Panel (Dummy)</h3>
+            </header>
+
+            <div class="admin-row">
+              <h4>Global Match State</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Control</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Start Game</td>
+                    <td><a href="#" class="mctf-cta">Run Warmup Countdown</a></td>
+                  </tr>
+                  <tr>
+                    <td>Pause Game</td>
+                    <td><a href="#" class="mctf-cta cta--yellow">Pause All Submissions</a></td>
+                  </tr>
+                  <tr>
+                    <td>Resume Game</td>
+                    <td><a href="#" class="mctf-cta">Resume Live Play</a></td>
+                  </tr>
+                  <tr>
+                    <td>End Game</td>
+                    <td><a href="#" class="mctf-cta cta--red">End and Lock Scoreboard</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-row">
+              <h4>Timing Overrides</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Setting</th>
+                    <th>Dummy Input</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Freeze Timer</td>
+                    <td><input type="checkbox" disabled /> Freeze countdown and challenge timers</td>
+                  </tr>
+                  <tr>
+                    <td>Overtime Minutes</td>
+                    <td><input type="number" min="0" max="120" value="15" disabled /></td>
+                  </tr>
+                  <tr>
+                    <td>Hint Cooldown</td>
+                    <td><input type="number" min="0" max="60" value="5" disabled /> minutes</td>
+                  </tr>
+                  <tr>
+                    <td>Scoreboard Refresh</td>
+                    <td>
+                      <select disabled>
+                        <option>1 second</option>
+                        <option selected>5 seconds</option>
+                        <option>10 seconds</option>
+                      </select>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-row">
+              <h4>Broadcast Message Composer</h4>
+              <p>Send a global message to all teams (dummy UI only):</p>
+              <p><input type="text" value="[NOTICE] Infrastructure maintenance in 10 minutes." disabled /></p>
+              <p>
+                <select disabled>
+                  <option selected>Info</option>
+                  <option>Warning</option>
+                  <option>Critical</option>
+                </select>
+                <a href="#" class="mctf-cta">Queue Broadcast</a>
+                <a href="#" class="mctf-cta cta--red">Push Immediately</a>
+              </p>
+            </div>
+
+            <div class="admin-row">
+              <h4>Emergency Controls</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Action</th>
+                    <th>Dummy Trigger</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Enable Read-Only Mode</td>
+                    <td><a href="#" class="mctf-cta cta--yellow">Set Read-Only</a></td>
+                    <td>Stops writes, keeps scoreboard visible</td>
+                  </tr>
+                  <tr>
+                    <td>Disable Flag Submission API</td>
+                    <td><a href="#" class="mctf-cta cta--red">Disable Endpoint</a></td>
+                    <td>For abuse prevention during incidents</td>
+                  </tr>
+                  <tr>
+                    <td>Force Team Re-Auth</td>
+                    <td><a href="#" class="mctf-cta cta--red">Invalidate Sessions</a></td>
+                    <td>Security fallback if token leak suspected</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" src="/static/js/plugins.js"></script>
+    <script type="text/javascript" src="/static/js/mapctf.js"></script>
+    <script type="text/javascript" src="/static/js/functions.js"></script>
+    <script type="text/javascript" src="/static/js/admin.js"></script>
+  </body>
+</html>

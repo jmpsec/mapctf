@@ -5,7 +5,7 @@
     <meta http-equiv="Expires" content="-1" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MAPCTF</title>
+    <title>MapCTF Admin: Settings</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
     <link rel="stylesheet" href="/static/css/mapctf.css" />
   </head>
@@ -27,9 +27,12 @@
           </header>
           <nav class="admin-nav-links row-fluid">
             <ul>
-              <li class="active"><a href="#configuration">Configuration</a></li>
-              <li><a href="#controls">Controls</a></li>
-              <li><a href="#teams">Teams</a></li>
+              <li><a href="/{{ .UUID }}/admin">Dashboard</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
+              <li><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
+              <li><a href="/{{ .UUID }}/admin/users">Users</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
+              <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
             </ul>
           </nav>
           <div class="admin-nav-controls row-fixed">
@@ -45,7 +48,7 @@
       <div id="mctf-main-content" class="mctf-page mctf-admin-main">
         <div class="admin-sections">
           <header class="admin-page-header">
-            <h3>Configuration</h3>
+            <h3>Settings</h3>
             <span class="admin-section--status" data-ready-status="ready">
               status_
               <span class="highlighted">ready</span>
@@ -53,9 +56,9 @@
             </span>
           </header>
 
-          <section id="configuration" class="admin-box">
+          <section id="settings" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Game Configuration</h3>
+              <h3>Game Settings</h3>
             </header>
 
             <div class="admin-row">
