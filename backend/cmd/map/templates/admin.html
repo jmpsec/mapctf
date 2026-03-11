@@ -15,7 +15,14 @@
       <div id="mctf-admin-nav">
         <div class="admin-nav-bar mctf-row-container">
           <header class="admin-nav-header row-fixed">
-            <div class="branding-el">POWERED BY MAPCTF</div>
+            <div class="branding">
+              <a href="/{{ .UUID }}/">
+                <div class="branding-rules">
+                  <img src="/static/img/favicon.png" alt="MapCTF logo" class="branding-logo" />
+                  <span>POWERED BY MAPCTF</span>
+                </div>
+              </a>
+            </div>
             <h2>Game Admin</h2>
           </header>
           <nav class="admin-nav-links row-fluid">
@@ -39,7 +46,11 @@
         <div class="admin-sections">
           <header class="admin-page-header">
             <h3>Configuration</h3>
-            <span class="admin-section--status">status_ <span class="highlighted">OK</span></span>
+            <span class="admin-section--status" data-ready-status="ready">
+              status_
+              <span class="highlighted">ready</span>
+              <span class="admin-section--status-message"></span>
+            </span>
           </header>
 
           <section id="configuration" class="admin-box">
@@ -48,26 +59,103 @@
             </header>
 
             <div class="admin-row">
-              <dl>
-                <dt>game</dt>
-                <dd>1</dd>
-                <dt>game_paused</dt>
-                <dd>0</dd>
-                <dt>registration</dt>
-                <dd>1</dd>
-                <dt>login</dt>
-                <dd>1</dd>
-                <dt>custom_org</dt>
-                <dd>MAPCTF</dd>
-              </dl>
-            </div>
-
-            <div class="admin-row admin-buttons">
-              <button class="mctf-cta cta--yellow" type="button">Edit game</button>
-              <button class="mctf-cta cta--yellow" type="button">Edit game_paused</button>
-              <button class="mctf-cta cta--yellow" type="button">Edit registration</button>
-              <button class="mctf-cta cta--yellow" type="button">Edit login</button>
-              <button class="mctf-cta cta--yellow" type="button">Edit custom_org</button>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>game_started</td>
+                    <td>
+                      <form id="form_game_started" action="/{{ .UUID }}/admin/settings" method="post">
+                        <input type="hidden" name="setting_name" value="game_started" />
+                        <select id="game_started" name="setting_value" onchange="saveSettingValue(this)">
+                          <option value="true" {{ if .GameStarted }}selected{{ end }}>true</option>
+                          <option value="false" {{ if not .GameStarted }}selected{{ end }}>false</option>
+                        </select>
+                      </form>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>game_paused</td>
+                    <td>
+                      <form id="form_game_paused" action="/{{ .UUID }}/admin/settings" method="post">
+                        <input type="hidden" name="setting_name" value="game_paused" />
+                        <select id="game_paused" name="setting_value" onchange="saveSettingValue(this)">
+                          <option value="true" {{ if .GamePaused }}selected{{ end }}>true</option>
+                          <option value="false" {{ if not .GamePaused }}selected{{ end }}>false</option>
+                        </select>
+                      </form>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>registration_enabled</td>
+                    <td>
+                      <form id="form_registration_enabled" action="/{{ .UUID }}/admin/settings" method="post">
+                        <input type="hidden" name="setting_name" value="registration_enabled" />
+                        <select id="registration_enabled" name="setting_value" onchange="saveSettingValue(this)">
+                          <option value="true" {{ if .RegistrationEnabled }}selected{{ end }}>true</option>
+                          <option value="false" {{ if not .RegistrationEnabled }}selected{{ end }}>false</option>
+                        </select>
+                      </form>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>login_enabled</td>
+                    <td>
+                      <form id="form_login_enabled" action="/{{ .UUID }}/admin/settings" method="post">
+                        <input type="hidden" name="setting_name" value="login_enabled" />
+                        <select id="login_enabled" name="setting_value" onchange="saveSettingValue(this)">
+                          <option value="true" {{ if .LoginEnabled }}selected{{ end }}>true</option>
+                          <option value="false" {{ if not .LoginEnabled }}selected{{ end }}>false</option>
+                        </select>
+                      </form>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>scoring_enabled</td>
+                    <td>
+                      <form id="form_scoring_enabled" action="/{{ .UUID }}/admin/settings" method="post">
+                        <input type="hidden" name="setting_name" value="scoring_enabled" />
+                        <select id="scoring_enabled" name="setting_value" onchange="saveSettingValue(this)">
+                          <option value="true" {{ if .ScoringEnabled }}selected{{ end }}>true</option>
+                          <option value="false" {{ if not .ScoringEnabled }}selected{{ end }}>false</option>
+                        </select>
+                      </form>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>custom_org</td>
+                    <td>
+                      <form id="form_custom_org" action="/{{ .UUID }}/admin/settings" method="post">
+                        <input type="hidden" name="setting_name" value="custom_org" />
+                        <input id="custom_org" type="text" name="setting_value" value="{{ .CustomOrg }}" onchange="saveSettingValue(this)" />
+                      </form>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>game_start_time</td>
+                    <td>
+                      <form id="form_game_start_time" action="/{{ .UUID }}/admin/settings" method="post">
+                        <input type="hidden" name="setting_name" value="game_start_time" />
+                        <input id="game_start_time" type="datetime-local" name="setting_value" value="{{ .GameStartTime }}" onchange="saveSettingValue(this)" />
+                      </form>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>game_end_time</td>
+                    <td>
+                      <form id="form_game_end_time" action="/{{ .UUID }}/admin/settings" method="post">
+                        <input type="hidden" name="setting_name" value="game_end_time" />
+                        <input id="game_end_time" type="datetime-local" name="setting_value" value="{{ .GameEndTime }}" onchange="saveSettingValue(this)" />
+                      </form>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </section>
         </div>
@@ -78,5 +166,6 @@
     <script type="text/javascript" src="/static/js/plugins.js"></script>
     <script type="text/javascript" src="/static/js/mapctf.js"></script>
     <script type="text/javascript" src="/static/js/functions.js"></script>
+    <script type="text/javascript" src="/static/js/admin.js"></script>
   </body>
 </html>

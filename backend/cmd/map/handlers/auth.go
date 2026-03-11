@@ -52,10 +52,14 @@ func (h *HandlersMap) LoginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	h.Sessions.Put(r.Context(), string(ContextKeyUser), user.Username)
 	h.Sessions.Put(r.Context(), string(ContextKeyAdmin), user.Admin)
+	redirectTo := "/" + uuid + "/gameboard"
+	if user.Admin {
+		redirectTo = "/" + uuid + "/admin"
+	}
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapLoginResponse{
 		Success:  true,
 		Message:  "Login successful",
-		Redirect: "/" + uuid + "/gameboard",
+		Redirect: redirectTo,
 	})
 }
 

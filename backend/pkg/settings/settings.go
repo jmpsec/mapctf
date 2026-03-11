@@ -41,6 +41,12 @@ var StringSettings = map[string]string{
 	CustomOrg: "",
 }
 
+// DateSettings to be used as check for valid setting and to keep default value
+var DateSettings = map[string]time.Time{
+	GameStartTime: time.Time{},
+	GameEndTime:   time.Time{},
+}
+
 const (
 	// TypeString is the string type for settings
 	TypeString string = "string"
@@ -145,6 +151,21 @@ func (m *SettingsManager) Initialization() error {
 			}
 			if err := m.Create(newSetting); err != nil {
 				return fmt.Errorf("failed to create default string setting %s: %w", name, err)
+			}
+		}
+	}
+	// Create default date settings if they don't exist
+	for name, defaultValue := range DateSettings {
+		if _, exists := existingSettings[name]; !exists {
+			newSetting := PlatformSetting{
+				Name:        name,
+				ValueType:   TypeDate,
+				ValueDate:   defaultValue,
+				UUID:        m.UUID,
+				Description: name + " date setting",
+			}
+			if err := m.Create(newSetting); err != nil {
+				return fmt.Errorf("failed to create default date setting %s: %w", name, err)
 			}
 		}
 	}
@@ -431,4 +452,3 @@ func (m *SettingsManager) SetCustomOrg(org string, username string) error {
 func (m *SettingsManager) GetCustomOrg() (string, error) {
 	return m.getStringSetting(CustomOrg)
 }
-

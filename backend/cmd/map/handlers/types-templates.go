@@ -62,6 +62,17 @@ type AdminTemplateData struct {
 	UUID          string
 	Authenticated bool
 	Admin         bool
+	Status        string
+	Message       string
+
+	LoginEnabled        bool
+	RegistrationEnabled bool
+	ScoringEnabled      bool
+	GamePaused          bool
+	GameStarted         bool
+	CustomOrg           string
+	GameStartTime       string
+	GameEndTime         string
 }
 
 // ErrorTemplateData for passing data to the error template

@@ -30,3 +30,10 @@ type MapLoginResponse struct {
 
 // MapLogoutResponse to be returned to map requests after a successful logout
 type MapLogoutResponse MapLoginResponse
+
+// AdminSettingsRequest to receive admin settings update requests
+type AdminSettingsRequest struct {
+	Action string `json:"action"`
+	Name   string `json:"name,omitempty"`
+	Value  string `json:"value,omitempty"`
+}

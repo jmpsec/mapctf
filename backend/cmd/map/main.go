@@ -271,7 +271,7 @@ func mapCTFService() {
 			r.Route(adminPath, func(r chi.Router) {
 				r.Use(handlersMap.RequireAdmin)
 				r.Get(rootPath, handlersMap.AdminTemplateHandler)
-				r.Post(rootPath, handlersMap.AdminSettingsPOSTHandler)
+				r.Post(settingsPath, handlersMap.AdminSettingsPOSTHandler)
 			})
 		})
 	})
