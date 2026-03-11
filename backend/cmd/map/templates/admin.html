@@ -137,6 +137,22 @@
                     </td>
                   </tr>
                   <tr>
+                    <td>language</td>
+                    <td>
+                      <form id="form_language" action="/{{ .UUID }}/admin/settings" method="post">
+                        <input type="hidden" name="setting_name" value="language" />
+                        <select id="language" name="setting_value" onchange="saveSettingValue(this)">
+                          <option value="en" {{ if eq .Language "en" }}selected{{ end }}>🇬🇧 en</option>
+                          <option value="es" {{ if eq .Language "es" }}selected{{ end }}>🇪🇸 es</option>
+                          <option value="fr" {{ if eq .Language "fr" }}selected{{ end }}>🇫🇷 fr</option>
+                          <option value="de" {{ if eq .Language "de" }}selected{{ end }}>🇩🇪 de</option>
+                          <option value="it" {{ if eq .Language "it" }}selected{{ end }}>🇮🇹 it</option>
+                          <option value="pt" {{ if eq .Language "pt" }}selected{{ end }}>🇵🇹 pt</option>
+                        </select>
+                      </form>
+                    </td>
+                  </tr>
+                  <tr>
                     <td>game_start_time</td>
                     <td>
                       <form id="form_game_start_time" action="/{{ .UUID }}/admin/settings" method="post">

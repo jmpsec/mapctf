@@ -71,6 +71,7 @@ type AdminTemplateData struct {
 	GamePaused          bool
 	GameStarted         bool
 	CustomOrg           string
+	Language            string
 	GameStartTime       string
 	GameEndTime         string
 }

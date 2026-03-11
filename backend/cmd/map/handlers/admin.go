@@ -86,6 +86,13 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 		log.Warn().Err(err).Msg("error loading custom_org")
 	}
 
+	language, err := h.Settings.GetLanguage()
+	if err == nil {
+		templateData.Language = language
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading language")
+	}
+
 	gameStartTime, err := h.Settings.GetGameStartTime()
 	if err == nil && !gameStartTime.IsZero() {
 		templateData.GameStartTime = gameStartTime.Format("2006-01-02T15:04")
@@ -176,6 +183,12 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 		if err := h.Settings.SetCustomOrg(settingValue, username); err != nil {
 			log.Err(err).Msg("error updating custom_org")
 			http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Failed to update custom_org"), http.StatusFound)
+			return
+		}
+	case "language":
+		if err := h.Settings.SetLanguage(settingValue, username); err != nil {
+			log.Err(err).Msg("error updating language")
+			http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Failed to update language"), http.StatusFound)
 			return
 		}
 	case "game_start_time":

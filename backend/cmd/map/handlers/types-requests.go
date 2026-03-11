@@ -33,7 +33,6 @@ type MapLogoutResponse MapLoginResponse
 
 // AdminSettingsRequest to receive admin settings update requests
 type AdminSettingsRequest struct {
-	Action string `json:"action"`
-	Name   string `json:"name,omitempty"`
-	Value  string `json:"value,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
 }

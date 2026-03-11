@@ -25,6 +25,8 @@ const (
 	GameEndTime string = "game_end_time"
 	// CustomOrg is the setting name for the custom organization
 	CustomOrg string = "custom_org"
+	// Language is the setting name for platform language
+	Language string = "language"
 )
 
 // BooleanSettings to be used as check for valid setting and to keep default value, if needed
@@ -39,6 +41,7 @@ var BooleanSettings = map[string]bool{
 // StringSettings to be used as check for valid setting and to keep default value
 var StringSettings = map[string]string{
 	CustomOrg: "",
+	Language:  "en",
 }
 
 // DateSettings to be used as check for valid setting and to keep default value
@@ -451,4 +454,14 @@ func (m *SettingsManager) SetCustomOrg(org string, username string) error {
 
 func (m *SettingsManager) GetCustomOrg() (string, error) {
 	return m.getStringSetting(CustomOrg)
+}
+
+func (m *SettingsManager) SetLanguage(language, username string) error {
+	return m.upsertSetting(Language, TypeString, Language+" string setting", username, func(s *PlatformSetting) {
+		s.ValueString = language
+	})
+}
+
+func (m *SettingsManager) GetLanguage() (string, error) {
+	return m.getStringSetting(Language)
 }
