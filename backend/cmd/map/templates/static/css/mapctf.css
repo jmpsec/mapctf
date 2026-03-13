@@ -5119,6 +5119,49 @@ General Admin
   padding-right: 20px;
   padding-bottom: 20px;
 }
+.admin-box .admin-settings-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 8px;
+}
+.admin-box .admin-setting-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid #2b3d43;
+  border-radius: 4px;
+  padding: 12px;
+}
+.admin-box .admin-setting-row > label {
+  min-width: 0;
+  margin: 0;
+  color: #cff8fa;
+}
+.admin-box .admin-setting-row > form {
+  margin: 0;
+  width: 100%;
+}
+.admin-box .admin-setting-row .admin-section-toggle {
+  margin: 0;
+}
+.admin-box .admin-setting-row input[type=text],
+.admin-box .admin-setting-row input[type=datetime-local],
+.admin-box .admin-setting-row select {
+  width: 100%;
+}
+@media (max-width: 1200px) {
+  .admin-box .admin-settings-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 780px) {
+  .admin-box .admin-settings-list {
+    grid-template-columns: 1fr;
+  }
+}
 .admin-box .admin-row.admin-buttons, .admin-box .admin-row.global-controls-rules {
   padding-top: 20px;
 }
