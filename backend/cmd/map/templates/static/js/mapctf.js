@@ -2862,10 +2862,38 @@
     }
   }
 
+  function normalizePath(path) {
+    var normalized = (path || "").toString().split("?")[0].split("#")[0];
+    if (normalized.length > 1 && normalized.charAt(normalized.length - 1) === "/") {
+      normalized = normalized.slice(0, -1);
+    }
+    return normalized;
+  }
+
+  function updateMainNavActiveLink() {
+    var currentPath = normalizePath(window.location.pathname);
+    var $links = $("#mctf-main-nav a[data-active]");
+
+    $links.removeClass("active");
+
+    $links.each(function () {
+      var href = $(this).attr("href");
+      if (!href || href.charAt(0) === "#") {
+        return;
+      }
+      var linkPath = normalizePath(href);
+      if (linkPath === currentPath) {
+        $(this).addClass("active");
+      }
+    });
+  }
+
   /**
    * set up stuff on document ready
    */
   $(document).ready(function () {
+    updateMainNavActiveLink();
+
     //
     // check to make sure that we're not using the initkit, and
     //  then initialize the Capture the Flag scripts. This
