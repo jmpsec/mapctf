@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -13,6 +14,18 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
+
+type adminActionResponse struct {
+	Success bool   `json:"success"`
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+func wantsJSONResponse(r *http.Request) bool {
+	return strings.Contains(r.Header.Get(ContentType), JSONApplication) ||
+		strings.Contains(r.Header.Get("Accept"), JSONApplication) ||
+		strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest")
+}
 
 // AdminTemplateHandler for admin dashboard page for GET requests
 func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Request) {
@@ -161,10 +174,29 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		log.Err(err).Msg("error parsing admin settings form")
-		http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Invalid form payload"), http.StatusFound)
-		return
+	jsonResponse := wantsJSONResponse(r)
+	redirectBase := "/" + uuid + "/admin/settings"
+	writeError := func(code int, msg string) {
+		if jsonResponse {
+			HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+				Success: false,
+				Status:  "error",
+				Message: msg,
+			})
+			return
+		}
+		http.Redirect(w, r, redirectBase+"?status=error&msg="+url.QueryEscape(msg), http.StatusFound)
+	}
+	writeSuccess := func(msg string) {
+		if jsonResponse {
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+				Success: true,
+				Status:  "ok",
+				Message: msg,
+			})
+			return
+		}
+		http.Redirect(w, r, redirectBase+"?status=ok&msg="+url.QueryEscape(msg), http.StatusFound)
 	}
 
 	username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
@@ -172,22 +204,45 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 		username = h.ServiceName
 	}
 
-	settingName := strings.TrimSpace(r.FormValue("setting_name"))
-	settingValue := strings.TrimSpace(r.FormValue("setting_value"))
+	var req AdminSettingsRequest
+	if strings.Contains(r.Header.Get(ContentType), JSONApplication) {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			log.Err(err).Msg("error parsing admin settings JSON payload")
+			writeError(http.StatusBadRequest, "Invalid JSON payload")
+			return
+		}
+	} else {
+		if err := r.ParseForm(); err != nil {
+			log.Err(err).Msg("error parsing admin settings form")
+			writeError(http.StatusBadRequest, "Invalid form payload")
+			return
+		}
+		req.SettingName = r.FormValue("setting_name")
+		req.SettingValue = r.FormValue("setting_value")
+	}
+
+	settingName := strings.TrimSpace(req.SettingName)
 	if settingName == "" {
-		http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Missing setting_name"), http.StatusFound)
+		settingName = strings.TrimSpace(req.Name)
+	}
+	settingValue := strings.TrimSpace(req.SettingValue)
+	if settingValue == "" {
+		settingValue = strings.TrimSpace(req.Value)
+	}
+	if settingName == "" {
+		writeError(http.StatusBadRequest, "Missing setting_name")
 		return
 	}
 
 	setBoolSetting := func(setter func(bool, string) error, setting string) bool {
 		parsed, err := strconv.ParseBool(strings.ToLower(settingValue))
 		if err != nil {
-			http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Invalid boolean for "+setting), http.StatusFound)
+			writeError(http.StatusBadRequest, "Invalid boolean for "+setting)
 			return false
 		}
 		if err := setter(parsed, username); err != nil {
 			log.Err(err).Msgf("error updating %s", setting)
-			http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Failed to update "+setting), http.StatusFound)
+			writeError(http.StatusInternalServerError, "Failed to update "+setting)
 			return false
 		}
 		return true
@@ -217,43 +272,43 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	case "custom_org":
 		if err := h.Settings.SetCustomOrg(settingValue, username); err != nil {
 			log.Err(err).Msg("error updating custom_org")
-			http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Failed to update custom_org"), http.StatusFound)
+			writeError(http.StatusInternalServerError, "Failed to update custom_org")
 			return
 		}
 	case "language":
 		if err := h.Settings.SetLanguage(settingValue, username); err != nil {
 			log.Err(err).Msg("error updating language")
-			http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Failed to update language"), http.StatusFound)
+			writeError(http.StatusInternalServerError, "Failed to update language")
 			return
 		}
 	case "game_start_time":
 		gameStartTime, err := time.ParseInLocation("2006-01-02T15:04", settingValue, time.Local)
 		if err != nil {
-			http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Invalid game_start_time format"), http.StatusFound)
+			writeError(http.StatusBadRequest, "Invalid game_start_time format")
 			return
 		}
 		if err := h.Settings.SetGameStartTime(gameStartTime, username); err != nil {
 			log.Err(err).Msg("error updating game_start_time")
-			http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Failed to update game_start_time"), http.StatusFound)
+			writeError(http.StatusInternalServerError, "Failed to update game_start_time")
 			return
 		}
 	case "game_end_time":
 		gameEndTime, err := time.ParseInLocation("2006-01-02T15:04", settingValue, time.Local)
 		if err != nil {
-			http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Invalid game_end_time format"), http.StatusFound)
+			writeError(http.StatusBadRequest, "Invalid game_end_time format")
 			return
 		}
 		if err := h.Settings.SetGameEndTime(gameEndTime, username); err != nil {
 			log.Err(err).Msg("error updating game_end_time")
-			http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Failed to update game_end_time"), http.StatusFound)
+			writeError(http.StatusInternalServerError, "Failed to update game_end_time")
 			return
 		}
 	default:
-		http.Redirect(w, r, "/"+uuid+"/admin?status=error&msg="+url.QueryEscape("Unsupported setting"), http.StatusFound)
+		writeError(http.StatusBadRequest, "Unsupported setting")
 		return
 	}
 
-	http.Redirect(w, r, "/"+uuid+"/admin?status=ok&msg="+url.QueryEscape("Updated "+settingName), http.StatusFound)
+	writeSuccess("Updated " + settingName)
 }
 
 // AdminControlsTemplateHandler for admin controls page for GET requests
@@ -418,4 +473,113 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 		log.Err(err).Msg("template error")
 		return
 	}
+}
+
+// AdminChallengesPOSTHandler for admin challenges page for POST requests
+func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	// Debug HTTP if enabled
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	jsonResponse := wantsJSONResponse(r)
+	redirectBase := "/" + uuid + "/admin/challenges"
+	writeError := func(code int, msg string) {
+		if jsonResponse {
+			HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+				Success: false,
+				Status:  "error",
+				Message: msg,
+			})
+			return
+		}
+		http.Redirect(w, r, redirectBase+"?status=error&msg="+url.QueryEscape(msg), http.StatusFound)
+	}
+	writeSuccess := func(msg string) {
+		if jsonResponse {
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+				Success: true,
+				Status:  "ok",
+				Message: msg,
+			})
+			return
+		}
+		http.Redirect(w, r, redirectBase+"?status=ok&msg="+url.QueryEscape(msg), http.StatusFound)
+	}
+
+	var req AdminChallengeCreateRequest
+	if strings.Contains(r.Header.Get(ContentType), JSONApplication) {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			log.Err(err).Msg("error parsing admin challenges JSON payload")
+			writeError(http.StatusBadRequest, "Invalid JSON payload")
+			return
+		}
+	} else {
+		if err := r.ParseForm(); err != nil {
+			log.Err(err).Msg("error parsing admin challenges form")
+			writeError(http.StatusBadRequest, "Invalid form payload")
+			return
+		}
+		req.Title = r.FormValue("title")
+		req.Description = r.FormValue("description")
+		req.CategoryID = r.FormValue("category_id")
+		req.Active = r.FormValue("active")
+		req.Points = r.FormValue("points")
+		req.Bonus = r.FormValue("bonus")
+		req.BonusDecay = r.FormValue("bonus_decay")
+		req.Penalty = r.FormValue("penalty")
+		req.Flag = r.FormValue("flag")
+		req.Hint = r.FormValue("hint")
+	}
+
+	title := strings.TrimSpace(req.Title)
+	description := strings.TrimSpace(req.Description)
+	categoryIDStr := strings.TrimSpace(req.CategoryID)
+	activeStr := strings.TrimSpace(req.Active)
+	pointsStr := strings.TrimSpace(req.Points)
+	bonusStr := strings.TrimSpace(req.Bonus)
+	bonusDecayStr := strings.TrimSpace(req.BonusDecay)
+	penaltyStr := strings.TrimSpace(req.Penalty)
+	flag := strings.TrimSpace(req.Flag)
+	hint := strings.TrimSpace(req.Hint)
+
+	if title == "" || flag == "" {
+		writeError(http.StatusBadRequest, "Title and flag are required")
+		return
+	}
+	categoryID, _ := strconv.ParseUint(categoryIDStr, 10, 64)
+	active, _ := strconv.ParseBool(activeStr)
+	points, _ := strconv.ParseInt(pointsStr, 10, 64)
+	bonus, _ := strconv.ParseInt(bonusStr, 10, 64)
+	bonusDecay, _ := strconv.ParseInt(bonusDecayStr, 10, 64)
+	penalty, _ := strconv.ParseInt(penaltyStr, 10, 64)
+
+	challenge := h.Challenges.New(
+		title,
+		description,
+		uint(categoryID),
+		active,
+		int(points),
+		int(bonus),
+		int(bonusDecay),
+		int(penalty),
+		flag,
+		hint,
+		uuid,
+	)
+
+	if err := h.Challenges.Create(challenge); err != nil {
+		log.Err(err).Msg("error creating challenge")
+		writeError(http.StatusInternalServerError, "Failed to create challenge")
+		return
+	}
+
+	writeSuccess("Challenge created")
 }

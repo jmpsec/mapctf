@@ -33,6 +33,22 @@ type MapLogoutResponse MapLoginResponse
 
 // AdminSettingsRequest to receive admin settings update requests
 type AdminSettingsRequest struct {
-	Name  string `json:"name,omitempty"`
-	Value string `json:"value,omitempty"`
+	SettingName  string `json:"setting_name,omitempty"`
+	SettingValue string `json:"setting_value,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Value        string `json:"value,omitempty"`
+}
+
+// AdminChallengeCreateRequest to receive admin challenge creation requests
+type AdminChallengeCreateRequest struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	CategoryID  string `json:"category_id"`
+	Active      string `json:"active"`
+	Points      string `json:"points"`
+	Bonus       string `json:"bonus"`
+	BonusDecay  string `json:"bonus_decay"`
+	Penalty     string `json:"penalty"`
+	Flag        string `json:"flag"`
+	Hint        string `json:"hint"`
 }

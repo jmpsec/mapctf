@@ -1913,6 +1913,11 @@
                   <li>
                     <a href="/{{ .UUID }}/registration">Registration</a>
                   </li>
+                  {{ if .Admin }}
+                  <li>
+                    <a href="/{{ .UUID }}/admin">🔐 Admin</a>
+                  </li>
+                  {{ end }}
                   <li><a href="/{{ .UUID }}/logout" id="gameboard-logout-link" data-logout-url="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a></li>
                 </ul>
               </li>

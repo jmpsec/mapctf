@@ -2241,6 +2241,7 @@ body {
   -webkit-flex: 0 0 300px;
   -ms-flex: 0 0 300px;
   flex: 0 0 300px;
+  min-height: 100vh;
 }
 .mctf-viewport .mctf-page {
   -webkit-box-flex: 1 1 auto;
@@ -4988,6 +4989,8 @@ Admin Nav
   text-transform: uppercase;
   letter-spacing: 0.2em;
   text-align: center;
+  margin-top: auto;
+  padding-bottom: 20px;
 }
 .admin-nav--footer .branding-el {
   display: block;
@@ -5004,6 +5007,9 @@ Admin Nav
   padding-top: 20px;
   margin: 20px auto 20px;
   border-top: 1px solid #2b3d43;
+}
+.admin-nav--footer a:last-child {
+  margin-bottom: 0;
 }
 
 /*---------------

@@ -112,37 +112,6 @@
             </div>
 
             <div class="admin-row">
-              <h4>Category Management (Dummy)</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {{ if .Categories }}
-                  {{ range .Categories }}
-                  <tr>
-                    <td>{{ .Name }}</td>
-                    <td>{{ .Description }}</td>
-                    <td>
-                      <a href="#" class="mctf-cta">Edit</a>
-                      <a href="#" class="mctf-cta cta--yellow">Hide</a>
-                    </td>
-                  </tr>
-                  {{ end }}
-                  {{ else }}
-                  <tr>
-                    <td colspan="3">No categories found for this event UUID.</td>
-                  </tr>
-                  {{ end }}
-                </tbody>
-              </table>
-            </div>
-
-            <div class="admin-row">
               <h4>Challenge Inventory</h4>
               <table>
                 <thead>
@@ -185,6 +154,74 @@
               </table>
             </div>
           </section>
+
+          <section id="categories" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Category Management</h3>
+            </header>
+
+            <div class="admin-row">
+              <h4>Create Category (Dummy)</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Field</th>
+                    <th>Input</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Name</td>
+                    <td><input type="text" value="web" disabled /></td>
+                  </tr>
+                  <tr>
+                    <td>Description</td>
+                    <td><input type="text" value="Web exploitation challenges" disabled /></td>
+                  </tr>
+                  <tr>
+                    <td>Logo</td>
+                    <td><input type="text" value="icon-web.svg" disabled /></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p>
+                <a href="#" class="mctf-cta">Create Category</a>
+                <a href="#" class="mctf-cta cta--yellow">Reset Form</a>
+              </p>
+            </div>
+
+            <div class="admin-row">
+              <h4>Category Directory</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{ if .Categories }}
+                  {{ range .Categories }}
+                  <tr>
+                    <td>{{ .Name }}</td>
+                    <td>{{ .Description }}</td>
+                    <td>
+                      <a href="#" class="mctf-cta">Edit</a>
+                      <a href="#" class="mctf-cta cta--yellow">Hide</a>
+                    </td>
+                  </tr>
+                  {{ end }}
+                  {{ else }}
+                  <tr>
+                    <td colspan="3">No categories found for this event UUID.</td>
+                  </tr>
+                  {{ end }}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
         </div>
       </div>
     </div>

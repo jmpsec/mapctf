@@ -1421,6 +1421,9 @@
     function init() {
       $modal = $("#mctf-modal");
       $modalContainer = $("#mctf-initkit");
+      if ($modalContainer.length === 0) {
+        $modalContainer = $("body");
+      }
       $countryHover = $("#mctf-country-popup");
 
       //
