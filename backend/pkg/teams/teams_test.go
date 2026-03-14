@@ -169,7 +169,7 @@ func TestTeamScoreStructure(t *testing.T) {
 		TeamID:   1,
 		Points:   50,
 		UUID:     testUUID2,
-		ScoredBy: 3,
+		ScoredBy: "3",
 	}
 
 	if score.TeamID != 1 {
@@ -184,8 +184,8 @@ func TestTeamScoreStructure(t *testing.T) {
 		t.Errorf("Expected UUID '%s', got '%s'", testUUID2, score.UUID)
 	}
 
-	if score.ScoredBy != 3 {
-		t.Errorf("Expected ScoredBy 3, got %d", score.ScoredBy)
+	if score.ScoredBy != "3" {
+		t.Errorf("Expected ScoredBy 3, got %s", score.ScoredBy)
 	}
 }
 
@@ -902,9 +902,9 @@ func TestTeamWithScores(t *testing.T) {
 
 	// Create scores
 	scores := []TeamScore{
-		{TeamID: createdTeam.ID, Points: 10, UUID: testUUID1, ScoredBy: 1},
-		{TeamID: createdTeam.ID, Points: 20, UUID: testUUID1, ScoredBy: 2},
-		{TeamID: createdTeam.ID, Points: 15, UUID: testUUID1, ScoredBy: 3},
+		{TeamID: createdTeam.ID, Points: 10, UUID: testUUID1, ScoredBy: "1"},
+		{TeamID: createdTeam.ID, Points: 20, UUID: testUUID1, ScoredBy: "2"},
+		{TeamID: createdTeam.ID, Points: 15, UUID: testUUID1, ScoredBy: "3"},
 	}
 
 	for _, score := range scores {

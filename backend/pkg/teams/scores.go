@@ -5,11 +5,11 @@ import "gorm.io/gorm"
 // TeamScore to hold all team scores over time
 type TeamScore struct {
 	gorm.Model
-	TeamID      uint   `gorm:"index"`
+	TeamID      uint `gorm:"index"`
 	ChallengeID uint
 	Points      int
 	UUID        string `gorm:"index"`
-	ScoredBy    uint
+	ScoredBy    string
 }
 
 // GetScores to get all scores for a team and UUID
@@ -22,7 +22,7 @@ func (m *TeamManager) GetScores(teamID uint, uuid string) ([]TeamScore, error) {
 }
 
 // NewScore to create a new team score
-func (m *TeamManager) NewScore(teamID, challengeID uint, points int, uuid string, scoredBy uint) (TeamScore, error) {
+func (m *TeamManager) NewScore(teamID, challengeID uint, points int, uuid, scoredBy string) (TeamScore, error) {
 	return TeamScore{
 		TeamID:      teamID,
 		ChallengeID: challengeID,
