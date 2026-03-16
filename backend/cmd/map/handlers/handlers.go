@@ -5,6 +5,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/cache"
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
@@ -35,6 +36,7 @@ type HandlersMap struct {
 	Users       *users.UserManager
 	Challenges  *challenges.ChallengeManager
 	Settings    *settings.SettingsManager
+	Logs        *logs.LogManager
 	Config      config.MapCTFConfiguration
 	Sessions    *scs.SessionManager
 	DebugHTTP   *zerolog.Logger
@@ -99,6 +101,12 @@ func WithChallenges(challenges *challenges.ChallengeManager) HandlersOption {
 func WithSettings(settings *settings.SettingsManager) HandlersOption {
 	return func(h *HandlersMap) {
 		h.Settings = settings
+	}
+}
+
+func WithLogs(logs *logs.LogManager) HandlersOption {
+	return func(h *HandlersMap) {
+		h.Logs = logs
 	}
 }
 

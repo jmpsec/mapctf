@@ -21,6 +21,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/cache"
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
@@ -84,6 +85,10 @@ const (
 	challengesPath = "/challenges"
 	// Teams path
 	teamsPath = "/teams"
+	// Activity path
+	activityPath = "/activity"
+	// Announcements path
+	announcementsPath = "/announcements"
 	// JSON data path
 	jsonPath = "/json"
 )
@@ -205,6 +210,12 @@ func mapCTFService() {
 	if err := settingsMgr.Initialization(); err != nil {
 		log.Fatal().Msgf("Failed to initialize default settings: %v", err)
 	}
+	// Logs Manager
+	log.Info().Msg("Initialize logs")
+	logsMgr, err := logs.CreateLogManager(db.Conn)
+	if err != nil {
+		log.Fatal().Msgf("Failed to initialize logs: %v", err)
+	}
 	// Session manager
 	sessionManager := scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
@@ -226,6 +237,7 @@ func mapCTFService() {
 		handlers.WithUsers(usersMgr),
 		handlers.WithChallenges(challengesMgr),
 		handlers.WithSettings(settingsMgr),
+		handlers.WithLogs(logsMgr),
 		handlers.WithSessions(sessionManager),
 		handlers.WithDebugHTTP(&flagParams.ConfigValues.DebugHTTP),
 	)
@@ -269,6 +281,13 @@ func mapCTFService() {
 			r.Use(handlersMap.RequireAuth)
 			// Protected gameboard routes
 			r.Get(mapGameboardPath, handlersMap.GameboardTemplateHandler)
+			// Protected JSON routes
+			r.Route(jsonPath, func(r chi.Router) {
+				r.Get(activityPath, handlersMap.JSONActivityHandler)
+				r.Get(announcementsPath, handlersMap.JSONAnnouncementsHandler)
+				r.Get(challengesPath, handlersMap.JSONChallengesHandler)
+				r.Get(teamsPath, handlersMap.JSONTeamsHandler)
+			})
 			// Protected admin routes
 			r.Route(adminPath, func(r chi.Router) {
 				r.Use(handlersMap.RequireAdmin)
