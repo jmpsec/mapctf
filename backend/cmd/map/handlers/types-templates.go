@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/jmpsec/mapctf/pkg/challenges"
+	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
 )
@@ -134,6 +135,17 @@ type AdminChallengesTemplateData struct {
 	Message       string
 	Challenges    []challenges.Challenge
 	Categories    []challenges.Category
+}
+
+// AdminActivityTemplateData for passing data to the admin activity template
+type AdminActivityTemplateData struct {
+	Title         string
+	UUID          string
+	Authenticated bool
+	Admin         bool
+	Status        string
+	Message       string
+	Activity      []logs.ActivityLog
 }
 
 // ErrorTemplateData for passing data to the error template
