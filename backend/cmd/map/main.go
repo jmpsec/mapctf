@@ -299,6 +299,7 @@ func mapCTFService() {
 				r.Get(usersPath, handlersMap.AdminUsersTemplateHandler)
 				r.Get(teamsPath, handlersMap.AdminTeamsTemplateHandler)
 				r.Get(activityPath, handlersMap.AdminActivityTemplateHandler)
+				r.Get(announcementsPath, handlersMap.AdminAnnouncementsTemplateHandler)
 			})
 		})
 	})

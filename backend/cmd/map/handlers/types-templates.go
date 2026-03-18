@@ -148,6 +148,17 @@ type AdminActivityTemplateData struct {
 	Activity      []logs.ActivityLog
 }
 
+// AdminAnnouncementsTemplateData for passing data to the admin announcements template
+type AdminAnnouncementsTemplateData struct {
+	Title         string
+	UUID          string
+	Authenticated bool
+	Admin         bool
+	Status        string
+	Message       string
+	Announcements []logs.Announcement
+}
+
 // ErrorTemplateData for passing data to the error template
 type ErrorTemplateData struct {
 	Title  string

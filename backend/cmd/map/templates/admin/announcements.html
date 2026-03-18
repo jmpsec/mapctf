@@ -5,7 +5,7 @@
     <meta http-equiv="Expires" content="-1" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MapCTF Admin: Activity</title>
+    <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
     <link rel="stylesheet" href="/static/css/mapctf.css" />
   </head>
@@ -33,8 +33,8 @@
               <li><a href="/{{ .UUID }}/admin/users">Users</a></li>
               <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
               <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
-              <li class="active"><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
-              <li><a href="/{{ .UUID }}/admin/announcements">Announcements</a></li>
+              <li><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/announcements">Announcements</a></li>
             </ul>
           </nav>
           <div class="admin-nav-controls row-fixed">
@@ -58,13 +58,13 @@
             </span>
           </header>
 
-          <section id="activity" class="admin-box">
+          <section id="announcements" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Activity Log</h3>
+              <h3>Announcements</h3>
             </header>
 
             <div class="admin-row">
-              <p>Activity log coming soon...</p>
+              <p>Announcements coming soon...</p>
             </div>
           </section>
         </div>
