@@ -49,7 +49,7 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	templateData := AdminTemplateData{
-		Title:         "Admin",
+		Title:         "MapCTF Admin: Dashboard",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -84,7 +84,7 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	templateData := AdminSettingsTemplateData{
-		Title:         "Admin",
+		Title:         "MapCTF Admin: Settings",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -333,7 +333,7 @@ func (h *HandlersMap) AdminControlsTemplateHandler(w http.ResponseWriter, r *htt
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	templateData := AdminControlsTemplateData{
-		Title:         "Admin",
+		Title:         "MapCTF Admin: Controls",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -368,7 +368,7 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	templateData := AdminTeamsTemplateData{
-		Title:         "Admin",
+		Title:         "MapCTF Admin: Teams",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -409,7 +409,7 @@ func (h *HandlersMap) AdminUsersTemplateHandler(w http.ResponseWriter, r *http.R
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	templateData := AdminUsersTemplateData{
-		Title:         "Admin",
+		Title:         "MapCTF Admin: Users",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -450,7 +450,7 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	templateData := AdminChallengesTemplateData{
-		Title:         "Admin",
+		Title:         "MapCTF Admin: Challenges",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -606,7 +606,7 @@ func (h *HandlersMap) AdminActivityTemplateHandler(w http.ResponseWriter, r *htt
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	templateData := AdminActivityTemplateData{
-		Title:         "Admin",
+		Title:         "MapCTF Admin: Activity",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
