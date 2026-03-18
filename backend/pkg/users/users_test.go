@@ -1799,3 +1799,155 @@ func TestSetPasswordUUIDIsolation(t *testing.T) {
 		t.Error("Entity 1's new password should not work for entity 2")
 	}
 }
+
+// TestGetAll tests retrieving all users for a given UUID
+func TestGetAll(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	users := []PlatformUser{
+		{Username: "entity1-user1", Email: "u1@entity1.com", PassHash: "hash1", UUID: testUUID1},
+		{Username: "entity1-user2", Email: "u2@entity1.com", PassHash: "hash2", UUID: testUUID1},
+		{Username: "entity2-user1", Email: "u1@entity2.com", PassHash: "hash3", UUID: testUUID2},
+	}
+
+	for _, user := range users {
+		if err := manager.Create(user); err != nil {
+			t.Fatalf("Failed to create user %s: %v", user.Username, err)
+		}
+	}
+
+	entity1Users, err := manager.GetAll(testUUID1)
+	if err != nil {
+		t.Fatalf("Failed to get users for UUID %s: %v", testUUID1, err)
+	}
+	if len(entity1Users) != 2 {
+		t.Errorf("Expected 2 users for UUID %s, got %d", testUUID1, len(entity1Users))
+	}
+	for _, user := range entity1Users {
+		if user.UUID != testUUID1 {
+			t.Errorf("Expected UUID '%s', got '%s'", testUUID1, user.UUID)
+		}
+	}
+
+	entity2Users, err := manager.GetAll(testUUID2)
+	if err != nil {
+		t.Fatalf("Failed to get users for UUID %s: %v", testUUID2, err)
+	}
+	if len(entity2Users) != 1 {
+		t.Errorf("Expected 1 user for UUID %s, got %d", testUUID2, len(entity2Users))
+	}
+	if len(entity2Users) == 1 && entity2Users[0].Username != "entity2-user1" {
+		t.Errorf("Expected username 'entity2-user1', got '%s'", entity2Users[0].Username)
+	}
+}
+
+// TestRegister tests Register creates users and handles duplicates
+func TestRegister(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	err = manager.Register("registeruser", "registerPass123", "Register User", "register@example.com", 7, testUUID1)
+	if err != nil {
+		t.Fatalf("Failed to register user: %v", err)
+	}
+
+	createdUser, err := manager.Get("registeruser", testUUID1)
+	if err != nil {
+		t.Fatalf("Failed to retrieve registered user: %v", err)
+	}
+
+	if createdUser.Username != "registeruser" {
+		t.Errorf("Expected username 'registeruser', got '%s'", createdUser.Username)
+	}
+	if createdUser.Name != "Register User" {
+		t.Errorf("Expected name 'Register User', got '%s'", createdUser.Name)
+	}
+	if createdUser.Email != "register@example.com" {
+		t.Errorf("Expected email 'register@example.com', got '%s'", createdUser.Email)
+	}
+	if createdUser.TeamID != 7 {
+		t.Errorf("Expected team ID 7, got %d", createdUser.TeamID)
+	}
+	if createdUser.Admin {
+		t.Error("Expected registered user to be non-admin")
+	}
+	if createdUser.Service {
+		t.Error("Expected registered user to be non-service")
+	}
+	if !createdUser.Active {
+		t.Error("Expected registered user to be active")
+	}
+	if createdUser.PassHash == "" {
+		t.Error("Expected registered user to have hashed password")
+	}
+
+	valid, _ := manager.CheckLoginCredentials("registeruser", "registerPass123", testUUID1)
+	if !valid {
+		t.Error("Expected registered user's credentials to be valid")
+	}
+
+	err = manager.Register("registeruser", "anotherPass", "Another Name", "another@example.com", 8, testUUID1)
+	if err == nil {
+		t.Error("Expected error when registering duplicate username in same UUID")
+	}
+}
+
+// TestUpdateUserSession tests user session field updates
+func TestUpdateUserSession(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateUserManager(db, &config.ConfigurationJWT{})
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	user, err := manager.New("sessionuser", "password123", "session@example.com", "Session User", false, false, testUUID1, 0)
+	if err != nil {
+		t.Fatalf("Failed to create user: %v", err)
+	}
+	if err := manager.Create(user); err != nil {
+		t.Fatalf("Failed to persist user: %v", err)
+	}
+
+	start := time.Now().Add(-1 * time.Second)
+	ipAddress := "203.0.113.42"
+	userAgent := "MapCTF-Test-Agent/1.0"
+	err = manager.UpdateUserSession("sessionuser", ipAddress, userAgent, testUUID1)
+	if err != nil {
+		t.Fatalf("Failed to update user session: %v", err)
+	}
+
+	updatedUser, err := manager.Get("sessionuser", testUUID1)
+	if err != nil {
+		t.Fatalf("Failed to retrieve updated user: %v", err)
+	}
+
+	if updatedUser.LastIPAddress != ipAddress {
+		t.Errorf("Expected IP address '%s', got '%s'", ipAddress, updatedUser.LastIPAddress)
+	}
+	if updatedUser.LastUserAgent != userAgent {
+		t.Errorf("Expected user agent '%s', got '%s'", userAgent, updatedUser.LastUserAgent)
+	}
+	if updatedUser.LastAccess.Before(start) {
+		t.Errorf("Expected LastAccess to be updated after %v, got %v", start, updatedUser.LastAccess)
+	}
+
+	err = manager.UpdateUserSession("sessionuser", "198.51.100.10", "Wrong-UUID-Agent", testUUID2)
+	if err != nil {
+		t.Fatalf("UpdateUserSession with wrong UUID should not error, got: %v", err)
+	}
+
+	stillUpdatedUser, err := manager.Get("sessionuser", testUUID1)
+	if err != nil {
+		t.Fatalf("Failed to retrieve user after wrong-UUID update: %v", err)
+	}
+	if stillUpdatedUser.LastIPAddress != ipAddress {
+		t.Error("Expected LastIPAddress to remain unchanged after wrong-UUID update")
+	}
+}

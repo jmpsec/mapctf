@@ -52,6 +52,10 @@ func (h *HandlersMap) LoginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	h.Sessions.Put(r.Context(), string(ContextKeyUser), user.Username)
 	h.Sessions.Put(r.Context(), string(ContextKeyAdmin), user.Admin)
+	// Update last login time for the user and other relevant info
+	if err := h.Users.UpdateUserSession(user.Username, getRealIP(r), r.UserAgent(), uuid); err != nil {
+		log.Err(err).Msg("error updating user session")
+	}
 	redirectTo := "/" + uuid + "/gameboard"
 	if user.Admin {
 		redirectTo = "/" + uuid + "/admin"

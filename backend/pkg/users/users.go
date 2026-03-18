@@ -268,3 +268,17 @@ func (m *UserManager) SetService(service bool, username string, uuid string) err
 	}
 	return nil
 }
+
+// UpdateUserSession to update the last access time, IP address and user agent for a given user by username and UUID
+func (m *UserManager) UpdateUserSession(username, ipAddress, userAgent string, uuid string) error {
+	if err := m.DB.Model(&PlatformUser{}).
+		Where("username = ? AND uuid = ?", username, uuid).
+		Updates(map[string]interface{}{
+			"last_access":     time.Now(),
+			"last_ip_address": ipAddress,
+			"last_user_agent": userAgent,
+		}).Error; err != nil {
+		return fmt.Errorf("failed to update user session: %w", err)
+	}
+	return nil
+}
