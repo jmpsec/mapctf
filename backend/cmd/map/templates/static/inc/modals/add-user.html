@@ -1,0 +1,43 @@
+<div class="mctf-modal-content">
+  <header class="modal-title">
+    <h4>
+      admin_
+      <span class="highlighted">Add User</span>
+    </h4>
+    <a href="#" class="js-close-modal">
+      <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
+    </a>
+  </header>
+
+  <div class="action-main">
+    <form id="admin-add-user-form" class="validate-form">
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-user-username">Username</label>
+        <input id="admin-add-user-username" name="username" type="text" style="width: 100%" required />
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-user-password">Password</label>
+        <input id="admin-add-user-password" name="password" type="password" required />
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-user-name">Name</label>
+        <input id="admin-add-user-name" name="name" type="text" style="width: 100%" />
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-user-email">Email</label>
+        <input id="admin-add-user-email" name="email" type="email" style="width: 100%" />
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-user-team-id">Team</label>
+        <select id="admin-add-user-team-id" name="team_id">
+          <option value="0">None</option>
+        </select>
+      </div>
+
+      <div class="action-actionable">
+        <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>
+        <button class="mctf-cta cta--yellow js-create-user" type="submit">Create User</button>
+      </div>
+    </form>
+  </div>
+</div>

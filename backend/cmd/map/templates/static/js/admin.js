@@ -180,10 +180,180 @@ function initAdminAjaxForms() {
   });
 }
 
+function initAdminUsersSearch() {
+  var searchInput = document.getElementById("admin-users-search");
+  if (!searchInput) {
+    return;
+  }
+
+  var userCards = Array.prototype.slice.call(document.querySelectorAll("#users section.admin-box[data-user-search]"));
+  if (!userCards.length) {
+    return;
+  }
+
+  function filterUsers() {
+    var query = (searchInput.value || "").trim().toLowerCase();
+    userCards.forEach(function (card) {
+      if (!query) {
+        card.style.display = "";
+        return;
+      }
+
+      var haystack = (card.getAttribute("data-user-search") || "").toLowerCase();
+      card.style.display = haystack.indexOf(query) !== -1 ? "" : "none";
+    });
+  }
+
+  searchInput.addEventListener("input", filterUsers);
+}
+
+function initAdminTeamsSearch() {
+  var searchInput = document.getElementById("admin-teams-search");
+  if (!searchInput) {
+    return;
+  }
+
+  var teamCards = Array.prototype.slice.call(document.querySelectorAll("#teams section.admin-box[data-team-search]"));
+  if (!teamCards.length) {
+    return;
+  }
+
+  function filterTeams() {
+    var query = (searchInput.value || "").trim().toLowerCase();
+    teamCards.forEach(function (card) {
+      if (!query) {
+        card.style.display = "";
+        return;
+      }
+
+      var haystack = (card.getAttribute("data-team-search") || "").toLowerCase();
+      card.style.display = haystack.indexOf(query) !== -1 ? "" : "none";
+    });
+  }
+
+  searchInput.addEventListener("input", filterTeams);
+}
+
+function createAdminUser(createURL, payload) {
+  return fetch(createURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify(payload),
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to create user");
+        }
+        return data;
+      });
+  });
+}
+
+function initAdminAddUserModal() {
+  var addUserBtn = document.querySelector('[data-action="add-new-user"]');
+  if (!addUserBtn) {
+    return;
+  }
+
+  addUserBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+
+    var createURL = addUserBtn.getAttribute("data-create-url");
+    if (!createURL) {
+      showTransientAdminStatus("error", "Missing user creation URL");
+      return;
+    }
+
+    if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+      showTransientAdminStatus("error", "Modal system unavailable");
+      return;
+    }
+
+    MAP_CTF.modal.loadPopup("add-user", function () {
+      var modal = document.getElementById("mctf-modal");
+      if (!modal) {
+        return;
+      }
+
+      var form = modal.querySelector("#admin-add-user-form");
+      if (!form) {
+        return;
+      }
+
+      var teamSelect = form.querySelector('select[name="team_id"]');
+      var teamsTemplate = document.getElementById("admin-users-team-options-template");
+      if (teamSelect && teamsTemplate) {
+        teamSelect.innerHTML = teamsTemplate.innerHTML;
+      }
+
+      var usernameInput = form.querySelector('input[name="username"]');
+      if (usernameInput) {
+        usernameInput.focus();
+      }
+
+      form.addEventListener("submit", function (submitEvent) {
+        submitEvent.preventDefault();
+
+        if (form.dataset.submitting === "true") {
+          return;
+        }
+
+        var username = (form.querySelector('input[name="username"]').value || "").trim();
+        var password = form.querySelector('input[name="password"]').value || "";
+        var name = (form.querySelector('input[name="name"]').value || "").trim();
+        var email = (form.querySelector('input[name="email"]').value || "").trim();
+        var teamField = form.querySelector('[name="team_id"]');
+        var teamID = teamField && typeof teamField.value === "string" ? teamField.value.trim() : "";
+
+        if (!username || !password) {
+          showTransientAdminStatus("error", "Username and password are required");
+          return;
+        }
+
+        form.dataset.submitting = "true";
+
+        createAdminUser(createURL, {
+          username: username,
+          password: password,
+          name: name,
+          email: email,
+          team_id: teamID,
+        })
+          .then(function (data) {
+            showTransientAdminStatus(data.status || "ok", data.message || "User created");
+            if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+              MAP_CTF.modal.close();
+            }
+            window.location.reload();
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to create user");
+          })
+          .finally(function () {
+            delete form.dataset.submitting;
+          });
+      });
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   initAdminStatusFromServerState();
   initAdminLogoutModal();
   initAdminAjaxForms();
+  initAdminUsersSearch();
+  initAdminTeamsSearch();
+  initAdminAddUserModal();
 });
 
 function saveSettingValue(input) {

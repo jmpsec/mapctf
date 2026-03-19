@@ -112,6 +112,8 @@ type AdminUsersTemplateData struct {
 	Status        string
 	Message       string
 	Users         []users.PlatformUser
+	TeamNames     map[uint]string
+	Teams         []teams.PlatformTeam
 }
 
 // AdminTeamsTemplateData for passing data to the admin teams template
@@ -123,6 +125,8 @@ type AdminTeamsTemplateData struct {
 	Status        string
 	Message       string
 	Teams         []teams.PlatformTeam
+	Users         []users.PlatformUser
+	TeamMembers   map[uint][]users.PlatformUser
 }
 
 // AdminChallengesTemplateData for passing data to the admin challenges template

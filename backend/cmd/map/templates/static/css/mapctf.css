@@ -5029,6 +5029,40 @@ General Admin
 .admin-page-header h3 {
   color: #ead44d;
 }
+.admin-page-header .admin-page-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-page-header .admin-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.admin-page-header .admin-management-search {
+  width: 260px;
+  margin: 0;
+}
+.admin-page-header .admin-page-header-top .mctf-cta {
+  margin: 0;
+}
+.admin-page-header .admin-section--status {
+  display: block;
+  margin-top: 8px;
+}
+@media (max-width: 820px) {
+  .admin-page-header .admin-page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-page-header .admin-page-header-actions {
+    width: 100%;
+  }
+  .admin-page-header .admin-management-search {
+    width: 100%;
+  }
+}
 
 .admin-box {
   position: relative;
@@ -5173,6 +5207,62 @@ General Admin
 }
 .admin-box .admin-buttons.admin-row {
   text-align: right;
+}
+.admin-users-compact .admin-box {
+  margin-top: 14px;
+}
+.admin-users-compact .admin-box .admin-box-header {
+  padding: 14px 16px;
+}
+.admin-users-compact .admin-box .admin-row {
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 12px;
+}
+.admin-users-compact .admin-box .admin-row:last-child {
+  padding-bottom: 16px;
+}
+.admin-users-compact .admin-box .form-el + .form-el {
+  margin-top: 10px;
+}
+.admin-users-compact .admin-box .admin-label {
+  padding-bottom: 6px;
+}
+.admin-teams-compact .admin-box {
+  margin-top: 14px;
+}
+.admin-teams-compact .admin-box .admin-box-header {
+  padding: 14px 16px;
+}
+.admin-teams-compact .admin-box .admin-row {
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 10px;
+}
+.admin-teams-compact .admin-box .admin-row:last-child {
+  padding-bottom: 16px;
+}
+.admin-teams-compact .admin-box .admin-label {
+  padding-bottom: 6px;
+}
+.admin-team-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.admin-team-icon {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #2b3d43;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+}
+.admin-team-icon .icon {
+  width: 40px;
+  height: 40px;
 }
 .admin-box .admin-buttons .admin--edit {
   display: none;

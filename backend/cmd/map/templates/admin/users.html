@@ -49,8 +49,14 @@
       </div>
       <div id="mctf-main-content" class="mctf-page mctf-admin-main">
         <div class="admin-sections">
-          <header class="admin-page-header">
-            <h3>User Management</h3>
+          <header class="admin-page-header admin-page-header--with-action">
+            <div class="admin-page-header-top">
+              <h3>User Management</h3>
+              <div class="admin-page-header-actions">
+                <input id="admin-users-search" class="admin-management-search" type="search" placeholder="Search users..." autocomplete="off" />
+                <button class="mctf-cta" data-action="add-new-user" data-create-url="/{{ .UUID }}/admin/users" type="button">Add User</button>
+              </div>
+            </div>
             <span class="admin-section--status" data-ready-status="ready">
               status_
               <span class="highlighted">ready</span>
@@ -58,126 +64,107 @@
             </span>
           </header>
 
-          <section id="users" class="admin-box">
-            <header class="admin-box-header mctf-cf">
-              <h3>Users Management</h3>
-            </header>
+          <template id="admin-users-team-options-template">
+            <option value="0">None</option>
+            {{ range .Teams }}
+            <option value="{{ .ID }}">{{ .Name }}</option>
+            {{ end }}
+          </template>
 
-            <div class="admin-row">
-              <h4>Create / Invite User (Dummy)</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Field</th>
-                    <th>Input</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Username</td>
-                    <td><input type="text" value="new_user" disabled /></td>
-                  </tr>
-                  <tr>
-                    <td>Email</td>
-                    <td><input type="email" value="user@example.com" disabled /></td>
-                  </tr>
-                  <tr>
-                    <td>Team ID</td>
-                    <td><input type="number" value="1" disabled /></td>
-                  </tr>
-                  <tr>
-                    <td>Role</td>
-                    <td>
-                      <select disabled>
-                        <option selected>Player</option>
-                        <option>Admin</option>
-                        <option>Service</option>
-                      </select>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <p>
-                <a href="#" class="mctf-cta">Create User</a>
-                <a href="#" class="mctf-cta cta--yellow">Send Invite</a>
-              </p>
-            </div>
+          <div id="users" class="admin-users-compact">
+            {{ if .Users }}
+            {{ range .Users }}
+            <section class="admin-box validate-form" data-user-search="{{ .Username }} {{ .ID }} {{ .Email }} {{ .TeamID }} {{ .LastIPAddress }}">
+              <header class="admin-box-header">
+                <h3>{{ .Username }}</h3>
+                <div class="admin-section-toggle radio-inline">
+                  <input type="radio" name="user-active-{{ .ID }}" id="user-{{ .ID }}-on" {{ if .Active }}checked{{ end }} disabled />
+                  <label for="user-{{ .ID }}-on">On</label>
 
-            <div class="admin-row">
-              <h4>Bulk Actions (Dummy)</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Action</th>
-                    <th>Description</th>
-                    <th>Trigger</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Activate Selected</td>
-                    <td>Enable login for selected users</td>
-                    <td><a href="#" class="mctf-cta">Activate</a></td>
-                  </tr>
-                  <tr>
-                    <td>Deactivate Selected</td>
-                    <td>Temporarily lock selected accounts</td>
-                    <td><a href="#" class="mctf-cta cta--yellow">Deactivate</a></td>
-                  </tr>
-                  <tr>
-                    <td>Reset Passwords</td>
-                    <td>Force password reset workflow</td>
-                    <td><a href="#" class="mctf-cta cta--red">Reset</a></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                  <input type="radio" name="user-active-{{ .ID }}" id="user-{{ .ID }}-off" {{ if not .Active }}checked{{ end }} disabled />
+                  <label for="user-{{ .ID }}-off">Off</label>
+                </div>
+              </header>
 
-            <div class="admin-row">
-              <h4>User Directory</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Team ID</th>
-                    <th>Admin</th>
-                    <th>Service</th>
-                    <th>Active</th>
-                    <th>Last Access</th>
-                    <th>Last IP</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {{ if .Users }}
-                  {{ range .Users }}
-                  <tr>
-                    <td>{{ .ID }}</td>
-                    <td>{{ .Username }}</td>
-                    <td>{{ .Email }}</td>
-                    <td>{{ .TeamID }}</td>
-                    <td>{{ if .Admin }}yes{{ else }}no{{ end }}</td>
-                    <td>{{ if .Service }}yes{{ else }}no{{ end }}</td>
-                    <td>{{ if .Active }}yes{{ else }}no{{ end }}</td>
-                    <td>{{ if .LastAccess.IsZero }}never{{ else }}{{ .LastAccess.Format "2006-01-02 15:04" }}{{ end }}</td>
-                    <td>{{ if .LastIPAddress }}{{ .LastIPAddress }}{{ else }}--{{ end }}</td>
-                    <td>
-                      <a href="#" class="mctf-cta">Edit</a>
-                      <a href="#" class="mctf-cta cta--yellow">Toggle</a>
-                    </td>
-                  </tr>
-                  {{ end }}
-                  {{ else }}
-                  <tr>
-                    <td colspan="10">No users found for this event UUID.</td>
-                  </tr>
-                  {{ end }}
-                </tbody>
-              </table>
-            </div>
-          </section>
+              <div class="admin-row">
+                <div class="mctf-column-container">
+                  <div class="col col-pad col-1-4">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Username</label>
+                      <input type="text" value="{{ .Username }}" disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-4">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Name</label>
+                      <input type="text" value="{{ if .Name }}{{ .Name }}{{ else }}--{{ end }}" disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-4">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Email</label>
+                      <input type="text" value="{{ .Email }}" disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-4">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Last IP</label>
+                      <input type="text" value="{{ if .LastIPAddress }}{{ .LastIPAddress }}{{ else }}--{{ end }}" disabled />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-row">
+                <div class="mctf-column-container">
+                  <div class="col col-pad col-1-4">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Team</label>
+                      <input type="text" value='{{ with index $.TeamNames .TeamID }}{{ . }}{{ else }}None{{ end }}' disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-4">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Admin</label>
+                      <input type="text" value="{{ if .Admin }}yes{{ else }}no{{ end }}" disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-4">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Last Access</label>
+                      <input type="text" value="{{ if .LastAccess.IsZero }}never{{ else }}{{ .LastAccess.Format "2006-01-02 15:04" }}{{ end }}" disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-4">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Service</label>
+                      <input type="text" value="{{ if .Service }}yes{{ else }}no{{ end }}" disabled />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-row">
+                <div class="admin-buttons">
+                  <a href="#" class="admin--edit" data-action="edit">EDIT</a>
+                  <button class="mctf-cta cta--red" data-action="delete" type="button">Delete</button>
+                  <button class="mctf-cta cta--yellow" data-action="save" type="button">Save</button>
+                </div>
+              </div>
+            </section>
+            {{ end }}
+            {{ else }}
+            <section class="admin-box validate-form">
+              <header class="admin-box-header">
+                <h3>No Users Found</h3>
+              </header>
+              <div class="admin-row">
+                <p>No users found for this event UUID.</p>
+              </div>
+            </section>
+            {{ end }}
+
+          </div>
         </div>
       </div>
     </div>

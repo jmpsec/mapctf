@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -381,6 +382,16 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 	} else {
 		templateData.Teams = teams
 	}
+	teamUsers, err := h.Users.GetAll(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading users for teams view")
+	} else {
+		templateData.Users = teamUsers
+		templateData.TeamMembers = make(map[uint][]users.PlatformUser)
+		for _, user := range teamUsers {
+			templateData.TeamMembers[user.TeamID] = append(templateData.TeamMembers[user.TeamID], user)
+		}
+	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
 		return
@@ -422,10 +433,145 @@ func (h *HandlersMap) AdminUsersTemplateHandler(w http.ResponseWriter, r *http.R
 	} else {
 		templateData.Users = users
 	}
+	templateData.TeamNames = map[uint]string{
+		0: "None",
+	}
+	teams, err := h.Teams.GetAll(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading teams for users view")
+	} else {
+		templateData.Teams = teams
+		for _, team := range teams {
+			templateData.TeamNames[team.ID] = team.Name
+		}
+	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
 		return
 	}
+}
+
+// AdminUsersPOSTHandler for admin users page for POST requests
+func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	// Debug HTTP if enabled
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
+		writeError(http.StatusBadRequest, "AJAX requests only")
+		return
+	}
+	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	var req AdminUserCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin users JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	username := strings.TrimSpace(req.Username)
+	password := strings.TrimSpace(req.Password)
+	name := strings.TrimSpace(req.Name)
+	email := strings.TrimSpace(req.Email)
+	teamIDStr := strings.TrimSpace(req.TeamID)
+	adminStr := strings.TrimSpace(req.Admin)
+	serviceStr := strings.TrimSpace(req.Service)
+	activeStr := strings.TrimSpace(req.Active)
+
+	if username == "" || password == "" {
+		writeError(http.StatusBadRequest, "Username and password are required")
+		return
+	}
+
+	teamID := uint(0)
+	if teamIDStr != "" {
+		parsedTeamID, err := strconv.ParseUint(teamIDStr, 10, 64)
+		if err != nil {
+			writeError(http.StatusBadRequest, "Invalid team_id")
+			return
+		}
+		teamID = uint(parsedTeamID)
+	}
+
+	admin := false
+	if adminStr != "" {
+		parsedAdmin, err := strconv.ParseBool(strings.ToLower(adminStr))
+		if err != nil {
+			writeError(http.StatusBadRequest, "Invalid admin value")
+			return
+		}
+		admin = parsedAdmin
+	}
+
+	service := false
+	if serviceStr != "" {
+		parsedService, err := strconv.ParseBool(strings.ToLower(serviceStr))
+		if err != nil {
+			writeError(http.StatusBadRequest, "Invalid service value")
+			return
+		}
+		service = parsedService
+	}
+
+	active := true
+	if activeStr != "" {
+		parsedActive, err := strconv.ParseBool(strings.ToLower(activeStr))
+		if err != nil {
+			writeError(http.StatusBadRequest, "Invalid active value")
+			return
+		}
+		active = parsedActive
+	}
+
+	user, err := h.Users.New(username, password, email, name, admin, service, uuid, teamID)
+	if err != nil {
+		log.Err(err).Msg("error creating user object")
+		writeError(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.Users.Create(user); err != nil {
+		log.Err(err).Msg("error saving user")
+		writeError(http.StatusInternalServerError, "Failed to create user")
+		return
+	}
+
+	if !active {
+		if err := h.Users.SetActive(false, username, uuid); err != nil {
+			log.Err(err).Msg("error setting active flag for new user")
+			writeError(http.StatusInternalServerError, "User created but failed to set active flag")
+			return
+		}
+	}
+
+	writeSuccess("User created")
 }
 
 // AdminChallengesTemplateHandler for admin challenges page for GET requests

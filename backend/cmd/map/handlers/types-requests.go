@@ -52,3 +52,15 @@ type AdminChallengeCreateRequest struct {
 	Flag        string `json:"flag"`
 	Hint        string `json:"hint"`
 }
+
+// AdminUserCreateRequest to receive admin user creation requests
+type AdminUserCreateRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	TeamID   string `json:"team_id"`
+	Admin    string `json:"admin"`
+	Service  string `json:"service"`
+	Active   string `json:"active"`
+}

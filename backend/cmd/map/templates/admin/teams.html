@@ -49,8 +49,14 @@
       </div>
       <div id="mctf-main-content" class="mctf-page mctf-admin-main">
         <div class="admin-sections">
-          <header class="admin-page-header">
-            <h3>Team Management</h3>
+          <header class="admin-page-header admin-page-header--with-action">
+            <div class="admin-page-header-top">
+              <h3>Team Management</h3>
+              <div class="admin-page-header-actions">
+                <input id="admin-teams-search" class="admin-management-search" type="search" placeholder="Search teams..." autocomplete="off" />
+                <button class="mctf-cta" data-action="add-new-team" type="button">Add Team</button>
+              </div>
+            </div>
             <span class="admin-section--status" data-ready-status="ready">
               status_
               <span class="highlighted">ready</span>
@@ -58,121 +64,104 @@
             </span>
           </header>
 
-          <section id="teams" class="admin-box">
-            <header class="admin-box-header mctf-cf">
-              <h3>Teams Management</h3>
-            </header>
+          <div id="teams" class="admin-teams-compact">
+            {{ if .Teams }}
+            {{ range .Teams }}
+            <section class="admin-box validate-form" data-team-search="{{ .Name }} {{ .ID }} {{ .Points }} {{ .Logo }}">
+              <header class="admin-box-header">
+                <h3 class="admin-team-title">
+                  <span class="admin-team-icon">
+                    <svg class="icon icon--badge">
+                      <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
+                    </svg>
+                  </span>
+                  <span>{{ .Name }}</span>
+                </h3>
+                <div class="admin-section-toggle radio-inline">
+                  <input type="radio" name="team-active-{{ .ID }}" id="team-{{ .ID }}-on" {{ if .Active }}checked{{ end }} disabled />
+                  <label for="team-{{ .ID }}-on">On</label>
 
-            <div class="admin-row">
-              <h4>Create Team (Dummy)</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Field</th>
-                    <th>Input</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Team Name</td>
-                    <td><input type="text" value="Team Name" disabled /></td>
-                  </tr>
-                  <tr>
-                    <td>Logo</td>
-                    <td><input type="text" value="logo_slug_or_url" disabled /></td>
-                  </tr>
-                  <tr>
-                    <td>Visibility</td>
-                    <td>
-                      <select disabled>
-                        <option selected>Visible</option>
-                        <option>Hidden</option>
+                  <input type="radio" name="team-active-{{ .ID }}" id="team-{{ .ID }}-off" {{ if not .Active }}checked{{ end }} disabled />
+                  <label for="team-{{ .ID }}-off">Off</label>
+                </div>
+              </header>
+
+              <div class="admin-row">
+                <div class="mctf-column-container">
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Team ID</label>
+                      <input type="text" value="{{ .ID }}" disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Points</label>
+                      <input type="text" value="{{ .Points }}" disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Last Score</label>
+                      <input type="text" value="{{ if .LastScore.IsZero }}never{{ else }}{{ .LastScore.Format "2006-01-02 15:04" }}{{ end }}" disabled />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-row">
+                <div class="mctf-column-container">
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Visible</label>
+                      <input type="text" value="{{ if .Visible }}yes{{ else }}no{{ end }}" disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Protected</label>
+                      <input type="text" value="{{ if .Protected }}yes{{ else }}no{{ end }}" disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Team Members</label>
+                      {{ $members := index $.TeamMembers .ID }}
+                      <select>
+                        {{ if $members }}
+                        {{ range $members }}
+                        <option>{{ .Username }} (#{{ .ID }})</option>
+                        {{ end }}
+                        {{ else }}
+                        <option>No members assigned</option>
+                        {{ end }}
                       </select>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Protection</td>
-                    <td><input type="checkbox" disabled /> Protected team</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p>
-                <a href="#" class="mctf-cta">Create Team</a>
-                <a href="#" class="mctf-cta cta--yellow">Import Teams CSV</a>
-              </p>
-            </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            <div class="admin-row">
-              <h4>Bulk Actions (Dummy)</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Action</th>
-                    <th>Description</th>
-                    <th>Trigger</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Activate Selected</td>
-                    <td>Enable selected teams for gameplay</td>
-                    <td><a href="#" class="mctf-cta">Activate</a></td>
-                  </tr>
-                  <tr>
-                    <td>Deactivate Selected</td>
-                    <td>Temporarily disable selected teams</td>
-                    <td><a href="#" class="mctf-cta cta--yellow">Deactivate</a></td>
-                  </tr>
-                  <tr>
-                    <td>Reset Scores</td>
-                    <td>Set score to zero for selected teams</td>
-                    <td><a href="#" class="mctf-cta cta--red">Reset</a></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+              <div class="admin-row">
+                <div class="admin-buttons">
+                  <a href="#" class="admin--edit" data-action="edit">EDIT</a>
+                  <button class="mctf-cta cta--red" data-action="delete" type="button">Delete</button>
+                  <button class="mctf-cta cta--yellow" data-action="save" type="button">Save</button>
+                </div>
+              </div>
+            </section>
+            {{ end }}
+            {{ else }}
+            <section class="admin-box validate-form">
+              <header class="admin-box-header">
+                <h3>No Teams Found</h3>
+              </header>
+              <div class="admin-row">
+                <p>No teams found for this event UUID.</p>
+              </div>
+            </section>
+            {{ end }}
 
-            <div class="admin-row">
-              <h4>Team Directory</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Points</th>
-                    <th>Active</th>
-                    <th>Visible</th>
-                    <th>Protected</th>
-                    <th>Last Score</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {{ if .Teams }}
-                  {{ range .Teams }}
-                  <tr>
-                    <td>{{ .ID }}</td>
-                    <td>{{ .Name }}</td>
-                    <td>{{ .Points }}</td>
-                    <td>{{ if .Active }}yes{{ else }}no{{ end }}</td>
-                    <td>{{ if .Visible }}yes{{ else }}no{{ end }}</td>
-                    <td>{{ if .Protected }}yes{{ else }}no{{ end }}</td>
-                    <td>{{ if .LastScore.IsZero }}never{{ else }}{{ .LastScore.Format "2006-01-02 15:04" }}{{ end }}</td>
-                    <td>
-                      <a href="#" class="mctf-cta">Edit</a>
-                      <a href="#" class="mctf-cta cta--yellow">Toggle</a>
-                    </td>
-                  </tr>
-                  {{ end }}
-                  {{ else }}
-                  <tr>
-                    <td colspan="8">No teams found for this event UUID.</td>
-                  </tr>
-                  {{ end }}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          </div>
         </div>
       </div>
     </div>
