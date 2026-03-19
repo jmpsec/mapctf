@@ -259,6 +259,31 @@ function createAdminUser(createURL, payload) {
   });
 }
 
+function createAdminTeam(createURL, payload) {
+  return fetch(createURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify(payload),
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to create team");
+        }
+        return data;
+      });
+  });
+}
+
 function initAdminAddUserModal() {
   var addUserBtn = document.querySelector('[data-action="add-new-user"]');
   if (!addUserBtn) {
@@ -347,6 +372,88 @@ function initAdminAddUserModal() {
   });
 }
 
+function initAdminAddTeamModal() {
+  var addTeamBtn = document.querySelector('[data-action="add-new-team"]');
+  if (!addTeamBtn) {
+    return;
+  }
+
+  addTeamBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+
+    var createURL = addTeamBtn.getAttribute("data-create-url");
+    if (!createURL) {
+      showTransientAdminStatus("error", "Missing team creation URL");
+      return;
+    }
+
+    if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+      showTransientAdminStatus("error", "Modal system unavailable");
+      return;
+    }
+
+    MAP_CTF.modal.loadPopup("add-team", function () {
+      var modal = document.getElementById("mctf-modal");
+      if (!modal) {
+        return;
+      }
+
+      var form = modal.querySelector("#admin-add-team-form");
+      if (!form) {
+        return;
+      }
+
+      var logoSelect = form.querySelector('select[name="logo"]');
+      var logosTemplate = document.getElementById("admin-teams-logo-options-template");
+      if (logoSelect && logosTemplate) {
+        logoSelect.innerHTML = logosTemplate.innerHTML;
+      }
+
+      var nameInput = form.querySelector('input[name="name"]');
+      if (nameInput) {
+        nameInput.focus();
+      }
+
+      form.addEventListener("submit", function (submitEvent) {
+        submitEvent.preventDefault();
+
+        if (form.dataset.submitting === "true") {
+          return;
+        }
+
+        var name = (form.querySelector('input[name="name"]').value || "").trim();
+        var logoField = form.querySelector('[name="logo"]');
+        var logo = logoField && typeof logoField.value === "string" ? logoField.value.trim() : "";
+
+        if (!name) {
+          showTransientAdminStatus("error", "Team name is required");
+          return;
+        }
+
+        form.dataset.submitting = "true";
+
+        createAdminTeam(createURL, {
+          name: name,
+          logo: logo,
+        })
+          .then(function (data) {
+            showTransientAdminStatus(data.status || "ok", data.message || "Team created");
+            if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+              MAP_CTF.modal.close();
+            }
+            window.location.reload();
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to create team");
+          })
+          .finally(function () {
+            delete form.dataset.submitting;
+          });
+      });
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   initAdminStatusFromServerState();
   initAdminLogoutModal();
@@ -354,6 +461,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminUsersSearch();
   initAdminTeamsSearch();
   initAdminAddUserModal();
+  initAdminAddTeamModal();
 });
 
 function saveSettingValue(input) {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -376,11 +377,17 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		Status:        r.URL.Query().Get("status"),
 		Message:       r.URL.Query().Get("msg"),
 	}
-	teams, err := h.Teams.GetAll(uuid)
+	teamList, err := h.Teams.GetAll(uuid)
 	if err != nil {
 		log.Warn().Err(err).Msg("error loading teams")
 	} else {
-		templateData.Teams = teams
+		templateData.Teams = teamList
+	}
+	var logos []teams.TeamLogo
+	if err := h.Teams.DB.Where("enabled = ? AND uuid = ?", true, uuid).Order("name ASC").Find(&logos).Error; err != nil {
+		log.Warn().Err(err).Msg("error loading team logos")
+	} else {
+		templateData.Logos = logos
 	}
 	teamUsers, err := h.Users.GetAll(uuid)
 	if err != nil {
@@ -396,6 +403,67 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		log.Err(err).Msg("template error")
 		return
 	}
+}
+
+// AdminTeamsPOSTHandler for admin teams page for POST requests
+func (h *HandlersMap) AdminTeamsPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	// Debug HTTP if enabled
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
+		writeError(http.StatusBadRequest, "AJAX requests only")
+		return
+	}
+	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	var req AdminTeamCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin teams JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	name := strings.TrimSpace(req.Name)
+	logo := strings.TrimSpace(req.Logo)
+	if name == "" {
+		writeError(http.StatusBadRequest, "Team name is required")
+		return
+	}
+
+	if _, err := h.Teams.Register(name, logo, uuid); err != nil {
+		log.Err(err).Msg("error creating team")
+		writeError(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeSuccess("Team created")
 }
 
 // AdminUsersTemplateHandler for admin users page for GET requests

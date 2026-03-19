@@ -54,7 +54,7 @@
               <h3>Team Management</h3>
               <div class="admin-page-header-actions">
                 <input id="admin-teams-search" class="admin-management-search" type="search" placeholder="Search teams..." autocomplete="off" />
-                <button class="mctf-cta" data-action="add-new-team" type="button">Add Team</button>
+                <button class="mctf-cta" data-action="add-new-team" data-create-url="/{{ .UUID }}/admin/teams" type="button">Add Team</button>
               </div>
             </div>
             <span class="admin-section--status" data-ready-status="ready">
@@ -63,6 +63,13 @@
               <span class="admin-section--status-message"></span>
             </span>
           </header>
+
+          <template id="admin-teams-logo-options-template">
+            <option value="">Random (auto)</option>
+            {{ range .Logos }}
+            <option value="{{ .Logo }}">{{ .Name }}</option>
+            {{ end }}
+          </template>
 
           <div id="teams" class="admin-teams-compact">
             {{ if .Teams }}

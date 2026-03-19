@@ -125,6 +125,7 @@ type AdminTeamsTemplateData struct {
 	Status        string
 	Message       string
 	Teams         []teams.PlatformTeam
+	Logos         []teams.TeamLogo
 	Users         []users.PlatformUser
 	TeamMembers   map[uint][]users.PlatformUser
 }

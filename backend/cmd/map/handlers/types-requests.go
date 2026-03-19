@@ -64,3 +64,9 @@ type AdminUserCreateRequest struct {
 	Service  string `json:"service"`
 	Active   string `json:"active"`
 }
+
+// AdminTeamCreateRequest to receive admin team creation requests
+type AdminTeamCreateRequest struct {
+	Name string `json:"name"`
+	Logo string `json:"logo"`
+}

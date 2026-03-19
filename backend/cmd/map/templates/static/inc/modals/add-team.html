@@ -1,0 +1,31 @@
+<div class="mctf-modal-content">
+  <header class="modal-title">
+    <h4>
+      admin_
+      <span class="highlighted">Add Team</span>
+    </h4>
+    <a href="#" class="js-close-modal">
+      <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
+    </a>
+  </header>
+
+  <div class="action-main">
+    <form id="admin-add-team-form" class="validate-form">
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-team-name">Team Name</label>
+        <input id="admin-add-team-name" name="name" type="text" style="width: 100%" required />
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-team-logo">Logo</label>
+        <select id="admin-add-team-logo" name="logo" style="width: 100%">
+          <option value="">Random (auto)</option>
+        </select>
+      </div>
+
+      <div class="action-actionable">
+        <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>
+        <button class="mctf-cta cta--yellow js-create-team" type="submit">Create Team</button>
+      </div>
+    </form>
+  </div>
+</div>
