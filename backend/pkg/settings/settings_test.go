@@ -329,10 +329,40 @@ func TestTypedGettersAndSetters(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, loginEnabled)
 
+	require.NoError(t, m.SetLoginSelectTeam(true, "alice"))
+	loginSelectTeam, err := m.GetLoginSelectTeam()
+	require.NoError(t, err)
+	require.True(t, loginSelectTeam)
+
+	require.NoError(t, m.SetLoginStrongPasswords(true, "alice"))
+	loginStrongPasswords, err := m.GetLoginStrongPasswords()
+	require.NoError(t, err)
+	require.True(t, loginStrongPasswords)
+
 	require.NoError(t, m.SetRegistrationEnabled(true, "alice"))
 	registrationEnabled, err := m.GetRegistrationEnabled()
 	require.NoError(t, err)
 	require.True(t, registrationEnabled)
+
+	require.NoError(t, m.SetRegistrationNames(true, "alice"))
+	registrationNames, err := m.GetRegistrationNames()
+	require.NoError(t, err)
+	require.True(t, registrationNames)
+
+	require.NoError(t, m.SetRegistrationEmails(true, "alice"))
+	registrationEmails, err := m.GetRegistrationEmails()
+	require.NoError(t, err)
+	require.True(t, registrationEmails)
+
+	require.NoError(t, m.SetRegistrationPlayers(6, "alice"))
+	registrationPlayers, err := m.GetRegistrationPlayers()
+	require.NoError(t, err)
+	require.Equal(t, 6, registrationPlayers)
+
+	require.NoError(t, m.SetRegistrationType(1, "alice"))
+	registrationType, err := m.GetRegistrationType()
+	require.NoError(t, err)
+	require.Equal(t, 1, registrationType)
 
 	require.NoError(t, m.SetScoringEnabled(true, "alice"))
 	scoringEnabled, err := m.GetScoringEnabled()
@@ -363,6 +393,21 @@ func TestTypedGettersAndSetters(t *testing.T) {
 	customOrg, err := m.GetCustomOrg()
 	require.NoError(t, err)
 	require.Equal(t, "Acme", customOrg)
+
+	require.NoError(t, m.SetCustomLogo("logo-michigan", "alice"))
+	customLogo, err := m.GetCustomLogo()
+	require.NoError(t, err)
+	require.Equal(t, "logo-michigan", customLogo)
+
+	require.NoError(t, m.SetLanguage("es", "alice"))
+	language, err := m.GetLanguage()
+	require.NoError(t, err)
+	require.Equal(t, "es", language)
+
+	require.NoError(t, m.SetLeaderboardLimit(25, "alice"))
+	leaderboardLimit, err := m.GetLeaderboardLimit()
+	require.NoError(t, err)
+	require.Equal(t, 25, leaderboardLimit)
 
 	// update path
 	require.NoError(t, m.SetLoginEnabled(false, "alice"))

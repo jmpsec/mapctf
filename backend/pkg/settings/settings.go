@@ -19,7 +19,7 @@ const (
 	RegistrationEnabled string = "registration_enabled"
 	// RegistrationNames is the setting name for registration name field enabled/disabled
 	RegistrationNames string = "registration_names"
-	// RegistrationEmails is the setting name for registration email field enabled/disabled	RegistrationEmails string = "registration_emails"
+	// RegistrationEmails is the setting name for registration email field enabled/disabled
 	RegistrationEmails string = "registration_emails"
 	// RegistrationPlayers is the setting name for registration player limit
 	RegistrationPlayers string = "registration_players"
