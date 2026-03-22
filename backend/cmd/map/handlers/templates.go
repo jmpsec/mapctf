@@ -6,6 +6,7 @@ import (
 	"text/template"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/rs/zerolog/log"
 )
 
@@ -103,23 +104,45 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
 	rMsg := "Register to play Capture The Flag here. Once you have registered, simply login for future site visits."
-	openReg, err := h.Settings.GetRegistrationEnabled()
+	regEnabled, err := h.Settings.GetRegistrationEnabled()
 	if err != nil {
 		log.Err(err).Msg("error getting registration enabled setting")
-		openReg = false
+		regEnabled = false
 	}
-	if !openReg {
+	if !regEnabled {
 		rMsg = "Team Registration will be open soon, stay tuned!"
 	}
+	regNames, err := h.Settings.GetRegistrationNames()
+	if err != nil {
+		log.Err(err).Msg("error getting registration names setting")
+		regNames = false
+	}
+	regEmails, err := h.Settings.GetRegistrationEmails()
+	if err != nil {
+		log.Err(err).Msg("error getting registration emails setting")
+		regEmails = false
+	}
+	regType, err := h.Settings.GetRegistrationType()
+	if err != nil {
+		log.Err(err).Msg("error getting registration type setting")
+		regType = settings.OpenRegistration
+	}
+	rTypeStr := "Open Registration"
+	if regType == settings.TokenRegistration {
+		rTypeStr = "Registration with Token"
+	}
 	templateData := RegistrationTemplateData{
-		Title:            "Register to mapctf",
-		RegistrationType: "Team Registration",
-		RegistrationMsg:  rMsg,
-		RegisterURL:      "/" + uuid + "/registration",
-		UUID:             uuid,
-		OpenRegistration: openReg,
-		Authenticated:    authenticated,
-		Admin:            isAdmin,
+		Title:               "Register to mapctf",
+		RegistrationMsg:     rMsg,
+		RegisterURL:         "/" + uuid + "/registration",
+		UUID:                uuid,
+		RegistrationEnabled: regEnabled,
+		RegistrationNames:   regNames,
+		RegistrationEmails:  regEmails,
+		RegistrationType:    regType,
+		RegistrationTypeStr: rTypeStr,
+		Authenticated:       authenticated,
+		Admin:               isAdmin,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")

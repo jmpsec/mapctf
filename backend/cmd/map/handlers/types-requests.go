@@ -3,6 +3,7 @@ package handlers
 type MapRegistrationRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Token    string `json:"token"`
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Logo     string `json:"logo"`

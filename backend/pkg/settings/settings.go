@@ -21,10 +21,10 @@ const (
 	RegistrationNames string = "registration_names"
 	// RegistrationEmails is the setting name for registration email field enabled/disabled
 	RegistrationEmails string = "registration_emails"
-	// RegistrationPlayers is the setting name for registration player limit
-	RegistrationPlayers string = "registration_players"
 	// RegistrationType is the setting name for registration type (open, token)
 	RegistrationType string = "registration_type"
+	// RegistrationToken is the setting name for the registration token when registration type is token-based
+	RegistrationToken string = "registration_token"
 	// ScoringEnabled is the setting name for scoring enabled/disabled
 	ScoringEnabled string = "scoring_enabled"
 	// GamePaused is the setting name for game paused/unpaused
@@ -45,6 +45,13 @@ const (
 	LeaderboardLimit string = "leaderboard_limit"
 )
 
+const (
+	// OpenRegistration is the registration type for open registration
+	OpenRegistration int = 0
+	// TokenRegistration is the registration type for token-based registration
+	TokenRegistration int = 1
+)
+
 // BooleanSettings to be used as check for valid setting and to keep default value, if needed
 var BooleanSettings = map[string]bool{
 	LoginEnabled:         false,
@@ -60,9 +67,10 @@ var BooleanSettings = map[string]bool{
 
 // StringSettings to be used as check for valid setting and to keep default value
 var StringSettings = map[string]string{
-	CustomOrg:  "",
-	CustomLogo: "",
-	Language:   "en",
+	CustomOrg:         "",
+	CustomLogo:        "",
+	Language:          "en",
+	RegistrationToken: "",
 }
 
 // DateSettings to be used as check for valid setting and to keep default value
@@ -73,9 +81,8 @@ var DateSettings = map[string]time.Time{
 
 // IntSettings to be used as check for valid setting and to keep default value
 var IntSettings = map[string]int{
-	RegistrationPlayers: 4,
-	RegistrationType:    0, // 0 = open, 1 = token
-	LeaderboardLimit:    10,
+	RegistrationType: OpenRegistration,
+	LeaderboardLimit: 10,
 }
 
 const (
@@ -490,16 +497,6 @@ func (m *SettingsManager) GetRegistrationEmails() (bool, error) {
 	return m.getBoolSetting(RegistrationEmails)
 }
 
-func (m *SettingsManager) SetRegistrationPlayers(players int, username string) error {
-	return m.upsertSetting(RegistrationPlayers, TypeInt, RegistrationPlayers+" int setting", username, func(s *PlatformSetting) {
-		s.ValueInt = players
-	})
-}
-
-func (m *SettingsManager) GetRegistrationPlayers() (int, error) {
-	return m.getIntSetting(RegistrationPlayers)
-}
-
 func (m *SettingsManager) SetRegistrationType(regType int, username string) error {
 	return m.upsertSetting(RegistrationType, TypeInt, RegistrationType+" int setting", username, func(s *PlatformSetting) {
 		s.ValueInt = regType
@@ -598,4 +595,14 @@ func (m *SettingsManager) SetLeaderboardLimit(limit int, username string) error 
 
 func (m *SettingsManager) GetLeaderboardLimit() (int, error) {
 	return m.getIntSetting(LeaderboardLimit)
+}
+
+func (m *SettingsManager) SetRegistrationToken(token, username string) error {
+	return m.upsertSetting(RegistrationToken, TypeString, RegistrationToken+" string setting", username, func(s *PlatformSetting) {
+		s.ValueString = token
+	})
+}
+
+func (m *SettingsManager) GetRegistrationToken() (string, error) {
+	return m.getStringSetting(RegistrationToken)
 }

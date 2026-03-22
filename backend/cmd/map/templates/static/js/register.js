@@ -38,18 +38,7 @@ function buildEmblemPicker() {
   for (var i = 0; i < badges.length; i++) {
     var logo = badges[i];
     var activeClass = logo === defaultLogo ? " active" : "";
-    html +=
-      '<li class="emblem-item' +
-      activeClass +
-      '" data-logo="' +
-      logo +
-      '" role="button" tabindex="0" aria-label="Choose emblem ' +
-      logo +
-      '">' +
-      '<svg class="icon--badge"><use xlink:href="#icon--badge-' +
-      logo +
-      '"></use></svg>' +
-      "</li>";
+    html += '<li class="emblem-item' + activeClass + '" data-logo="' + logo + '" role="button" tabindex="0" aria-label="Choose emblem ' + logo + '">' + '<svg class="icon--badge"><use xlink:href="#icon--badge-' + logo + '"></use></svg>' + "</li>";
   }
 
   $list.html(html);
@@ -59,6 +48,7 @@ function buildEmblemPicker() {
 function sendRegistration() {
   var _username = $("#register_username").val();
   var _password = $("#register_password").val();
+  var _token = $("#register_token").val();
   var _name = $("#register_name").val();
   var _email = $("#register_email").val();
   var _team_name = $("#register_team_name").val();
@@ -68,10 +58,11 @@ function sendRegistration() {
   var data = {
     username: _username,
     password: _password,
+    token: _token,
     name: _name,
     email: _email,
     logo: _logo,
-    team: _team_name
+    team: _team_name,
   };
   sendPostRequest(data, _url, "", false, false);
 }

@@ -53,33 +53,35 @@ type GameboardTemplateData struct {
 
 // RegistrationTemplateData for passing data to the registration template
 type RegistrationTemplateData struct {
-	Title            string
-	RegistrationType string
-	RegistrationMsg  string
-	RegisterURL      string
-	UUID             string
-	OpenRegistration bool
-	Authenticated    bool
-	Admin            bool
+	Title               string
+	RegistrationMsg     string
+	RegisterURL         string
+	UUID                string
+	RegistrationEnabled bool
+	RegistrationNames   bool
+	RegistrationEmails  bool
+	RegistrationType    int
+	RegistrationTypeStr string
+	Authenticated       bool
+	Admin               bool
 }
 
 // AdminSettingsTemplateData for passing data to the admin settings template
 type AdminSettingsTemplateData struct {
-	Title         string
-	UUID          string
-	Authenticated bool
-	Admin         bool
-	Status        string
-	Message       string
-
+	Title                string
+	UUID                 string
+	Authenticated        bool
+	Admin                bool
+	Status               string
+	Message              string
 	LoginEnabled         bool
 	LoginSelectTeam      bool
 	LoginStrongPasswords bool
 	RegistrationEnabled  bool
 	RegistrationNames    bool
 	RegistrationEmails   bool
-	RegistrationPlayers  int
 	RegistrationType     int
+	RegistrationToken    string
 	ScoringEnabled       bool
 	GamePaused           bool
 	GameStarted          bool

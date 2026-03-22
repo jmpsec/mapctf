@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/rs/zerolog/log"
 )
 
@@ -27,6 +28,30 @@ func (h *HandlersMap) RegistrationPOSTHandler(w http.ResponseWriter, r *http.Req
 		log.Err(err).Msg("error parsing request body")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid request body"})
 		return
+	}
+	regType, err := h.Settings.GetRegistrationType()
+	if err != nil {
+		log.Err(err).Msg("error getting registration type setting")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get registration type setting"})
+		return
+	}
+	if req.Token == "" && regType == settings.TokenRegistration {
+		log.Err(errors.New("registration token is required")).Msg("registration token is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "registration token is required"})
+		return
+	}
+	if regType == settings.TokenRegistration {
+		regToken, err := h.Settings.GetRegistrationToken()
+		if err != nil {
+			log.Err(err).Msg("error getting registration token setting")
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get registration token setting"})
+			return
+		}
+		if req.Token != regToken {
+			log.Err(errors.New("invalid registration token")).Msg("invalid registration token")
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid registration token"})
+			return
+		}
 	}
 	if req.Username == "" || req.Password == "" {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "username and password are required"})

@@ -147,13 +147,6 @@
                   </form>
                 </div>
                 <div class="admin-setting-row">
-                  <label for="registration_players">registration_players</label>
-                  <form id="form_registration_players" action="/{{ .UUID }}/admin/settings" method="post">
-                    <input type="hidden" name="setting_name" value="registration_players" />
-                    <input id="registration_players" type="number" min="1" name="setting_value" value="{{ .RegistrationPlayers }}" onchange="saveSettingValue(this)" />
-                  </form>
-                </div>
-                <div class="admin-setting-row">
                   <label for="registration_type">registration_type</label>
                   <form id="form_registration_type" action="/{{ .UUID }}/admin/settings" method="post">
                     <input type="hidden" name="setting_name" value="registration_type" />
@@ -163,6 +156,14 @@
                     </select>
                   </form>
                 </div>
+                <div class="admin-setting-row">
+                  <label for="registration_token">registration_token</label>
+                  <form id="form_registration_token" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="registration_token" />
+                    <input id="registration_token" type="text" name="setting_value" value="{{ .RegistrationToken }}" onchange="saveSettingValue(this)" />
+                  </form>
+                </div>
+
               </div>
             </div>
           </section>

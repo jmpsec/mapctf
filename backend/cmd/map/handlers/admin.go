@@ -136,18 +136,18 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 		log.Warn().Err(err).Msg("error loading registration_emails")
 	}
 
-	registrationPlayers, err := h.Settings.GetRegistrationPlayers()
-	if err == nil {
-		templateData.RegistrationPlayers = registrationPlayers
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Warn().Err(err).Msg("error loading registration_players")
-	}
-
 	registrationType, err := h.Settings.GetRegistrationType()
 	if err == nil {
 		templateData.RegistrationType = registrationType
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading registration_type")
+	}
+
+	registrationToken, err := h.Settings.GetRegistrationToken()
+	if err == nil {
+		templateData.RegistrationToken = registrationToken
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading registration_token")
 	}
 
 	scoringEnabled, err := h.Settings.GetScoringEnabled()
@@ -344,12 +344,14 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 		if !setBoolSetting(h.Settings.SetRegistrationEmails, settingName) {
 			return
 		}
-	case "registration_players":
-		if !setIntSetting(h.Settings.SetRegistrationPlayers, settingName) {
-			return
-		}
 	case "registration_type":
 		if !setIntSetting(h.Settings.SetRegistrationType, settingName) {
+			return
+		}
+	case "registration_token":
+		if err := h.Settings.SetRegistrationToken(settingValue, username); err != nil {
+			log.Err(err).Msg("error updating registration_token")
+			writeError(http.StatusInternalServerError, "Failed to update registration_token")
 			return
 		}
 	case "scoring_enabled":

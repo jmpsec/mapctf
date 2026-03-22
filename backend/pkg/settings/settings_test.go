@@ -99,6 +99,55 @@ func TestGetMissingReturnsError(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestGetAllByUUID(t *testing.T) {
+	m, sqlDB := newTestManager(t)
+	defer func() { _ = sqlDB.Close() }()
+
+	require.NoError(t, m.Create(PlatformSetting{
+		Name:      "tenant_a_only",
+		ValueType: TypeString,
+		UUID:      "tenant-a",
+	}))
+	require.NoError(t, m.Create(PlatformSetting{
+		Name:      "tenant_b_only",
+		ValueType: TypeString,
+		UUID:      "tenant-b",
+	}))
+
+	allA, err := m.GetAll("tenant-a")
+	require.NoError(t, err)
+	require.Len(t, allA, 1)
+	require.Equal(t, "tenant_a_only", allA[0].Name)
+	require.Equal(t, "tenant-a", allA[0].UUID)
+}
+
+func TestInitializationCreatesDefaultsAndIsIdempotent(t *testing.T) {
+	m, sqlDB := newTestManager(t)
+	defer func() { _ = sqlDB.Close() }()
+
+	require.NoError(t, m.Initialization())
+
+	for name := range BooleanSettings {
+		require.True(t, m.Exists(name, "tenant-a"), "missing boolean setting %s", name)
+	}
+	for name := range StringSettings {
+		require.True(t, m.Exists(name, "tenant-a"), "missing string setting %s", name)
+	}
+	for name := range DateSettings {
+		require.True(t, m.Exists(name, "tenant-a"), "missing date setting %s", name)
+	}
+	for name := range IntSettings {
+		require.True(t, m.Exists(name, "tenant-a"), "missing int setting %s", name)
+	}
+
+	var firstCount int64
+	require.NoError(t, m.DB.Model(&PlatformSetting{}).Where("uuid = ?", "tenant-a").Count(&firstCount).Error)
+	require.NoError(t, m.Initialization())
+	var secondCount int64
+	require.NoError(t, m.DB.Model(&PlatformSetting{}).Where("uuid = ?", "tenant-a").Count(&secondCount).Error)
+	require.Equal(t, firstCount, secondCount)
+}
+
 func TestLogEvent(t *testing.T) {
 	m, sqlDB := newTestManager(t)
 	defer func() { _ = sqlDB.Close() }()
@@ -236,7 +285,7 @@ func TestChangeErrors(t *testing.T) {
 		require.Contains(t, err.Error(), "failed to get setting")
 	})
 
-	t.Run("update failure returns error", func(t *testing.T) {
+	t.Run("update succeeds", func(t *testing.T) {
 		s := PlatformSetting{
 			Name:        "some_setting",
 			ValueType:   TypeString,
@@ -251,6 +300,20 @@ func TestChangeErrors(t *testing.T) {
 		updated, getErr := m.Get("some_setting", "tenant-a")
 		require.NoError(t, getErr)
 		require.Equal(t, "after", updated.ValueString)
+	})
+
+	t.Run("invalid value type returns resolve column error", func(t *testing.T) {
+		s := PlatformSetting{
+			Name:        "bad_type_setting",
+			ValueType:   TypeString,
+			ValueString: "before",
+			UUID:        "tenant-a",
+		}
+		require.NoError(t, m.Create(s))
+
+		err := m.Change("bad_type_setting", "unknown-type", "tenant-a", "after", "alice")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to resolve setting value column")
 	})
 }
 
@@ -354,15 +417,15 @@ func TestTypedGettersAndSetters(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, registrationEmails)
 
-	require.NoError(t, m.SetRegistrationPlayers(6, "alice"))
-	registrationPlayers, err := m.GetRegistrationPlayers()
-	require.NoError(t, err)
-	require.Equal(t, 6, registrationPlayers)
-
 	require.NoError(t, m.SetRegistrationType(1, "alice"))
 	registrationType, err := m.GetRegistrationType()
 	require.NoError(t, err)
 	require.Equal(t, 1, registrationType)
+
+	require.NoError(t, m.SetRegistrationToken("invite-123", "alice"))
+	registrationToken, err := m.GetRegistrationToken()
+	require.NoError(t, err)
+	require.Equal(t, "invite-123", registrationToken)
 
 	require.NoError(t, m.SetScoringEnabled(true, "alice"))
 	scoringEnabled, err := m.GetScoringEnabled()
