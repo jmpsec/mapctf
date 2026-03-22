@@ -101,11 +101,53 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 		log.Warn().Err(err).Msg("error loading login_enabled")
 	}
 
+	loginSelectTeam, err := h.Settings.GetLoginSelectTeam()
+	if err == nil {
+		templateData.LoginSelectTeam = loginSelectTeam
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading login_select_team")
+	}
+
+	loginStrongPasswords, err := h.Settings.GetLoginStrongPasswords()
+	if err == nil {
+		templateData.LoginStrongPasswords = loginStrongPasswords
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading login_strong_passwords")
+	}
+
 	registrationEnabled, err := h.Settings.GetRegistrationEnabled()
 	if err == nil {
 		templateData.RegistrationEnabled = registrationEnabled
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading registration_enabled")
+	}
+
+	registrationNames, err := h.Settings.GetRegistrationNames()
+	if err == nil {
+		templateData.RegistrationNames = registrationNames
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading registration_names")
+	}
+
+	registrationEmails, err := h.Settings.GetRegistrationEmails()
+	if err == nil {
+		templateData.RegistrationEmails = registrationEmails
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading registration_emails")
+	}
+
+	registrationPlayers, err := h.Settings.GetRegistrationPlayers()
+	if err == nil {
+		templateData.RegistrationPlayers = registrationPlayers
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading registration_players")
+	}
+
+	registrationType, err := h.Settings.GetRegistrationType()
+	if err == nil {
+		templateData.RegistrationType = registrationType
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading registration_type")
 	}
 
 	scoringEnabled, err := h.Settings.GetScoringEnabled()
@@ -136,11 +178,25 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 		log.Warn().Err(err).Msg("error loading custom_org")
 	}
 
+	customLogo, err := h.Settings.GetCustomLogo()
+	if err == nil {
+		templateData.CustomLogo = customLogo
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading custom_logo")
+	}
+
 	language, err := h.Settings.GetLanguage()
 	if err == nil {
 		templateData.Language = language
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading language")
+	}
+
+	leaderboardLimit, err := h.Settings.GetLeaderboardLimit()
+	if err == nil {
+		templateData.LeaderboardLimit = leaderboardLimit
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading leaderboard_limit")
 	}
 
 	gameStartTime, err := h.Settings.GetGameStartTime()
@@ -249,14 +305,51 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 		}
 		return true
 	}
+	setIntSetting := func(setter func(int, string) error, setting string) bool {
+		parsed, err := strconv.Atoi(settingValue)
+		if err != nil {
+			writeError(http.StatusBadRequest, "Invalid integer for "+setting)
+			return false
+		}
+		if err := setter(parsed, username); err != nil {
+			log.Err(err).Msgf("error updating %s", setting)
+			writeError(http.StatusInternalServerError, "Failed to update "+setting)
+			return false
+		}
+		return true
+	}
 
 	switch settingName {
 	case "login_enabled":
 		if !setBoolSetting(h.Settings.SetLoginEnabled, settingName) {
 			return
 		}
+	case "login_select_team":
+		if !setBoolSetting(h.Settings.SetLoginSelectTeam, settingName) {
+			return
+		}
+	case "login_strong_passwords":
+		if !setBoolSetting(h.Settings.SetLoginStrongPasswords, settingName) {
+			return
+		}
 	case "registration_enabled":
 		if !setBoolSetting(h.Settings.SetRegistrationEnabled, settingName) {
+			return
+		}
+	case "registration_names":
+		if !setBoolSetting(h.Settings.SetRegistrationNames, settingName) {
+			return
+		}
+	case "registration_emails":
+		if !setBoolSetting(h.Settings.SetRegistrationEmails, settingName) {
+			return
+		}
+	case "registration_players":
+		if !setIntSetting(h.Settings.SetRegistrationPlayers, settingName) {
+			return
+		}
+	case "registration_type":
+		if !setIntSetting(h.Settings.SetRegistrationType, settingName) {
 			return
 		}
 	case "scoring_enabled":
@@ -277,10 +370,20 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 			writeError(http.StatusInternalServerError, "Failed to update custom_org")
 			return
 		}
+	case "custom_logo":
+		if err := h.Settings.SetCustomLogo(settingValue, username); err != nil {
+			log.Err(err).Msg("error updating custom_logo")
+			writeError(http.StatusInternalServerError, "Failed to update custom_logo")
+			return
+		}
 	case "language":
 		if err := h.Settings.SetLanguage(settingValue, username); err != nil {
 			log.Err(err).Msg("error updating language")
 			writeError(http.StatusInternalServerError, "Failed to update language")
+			return
+		}
+	case "leaderboard_limit":
+		if !setIntSetting(h.Settings.SetLeaderboardLimit, settingName) {
 			return
 		}
 	case "game_start_time":

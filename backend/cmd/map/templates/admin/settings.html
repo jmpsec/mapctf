@@ -58,11 +58,141 @@
             </span>
           </header>
 
-          <section id="settings" class="admin-box">
+          <section id="settings-login" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Login Settings</h3>
+            </header>
+            <div class="admin-row">
+              <div class="admin-settings-list">
+                <div class="admin-setting-row">
+                  <label for="login_enabled_on">login_enabled</label>
+                  <form id="form_login_enabled" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="login_enabled" />
+                    <div class="admin-section-toggle radio-inline">
+                      <input type="radio" name="setting_value" id="login_enabled_on" value="true" {{ if .LoginEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="login_enabled_on">On</label>
+                      <input type="radio" name="setting_value" id="login_enabled_off" value="false" {{ if not .LoginEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="login_enabled_off">Off</label>
+                    </div>
+                  </form>
+                </div>
+                <div class="admin-setting-row">
+                  <label for="login_select_team_on">login_select_team</label>
+                  <form id="form_login_select_team" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="login_select_team" />
+                    <div class="admin-section-toggle radio-inline">
+                      <input type="radio" name="setting_value" id="login_select_team_on" value="true" {{ if .LoginSelectTeam }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="login_select_team_on">On</label>
+                      <input type="radio" name="setting_value" id="login_select_team_off" value="false" {{ if not .LoginSelectTeam }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="login_select_team_off">Off</label>
+                    </div>
+                  </form>
+                </div>
+                <div class="admin-setting-row">
+                  <label for="login_strong_passwords_on">login_strong_passwords</label>
+                  <form id="form_login_strong_passwords" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="login_strong_passwords" />
+                    <div class="admin-section-toggle radio-inline">
+                      <input type="radio" name="setting_value" id="login_strong_passwords_on" value="true" {{ if .LoginStrongPasswords }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="login_strong_passwords_on">On</label>
+                      <input type="radio" name="setting_value" id="login_strong_passwords_off" value="false" {{ if not .LoginStrongPasswords }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="login_strong_passwords_off">Off</label>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="settings-registration" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Registration Settings</h3>
+            </header>
+            <div class="admin-row">
+              <div class="admin-settings-list">
+                <div class="admin-setting-row">
+                  <label for="registration_enabled_on">registration_enabled</label>
+                  <form id="form_registration_enabled" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="registration_enabled" />
+                    <div class="admin-section-toggle radio-inline">
+                      <input type="radio" name="setting_value" id="registration_enabled_on" value="true" {{ if .RegistrationEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="registration_enabled_on">On</label>
+                      <input type="radio" name="setting_value" id="registration_enabled_off" value="false" {{ if not .RegistrationEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="registration_enabled_off">Off</label>
+                    </div>
+                  </form>
+                </div>
+                <div class="admin-setting-row">
+                  <label for="registration_names_on">registration_names</label>
+                  <form id="form_registration_names" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="registration_names" />
+                    <div class="admin-section-toggle radio-inline">
+                      <input type="radio" name="setting_value" id="registration_names_on" value="true" {{ if .RegistrationNames }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="registration_names_on">On</label>
+                      <input type="radio" name="setting_value" id="registration_names_off" value="false" {{ if not .RegistrationNames }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="registration_names_off">Off</label>
+                    </div>
+                  </form>
+                </div>
+                <div class="admin-setting-row">
+                  <label for="registration_emails_on">registration_emails</label>
+                  <form id="form_registration_emails" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="registration_emails" />
+                    <div class="admin-section-toggle radio-inline">
+                      <input type="radio" name="setting_value" id="registration_emails_on" value="true" {{ if .RegistrationEmails }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="registration_emails_on">On</label>
+                      <input type="radio" name="setting_value" id="registration_emails_off" value="false" {{ if not .RegistrationEmails }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="registration_emails_off">Off</label>
+                    </div>
+                  </form>
+                </div>
+                <div class="admin-setting-row">
+                  <label for="registration_players">registration_players</label>
+                  <form id="form_registration_players" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="registration_players" />
+                    <input id="registration_players" type="number" min="1" name="setting_value" value="{{ .RegistrationPlayers }}" onchange="saveSettingValue(this)" />
+                  </form>
+                </div>
+                <div class="admin-setting-row">
+                  <label for="registration_type">registration_type</label>
+                  <form id="form_registration_type" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="registration_type" />
+                    <select id="registration_type" name="setting_value" onchange="saveSettingValue(this)">
+                      <option value="0" {{ if eq .RegistrationType 0 }}selected{{ end }}>open</option>
+                      <option value="1" {{ if eq .RegistrationType 1 }}selected{{ end }}>token</option>
+                    </select>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="settings-scoring" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Scoring Settings</h3>
+            </header>
+            <div class="admin-row">
+              <div class="admin-settings-list">
+                <div class="admin-setting-row">
+                  <label for="scoring_enabled_on">scoring_enabled</label>
+                  <form id="form_scoring_enabled" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="scoring_enabled" />
+                    <div class="admin-section-toggle radio-inline">
+                      <input type="radio" name="setting_value" id="scoring_enabled_on" value="true" {{ if .ScoringEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="scoring_enabled_on">On</label>
+                      <input type="radio" name="setting_value" id="scoring_enabled_off" value="false" {{ if not .ScoringEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="scoring_enabled_off">Off</label>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="settings-game" class="admin-box">
             <header class="admin-box-header mctf-cf">
               <h3>Game Settings</h3>
             </header>
-
             <div class="admin-row">
               <div class="admin-settings-list">
                 <div class="admin-setting-row">
@@ -72,13 +202,11 @@
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="game_started_on" value="true" {{ if .GameStarted }}checked{{ end }} onchange="saveSettingValue(this)" />
                       <label for="game_started_on">On</label>
-
                       <input type="radio" name="setting_value" id="game_started_off" value="false" {{ if not .GameStarted }}checked{{ end }} onchange="saveSettingValue(this)" />
                       <label for="game_started_off">Off</label>
                     </div>
                   </form>
                 </div>
-
                 <div class="admin-setting-row">
                   <label for="game_paused_on">game_paused</label>
                   <form id="form_game_paused" action="/{{ .UUID }}/admin/settings" method="post">
@@ -86,55 +214,35 @@
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="game_paused_on" value="true" {{ if .GamePaused }}checked{{ end }} onchange="saveSettingValue(this)" />
                       <label for="game_paused_on">On</label>
-
                       <input type="radio" name="setting_value" id="game_paused_off" value="false" {{ if not .GamePaused }}checked{{ end }} onchange="saveSettingValue(this)" />
                       <label for="game_paused_off">Off</label>
                     </div>
                   </form>
                 </div>
-
                 <div class="admin-setting-row">
-                  <label for="registration_enabled_on">registration_enabled</label>
-                  <form id="form_registration_enabled" action="/{{ .UUID }}/admin/settings" method="post">
-                    <input type="hidden" name="setting_name" value="registration_enabled" />
-                    <div class="admin-section-toggle radio-inline">
-                      <input type="radio" name="setting_value" id="registration_enabled_on" value="true" {{ if .RegistrationEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="registration_enabled_on">On</label>
-
-                      <input type="radio" name="setting_value" id="registration_enabled_off" value="false" {{ if not .RegistrationEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="registration_enabled_off">Off</label>
-                    </div>
+                  <label for="game_start_time">game_start_time</label>
+                  <form id="form_game_start_time" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="game_start_time" />
+                    <input id="game_start_time" type="datetime-local" name="setting_value" value="{{ .GameStartTime }}" onchange="saveSettingValue(this)" />
                   </form>
                 </div>
-
                 <div class="admin-setting-row">
-                  <label for="login_enabled_on">login_enabled</label>
-                  <form id="form_login_enabled" action="/{{ .UUID }}/admin/settings" method="post">
-                    <input type="hidden" name="setting_name" value="login_enabled" />
-                    <div class="admin-section-toggle radio-inline">
-                      <input type="radio" name="setting_value" id="login_enabled_on" value="true" {{ if .LoginEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="login_enabled_on">On</label>
-
-                      <input type="radio" name="setting_value" id="login_enabled_off" value="false" {{ if not .LoginEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="login_enabled_off">Off</label>
-                    </div>
+                  <label for="game_end_time">game_end_time</label>
+                  <form id="form_game_end_time" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="game_end_time" />
+                    <input id="game_end_time" type="datetime-local" name="setting_value" value="{{ .GameEndTime }}" onchange="saveSettingValue(this)" />
                   </form>
                 </div>
+              </div>
+            </div>
+          </section>
 
-                <div class="admin-setting-row">
-                  <label for="scoring_enabled_on">scoring_enabled</label>
-                  <form id="form_scoring_enabled" action="/{{ .UUID }}/admin/settings" method="post">
-                    <input type="hidden" name="setting_name" value="scoring_enabled" />
-                    <div class="admin-section-toggle radio-inline">
-                      <input type="radio" name="setting_value" id="scoring_enabled_on" value="true" {{ if .ScoringEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="scoring_enabled_on">On</label>
-
-                      <input type="radio" name="setting_value" id="scoring_enabled_off" value="false" {{ if not .ScoringEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="scoring_enabled_off">Off</label>
-                    </div>
-                  </form>
-                </div>
-
+          <section id="settings-branding" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Branding Settings</h3>
+            </header>
+            <div class="admin-row">
+              <div class="admin-settings-list">
                 <div class="admin-setting-row">
                   <label for="custom_org">custom_org</label>
                   <form id="form_custom_org" action="/{{ .UUID }}/admin/settings" method="post">
@@ -142,7 +250,23 @@
                     <input id="custom_org" type="text" name="setting_value" value="{{ .CustomOrg }}" onchange="saveSettingValue(this)" />
                   </form>
                 </div>
+                <div class="admin-setting-row">
+                  <label for="custom_logo">custom_logo</label>
+                  <form id="form_custom_logo" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="custom_logo" />
+                    <input id="custom_logo" type="text" name="setting_value" value="{{ .CustomLogo }}" onchange="saveSettingValue(this)" />
+                  </form>
+                </div>
+              </div>
+            </div>
+          </section>
 
+          <section id="settings-localization" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Localization Settings</h3>
+            </header>
+            <div class="admin-row">
+              <div class="admin-settings-list">
                 <div class="admin-setting-row">
                   <label for="language">language</label>
                   <form id="form_language" action="/{{ .UUID }}/admin/settings" method="post">
@@ -157,20 +281,21 @@
                     </select>
                   </form>
                 </div>
+              </div>
+            </div>
+          </section>
 
+          <section id="settings-leaderboard" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Leaderboard Settings</h3>
+            </header>
+            <div class="admin-row">
+              <div class="admin-settings-list">
                 <div class="admin-setting-row">
-                  <label for="game_start_time">game_start_time</label>
-                  <form id="form_game_start_time" action="/{{ .UUID }}/admin/settings" method="post">
-                    <input type="hidden" name="setting_name" value="game_start_time" />
-                    <input id="game_start_time" type="datetime-local" name="setting_value" value="{{ .GameStartTime }}" onchange="saveSettingValue(this)" />
-                  </form>
-                </div>
-
-                <div class="admin-setting-row">
-                  <label for="game_end_time">game_end_time</label>
-                  <form id="form_game_end_time" action="/{{ .UUID }}/admin/settings" method="post">
-                    <input type="hidden" name="setting_name" value="game_end_time" />
-                    <input id="game_end_time" type="datetime-local" name="setting_value" value="{{ .GameEndTime }}" onchange="saveSettingValue(this)" />
+                  <label for="leaderboard_limit">leaderboard_limit</label>
+                  <form id="form_leaderboard_limit" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="leaderboard_limit" />
+                    <input id="leaderboard_limit" type="number" min="1" name="setting_value" value="{{ .LeaderboardLimit }}" onchange="saveSettingValue(this)" />
                   </form>
                 </div>
               </div>

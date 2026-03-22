@@ -14,6 +14,7 @@ build
 .vscode
 dist
 tmp
+__pycache__
 
 # Logs
 *.log

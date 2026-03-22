@@ -11,8 +11,20 @@ import (
 const (
 	// LoginEnabled is the setting name for login enabled/disabled
 	LoginEnabled string = "login_enabled"
+	// LoginSelectTeam is the setting name for login team selection enabled/disabled
+	LoginSelectTeam string = "login_select_team"
+	// LoginStrongPasswords is the setting name for login strong password requirement enabled/disabled
+	LoginStrongPasswords string = "login_strong_passwords"
 	// RegistrationEnabled is the setting name for registration enabled/disabled
 	RegistrationEnabled string = "registration_enabled"
+	// RegistrationNames is the setting name for registration name field enabled/disabled
+	RegistrationNames string = "registration_names"
+	// RegistrationEmails is the setting name for registration email field enabled/disabled	RegistrationEmails string = "registration_emails"
+	RegistrationEmails string = "registration_emails"
+	// RegistrationPlayers is the setting name for registration player limit
+	RegistrationPlayers string = "registration_players"
+	// RegistrationType is the setting name for registration type (open, token)
+	RegistrationType string = "registration_type"
 	// ScoringEnabled is the setting name for scoring enabled/disabled
 	ScoringEnabled string = "scoring_enabled"
 	// GamePaused is the setting name for game paused/unpaused
@@ -23,31 +35,47 @@ const (
 	GameStartTime string = "game_start_time"
 	// GameEndTime is the setting name for game end time
 	GameEndTime string = "game_end_time"
-	// CustomOrg is the setting name for the custom organization
+	// CustomOrg is the setting name for the custom branding organization
 	CustomOrg string = "custom_org"
+	// CustomLogo is the setting name for the custom branding logo
+	CustomLogo string = "custom_logo"
 	// Language is the setting name for platform language
 	Language string = "language"
+	// LeaderboardLimit is the setting name for the number of teams to show on the leaderboard
+	LeaderboardLimit string = "leaderboard_limit"
 )
 
 // BooleanSettings to be used as check for valid setting and to keep default value, if needed
 var BooleanSettings = map[string]bool{
-	LoginEnabled:        false,
-	RegistrationEnabled: false,
-	ScoringEnabled:      false,
-	GamePaused:          false,
-	GameStarted:         false,
+	LoginEnabled:         false,
+	LoginSelectTeam:      false,
+	LoginStrongPasswords: false,
+	RegistrationEnabled:  false,
+	RegistrationNames:    false,
+	RegistrationEmails:   false,
+	ScoringEnabled:       false,
+	GamePaused:           false,
+	GameStarted:          false,
 }
 
 // StringSettings to be used as check for valid setting and to keep default value
 var StringSettings = map[string]string{
-	CustomOrg: "",
-	Language:  "en",
+	CustomOrg:  "",
+	CustomLogo: "",
+	Language:   "en",
 }
 
 // DateSettings to be used as check for valid setting and to keep default value
 var DateSettings = map[string]time.Time{
 	GameStartTime: time.Time{},
 	GameEndTime:   time.Time{},
+}
+
+// IntSettings to be used as check for valid setting and to keep default value
+var IntSettings = map[string]int{
+	RegistrationPlayers: 4,
+	RegistrationType:    0, // 0 = open, 1 = token
+	LeaderboardLimit:    10,
 }
 
 const (
@@ -169,6 +197,21 @@ func (m *SettingsManager) Initialization() error {
 			}
 			if err := m.Create(newSetting); err != nil {
 				return fmt.Errorf("failed to create default date setting %s: %w", name, err)
+			}
+		}
+	}
+	// Create default int settings if they don't exist
+	for name, defaultValue := range IntSettings {
+		if _, exists := existingSettings[name]; !exists {
+			newSetting := PlatformSetting{
+				Name:        name,
+				ValueType:   TypeInt,
+				ValueInt:    defaultValue,
+				UUID:        m.UUID,
+				Description: name + " int setting",
+			}
+			if err := m.Create(newSetting); err != nil {
+				return fmt.Errorf("failed to create default int setting %s: %w", name, err)
 			}
 		}
 	}
@@ -365,6 +408,17 @@ func (m *SettingsManager) getStringSetting(name string) (string, error) {
 	return setting.ValueString, nil
 }
 
+func (m *SettingsManager) getIntSetting(name string) (int, error) {
+	setting, err := m.Get(name, m.UUID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get setting %s: %w", name, err)
+	}
+	if setting.ValueType != TypeInt {
+		return 0, fmt.Errorf("setting %s has unexpected type %s", name, setting.ValueType)
+	}
+	return setting.ValueInt, nil
+}
+
 func (m *SettingsManager) getDateSetting(name string) (time.Time, error) {
 	setting, err := m.Get(name, m.UUID)
 	if err != nil {
@@ -386,6 +440,26 @@ func (m *SettingsManager) GetLoginEnabled() (bool, error) {
 	return m.getBoolSetting(LoginEnabled)
 }
 
+func (m *SettingsManager) SetLoginSelectTeam(enabled bool, username string) error {
+	return m.upsertSetting(LoginSelectTeam, TypeBool, LoginSelectTeam+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = enabled
+	})
+}
+
+func (m *SettingsManager) GetLoginSelectTeam() (bool, error) {
+	return m.getBoolSetting(LoginSelectTeam)
+}
+
+func (m *SettingsManager) SetLoginStrongPasswords(enabled bool, username string) error {
+	return m.upsertSetting(LoginStrongPasswords, TypeBool, LoginStrongPasswords+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = enabled
+	})
+}
+
+func (m *SettingsManager) GetLoginStrongPasswords() (bool, error) {
+	return m.getBoolSetting(LoginStrongPasswords)
+}
+
 func (m *SettingsManager) SetRegistrationEnabled(enabled bool, username string) error {
 	return m.upsertSetting(RegistrationEnabled, TypeBool, RegistrationEnabled+" boolean setting", username, func(s *PlatformSetting) {
 		s.ValueBool = enabled
@@ -394,6 +468,46 @@ func (m *SettingsManager) SetRegistrationEnabled(enabled bool, username string) 
 
 func (m *SettingsManager) GetRegistrationEnabled() (bool, error) {
 	return m.getBoolSetting(RegistrationEnabled)
+}
+
+func (m *SettingsManager) SetRegistrationNames(enabled bool, username string) error {
+	return m.upsertSetting(RegistrationNames, TypeBool, RegistrationNames+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = enabled
+	})
+}
+
+func (m *SettingsManager) GetRegistrationNames() (bool, error) {
+	return m.getBoolSetting(RegistrationNames)
+}
+
+func (m *SettingsManager) SetRegistrationEmails(enabled bool, username string) error {
+	return m.upsertSetting(RegistrationEmails, TypeBool, RegistrationEmails+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = enabled
+	})
+}
+
+func (m *SettingsManager) GetRegistrationEmails() (bool, error) {
+	return m.getBoolSetting(RegistrationEmails)
+}
+
+func (m *SettingsManager) SetRegistrationPlayers(players int, username string) error {
+	return m.upsertSetting(RegistrationPlayers, TypeInt, RegistrationPlayers+" int setting", username, func(s *PlatformSetting) {
+		s.ValueInt = players
+	})
+}
+
+func (m *SettingsManager) GetRegistrationPlayers() (int, error) {
+	return m.getIntSetting(RegistrationPlayers)
+}
+
+func (m *SettingsManager) SetRegistrationType(regType int, username string) error {
+	return m.upsertSetting(RegistrationType, TypeInt, RegistrationType+" int setting", username, func(s *PlatformSetting) {
+		s.ValueInt = regType
+	})
+}
+
+func (m *SettingsManager) GetRegistrationType() (int, error) {
+	return m.getIntSetting(RegistrationType)
 }
 
 func (m *SettingsManager) SetScoringEnabled(enabled bool, username string) error {
@@ -456,6 +570,16 @@ func (m *SettingsManager) GetCustomOrg() (string, error) {
 	return m.getStringSetting(CustomOrg)
 }
 
+func (m *SettingsManager) SetCustomLogo(logo, username string) error {
+	return m.upsertSetting(CustomLogo, TypeString, CustomLogo+" string setting", username, func(s *PlatformSetting) {
+		s.ValueString = logo
+	})
+}
+
+func (m *SettingsManager) GetCustomLogo() (string, error) {
+	return m.getStringSetting(CustomLogo)
+}
+
 func (m *SettingsManager) SetLanguage(language, username string) error {
 	return m.upsertSetting(Language, TypeString, Language+" string setting", username, func(s *PlatformSetting) {
 		s.ValueString = language
@@ -464,4 +588,14 @@ func (m *SettingsManager) SetLanguage(language, username string) error {
 
 func (m *SettingsManager) GetLanguage() (string, error) {
 	return m.getStringSetting(Language)
+}
+
+func (m *SettingsManager) SetLeaderboardLimit(limit int, username string) error {
+	return m.upsertSetting(LeaderboardLimit, TypeInt, LeaderboardLimit+" int setting", username, func(s *PlatformSetting) {
+		s.ValueInt = limit
+	})
+}
+
+func (m *SettingsManager) GetLeaderboardLimit() (int, error) {
+	return m.getIntSetting(LeaderboardLimit)
 }

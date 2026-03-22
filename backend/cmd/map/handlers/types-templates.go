@@ -72,15 +72,23 @@ type AdminSettingsTemplateData struct {
 	Status        string
 	Message       string
 
-	LoginEnabled        bool
-	RegistrationEnabled bool
-	ScoringEnabled      bool
-	GamePaused          bool
-	GameStarted         bool
-	CustomOrg           string
-	Language            string
-	GameStartTime       string
-	GameEndTime         string
+	LoginEnabled         bool
+	LoginSelectTeam      bool
+	LoginStrongPasswords bool
+	RegistrationEnabled  bool
+	RegistrationNames    bool
+	RegistrationEmails   bool
+	RegistrationPlayers  int
+	RegistrationType     int
+	ScoringEnabled       bool
+	GamePaused           bool
+	GameStarted          bool
+	CustomOrg            string
+	CustomLogo           string
+	Language             string
+	LeaderboardLimit     int
+	GameStartTime        string
+	GameEndTime          string
 }
 
 // AdminTemplateData for passing data to the admin template
