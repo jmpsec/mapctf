@@ -33,7 +33,7 @@ func (h *HandlersMap) IndexTemplateHandler(w http.ResponseWriter, r *http.Reques
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
 	templateData := IndexTemplateData{
-		Title:         "Welcome to mapctf",
+		Title:         "MapCTF: Welcome to the platform",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         isAdmin,
@@ -150,7 +150,7 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 		rTypeStr = "Registration with Token"
 	}
 	templateData := RegistrationTemplateData{
-		Title:               "Register to mapctf",
+		Title:               "MapCTF: Register to platform",
 		RegistrationMsg:     rMsg,
 		RegisterURL:         "/" + uuid + "/registration",
 		UUID:                uuid,
@@ -191,7 +191,7 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
 	templateData := CountdownTemplateData{
-		Title:         "Countdown to mapctf",
+		Title:         "MapCTF: Countdown to event",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         isAdmin,
@@ -225,7 +225,7 @@ func (h *HandlersMap) RulesTemplateHandler(w http.ResponseWriter, r *http.Reques
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
 	templateData := RulesTemplateData{
-		Title:         "Rules of mapctf",
+		Title:         "MapCTF: Rules of the game",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         isAdmin,
@@ -259,7 +259,7 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
 	templateData := GameboardTemplateData{
-		Title:         "Gameboard of mapctf",
+		Title:         "MapCTF: Gameboard",
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         isAdmin,
