@@ -101,13 +101,6 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 		log.Warn().Err(err).Msg("error loading login_enabled")
 	}
 
-	loginSelectTeam, err := h.Settings.GetLoginSelectTeam()
-	if err == nil {
-		templateData.LoginSelectTeam = loginSelectTeam
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Warn().Err(err).Msg("error loading login_select_team")
-	}
-
 	loginStrongPasswords, err := h.Settings.GetLoginStrongPasswords()
 	if err == nil {
 		templateData.LoginStrongPasswords = loginStrongPasswords
@@ -322,10 +315,6 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	switch settingName {
 	case "login_enabled":
 		if !setBoolSetting(h.Settings.SetLoginEnabled, settingName) {
-			return
-		}
-	case "login_select_team":
-		if !setBoolSetting(h.Settings.SetLoginSelectTeam, settingName) {
 			return
 		}
 	case "login_strong_passwords":

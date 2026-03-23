@@ -11,8 +11,6 @@ import (
 const (
 	// LoginEnabled is the setting name for login enabled/disabled
 	LoginEnabled string = "login_enabled"
-	// LoginSelectTeam is the setting name for login team selection enabled/disabled
-	LoginSelectTeam string = "login_select_team"
 	// LoginStrongPasswords is the setting name for login strong password requirement enabled/disabled
 	LoginStrongPasswords string = "login_strong_passwords"
 	// RegistrationEnabled is the setting name for registration enabled/disabled
@@ -55,7 +53,6 @@ const (
 // BooleanSettings to be used as check for valid setting and to keep default value, if needed
 var BooleanSettings = map[string]bool{
 	LoginEnabled:         false,
-	LoginSelectTeam:      false,
 	LoginStrongPasswords: false,
 	RegistrationEnabled:  false,
 	RegistrationNames:    false,
@@ -445,16 +442,6 @@ func (m *SettingsManager) SetLoginEnabled(enabled bool, username string) error {
 
 func (m *SettingsManager) GetLoginEnabled() (bool, error) {
 	return m.getBoolSetting(LoginEnabled)
-}
-
-func (m *SettingsManager) SetLoginSelectTeam(enabled bool, username string) error {
-	return m.upsertSetting(LoginSelectTeam, TypeBool, LoginSelectTeam+" boolean setting", username, func(s *PlatformSetting) {
-		s.ValueBool = enabled
-	})
-}
-
-func (m *SettingsManager) GetLoginSelectTeam() (bool, error) {
-	return m.getBoolSetting(LoginSelectTeam)
 }
 
 func (m *SettingsManager) SetLoginStrongPasswords(enabled bool, username string) error {

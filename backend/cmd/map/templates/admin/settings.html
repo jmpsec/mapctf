@@ -77,18 +77,6 @@
                   </form>
                 </div>
                 <div class="admin-setting-row">
-                  <label for="login_select_team_on">login_select_team</label>
-                  <form id="form_login_select_team" action="/{{ .UUID }}/admin/settings" method="post">
-                    <input type="hidden" name="setting_name" value="login_select_team" />
-                    <div class="admin-section-toggle radio-inline">
-                      <input type="radio" name="setting_value" id="login_select_team_on" value="true" {{ if .LoginSelectTeam }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="login_select_team_on">On</label>
-                      <input type="radio" name="setting_value" id="login_select_team_off" value="false" {{ if not .LoginSelectTeam }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="login_select_team_off">Off</label>
-                    </div>
-                  </form>
-                </div>
-                <div class="admin-setting-row">
                   <label for="login_strong_passwords_on">login_strong_passwords</label>
                   <form id="form_login_strong_passwords" action="/{{ .UUID }}/admin/settings" method="post">
                     <input type="hidden" name="setting_name" value="login_strong_passwords" />

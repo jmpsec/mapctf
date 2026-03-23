@@ -9,14 +9,15 @@ import (
 
 // LoginTemplateData for passing data to the login template
 type LoginTemplateData struct {
-	Title         string
-	LoginType     string
-	LoginMsg      string
-	LoginURL      string
-	UUID          string
-	TeamLogin     bool
-	Authenticated bool
-	Admin         bool
+	Title                string
+	LoginType            string
+	LoginMsg             string
+	LoginURL             string
+	UUID                 string
+	LoginEnabled         bool
+	LoginStrongPasswords bool
+	Authenticated        bool
+	Admin                bool
 }
 
 // IndexTemplateData for passing data to the index template
@@ -75,7 +76,6 @@ type AdminSettingsTemplateData struct {
 	Status               string
 	Message              string
 	LoginEnabled         bool
-	LoginSelectTeam      bool
 	LoginStrongPasswords bool
 	RegistrationEnabled  bool
 	RegistrationNames    bool

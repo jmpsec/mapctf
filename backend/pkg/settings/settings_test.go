@@ -392,11 +392,6 @@ func TestTypedGettersAndSetters(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, loginEnabled)
 
-	require.NoError(t, m.SetLoginSelectTeam(true, "alice"))
-	loginSelectTeam, err := m.GetLoginSelectTeam()
-	require.NoError(t, err)
-	require.True(t, loginSelectTeam)
-
 	require.NoError(t, m.SetLoginStrongPasswords(true, "alice"))
 	loginStrongPasswords, err := m.GetLoginStrongPasswords()
 	require.NoError(t, err)

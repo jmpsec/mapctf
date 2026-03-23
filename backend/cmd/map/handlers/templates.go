@@ -66,14 +66,32 @@ func (h *HandlersMap) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
+	loginEnabled, err := h.Settings.GetLoginEnabled()
+	if err != nil {
+		log.Err(err).Msg("error getting login enabled setting")
+		loginEnabled = false
+	}
+	loginStrongPasswords, err := h.Settings.GetLoginStrongPasswords()
+	if err != nil {
+		log.Err(err).Msg("error getting login strong passwords setting")
+		loginStrongPasswords = false
+	}
+	loginMsg := "Login to play Capture The Flag here."
+	loginType := "Team Login"
+	if !loginEnabled {
+		loginMsg = "Team login is currently disabled. Only admins can login at this time."
+		loginType = "Admin Login"
+	}
 	templateData := LoginTemplateData{
-		Title:         "Login to mapctf",
-		LoginType:     "Admin Login",
-		LoginMsg:      "Team login is disabled. Only admins can login at this time.",
-		LoginURL:      "/" + uuid + "/login",
-		UUID:          uuid,
-		Authenticated: authenticated,
-		Admin:         isAdmin,
+		Title:                "MapCTF: Login to platform",
+		LoginType:            loginType,
+		LoginMsg:             loginMsg,
+		LoginURL:             "/" + uuid + "/login",
+		UUID:                 uuid,
+		LoginEnabled:         loginEnabled,
+		LoginStrongPasswords: loginStrongPasswords,
+		Authenticated:        authenticated,
+		Admin:                isAdmin,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
