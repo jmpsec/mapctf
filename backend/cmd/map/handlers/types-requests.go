@@ -54,6 +54,13 @@ type AdminChallengeCreateRequest struct {
 	Hint        string `json:"hint"`
 }
 
+// AdminCategoryCreateRequest to receive admin category creation requests
+type AdminCategoryCreateRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Logo        string `json:"logo"`
+}
+
 // AdminUserCreateRequest to receive admin user creation requests
 type AdminUserCreateRequest struct {
 	Username string `json:"username"`

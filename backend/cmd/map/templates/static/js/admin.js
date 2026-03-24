@@ -284,6 +284,31 @@ function createAdminTeam(createURL, payload) {
   });
 }
 
+function createAdminCategory(createURL, payload) {
+  return fetch(createURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify(payload),
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to create category");
+        }
+        return data;
+      });
+  });
+}
+
 function initAdminAddUserModal() {
   var addUserBtn = document.querySelector('[data-action="add-new-user"]');
   if (!addUserBtn) {
@@ -454,6 +479,96 @@ function initAdminAddTeamModal() {
   });
 }
 
+function initAdminAddCategoryModal() {
+  var addCategoryBtn = document.querySelector('[data-action="add-new-category"]');
+  if (!addCategoryBtn) {
+    return;
+  }
+
+  addCategoryBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+
+    var createURL = addCategoryBtn.getAttribute("data-create-url");
+    if (!createURL) {
+      showTransientAdminStatus("error", "Missing category creation URL");
+      return;
+    }
+
+    if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+      showTransientAdminStatus("error", "Modal system unavailable");
+      return;
+    }
+
+    MAP_CTF.modal.loadPopup("add-category", function () {
+      var modal = document.getElementById("mctf-modal");
+      if (!modal) {
+        return;
+      }
+
+      var form = modal.querySelector("#admin-add-category-form");
+      if (!form) {
+        return;
+      }
+
+      var logoSelect = form.querySelector('select[name="logo"]');
+      var logoPreview = form.querySelector("#admin-add-category-logo-preview i");
+      var updateLogoPreview = function () {
+        if (!logoSelect || !logoPreview) {
+          return;
+        }
+        logoPreview.className = logoSelect.value || "fa-solid fa-globe";
+      };
+      if (logoSelect) {
+        logoSelect.addEventListener("change", updateLogoPreview);
+      }
+      updateLogoPreview();
+
+      var nameInput = form.querySelector('input[name="name"]');
+      if (nameInput) {
+        nameInput.focus();
+      }
+
+      form.addEventListener("submit", function (submitEvent) {
+        submitEvent.preventDefault();
+
+        if (form.dataset.submitting === "true") {
+          return;
+        }
+
+        var name = (form.querySelector('input[name="name"]').value || "").trim();
+        var description = (form.querySelector('input[name="description"]').value || "").trim();
+        var logo = (form.querySelector('select[name="logo"]').value || "").trim();
+
+        if (!name) {
+          showTransientAdminStatus("error", "Category name is required");
+          return;
+        }
+
+        form.dataset.submitting = "true";
+
+        createAdminCategory(createURL, {
+          name: name,
+          description: description,
+          logo: logo,
+        })
+          .then(function (data) {
+            showTransientAdminStatus(data.status || "ok", data.message || "Category created");
+            if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+              MAP_CTF.modal.close();
+            }
+            window.location.reload();
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to create category");
+          })
+          .finally(function () {
+            delete form.dataset.submitting;
+          });
+      });
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   initAdminStatusFromServerState();
   initAdminLogoutModal();
@@ -462,6 +577,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminTeamsSearch();
   initAdminAddUserModal();
   initAdminAddTeamModal();
+  initAdminAddCategoryModal();
 });
 
 function saveSettingValue(input) {

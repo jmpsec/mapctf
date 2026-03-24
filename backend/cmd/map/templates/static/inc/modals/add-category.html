@@ -1,0 +1,50 @@
+<div class="mctf-modal-content">
+  <header class="modal-title">
+    <h4>
+      admin_
+      <span class="highlighted">Add Category</span>
+    </h4>
+    <a href="#" class="js-close-modal">
+      <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
+    </a>
+  </header>
+
+  <div class="action-main">
+    <form id="admin-add-category-form" class="validate-form">
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-category-name">Name</label>
+        <input id="admin-add-category-name" name="name" type="text" style="width: 100%" required />
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-category-description">Description</label>
+        <input id="admin-add-category-description" name="description" type="text" style="width: 100%" />
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-category-logo">Logo</label>
+        <div style="display: flex; align-items: center; gap: 12px">
+          <select id="admin-add-category-logo" name="logo" style="width: 100%">
+            <option value="fa-solid fa-globe">Web - Globe</option>
+            <option value="fa-solid fa-key">Crypto - Key</option>
+            <option value="fa-solid fa-bug">Pwn - Bug</option>
+            <option value="fa-solid fa-microchip">Reverse - Microchip</option>
+            <option value="fa-solid fa-magnifying-glass">Forensics - Magnifier</option>
+            <option value="fa-solid fa-user-secret">OSINT - Investigator</option>
+            <option value="fa-solid fa-puzzle-piece">Misc - Puzzle</option>
+            <option value="fa-solid fa-satellite-dish">Hardware - Antenna</option>
+            <option value="fa-solid fa-mobile-screen-button">Mobile - Phone</option>
+            <option value="fa-solid fa-cloud">Cloud - Cloud</option>
+            <option value="fa-solid fa-robot">AI - Robot</option>
+          </select>
+          <div id="admin-add-category-logo-preview" style="font-size: 22px; min-width: 24px">
+            <i class="fa-solid fa-globe" aria-hidden="true"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-actionable">
+        <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>
+        <button class="mctf-cta cta--yellow js-create-category" type="submit">Create Category</button>
+      </div>
+    </form>
+  </div>
+</div>

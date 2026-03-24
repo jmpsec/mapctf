@@ -892,6 +892,70 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	writeSuccess("Challenge created")
 }
 
+// AdminChallengeCategoriesPOSTHandler for admin challenge categories creation via POST requests
+func (h *HandlersMap) AdminChallengeCategoriesPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.Contains(r.Header.Get(ContentType), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	var req AdminCategoryCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin category JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	name := strings.TrimSpace(req.Name)
+	description := strings.TrimSpace(req.Description)
+	logo := strings.TrimSpace(req.Logo)
+
+	if name == "" {
+		writeError(http.StatusBadRequest, "Category name is required")
+		return
+	}
+
+	category, err := h.Challenges.NewCategory(name, description, logo, uuid)
+	if err != nil {
+		log.Err(err).Msg("error creating category object")
+		writeError(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.Challenges.CreateCategory(category); err != nil {
+		log.Err(err).Msg("error creating category")
+		writeError(http.StatusInternalServerError, "Failed to create category")
+		return
+	}
+
+	writeSuccess("Category created")
+}
+
 // AdminActivityTemplateHandler for admin activity page for GET requests
 func (h *HandlersMap) AdminActivityTemplateHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {

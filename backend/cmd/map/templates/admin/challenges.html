@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="/static/css/mapctf.css" />
   </head>
   <body data-section="admin">
@@ -61,6 +62,9 @@
           <section id="challenges" class="admin-box">
             <header class="admin-box-header mctf-cf">
               <h3>Challenge Management</h3>
+              <div class="admin-section-toggle">
+                <button class="mctf-cta" data-action="add-new-challenge" type="button">Add Challenge</button>
+              </div>
             </header>
 
             <div class="admin-row">
@@ -159,7 +163,10 @@
 
           <section id="categories" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Category Management</h3>
+              <h3>Challenge Categories</h3>
+              <div class="admin-section-toggle">
+                <button class="mctf-cta" data-action="add-new-category" data-create-url="/{{ .UUID }}/admin/challenges/categories" type="button">Add Category</button>
+              </div>
             </header>
 
             <div class="admin-row">
