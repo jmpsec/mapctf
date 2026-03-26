@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/rs/zerolog/log"
@@ -777,6 +778,30 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 	} else {
 		templateData.Categories = categories
 	}
+	activity, err := h.Logs.AllActivity(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading activity for solves view")
+	} else {
+		for _, entry := range activity {
+			if strings.Contains(strings.ToLower(entry.Action), "solve") {
+				templateData.Solves = append(templateData.Solves, entry)
+			}
+		}
+	}
+	templateData.ChallengeSolves = make(map[uint][]logs.ActivityLog, len(templateData.Challenges))
+	for _, challenge := range templateData.Challenges {
+		challengeTitle := strings.ToLower(challenge.Title)
+		challengeID := strconv.Itoa(int(challenge.ID))
+		for _, solve := range templateData.Solves {
+			searchText := strings.ToLower(solve.Subject + " " + solve.Action + " " + solve.Message + " " + solve.Arguments)
+			if strings.Contains(searchText, challengeTitle) ||
+				strings.Contains(searchText, "challenge="+challengeID) ||
+				strings.Contains(searchText, "challenge_id="+challengeID) ||
+				strings.Contains(searchText, "challengeid="+challengeID) {
+				templateData.ChallengeSolves[challenge.ID] = append(templateData.ChallengeSolves[challenge.ID], solve)
+			}
+		}
+	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
 		return
@@ -797,59 +822,37 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	jsonResponse := wantsJSONResponse(r)
-	redirectBase := "/" + uuid + "/admin/challenges"
 	writeError := func(code int, msg string) {
-		if jsonResponse {
-			HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
-				Success: false,
-				Status:  "error",
-				Message: msg,
-			})
-			return
-		}
-		http.Redirect(w, r, redirectBase+"?status=error&msg="+url.QueryEscape(msg), http.StatusFound)
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
 	}
 	writeSuccess := func(msg string) {
-		if jsonResponse {
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
-				Success: true,
-				Status:  "ok",
-				Message: msg,
-			})
-			return
-		}
-		http.Redirect(w, r, redirectBase+"?status=ok&msg="+url.QueryEscape(msg), http.StatusFound)
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.Contains(r.Header.Get(ContentType), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
 	}
 
 	var req AdminChallengeCreateRequest
-	if strings.Contains(r.Header.Get(ContentType), JSONApplication) {
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			log.Err(err).Msg("error parsing admin challenges JSON payload")
-			writeError(http.StatusBadRequest, "Invalid JSON payload")
-			return
-		}
-	} else {
-		if err := r.ParseForm(); err != nil {
-			log.Err(err).Msg("error parsing admin challenges form")
-			writeError(http.StatusBadRequest, "Invalid form payload")
-			return
-		}
-		req.Title = r.FormValue("title")
-		req.Description = r.FormValue("description")
-		req.CategoryID = r.FormValue("category_id")
-		req.Active = r.FormValue("active")
-		req.Points = r.FormValue("points")
-		req.Bonus = r.FormValue("bonus")
-		req.BonusDecay = r.FormValue("bonus_decay")
-		req.Penalty = r.FormValue("penalty")
-		req.Flag = r.FormValue("flag")
-		req.Hint = r.FormValue("hint")
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin challenges JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
 	}
 
 	title := strings.TrimSpace(req.Title)
 	description := strings.TrimSpace(req.Description)
 	categoryIDStr := strings.TrimSpace(req.CategoryID)
+	country := strings.TrimSpace(req.Country)
 	activeStr := strings.TrimSpace(req.Active)
 	pointsStr := strings.TrimSpace(req.Points)
 	bonusStr := strings.TrimSpace(req.Bonus)
@@ -862,17 +865,42 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 		writeError(http.StatusBadRequest, "Title and flag are required")
 		return
 	}
-	categoryID, _ := strconv.ParseUint(categoryIDStr, 10, 64)
-	active, _ := strconv.ParseBool(activeStr)
-	points, _ := strconv.ParseInt(pointsStr, 10, 64)
-	bonus, _ := strconv.ParseInt(bonusStr, 10, 64)
-	bonusDecay, _ := strconv.ParseInt(bonusDecayStr, 10, 64)
-	penalty, _ := strconv.ParseInt(penaltyStr, 10, 64)
+	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
+	if err != nil || categoryID == 0 {
+		writeError(http.StatusBadRequest, "Valid category_id is required")
+		return
+	}
+	active, err := strconv.ParseBool(activeStr)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid active value")
+		return
+	}
+	points, err := strconv.ParseInt(pointsStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid points value")
+		return
+	}
+	bonus, err := strconv.ParseInt(bonusStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid bonus value")
+		return
+	}
+	bonusDecay, err := strconv.ParseInt(bonusDecayStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid bonus_decay value")
+		return
+	}
+	penalty, err := strconv.ParseInt(penaltyStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid penalty value")
+		return
+	}
 
 	challenge := h.Challenges.New(
 		title,
 		description,
 		uint(categoryID),
+		country,
 		active,
 		int(points),
 		int(bonus),
@@ -890,6 +918,186 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	}
 
 	writeSuccess("Challenge created")
+}
+
+// AdminChallengeUpdatePOSTHandler for updating an existing challenge via POST requests
+func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	// Debug HTTP if enabled
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.Contains(r.Header.Get(ContentType), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	challengeIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	challengeID, err := strconv.ParseUint(challengeIDStr, 10, 64)
+	if err != nil || challengeID == 0 {
+		writeError(http.StatusBadRequest, "Invalid challenge id")
+		return
+	}
+
+	var req AdminChallengeCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin challenge update JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	title := strings.TrimSpace(req.Title)
+	description := strings.TrimSpace(req.Description)
+	categoryIDStr := strings.TrimSpace(req.CategoryID)
+	country := strings.TrimSpace(req.Country)
+	activeStr := strings.TrimSpace(req.Active)
+	pointsStr := strings.TrimSpace(req.Points)
+	bonusStr := strings.TrimSpace(req.Bonus)
+	bonusDecayStr := strings.TrimSpace(req.BonusDecay)
+	penaltyStr := strings.TrimSpace(req.Penalty)
+	flag := strings.TrimSpace(req.Flag)
+	hint := strings.TrimSpace(req.Hint)
+
+	if title == "" || flag == "" {
+		writeError(http.StatusBadRequest, "Title and flag are required")
+		return
+	}
+	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
+	if err != nil || categoryID == 0 {
+		writeError(http.StatusBadRequest, "Valid category_id is required")
+		return
+	}
+	active, err := strconv.ParseBool(activeStr)
+	if err != nil {
+		switch strings.ToLower(activeStr) {
+		case "active", "on":
+			active = true
+		case "inactive", "off":
+			active = false
+		default:
+			writeError(http.StatusBadRequest, "Invalid active value")
+			return
+		}
+	}
+	points, err := strconv.ParseInt(pointsStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid points value")
+		return
+	}
+	bonus, err := strconv.ParseInt(bonusStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid bonus value")
+		return
+	}
+	bonusDecay, err := strconv.ParseInt(bonusDecayStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid bonus_decay value")
+		return
+	}
+	penalty, err := strconv.ParseInt(penaltyStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid penalty value")
+		return
+	}
+
+	challenge, err := h.Challenges.GetByID(uint(challengeID), uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading challenge to update")
+		writeError(http.StatusNotFound, "Challenge not found")
+		return
+	}
+
+	challenge.Title = title
+	challenge.Description = description
+	challenge.CategoryID = uint(categoryID)
+	challenge.Country = country
+	challenge.Active = active
+	challenge.Points = int(points)
+	challenge.Bonus = int(bonus)
+	challenge.BonusDecay = int(bonusDecay)
+	challenge.Penalty = int(penalty)
+	challenge.Flag = flag
+	challenge.Hint = hint
+
+	if err := h.Challenges.Update(challenge); err != nil {
+		log.Err(err).Msg("error updating challenge")
+		writeError(http.StatusInternalServerError, "Failed to update challenge")
+		return
+	}
+
+	writeSuccess("Challenge updated")
+}
+
+// AdminChallengeDeletePOSTHandler for deleting an existing challenge via POST requests
+func (h *HandlersMap) AdminChallengeDeletePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	challengeIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	challengeID, err := strconv.ParseUint(challengeIDStr, 10, 64)
+	if err != nil || challengeID == 0 {
+		writeError(http.StatusBadRequest, "Invalid challenge id")
+		return
+	}
+
+	if _, err := h.Challenges.GetByID(uint(challengeID), uuid); err != nil {
+		log.Err(err).Msg("error loading challenge to delete")
+		writeError(http.StatusNotFound, "Challenge not found")
+		return
+	}
+
+	if err := h.Challenges.Delete(uint(challengeID), uuid); err != nil {
+		log.Err(err).Msg("error deleting challenge")
+		writeError(http.StatusInternalServerError, "Failed to delete challenge")
+		return
+	}
+
+	writeSuccess("Challenge deleted")
 }
 
 // AdminChallengeCategoriesPOSTHandler for admin challenge categories creation via POST requests

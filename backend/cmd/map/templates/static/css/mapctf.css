@@ -5113,7 +5113,8 @@ General Admin
 .admin-box #custom-logo-input {
   display: none;
 }
-.admin-box input:not(:checked) + label {
+.admin-box input[type=radio]:not(:checked) + label,
+.admin-box input[type=checkbox]:not(:checked) + label {
   color: #21b4ba;
 }
 .admin-box ::-webkit-input-placeholder {
@@ -5186,14 +5187,143 @@ General Admin
 .admin-box .admin-setting-row select {
   width: 100%;
 }
+.admin-box .admin-setting-row textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 72px;
+}
+.admin-box .admin-challenges-subtitle {
+  margin: 8px 0 10px;
+  color: #21b4ba;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.admin-box .admin-challenge-rows {
+  grid-template-columns: 1fr;
+}
+.admin-box .admin-challenge-row {
+  width: 100%;
+}
+.admin-box .admin-challenge-row-layout {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+.admin-box .admin-challenges-editor {
+  grid-column: 1;
+  grid-row: 1;
+}
+.admin-box .admin-challenge-side {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.admin-box .admin-challenge-status {
+  margin-bottom: 10px;
+}
+.admin-box .admin-challenge-activity {
+  border: 1px solid #2b3d43;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.16);
+  padding: 10px;
+  min-height: 0;
+  flex: 1;
+}
+.admin-box .admin-challenge-grid {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-box .admin-field-label {
+  margin: 0 0 4px;
+  color: #8ed9de;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.85em;
+}
+.admin-box .admin-form-field {
+  width: 100%;
+}
+.admin-box .admin-form-field input[type=text],
+.admin-box .admin-form-field input[type=number],
+.admin-box .admin-form-field select,
+.admin-box .admin-form-field textarea {
+  width: 100%;
+}
+.admin-box .admin-form-field--inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.admin-box .admin-form-field--inline .admin-field-label {
+  margin: 0;
+}
+.admin-box .admin-form-field--inline input[type=checkbox] {
+  width: auto;
+}
+.admin-box .admin-score-group {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.admin-box .admin-score-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-box .admin-challenge-form .admin-buttons {
+  margin-top: 12px;
+}
+.admin-box .admin-activity-status-toggle {
+  margin-bottom: 10px;
+}
+.admin-box .admin-activity-label {
+  margin: 0 0 8px;
+  color: #8ed9de;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8em;
+}
+.admin-box .admin-activity-list {
+  grid-template-columns: 1fr;
+}
+.admin-box .admin-activity-empty {
+  color: #8ed9de;
+  font-size: 0.9em;
+}
 @media (max-width: 1200px) {
   .admin-box .admin-settings-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-box .admin-challenge-rows {
+    grid-template-columns: 1fr;
+  }
+  .admin-box .admin-challenge-row-layout {
+    grid-template-columns: 1fr;
+  }
+  .admin-box .admin-challenges-editor,
+  .admin-box .admin-challenge-side,
+  .admin-box .admin-challenge-status,
+  .admin-box .admin-challenge-activity {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .admin-box .admin-challenge-side {
+    min-height: auto;
   }
 }
 @media (max-width: 780px) {
   .admin-box .admin-settings-list {
     grid-template-columns: 1fr;
+  }
+  .admin-box .admin-score-group {
+    grid-template-columns: 1fr 1fr;
   }
 }
 .admin-box .admin-row.admin-buttons, .admin-box .admin-row.global-controls-rules {

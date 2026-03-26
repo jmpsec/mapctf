@@ -12,6 +12,7 @@ type Challenge struct {
 	Title       string
 	Description string
 	CategoryID  uint
+	Country     string
 	Active      bool
 	Points      int
 	Bonus       int
@@ -19,7 +20,7 @@ type Challenge struct {
 	Flag        string
 	Hint        string
 	Penalty     int
-	UUID        string `gorm:"unique;index"`
+	UUID        string `gorm:"index"`
 }
 
 // Category to hold all challenge categories
@@ -28,7 +29,7 @@ type Category struct {
 	Name        string `gorm:"index"`
 	Description string
 	Logo        string
-	UUID        string `gorm:"unique;index"`
+	UUID        string `gorm:"index"`
 }
 
 // ChallengeManager to handle all challenges of the platform
@@ -59,6 +60,36 @@ func CreateChallengeManager(backend *gorm.DB) (*ChallengeManager, error) {
 func (m *ChallengeManager) Create(challenge Challenge) error {
 	if err := m.DB.Create(&challenge).Error; err != nil {
 		return fmt.Errorf("Create Challenge %w", err)
+	}
+	return nil
+}
+
+// Update challenge
+func (m *ChallengeManager) Update(challenge Challenge) error {
+	if err := m.DB.Model(&Challenge{}).
+		Where("id = ? AND uuid = ?", challenge.ID, challenge.UUID).
+		Updates(map[string]interface{}{
+			"title":       challenge.Title,
+			"description": challenge.Description,
+			"category_id": challenge.CategoryID,
+			"country":     challenge.Country,
+			"active":      challenge.Active,
+			"points":      challenge.Points,
+			"bonus":       challenge.Bonus,
+			"bonus_decay": challenge.BonusDecay,
+			"flag":        challenge.Flag,
+			"hint":        challenge.Hint,
+			"penalty":     challenge.Penalty,
+		}).Error; err != nil {
+		return fmt.Errorf("Update Challenge %w", err)
+	}
+	return nil
+}
+
+// Delete challenge
+func (m *ChallengeManager) Delete(id uint, uuid string) error {
+	if err := m.DB.Where("id = ? AND uuid = ?", id, uuid).Delete(&Challenge{}).Error; err != nil {
+		return fmt.Errorf("Delete Challenge %w", err)
 	}
 	return nil
 }
@@ -117,11 +148,12 @@ func (m *ChallengeManager) ExistCategory(name string, uuid string) bool {
 }
 
 // New empty challenge
-func (m *ChallengeManager) New(title, description string, categoryID uint, active bool, points, bonus, bonusDecay, penalty int, flag, hint string, uuid string) Challenge {
+func (m *ChallengeManager) New(title, description string, categoryID uint, country string, active bool, points, bonus, bonusDecay, penalty int, flag, hint string, uuid string) Challenge {
 	return Challenge{
 		Title:       title,
 		Description: description,
 		CategoryID:  categoryID,
+		Country:     country,
 		Active:      active,
 		Points:      points,
 		Bonus:       bonus,

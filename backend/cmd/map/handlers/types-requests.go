@@ -45,6 +45,7 @@ type AdminChallengeCreateRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	CategoryID  string `json:"category_id"`
+	Country     string `json:"country"`
 	Active      string `json:"active"`
 	Points      string `json:"points"`
 	Bonus       string `json:"bonus"`

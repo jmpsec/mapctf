@@ -228,8 +228,8 @@ func TestGetCategoryByID(t *testing.T) {
 
 	// Create a category
 	category := Category{
-		Name:  "Crypto",
-		UUID:  testUUID1,
+		Name: "Crypto",
+		UUID: testUUID1,
 	}
 	if err := manager.CreateCategory(category); err != nil {
 		t.Fatalf("Failed to create category: %v", err)
@@ -256,8 +256,8 @@ func TestGetCategoryByIDWrongEntity(t *testing.T) {
 
 	// Create a category with UUID 1
 	category := Category{
-		Name:  "Reversing",
-		UUID:  testUUID1,
+		Name: "Reversing",
+		UUID: testUUID1,
 	}
 	if err := manager.CreateCategory(category); err != nil {
 		t.Fatalf("Failed to create category: %v", err)
@@ -299,8 +299,8 @@ func TestExistCategory(t *testing.T) {
 
 	// Create a category
 	category := Category{
-		Name:  "Forensics",
-		UUID:  testUUID1,
+		Name: "Forensics",
+		UUID: testUUID1,
 	}
 	if err := manager.CreateCategory(category); err != nil {
 		t.Fatalf("Failed to create category: %v", err)
@@ -329,6 +329,7 @@ func TestNew(t *testing.T) {
 		"SQL Injection",
 		"Find the SQL injection vulnerability",
 		1,
+		"Argentina",
 		true,
 		200,
 		20,
@@ -411,8 +412,8 @@ func TestNewCategoryDuplicate(t *testing.T) {
 
 	// Create first category
 	category := Category{
-		Name:  "Pwn",
-		UUID:  testUUID1,
+		Name: "Pwn",
+		UUID: testUUID1,
 	}
 	if err := manager.CreateCategory(category); err != nil {
 		t.Fatalf("Failed to create category: %v", err)
@@ -435,8 +436,8 @@ func TestNewCategorySameNameDifferentEntity(t *testing.T) {
 
 	// Create category for UUID 1
 	category1 := Category{
-		Name:  "Misc",
-		UUID:  testUUID1,
+		Name: "Misc",
+		UUID: testUUID1,
 	}
 	if err := manager.CreateCategory(category1); err != nil {
 		t.Fatalf("Failed to create category for UUID 1: %v", err)
@@ -515,12 +516,12 @@ func TestMultiEntityCategoryIsolation(t *testing.T) {
 
 	// Create categories for different UUIDs
 	category1 := Category{
-		Name:  "UUID 1 Category",
-		UUID:  testUUID1,
+		Name: "UUID 1 Category",
+		UUID: testUUID1,
 	}
 	category2 := Category{
-		Name:  "UUID 2 Category",
-		UUID:  testUUID2,
+		Name: "UUID 2 Category",
+		UUID: testUUID2,
 	}
 
 	if err := manager.CreateCategory(category1); err != nil {

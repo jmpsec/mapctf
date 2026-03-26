@@ -1,0 +1,85 @@
+<div class="mctf-modal-content">
+  <header class="modal-title">
+    <h4>
+      admin_
+      <span class="highlighted">Add Challenge</span>
+    </h4>
+    <a href="#" class="js-close-modal">
+      <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
+    </a>
+  </header>
+
+  <div class="action-main">
+    <form id="admin-add-challenge-form" class="validate-form">
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-challenge-title">Title</label>
+        <input id="admin-add-challenge-title" name="title" type="text" style="width: 100%" required />
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-challenge-description">Description</label>
+        <input id="admin-add-challenge-description" name="description" type="text" style="width: 100%" />
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-challenge-category-id">Category</label>
+        <select id="admin-add-challenge-category-id" name="category_id" style="width: 100%"></select>
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-challenge-country">Country</label>
+        <select id="admin-add-challenge-country" name="country" class="admin-country-select" style="width: 100%">
+          <option value="">Select country</option>
+        </select>
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-challenge-flag">Flag</label>
+        <input id="admin-add-challenge-flag" name="flag" type="text" style="width: 100%" required />
+      </div>
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-challenge-hint">Hint</label>
+        <input id="admin-add-challenge-hint" name="hint" type="text" style="width: 100%" />
+      </div>
+
+      <div class="mctf-column-container">
+        <div class="col col-pad col-1-2">
+          <div class="form-el el--block-label el--full-text">
+            <label for="admin-add-challenge-points">Points</label>
+            <input id="admin-add-challenge-points" name="points" type="number" min="0" value="100" required />
+          </div>
+        </div>
+        <div class="col col-pad col-1-2">
+          <div class="form-el el--block-label el--full-text">
+            <label for="admin-add-challenge-bonus">Bonus</label>
+            <input id="admin-add-challenge-bonus" name="bonus" type="number" min="0" value="0" />
+          </div>
+        </div>
+      </div>
+
+      <div class="mctf-column-container">
+        <div class="col col-pad col-1-2">
+          <div class="form-el el--block-label el--full-text">
+            <label for="admin-add-challenge-bonus-decay">Bonus Decay</label>
+            <input id="admin-add-challenge-bonus-decay" name="bonus_decay" type="number" min="0" value="0" />
+          </div>
+        </div>
+        <div class="col col-pad col-1-2">
+          <div class="form-el el--block-label el--full-text">
+            <label for="admin-add-challenge-penalty">Penalty</label>
+            <input id="admin-add-challenge-penalty" name="penalty" type="number" min="0" value="0" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-challenge-active">Active</label>
+        <select id="admin-add-challenge-active" name="active" style="width: 100%">
+          <option value="true" selected>On</option>
+          <option value="false">Off</option>
+        </select>
+      </div>
+
+      <div class="action-actionable">
+        <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>
+        <button class="mctf-cta cta--yellow js-create-challenge" type="submit">Create Challenge</button>
+      </div>
+    </form>
+  </div>
+</div>

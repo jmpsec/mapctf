@@ -112,6 +112,7 @@ func (h *HandlersAPI) CreateChallengeHandler(w http.ResponseWriter, r *http.Requ
 		req.Title,
 		req.Description,
 		req.CategoryID,
+		"",
 		req.Active,
 		req.Points,
 		req.Bonus,

@@ -63,101 +63,150 @@
             <header class="admin-box-header mctf-cf">
               <h3>Challenge Management</h3>
               <div class="admin-section-toggle">
-                <button class="mctf-cta" data-action="add-new-challenge" type="button">Add Challenge</button>
+                <button class="mctf-cta" data-action="add-new-challenge" data-create-url="/{{ .UUID }}/admin/challenges" type="button">Add Challenge</button>
               </div>
             </header>
 
-            <div class="admin-row">
-              <h4>Create Challenge (Dummy)</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Field</th>
-                    <th>Input</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Title</td>
-                    <td><input type="text" value="web_01_injection" disabled /></td>
-                  </tr>
-                  <tr>
-                    <td>Category</td>
-                    <td>
-                      <select disabled>
-                        {{ if .Categories }}
-                        {{ range .Categories }}
-                        <option>{{ .Name }}</option>
-                        {{ end }}
-                        {{ else }}
-                        <option selected>web</option>
-                        <option>crypto</option>
-                        <option>forensics</option>
-                        {{ end }}
-                      </select>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Points / Bonus / Penalty</td>
-                    <td>
-                      <input type="number" value="100" disabled />
-                      <input type="number" value="20" disabled />
-                      <input type="number" value="5" disabled />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Flag</td>
-                    <td><input type="text" value="MAPCTF{example_flag}" disabled /></td>
-                  </tr>
-                </tbody>
-              </table>
-              <p>
-                <a href="#" class="mctf-cta">Create Challenge</a>
-                <a href="#" class="mctf-cta cta--yellow">Import Pack</a>
-              </p>
-            </div>
+            <template id="admin-challenges-category-options-template">
+              {{ if .Categories }}
+              {{ range .Categories }}
+              <option value="{{ .ID }}">{{ .Name }}</option>
+              {{ end }}
+              {{ else }}
+              <option value="">No categories available</option>
+              {{ end }}
+            </template>
 
             <div class="admin-row">
-              <h4>Challenge Inventory</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Category ID</th>
-                    <th>Points</th>
-                    <th>Bonus</th>
-                    <th>Penalty</th>
-                    <th>Active</th>
-                    <th>Updated</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {{ if .Challenges }}
-                  {{ range .Challenges }}
-                  <tr>
-                    <td>{{ .ID }}</td>
-                    <td>{{ .Title }}</td>
-                    <td>{{ .CategoryID }}</td>
-                    <td>{{ .Points }}</td>
-                    <td>{{ .Bonus }}</td>
-                    <td>{{ .Penalty }}</td>
-                    <td>{{ if .Active }}yes{{ else }}no{{ end }}</td>
-                    <td>{{ .UpdatedAt.Format "2006-01-02 15:04" }}</td>
-                    <td>
-                      <a href="#" class="mctf-cta">Edit</a>
-                      <a href="#" class="mctf-cta cta--yellow">Toggle</a>
-                    </td>
-                  </tr>
-                  {{ end }}
-                  {{ else }}
-                  <tr>
-                    <td colspan="9">No challenges found for this event UUID.</td>
-                  </tr>
-                  {{ end }}
-                </tbody>
-              </table>
+              <div class="admin-settings-list admin-challenge-rows">
+                {{ if .Challenges }}
+                {{ range .Challenges }}
+                {{ $challenge := . }}
+                {{ $challengeSolves := index $.ChallengeSolves .ID }}
+                <div class="admin-setting-row admin-challenge-row">
+                  <div class="admin-challenge-row-layout">
+                    <div class="admin-challenges-editor">
+                      <label>{{ .Title }}</label>
+                      <form class="admin-challenge-form" autocomplete="off">
+                        <div class="admin-challenge-grid">
+                          <div class="admin-form-field">
+                            <label class="admin-field-label" for="challenge-title-{{ .ID }}">Title</label>
+                            <input id="challenge-title-{{ .ID }}" name="title" type="text" value="{{ .Title }}" />
+                          </div>
+
+                          <div class="admin-form-field">
+                            <label class="admin-field-label" for="challenge-description-{{ .ID }}">Description</label>
+                            <textarea id="challenge-description-{{ .ID }}" name="description" rows="3">{{ .Description }}</textarea>
+                          </div>
+
+                          <div class="admin-form-field">
+                            <label class="admin-field-label" for="challenge-category-{{ .ID }}">Category</label>
+                            <select id="challenge-category-{{ .ID }}" name="category_id">
+                              {{ range $.Categories }}
+                              <option value="{{ .ID }}" {{ if eq .ID $challenge.CategoryID }}selected{{ end }}>{{ .Name }}</option>
+                              {{ end }}
+                            </select>
+                          </div>
+
+                          <div class="admin-form-field">
+                            <label class="admin-field-label" for="challenge-country-{{ .ID }}">Country</label>
+                            <select id="challenge-country-{{ .ID }}" name="country" class="admin-country-select" data-current-country="{{ .Country }}">
+                              <option value="" {{ if not .Country }}selected{{ end }}>Select country</option>
+                              {{ if .Country }}
+                              <option value="{{ .Country }}" selected>{{ .Country }}</option>
+                              {{ end }}
+                            </select>
+                          </div>
+
+                          <div class="admin-form-field">
+                            <div class="admin-score-group">
+                              <div class="admin-score-item">
+                                <label class="admin-field-label" for="challenge-points-{{ .ID }}">Points</label>
+                                <input id="challenge-points-{{ .ID }}" name="points" type="number" value="{{ .Points }}" />
+                              </div>
+                              <div class="admin-score-item">
+                                <label class="admin-field-label" for="challenge-bonus-{{ .ID }}">Bonus</label>
+                                <input id="challenge-bonus-{{ .ID }}" name="bonus" type="number" value="{{ .Bonus }}" />
+                              </div>
+                              <div class="admin-score-item">
+                                <label class="admin-field-label" for="challenge-bonus-decay-{{ .ID }}">Bonus Decay</label>
+                                <input id="challenge-bonus-decay-{{ .ID }}" name="bonus_decay" type="number" value="{{ .BonusDecay }}" />
+                              </div>
+                              <div class="admin-score-item">
+                                <label class="admin-field-label" for="challenge-penalty-{{ .ID }}">Penalty</label>
+                                <input id="challenge-penalty-{{ .ID }}" name="penalty" type="number" value="{{ .Penalty }}" />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="admin-form-field">
+                            <label class="admin-field-label" for="challenge-flag-{{ .ID }}">Flag</label>
+                            <input id="challenge-flag-{{ .ID }}" name="flag" type="text" value="{{ .Flag }}" />
+                          </div>
+
+                          <div class="admin-form-field">
+                            <label class="admin-field-label" for="challenge-hint-{{ .ID }}">Hint</label>
+                            <textarea id="challenge-hint-{{ .ID }}" name="hint" rows="2">{{ .Hint }}</textarea>
+                          </div>
+                        </div>
+                        <div class="admin-buttons">
+                          <button type="button" class="mctf-cta" data-action="save-challenge" data-update-url="/{{ $.UUID }}/admin/challenges/{{ .ID }}">Save</button>
+                          <button type="button" class="mctf-cta cta--red" data-action="delete-challenge" data-delete-url="/{{ $.UUID }}/admin/challenges/{{ .ID }}/delete">Delete</button>
+                        </div>
+                      </form>
+                    </div>
+
+                    <div class="admin-challenge-side">
+                      <div class="admin-challenge-status">
+                        <div class="admin-section-toggle radio-inline admin-activity-status-toggle">
+                          <input
+                            type="radio"
+                            id="challenge-status-active-{{ .ID }}"
+                            name="challenge-status-{{ .ID }}"
+                            value="true"
+                            {{ if .Active }}checked{{ end }}
+                          />
+                          <label for="challenge-status-active-{{ .ID }}">Active</label>
+                          <input
+                            type="radio"
+                            id="challenge-status-inactive-{{ .ID }}"
+                            name="challenge-status-{{ .ID }}"
+                            value="false"
+                            {{ if not .Active }}checked{{ end }}
+                          />
+                          <label for="challenge-status-inactive-{{ .ID }}">Inactive</label>
+                        </div>
+                      </div>
+                      <aside class="admin-challenge-activity">
+                        <p class="admin-activity-label">Activity log</p>
+                        <div class="admin-settings-list admin-activity-list">
+                          {{ if $challengeSolves }}
+                          {{ range $challengeSolves }}
+                          <div class="admin-setting-row">
+                            <label>Solve Event</label>
+                            <span>Subject: {{ .Subject }}</span>
+                            <span>Action: {{ .Action }}</span>
+                            <span>Message: {{ if .Message }}{{ .Message }}{{ else }}--{{ end }}</span>
+                            <span>Arguments: {{ if .Arguments }}{{ .Arguments }}{{ else }}--{{ end }}</span>
+                            <span>At: {{ .CreatedAt.Format "2006-01-02 15:04" }}</span>
+                          </div>
+                          {{ end }}
+                          {{ else }}
+                          <span class="admin-activity-empty">No activity for this challenge yet.</span>
+                          {{ end }}
+                        </div>
+                      </aside>
+                    </div>
+                  </div>
+                </div>
+                {{ end }}
+                {{ else }}
+                <div class="admin-setting-row">
+                  <label>No challenges found</label>
+                  <span>No challenges found for this event UUID.</span>
+                </div>
+                {{ end }}
+              </div>
             </div>
           </section>
 
@@ -170,64 +219,28 @@
             </header>
 
             <div class="admin-row">
-              <h4>Create Category (Dummy)</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Field</th>
-                    <th>Input</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Name</td>
-                    <td><input type="text" value="web" disabled /></td>
-                  </tr>
-                  <tr>
-                    <td>Description</td>
-                    <td><input type="text" value="Web exploitation challenges" disabled /></td>
-                  </tr>
-                  <tr>
-                    <td>Logo</td>
-                    <td><input type="text" value="icon-web.svg" disabled /></td>
-                  </tr>
-                </tbody>
-              </table>
-              <p>
-                <a href="#" class="mctf-cta">Create Category</a>
-                <a href="#" class="mctf-cta cta--yellow">Reset Form</a>
-              </p>
-            </div>
-
-            <div class="admin-row">
-              <h4>Category Directory</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {{ if .Categories }}
-                  {{ range .Categories }}
-                  <tr>
-                    <td>{{ .Name }}</td>
-                    <td>{{ .Description }}</td>
-                    <td>
-                      <a href="#" class="mctf-cta">Edit</a>
-                      <a href="#" class="mctf-cta cta--yellow">Hide</a>
-                    </td>
-                  </tr>
-                  {{ end }}
-                  {{ else }}
-                  <tr>
-                    <td colspan="3">No categories found for this event UUID.</td>
-                  </tr>
-                  {{ end }}
-                </tbody>
-              </table>
+              <div class="admin-settings-list">
+                {{ if .Categories }}
+                {{ range .Categories }}
+                <div class="admin-setting-row">
+                  <label>{{ .Name }}</label>
+                  <div style="display: flex; align-items: center; gap: 10px">
+                    <i class="{{ if .Logo }}{{ .Logo }}{{ else }}fa-solid fa-puzzle-piece{{ end }}" aria-hidden="true" style="font-size: 20px"></i>
+                    <span>{{ if .Description }}{{ .Description }}{{ else }}No description{{ end }}</span>
+                  </div>
+                  <div class="admin-buttons" style="margin-top: 4px">
+                    <a href="#" class="mctf-cta">Edit</a>
+                    <a href="#" class="mctf-cta cta--yellow">Hide</a>
+                  </div>
+                </div>
+                {{ end }}
+                {{ else }}
+                <div class="admin-setting-row">
+                  <label>No categories found</label>
+                  <span>No categories found for this event UUID.</span>
+                </div>
+                {{ end }}
+              </div>
             </div>
           </section>
 
