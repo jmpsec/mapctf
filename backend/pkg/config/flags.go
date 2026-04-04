@@ -28,6 +28,8 @@ const (
 	defSQLiteDBFile string = "./mapctf.db"
 	// Default debug HTTP file
 	defDebugHTTPFile string = "debug-http-mapctf.log"
+	// Default seed file for the countries data
+	defCountriesSeedFile string = "config/map-countries-seed.json"
 )
 
 // ServiceFlagParams stores flag values for the each service
@@ -376,6 +378,13 @@ func initMapFlags(params *ServiceFlagParams) []cli.Flag {
 			Usage:       "UUID for the mapctf instance. If empty, a random UUID will be generated at startup",
 			Sources:     cli.EnvVars("MAP_UUID"),
 			Destination: &params.ConfigValues.Map.UUID,
+		},
+		&cli.StringFlag{
+			Name:        "countries",
+			Value:       defCountriesSeedFile,
+			Usage:       "File path to the countries seed JSON data",
+			Sources:     cli.EnvVars("MAP_COUNTRIES"),
+			Destination: &params.ConfigValues.Map.CountriesFile,
 		},
 	}
 }

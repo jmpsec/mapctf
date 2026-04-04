@@ -21,6 +21,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/cache"
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
@@ -218,6 +219,17 @@ func mapCTFService() {
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize logs: %v", err)
 	}
+	// Countries Manager
+	log.Info().Msg("Initialize countries")
+	countriesMgr, err := countries.CreateCountries(db.Conn, flagParams.ConfigValues.Map.UUID)
+	if err != nil {
+		log.Fatal().Msgf("Failed to initialize countries: %v", err)
+	}
+	countryStats, err := countriesMgr.InitializeCountries(flagParams.ConfigValues.Map.CountriesFile)
+	if err != nil {
+		log.Fatal().Msgf("Failed to initialize countries: %v", err)
+	}
+	log.Info().Msgf("Countries initialization stats: Total=%d, Inserted=%d, Existing=%d", countryStats.TotalCountries, countryStats.InsertedCountries, countryStats.ExistingCountries)
 	// Session manager
 	sessionManager := scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
@@ -240,6 +252,7 @@ func mapCTFService() {
 		handlers.WithChallenges(challengesMgr),
 		handlers.WithSettings(settingsMgr),
 		handlers.WithLogs(logsMgr),
+		handlers.WithCountries(countriesMgr),
 		handlers.WithSessions(sessionManager),
 		handlers.WithDebugHTTP(&flagParams.ConfigValues.DebugHTTP),
 	)

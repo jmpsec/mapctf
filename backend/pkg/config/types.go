@@ -97,9 +97,10 @@ type ConfigurationJWT struct {
 
 // ConfigurationMap to hold the map configuration values
 type ConfigurationMap struct {
-	UUID         string `yaml:"uuid"`
-	StaticDir    string `yaml:"staticDir"`
-	TemplatesDir string `yaml:"templatesDir"`
+	UUID          string `yaml:"uuid"`
+	StaticDir     string `yaml:"staticDir"`
+	TemplatesDir  string `yaml:"templatesDir"`
+	CountriesFile string `yaml:"countriesFile"`
 }
 
 // ConfigurationDebugHTTP to hold all HTTP debug configuration values

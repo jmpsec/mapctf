@@ -24,6 +24,7 @@ coverage.out
 
 # Configuration files except Docker env and goreleaser
 *.json
+!map-countries-seed.json
 *.yaml
 !mapctf.example.yaml
 *.yml
