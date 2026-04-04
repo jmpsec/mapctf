@@ -94,6 +94,7 @@ func (s *CountriesManager) InitializeCountries(seedFile string) (*Initialization
 	// Insert countries into the database
 
 	for _, c := range countriesData {
+		stats.TotalCountries++
 		// Check if the country already exists in the database
 		exists, err := s.Exists(c.CountryCode, s.UUID)
 		if err != nil {
@@ -121,7 +122,6 @@ func (s *CountriesManager) InitializeCountries(seedFile string) (*Initialization
 			return stats, fmt.Errorf("failed to create country %s: %w", country.Name, err)
 		}
 		stats.InsertedCountries++
-		stats.TotalCountries++
 	}
 	return stats, nil
 }
@@ -158,6 +158,20 @@ func (s *CountriesManager) Create(country MapCountry) error {
 	country.UUID = s.UUID
 	if err := s.DB.Create(&country).Error; err != nil {
 		return fmt.Errorf("failed to create country: %w", err)
+	}
+	return nil
+}
+
+// SetActiveByID updates the active status of a country by ID for the manager UUID
+func (s *CountriesManager) SetActiveByID(id uint, active bool) error {
+	result := s.DB.Model(&MapCountry{}).
+		Where("id = ? AND uuid = ?", id, s.UUID).
+		Update("active", active)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update country active status: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("country not found")
 	}
 	return nil
 }

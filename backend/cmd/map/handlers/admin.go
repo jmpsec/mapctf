@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
@@ -1244,4 +1245,143 @@ func (h *HandlersMap) AdminAnnouncementsTemplateHandler(w http.ResponseWriter, r
 		log.Err(err).Msg("template error")
 		return
 	}
+}
+
+// AdminCountriesTemplateHandler for admin countries page for GET requests
+func (h *HandlersMap) AdminCountriesTemplateHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	// Prepare template
+	t, err := template.ParseFiles(
+		h.Config.Map.TemplatesDir + "/admin/countries.html")
+	if err != nil {
+		log.Err(err).Msg("error getting admin template")
+		return
+	}
+	// Prepare template data
+	authenticated := h.IsAuthenticated(r.Context())
+	templateData := AdminCountriesTemplateData{
+		Title:         "MapCTF Admin: Countries",
+		UUID:          uuid,
+		Authenticated: authenticated,
+		Admin:         h.IsAdmin(r.Context()),
+		Status:        r.URL.Query().Get("status"),
+		Message:       r.URL.Query().Get("msg"),
+	}
+
+	var countriesList []countries.MapCountry
+	if h.Countries != nil {
+		countriesList, err = h.Countries.GetAllCountries()
+	} else {
+		err = errors.New("countries manager not initialized")
+	}
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading countries")
+	} else {
+		templateData.Countries = countriesList
+	}
+
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("template error")
+		return
+	}
+}
+
+// AdminCountryUpdatePOSTHandler for updating country active status via POST requests
+func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	jsonResponse := wantsJSONResponse(r)
+	redirectBase := "/" + uuid + "/admin/countries"
+	writeError := func(code int, msg string) {
+		if jsonResponse {
+			HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+				Success: false,
+				Status:  "error",
+				Message: msg,
+			})
+			return
+		}
+		http.Redirect(w, r, redirectBase+"?status=error&msg="+url.QueryEscape(msg), http.StatusFound)
+	}
+	writeSuccess := func(msg string) {
+		if jsonResponse {
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+				Success: true,
+				Status:  "ok",
+				Message: msg,
+			})
+			return
+		}
+		http.Redirect(w, r, redirectBase+"?status=ok&msg="+url.QueryEscape(msg), http.StatusFound)
+	}
+
+	countryIDParam := strings.TrimSpace(chi.URLParam(r, "id"))
+	if countryIDParam == "" {
+		writeError(http.StatusBadRequest, "Missing country ID")
+		return
+	}
+	countryID, err := strconv.ParseUint(countryIDParam, 10, 32)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid country ID")
+		return
+	}
+
+	if h.Countries == nil {
+		writeError(http.StatusInternalServerError, "Countries manager is not initialized")
+		return
+	}
+
+	activeValue := "false"
+	if strings.Contains(r.Header.Get(ContentType), JSONApplication) {
+		var req struct {
+			Active bool `json:"active"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(http.StatusBadRequest, "Invalid JSON payload")
+			return
+		}
+		if req.Active {
+			activeValue = "true"
+		}
+	} else {
+		if err := r.ParseForm(); err != nil {
+			writeError(http.StatusBadRequest, "Invalid form payload")
+			return
+		}
+		activeValue = strings.TrimSpace(r.FormValue("active"))
+		if activeValue == "" {
+			activeValue = "false"
+		}
+	}
+
+	active, err := strconv.ParseBool(strings.ToLower(activeValue))
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid active value")
+		return
+	}
+	if err := h.Countries.SetActiveByID(uint(countryID), active); err != nil {
+		log.Err(err).Msg("error updating country active status")
+		writeError(http.StatusInternalServerError, "Failed to update country status")
+		return
+	}
+
+	writeSuccess("Country status updated")
 }

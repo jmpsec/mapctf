@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/jmpsec/mapctf/pkg/challenges"
+	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
@@ -174,6 +175,17 @@ type AdminAnnouncementsTemplateData struct {
 	Status        string
 	Message       string
 	Announcements []logs.Announcement
+}
+
+// AdminCountriesTemplateData for passing data to the admin countries template
+type AdminCountriesTemplateData struct {
+	Title         string
+	UUID          string
+	Authenticated bool
+	Admin         bool
+	Status        string
+	Message       string
+	Countries     []countries.MapCountry
 }
 
 // ErrorTemplateData for passing data to the error template

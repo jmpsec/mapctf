@@ -84,6 +84,8 @@ const (
 	usersPath = "/users"
 	// Challenges path
 	challengesPath = "/challenges"
+	// Countries path
+	countriesPath = "/countries"
 	// Categories path
 	categoriesPath = "/categories"
 	// Teams path
@@ -321,6 +323,8 @@ func mapCTFService() {
 				r.Post(teamsPath, handlersMap.AdminTeamsPOSTHandler)
 				r.Get(activityPath, handlersMap.AdminActivityTemplateHandler)
 				r.Get(announcementsPath, handlersMap.AdminAnnouncementsTemplateHandler)
+				r.Get(countriesPath, handlersMap.AdminCountriesTemplateHandler)
+				r.Post(countriesPath+"/{id}", handlersMap.AdminCountryUpdatePOSTHandler)
 			})
 		})
 	})
