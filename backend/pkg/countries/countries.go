@@ -8,12 +8,19 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// NoChallengeID is a constant to represent no challenge assigned to a country
+	NoChallengeID uint = 0
+)
+
 // MapCountry represents a country in the map with its vector data and styling information
 type MapCountry struct {
 	gorm.Model
 	Name            string `gorm:"index"`
 	CountryCode     string `gorm:"index"`
 	Active          bool
+	Assigned        bool
+	ChallengeID     uint
 	LandPath        string
 	LandClass       string
 	LandStyle       string
@@ -28,7 +35,6 @@ type MapCountry struct {
 type JSONCountry struct {
 	Name            string `json:"Name"`
 	CountryCode     string `json:"CountryCode"`
-	Active          bool   `json:"Active"`
 	LandPath        string `json:"LandPath"`
 	LandClass       string `json:"LandClass"`
 	LandStyle       string `json:"LandStyle"`
@@ -96,7 +102,7 @@ func (s *CountriesManager) InitializeCountries(seedFile string) (*Initialization
 	for _, c := range countriesData {
 		stats.TotalCountries++
 		// Check if the country already exists in the database
-		exists, err := s.Exists(c.CountryCode, s.UUID)
+		exists, err := s.Exists(c.CountryCode)
 		if err != nil {
 			return stats, fmt.Errorf("failed to check if country exists: %w", err)
 		}
@@ -108,7 +114,9 @@ func (s *CountriesManager) InitializeCountries(seedFile string) (*Initialization
 		country := MapCountry{
 			Name:            c.Name,
 			CountryCode:     c.CountryCode,
-			Active:          c.Active,
+			Active:          true,
+			Assigned:        false,
+			ChallengeID:     NoChallengeID,
 			LandPath:        c.LandPath,
 			LandClass:       c.LandClass,
 			LandStyle:       c.LandStyle,
@@ -126,8 +134,8 @@ func (s *CountriesManager) InitializeCountries(seedFile string) (*Initialization
 	return stats, nil
 }
 
-// GetAllCountries to get all countries from the database
-func (s *CountriesManager) GetAllCountries() ([]MapCountry, error) {
+// GetAll to get all countries from the database
+func (s *CountriesManager) GetAll() ([]MapCountry, error) {
 	var countries []MapCountry
 	if err := s.DB.Where("uuid = ?", s.UUID).Find(&countries).Error; err != nil {
 		return nil, fmt.Errorf("failed to get countries: %w", err)
@@ -135,8 +143,8 @@ func (s *CountriesManager) GetAllCountries() ([]MapCountry, error) {
 	return countries, nil
 }
 
-// GetActiveCountries to get all active countries from the database
-func (s *CountriesManager) GetActiveCountries() ([]MapCountry, error) {
+// GetActive to get all active countries from the database
+func (s *CountriesManager) GetActive() ([]MapCountry, error) {
 	var countries []MapCountry
 	if err := s.DB.Where("uuid = ? AND active = ?", s.UUID, true).Find(&countries).Error; err != nil {
 		return nil, fmt.Errorf("failed to get active countries: %w", err)
@@ -144,13 +152,31 @@ func (s *CountriesManager) GetActiveCountries() ([]MapCountry, error) {
 	return countries, nil
 }
 
+// GetAvailable to get all available (active and not assigned) countries from the database
+func (s *CountriesManager) GetAvailable() ([]MapCountry, error) {
+	var countries []MapCountry
+	if err := s.DB.Where("uuid = ? AND active = ? AND assigned = ?", s.UUID, true, false).Find(&countries).Error; err != nil {
+		return nil, fmt.Errorf("failed to get available countries: %w", err)
+	}
+	return countries, nil
+}
+
 // Exists to check if a country exists in the database by its country code and uuid
-func (s *CountriesManager) Exists(countryCode, uuid string) (bool, error) {
+func (s *CountriesManager) Exists(countryCode string) (bool, error) {
 	var count int64
-	if err := s.DB.Model(&MapCountry{}).Where("country_code = ? AND uuid = ?", countryCode, uuid).Count(&count).Error; err != nil {
+	if err := s.DB.Model(&MapCountry{}).Where("country_code = ? AND uuid = ?", countryCode, s.UUID).Count(&count).Error; err != nil {
 		return false, fmt.Errorf("failed to check if country exists: %w", err)
 	}
 	return count > 0, nil
+}
+
+// GetByCode returns one country by country code and manager UUID
+func (s *CountriesManager) GetByCode(countryCode string) (MapCountry, error) {
+	var country MapCountry
+	if err := s.DB.Where("country_code = ? AND uuid = ?", countryCode, s.UUID).First(&country).Error; err != nil {
+		return MapCountry{}, fmt.Errorf("failed to get country by code: %w", err)
+	}
+	return country, nil
 }
 
 // Create to create a new country in the database
@@ -169,6 +195,36 @@ func (s *CountriesManager) SetActiveByID(id uint, active bool) error {
 		Update("active", active)
 	if result.Error != nil {
 		return fmt.Errorf("failed to update country active status: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("country not found")
+	}
+	return nil
+}
+
+// AssignCountryToChallenge assigns a challenge to a country by country code and challenge ID
+func (s *CountriesManager) AssignCountryToChallenge(countryCode string, challengeID uint) error {
+	result := s.DB.Model(&MapCountry{}).
+		Where("country_code = ? AND uuid = ?", countryCode, s.UUID).
+		Update("challenge_id", challengeID).
+		Update("assigned", challengeID != NoChallengeID)
+	if result.Error != nil {
+		return fmt.Errorf("failed to assign challenge to country: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("country not found")
+	}
+	return nil
+}
+
+// ReleaseCountry releases a country from its assigned challenge by country code
+func (s *CountriesManager) ReleaseCountry(countryCode string) error {
+	result := s.DB.Model(&MapCountry{}).
+		Where("country_code = ? AND uuid = ?", countryCode, s.UUID).
+		Update("challenge_id", NoChallengeID).
+		Update("assigned", false)
+	if result.Error != nil {
+		return fmt.Errorf("failed to release country: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
 		return fmt.Errorf("country not found")

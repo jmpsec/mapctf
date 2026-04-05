@@ -78,12 +78,24 @@
               {{ end }}
             </template>
 
+            <template id="admin-challenges-available-country-options-template">
+              <option value="">Select country</option>
+              {{ if .AvailableCountries }}
+              {{ range .AvailableCountries }}
+              <option value="{{ .CountryCode }}">{{ .Name }} ({{ .CountryCode }})</option>
+              {{ end }}
+              {{ else }}
+              <option value="" disabled>No active and available countries</option>
+              {{ end }}
+            </template>
+
             <div class="admin-row">
               <div class="admin-settings-list admin-challenge-rows">
                 {{ if .Challenges }}
                 {{ range .Challenges }}
                 {{ $challenge := . }}
                 {{ $challengeSolves := index $.ChallengeSolves .ID }}
+                {{ $challengeCountryOptions := index $.ChallengeCountryOptions .ID }}
                 <div class="admin-setting-row admin-challenge-row">
                   <div class="admin-challenge-row-layout">
                     <div class="admin-challenges-editor">
@@ -111,9 +123,13 @@
 
                           <div class="admin-form-field">
                             <label class="admin-field-label" for="challenge-country-{{ .ID }}">Country</label>
-                            <select id="challenge-country-{{ .ID }}" name="country" class="admin-country-select" data-current-country="{{ .Country }}">
+                            <select id="challenge-country-{{ .ID }}" name="country" class="admin-country-select">
                               <option value="" {{ if not .Country }}selected{{ end }}>Select country</option>
-                              {{ if .Country }}
+                              {{ if $challengeCountryOptions }}
+                              {{ range $challengeCountryOptions }}
+                              <option value="{{ .CountryCode }}" {{ if eq .CountryCode $challenge.Country }}selected{{ end }}>{{ .Name }} ({{ .CountryCode }})</option>
+                              {{ end }}
+                              {{ else if .Country }}
                               <option value="{{ .Country }}" selected>{{ .Country }}</option>
                               {{ end }}
                             </select>

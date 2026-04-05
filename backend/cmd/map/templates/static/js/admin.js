@@ -1,6 +1,5 @@
 var adminStatusResetTimer = null;
 var adminStatusResetDelayMs = 5000;
-var adminCountriesCache = [];
 
 function setAdminStatus(status, message) {
   var statusEl = document.querySelector(".admin-section--status");
@@ -415,7 +414,12 @@ function initAdminAddChallengeModal() {
       if (!form) {
         return;
       }
-      populateCountrySelects(adminCountriesCache);
+
+      var countrySelect = form.querySelector('select[name="country"]');
+      var availableCountriesTemplate = document.getElementById("admin-challenges-available-country-options-template");
+      if (countrySelect && availableCountriesTemplate) {
+        countrySelect.innerHTML = availableCountriesTemplate.innerHTML;
+      }
 
       var categorySelect = form.querySelector('select[name="category_id"]');
       var categoriesTemplate = document.getElementById("admin-challenges-category-options-template");
@@ -749,151 +753,6 @@ function initAdminAddCategoryModal() {
   });
 }
 
-function extractCountryNamesFromListviewMarkup(markup) {
-  if (!markup || typeof markup !== "string") {
-    return [];
-  }
-
-  var parser = new DOMParser();
-  var doc = parser.parseFromString(markup, "text/html");
-  var rows = doc.querySelectorAll("tr[data-country]");
-  var seen = {};
-  var countries = [];
-
-  rows.forEach(function (row) {
-    var country = (row.getAttribute("data-country") || "").trim();
-    if (!country || seen[country]) {
-      return;
-    }
-    seen[country] = true;
-    countries.push(country);
-  });
-
-  countries.sort(function (a, b) {
-    return a.localeCompare(b);
-  });
-
-  if (countries.length === 0) {
-    var matches = markup.match(/data-country="([^"]+)"/g) || [];
-    matches.forEach(function (entry) {
-      var country = entry.replace('data-country="', "").replace('"', "").trim();
-      if (!country || seen[country]) {
-        return;
-      }
-      seen[country] = true;
-      countries.push(country);
-    });
-    countries.sort(function (a, b) {
-      return a.localeCompare(b);
-    });
-  }
-
-  return countries;
-}
-
-function getFallbackCountries() {
-  return [
-    "Argentina",
-    "Australia",
-    "Brazil",
-    "Canada",
-    "China",
-    "France",
-    "Germany",
-    "India",
-    "Italy",
-    "Japan",
-    "Mexico",
-    "Netherlands",
-    "South Africa",
-    "Spain",
-    "United Kingdom",
-    "United States",
-  ];
-}
-
-function populateCountrySelects(countries) {
-  var countrySelects = document.querySelectorAll('select[name="country"]');
-  if (!countrySelects.length) {
-    return;
-  }
-
-  countrySelects.forEach(function (select) {
-    var previousValue = select.value || "";
-    var currentValue = (select.dataset && select.dataset.currentCountry) ? String(select.dataset.currentCountry).trim() : "";
-    select.innerHTML = "";
-
-    var placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Select country";
-    select.appendChild(placeholder);
-
-    if (countries && countries.length) {
-      countries.forEach(function (country) {
-        var option = document.createElement("option");
-        option.value = country;
-        option.textContent = country;
-        select.appendChild(option);
-      });
-    }
-
-    if (previousValue) {
-      select.value = previousValue;
-    } else if (currentValue) {
-      select.value = currentValue;
-
-      if (select.value !== currentValue) {
-        var matchedOption = null;
-        Array.prototype.slice.call(select.options).forEach(function (opt) {
-          if (String(opt.value || "").toLowerCase() === currentValue.toLowerCase()) {
-            matchedOption = opt;
-          }
-        });
-
-        if (matchedOption) {
-          select.value = matchedOption.value;
-        } else {
-          var existingOption = document.createElement("option");
-          existingOption.value = currentValue;
-          existingOption.textContent = currentValue;
-          select.appendChild(existingOption);
-          select.value = currentValue;
-        }
-      }
-    }
-  });
-}
-
-function initAdminChallengeCountryDropdowns() {
-  var countrySelects = document.querySelectorAll('select[name="country"].admin-country-select');
-  if (!countrySelects.length) {
-    return;
-  }
-
-  fetch("/static/inc/gameboard/listview.html", {
-    credentials: "same-origin",
-    headers: { Accept: "text/html" },
-  })
-    .then(function (response) {
-      if (!response.ok) {
-        throw new Error("Failed to load country list");
-      }
-      return response.text();
-    })
-    .then(function (markup) {
-      var countries = extractCountryNamesFromListviewMarkup(markup);
-      if (!countries.length) {
-        countries = getFallbackCountries();
-      }
-      adminCountriesCache = countries;
-      populateCountrySelects(countries);
-    })
-    .catch(function () {
-      adminCountriesCache = getFallbackCountries();
-      populateCountrySelects(adminCountriesCache);
-    });
-}
-
 function initAdminChallengeSaveButtons() {
   var saveButtons = document.querySelectorAll('[data-action="save-challenge"]');
   if (!saveButtons.length) {
@@ -1066,7 +925,6 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminTeamsSearch();
   initAdminChallengeSaveButtons();
   initAdminChallengeDeleteButtons();
-  initAdminChallengeCountryDropdowns();
   initAdminAddChallengeModal();
   initAdminAddUserModal();
   initAdminAddTeamModal();

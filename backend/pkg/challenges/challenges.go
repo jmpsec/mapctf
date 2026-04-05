@@ -64,6 +64,14 @@ func (m *ChallengeManager) Create(challenge Challenge) error {
 	return nil
 }
 
+// CreateAndReturn challenge and populate its generated fields (ID, timestamps)
+func (m *ChallengeManager) CreateAndReturn(challenge *Challenge) error {
+	if err := m.DB.Create(challenge).Error; err != nil {
+		return fmt.Errorf("Create Challenge %w", err)
+	}
+	return nil
+}
+
 // Update challenge
 func (m *ChallengeManager) Update(challenge Challenge) error {
 	if err := m.DB.Model(&Challenge{}).

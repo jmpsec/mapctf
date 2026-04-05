@@ -143,16 +143,19 @@ type AdminTeamsTemplateData struct {
 
 // AdminChallengesTemplateData for passing data to the admin challenges template
 type AdminChallengesTemplateData struct {
-	Title           string
-	UUID            string
-	Authenticated   bool
-	Admin           bool
-	Status          string
-	Message         string
-	Challenges      []challenges.Challenge
-	Categories      []challenges.Category
-	Solves          []logs.ActivityLog
-	ChallengeSolves map[uint][]logs.ActivityLog
+	Title                   string
+	UUID                    string
+	Authenticated           bool
+	Admin                   bool
+	Status                  string
+	Message                 string
+	Challenges              []challenges.Challenge
+	AllCountries            []countries.MapCountry
+	AvailableCountries      []countries.MapCountry
+	ChallengeCountryOptions map[uint][]countries.MapCountry
+	Categories              []challenges.Category
+	Solves                  []logs.ActivityLog
+	ChallengeSolves         map[uint][]logs.ActivityLog
 }
 
 // AdminActivityTemplateData for passing data to the admin activity template

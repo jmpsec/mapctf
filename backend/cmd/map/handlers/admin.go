@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
@@ -789,8 +790,41 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 			}
 		}
 	}
+	templateData.ChallengeCountryOptions = make(map[uint][]countries.MapCountry)
+	allCountries, err := h.Countries.GetAll()
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading all countries")
+	} else {
+		sort.Slice(allCountries, func(i, j int) bool {
+			return allCountries[i].Name < allCountries[j].Name
+		})
+		templateData.AllCountries = allCountries
+	}
+	availableCountries, err := h.Countries.GetAvailable()
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading available countries")
+	} else {
+		sort.Slice(availableCountries, func(i, j int) bool {
+			return availableCountries[i].Name < availableCountries[j].Name
+		})
+		templateData.AvailableCountries = availableCountries
+	}
+
+	allCountriesByCode := make(map[string]countries.MapCountry, len(templateData.AllCountries))
+	allCountriesByName := make(map[string]countries.MapCountry, len(templateData.AllCountries))
+	for _, c := range templateData.AllCountries {
+		code := strings.ToUpper(strings.TrimSpace(c.CountryCode))
+		allCountriesByCode[code] = c
+		allCountriesByName[strings.ToLower(strings.TrimSpace(c.Name))] = c
+	}
+	availableByCode := make(map[string]countries.MapCountry, len(templateData.AvailableCountries))
+	for _, c := range templateData.AvailableCountries {
+		availableByCode[strings.ToUpper(strings.TrimSpace(c.CountryCode))] = c
+	}
+
 	templateData.ChallengeSolves = make(map[uint][]logs.ActivityLog, len(templateData.Challenges))
-	for _, challenge := range templateData.Challenges {
+	for i := range templateData.Challenges {
+		challenge := templateData.Challenges[i]
 		challengeTitle := strings.ToLower(challenge.Title)
 		challengeID := strconv.Itoa(int(challenge.ID))
 		for _, solve := range templateData.Solves {
@@ -802,6 +836,42 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 				templateData.ChallengeSolves[challenge.ID] = append(templateData.ChallengeSolves[challenge.ID], solve)
 			}
 		}
+
+		normalizedChallengeCountryCode := strings.ToUpper(strings.TrimSpace(challenge.Country))
+		if normalizedChallengeCountryCode != "" {
+			if _, exists := allCountriesByCode[normalizedChallengeCountryCode]; !exists {
+				if countryByName, found := allCountriesByName[strings.ToLower(strings.TrimSpace(challenge.Country))]; found {
+					normalizedChallengeCountryCode = strings.ToUpper(strings.TrimSpace(countryByName.CountryCode))
+					templateData.Challenges[i].Country = normalizedChallengeCountryCode
+				}
+			} else {
+				templateData.Challenges[i].Country = normalizedChallengeCountryCode
+			}
+		}
+
+		options := make([]countries.MapCountry, 0, len(templateData.AvailableCountries)+1)
+		added := make(map[string]bool, len(templateData.AvailableCountries)+1)
+		if normalizedChallengeCountryCode != "" {
+			if currentCountry, ok := allCountriesByCode[normalizedChallengeCountryCode]; ok {
+				options = append(options, currentCountry)
+				added[normalizedChallengeCountryCode] = true
+			}
+		}
+		for _, availableCountry := range templateData.AvailableCountries {
+			code := strings.ToUpper(strings.TrimSpace(availableCountry.CountryCode))
+			if added[code] {
+				continue
+			}
+			options = append(options, availableCountry)
+			added[code] = true
+		}
+		if len(options) == 0 && normalizedChallengeCountryCode != "" {
+			options = append(options, countries.MapCountry{
+				Name:        templateData.Challenges[i].Country,
+				CountryCode: templateData.Challenges[i].Country,
+			})
+		}
+		templateData.ChallengeCountryOptions[challenge.ID] = options
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -853,7 +923,7 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	title := strings.TrimSpace(req.Title)
 	description := strings.TrimSpace(req.Description)
 	categoryIDStr := strings.TrimSpace(req.CategoryID)
-	country := strings.TrimSpace(req.Country)
+	country := strings.ToUpper(strings.TrimSpace(req.Country))
 	activeStr := strings.TrimSpace(req.Active)
 	pointsStr := strings.TrimSpace(req.Points)
 	bonusStr := strings.TrimSpace(req.Bonus)
@@ -865,6 +935,17 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	if title == "" || flag == "" {
 		writeError(http.StatusBadRequest, "Title and flag are required")
 		return
+	}
+	if country != "" {
+		selectedCountry, err := h.Countries.GetByCode(country)
+		if err != nil {
+			writeError(http.StatusBadRequest, "Invalid country code")
+			return
+		}
+		if !selectedCountry.Active || selectedCountry.Assigned {
+			writeError(http.StatusBadRequest, "Country must be active and available")
+			return
+		}
 	}
 	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
 	if err != nil || categoryID == 0 {
@@ -912,10 +993,18 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 		uuid,
 	)
 
-	if err := h.Challenges.Create(challenge); err != nil {
+	if err := h.Challenges.CreateAndReturn(&challenge); err != nil {
 		log.Err(err).Msg("error creating challenge")
 		writeError(http.StatusInternalServerError, "Failed to create challenge")
 		return
+	}
+	if country != "" {
+		if err := h.Countries.AssignCountryToChallenge(country, challenge.ID); err != nil {
+			log.Err(err).Msg("error assigning country to challenge")
+			_ = h.Challenges.Delete(challenge.ID, uuid)
+			writeError(http.StatusInternalServerError, "Failed to assign country to challenge")
+			return
+		}
 	}
 
 	writeSuccess("Challenge created")
@@ -972,7 +1061,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	title := strings.TrimSpace(req.Title)
 	description := strings.TrimSpace(req.Description)
 	categoryIDStr := strings.TrimSpace(req.CategoryID)
-	country := strings.TrimSpace(req.Country)
+	country := strings.ToUpper(strings.TrimSpace(req.Country))
 	activeStr := strings.TrimSpace(req.Active)
 	pointsStr := strings.TrimSpace(req.Points)
 	bonusStr := strings.TrimSpace(req.Bonus)
@@ -1029,6 +1118,18 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 		writeError(http.StatusNotFound, "Challenge not found")
 		return
 	}
+	previousCountry := strings.ToUpper(strings.TrimSpace(challenge.Country))
+	if country != previousCountry && country != "" {
+		selectedCountry, err := h.Countries.GetByCode(country)
+		if err != nil {
+			writeError(http.StatusBadRequest, "Invalid country code")
+			return
+		}
+		if !selectedCountry.Active || selectedCountry.Assigned {
+			writeError(http.StatusBadRequest, "Country must be active and available")
+			return
+		}
+	}
 
 	challenge.Title = title
 	challenge.Description = description
@@ -1046,6 +1147,30 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 		log.Err(err).Msg("error updating challenge")
 		writeError(http.StatusInternalServerError, "Failed to update challenge")
 		return
+	}
+	if previousCountry != country {
+		if previousCountry != "" {
+			exists, err := h.Countries.Exists(previousCountry)
+			if err != nil {
+				log.Err(err).Msg("error checking previous challenge country")
+				writeError(http.StatusInternalServerError, "Failed to update challenge country assignment")
+				return
+			}
+			if exists {
+				if err := h.Countries.ReleaseCountry(previousCountry); err != nil {
+					log.Err(err).Msg("error releasing previous challenge country")
+					writeError(http.StatusInternalServerError, "Failed to update challenge country assignment")
+					return
+				}
+			}
+		}
+		if country != "" {
+			if err := h.Countries.AssignCountryToChallenge(country, challenge.ID); err != nil {
+				log.Err(err).Msg("error assigning updated challenge country")
+				writeError(http.StatusInternalServerError, "Failed to update challenge country assignment")
+				return
+			}
+		}
 	}
 
 	writeSuccess("Challenge updated")
@@ -1086,10 +1211,27 @@ func (h *HandlersMap) AdminChallengeDeletePOSTHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	if _, err := h.Challenges.GetByID(uint(challengeID), uuid); err != nil {
+	challenge, err := h.Challenges.GetByID(uint(challengeID), uuid)
+	if err != nil {
 		log.Err(err).Msg("error loading challenge to delete")
 		writeError(http.StatusNotFound, "Challenge not found")
 		return
+	}
+	country := strings.ToUpper(strings.TrimSpace(challenge.Country))
+	if country != "" {
+		exists, err := h.Countries.Exists(country)
+		if err != nil {
+			log.Err(err).Msg("error checking challenge country before delete")
+			writeError(http.StatusInternalServerError, "Failed to release challenge country")
+			return
+		}
+		if exists {
+			if err := h.Countries.ReleaseCountry(country); err != nil {
+				log.Err(err).Msg("error releasing challenge country before delete")
+				writeError(http.StatusInternalServerError, "Failed to release challenge country")
+				return
+			}
+		}
 	}
 
 	if err := h.Challenges.Delete(uint(challengeID), uuid); err != nil {
@@ -1279,7 +1421,7 @@ func (h *HandlersMap) AdminCountriesTemplateHandler(w http.ResponseWriter, r *ht
 
 	var countriesList []countries.MapCountry
 	if h.Countries != nil {
-		countriesList, err = h.Countries.GetAllCountries()
+		countriesList, err = h.Countries.GetAll()
 	} else {
 		err = errors.New("countries manager not initialized")
 	}
