@@ -160,6 +160,8 @@
                   <tr>
                     <th>Country</th>
                     <th>Country Code</th>
+                    <th>Assigned</th>
+                    <th>Challenge</th>
                     <th>SVG</th>
                     <th>Active</th>
                   </tr>
@@ -167,8 +169,10 @@
                 <tbody>
                   {{ range .Countries }}
                   <tr id="country-row-{{ .CountryCode }}" data-country-code="{{ .CountryCode }}">
-                    <td>{{ .Name }}</td>
+                    <td>{{ with index $.CountryFlag .CountryCode }}{{ . }} {{ end }}{{ .Name }}</td>
                     <td>{{ .CountryCode }}</td>
+                    <td>{{ if .Assigned }}Yes{{ else }}No{{ end }}</td>
+                    <td>{{ if and .Assigned (ne .ChallengeID 0) }}{{ index $.ChallengeName .ChallengeID }}{{ else }}-{{ end }}</td>
                     <td>
                       <div style="display: flex; gap: 8px; align-items: center; min-width: 100px">
                         <svg class="country-shape-preview" width="84" height="48" aria-label="{{ .Name }} map shape preview">

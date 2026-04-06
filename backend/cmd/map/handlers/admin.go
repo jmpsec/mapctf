@@ -26,6 +26,22 @@ type adminActionResponse struct {
 	Message string `json:"message"`
 }
 
+func countryCodeToFlagEmoji(code string) string {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if len(code) != 2 {
+		return ""
+	}
+	first := code[0]
+	second := code[1]
+	if first < 'A' || first > 'Z' || second < 'A' || second > 'Z' {
+		return ""
+	}
+	return string([]rune{
+		rune(first-'A') + 0x1F1E6,
+		rune(second-'A') + 0x1F1E6,
+	})
+}
+
 func wantsJSONResponse(r *http.Request) bool {
 	return strings.Contains(r.Header.Get(ContentType), JSONApplication) ||
 		strings.Contains(r.Header.Get("Accept"), JSONApplication) ||
@@ -767,6 +783,7 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 		Admin:         h.IsAdmin(r.Context()),
 		Status:        r.URL.Query().Get("status"),
 		Message:       r.URL.Query().Get("msg"),
+		CountryFlag:   make(map[string]string),
 	}
 	challenges, err := h.Challenges.GetAll(uuid)
 	if err != nil {
@@ -816,6 +833,7 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 		code := strings.ToUpper(strings.TrimSpace(c.CountryCode))
 		allCountriesByCode[code] = c
 		allCountriesByName[strings.ToLower(strings.TrimSpace(c.Name))] = c
+		templateData.CountryFlag[code] = countryCodeToFlagEmoji(code)
 	}
 	availableByCode := make(map[string]countries.MapCountry, len(templateData.AvailableCountries))
 	for _, c := range templateData.AvailableCountries {
@@ -1417,6 +1435,8 @@ func (h *HandlersMap) AdminCountriesTemplateHandler(w http.ResponseWriter, r *ht
 		Admin:         h.IsAdmin(r.Context()),
 		Status:        r.URL.Query().Get("status"),
 		Message:       r.URL.Query().Get("msg"),
+		ChallengeName: make(map[uint]string),
+		CountryFlag:   make(map[string]string),
 	}
 
 	var countriesList []countries.MapCountry
@@ -1429,6 +1449,17 @@ func (h *HandlersMap) AdminCountriesTemplateHandler(w http.ResponseWriter, r *ht
 		log.Warn().Err(err).Msg("error loading countries")
 	} else {
 		templateData.Countries = countriesList
+		for _, country := range countriesList {
+			templateData.CountryFlag[country.CountryCode] = countryCodeToFlagEmoji(country.CountryCode)
+		}
+	}
+	challengesList, err := h.Challenges.GetAll(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading challenges for countries view")
+	} else {
+		for _, challenge := range challengesList {
+			templateData.ChallengeName[challenge.ID] = challenge.Title
+		}
 	}
 
 	if err := t.Execute(w, templateData); err != nil {

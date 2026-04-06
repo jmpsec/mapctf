@@ -153,6 +153,7 @@ type AdminChallengesTemplateData struct {
 	AllCountries            []countries.MapCountry
 	AvailableCountries      []countries.MapCountry
 	ChallengeCountryOptions map[uint][]countries.MapCountry
+	CountryFlag             map[string]string
 	Categories              []challenges.Category
 	Solves                  []logs.ActivityLog
 	ChallengeSolves         map[uint][]logs.ActivityLog
@@ -189,6 +190,8 @@ type AdminCountriesTemplateData struct {
 	Status        string
 	Message       string
 	Countries     []countries.MapCountry
+	ChallengeName map[uint]string
+	CountryFlag   map[string]string
 }
 
 // ErrorTemplateData for passing data to the error template

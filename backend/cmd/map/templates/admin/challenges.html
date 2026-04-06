@@ -82,7 +82,7 @@
               <option value="">Select country</option>
               {{ if .AvailableCountries }}
               {{ range .AvailableCountries }}
-              <option value="{{ .CountryCode }}">{{ .Name }} ({{ .CountryCode }})</option>
+              <option value="{{ .CountryCode }}">{{ with index $.CountryFlag .CountryCode }}{{ . }} {{ end }}{{ .Name }} ({{ .CountryCode }})</option>
               {{ end }}
               {{ else }}
               <option value="" disabled>No active and available countries</option>
@@ -127,7 +127,7 @@
                               <option value="" {{ if not .Country }}selected{{ end }}>Select country</option>
                               {{ if $challengeCountryOptions }}
                               {{ range $challengeCountryOptions }}
-                              <option value="{{ .CountryCode }}" {{ if eq .CountryCode $challenge.Country }}selected{{ end }}>{{ .Name }} ({{ .CountryCode }})</option>
+                              <option value="{{ .CountryCode }}" {{ if eq .CountryCode $challenge.Country }}selected{{ end }}>{{ with index $.CountryFlag .CountryCode }}{{ . }} {{ end }}{{ .Name }} ({{ .CountryCode }})</option>
                               {{ end }}
                               {{ else if .Country }}
                               <option value="{{ .Country }}" selected>{{ .Country }}</option>
