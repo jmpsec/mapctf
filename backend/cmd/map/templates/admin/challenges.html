@@ -69,12 +69,13 @@
             </header>
 
             <template id="admin-challenges-category-options-template">
+              <option value="">Select category</option>
               {{ if .Categories }}
               {{ range .Categories }}
               <option value="{{ .ID }}">{{ .Name }}</option>
               {{ end }}
               {{ else }}
-              <option value="">No categories available</option>
+              <option value="" disabled>No categories available</option>
               {{ end }}
             </template>
 

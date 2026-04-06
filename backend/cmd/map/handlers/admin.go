@@ -967,7 +967,11 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	}
 	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
 	if err != nil || categoryID == 0 {
-		writeError(http.StatusBadRequest, "Valid category_id is required")
+		writeError(http.StatusBadRequest, "Please select a category")
+		return
+	}
+	if _, err := h.Challenges.GetCategoryByID(uint(categoryID), uuid); err != nil {
+		writeError(http.StatusBadRequest, "Please select a valid category")
 		return
 	}
 	active, err := strconv.ParseBool(activeStr)
