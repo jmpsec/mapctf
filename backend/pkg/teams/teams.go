@@ -2,6 +2,7 @@ package teams
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -82,7 +83,7 @@ func (m *TeamManager) Register(name, logo string, uuid string) (PlatformTeam, er
 	if m.Exists(name, uuid) {
 		return PlatformTeam{}, fmt.Errorf("team %s already exists", name)
 	}
-	if logo == "" {
+	if logo == "" || strings.EqualFold(strings.TrimSpace(logo), "random") {
 		randomLogo, err := m.RandomLogo(uuid)
 		if err != nil {
 			return PlatformTeam{}, fmt.Errorf("failed to get random logo: %w", err)

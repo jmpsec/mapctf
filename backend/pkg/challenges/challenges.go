@@ -179,6 +179,15 @@ func (m *ChallengeManager) GetAll(uuid string) ([]Challenge, error) {
 	return challenges, nil
 }
 
+// GetActive to get all active challenges
+func (m *ChallengeManager) GetActive(uuid string) ([]Challenge, error) {
+	var challenges []Challenge
+	if err := m.DB.Where("uuid = ? AND active = ?", uuid, true).Find(&challenges).Error; err != nil {
+		return challenges, fmt.Errorf("Get Active Challenges by Entity: %w", err)
+	}
+	return challenges, nil
+}
+
 // GetAllCategories to get all categories for a specific entity ID
 func (m *ChallengeManager) GetAllCategories(uuid string) ([]Category, error) {
 	var categories []Category

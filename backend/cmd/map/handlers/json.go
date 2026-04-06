@@ -93,8 +93,8 @@ func (h *HandlersMap) JSONChallengesHandler(w http.ResponseWriter, r *http.Reque
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
 		return
 	}
-	// Get all challenges for the given UUID
-	challenges, err := h.Challenges.GetAll(uuid)
+	// Get all active challenges for the given UUID
+	challenges, err := h.Challenges.GetActive(uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving challenges")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving challenges"})
