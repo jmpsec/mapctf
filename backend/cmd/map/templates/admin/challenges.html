@@ -9,6 +9,62 @@
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="/static/css/mapctf.css" />
+    <style>
+      #mctf-main-content.mctf-admin-main {
+        padding-top: 0;
+      }
+
+      #mctf-main-content .admin-sections {
+        padding-top: 80px;
+      }
+
+      .admin-page-header.admin-page-header--sticky {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #000;
+      }
+
+      @media (max-width: 960px) {
+        #mctf-main-content.mctf-admin-main {
+          padding-top: 80px;
+        }
+
+        #mctf-main-content .admin-sections {
+          padding-top: 0;
+        }
+      }
+
+      #challenge-actions .admin-settings-list {
+        grid-template-columns: 1fr;
+      }
+
+      #challenge-actions .admin-setting-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      #challenge-actions .admin-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-self: flex-start;
+        margin-top: 0;
+      }
+
+      #challenge-actions .admin-buttons .mctf-cta {
+        margin: 0;
+      }
+
+      #challenge-actions .admin-buttons button + button,
+      #challenge-actions .admin-buttons button + a,
+      #challenge-actions .admin-buttons a + button,
+      #challenge-actions .admin-buttons a + a {
+        margin-left: 0;
+      }
+    </style>
   </head>
   <body data-section="admin">
     <div class="mctf-sprite" id="mctf-svg-sprite"></div>
@@ -51,8 +107,10 @@
       </div>
       <div id="mctf-main-content" class="mctf-page mctf-admin-main">
         <div class="admin-sections">
-          <header class="admin-page-header">
-            <h3>Challenges</h3>
+          <header class="admin-page-header admin-page-header--with-action admin-page-header--sticky">
+            <div class="admin-page-header-top">
+              <h3>Challenges</h3>
+            </div>
             <span class="admin-section--status" data-ready-status="ready">
               status_
               <span class="highlighted">ready</span>
@@ -61,9 +119,9 @@
           </header>
 
           <section id="challenges" class="admin-box">
-            <header class="admin-box-header mctf-cf">
+            <header class="admin-box-header mctf-cf" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap">
               <h3>Challenge Management</h3>
-              <div class="admin-section-toggle">
+              <div class="admin-section-toggle" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto">
                 <button class="mctf-cta" data-action="add-new-challenge" data-create-url="/{{ .UUID }}/admin/challenges" type="button">Add Challenge</button>
               </div>
             </header>
@@ -227,6 +285,38 @@
             </div>
           </section>
 
+          <section id="challenge-actions" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Challenge Actions</h3>
+            </header>
+            <div class="admin-row">
+              <div class="admin-settings-list">
+                <div class="admin-setting-row">
+                  <label>Import / Export</label>
+                  <div class="admin-buttons" style="margin-top: 0">
+                    <button class="mctf-cta" data-action="import-all-challenges" data-import-url="/{{ .UUID }}/admin/challenges/import" type="button">Import All</button>
+                    <a class="mctf-cta" href="/{{ .UUID }}/admin/challenges/export">Export All</a>
+                  </div>
+                </div>
+                <div class="admin-setting-row">
+                  <label>Bulk challenge state</label>
+                  <div class="admin-buttons" style="margin-top: 0">
+                    <button class="mctf-cta cta--yellow" data-action="enable-all-challenges" data-enable-all-url="/{{ .UUID }}/admin/challenges/enable-all" type="button">Enable All Challenges</button>
+                    <button class="mctf-cta cta--yellow" data-action="disable-all-challenges" data-disable-all-url="/{{ .UUID }}/admin/challenges/disable-all" type="button">Disable All Challenges</button>
+                  </div>
+                </div>
+                <div class="admin-setting-row">
+                  <label>Bulk delete</label>
+                  <div class="admin-buttons" style="margin-top: 0">
+                    <button class="mctf-cta cta--red" data-action="delete-all-challenges" data-delete-all-url="/{{ .UUID }}/admin/challenges/delete-all" type="button">Delete All Challenges</button>
+                    <button class="mctf-cta cta--red" data-action="delete-all-categories" data-delete-all-categories-url="/{{ .UUID }}/admin/challenges/categories/delete-all" type="button">Delete All Categories</button>
+                  </div>
+                </div>
+                <input id="admin-challenges-import-file" type="file" accept=".json,application/json" hidden />
+              </div>
+            </div>
+          </section>
+
           <section id="categories" class="admin-box">
             <header class="admin-box-header mctf-cf">
               <h3>Challenge Categories</h3>
@@ -246,8 +336,26 @@
                     <span>{{ if .Description }}{{ .Description }}{{ else }}No description{{ end }}</span>
                   </div>
                   <div class="admin-buttons" style="margin-top: 4px">
-                    <a href="#" class="mctf-cta">Edit</a>
-                    <a href="#" class="mctf-cta cta--yellow">Hide</a>
+                    <button
+                      type="button"
+                      class="mctf-cta"
+                      data-action="edit-category"
+                      data-update-url="/{{ $.UUID }}/admin/challenges/categories/{{ .ID }}"
+                      data-category-name="{{ .Name }}"
+                      data-category-description="{{ .Description }}"
+                      data-category-logo="{{ if .Logo }}{{ .Logo }}{{ else }}fa-solid fa-puzzle-piece{{ end }}"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      class="mctf-cta cta--red"
+                      data-action="delete-category"
+                      data-delete-url="/{{ $.UUID }}/admin/challenges/categories/{{ .ID }}/delete"
+                      data-category-name="{{ .Name }}"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
                 {{ end }}

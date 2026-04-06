@@ -26,6 +26,33 @@ type adminActionResponse struct {
 	Message string `json:"message"`
 }
 
+type adminChallengesTransferPayload struct {
+	Version    int                               `json:"version"`
+	ExportedAt string                            `json:"exported_at"`
+	Categories []adminChallengesTransferCategory `json:"categories"`
+	Challenges []adminChallengesTransferItem     `json:"challenges"`
+}
+
+type adminChallengesTransferCategory struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Logo        string `json:"logo"`
+}
+
+type adminChallengesTransferItem struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Category    string `json:"category"`
+	Country     string `json:"country"`
+	Active      bool   `json:"active"`
+	Points      int    `json:"points"`
+	Bonus       int    `json:"bonus"`
+	BonusDecay  int    `json:"bonus_decay"`
+	Penalty     int    `json:"penalty"`
+	Flag        string `json:"flag"`
+	Hint        string `json:"hint"`
+}
+
 func countryCodeToFlagEmoji(code string) string {
 	code = strings.ToUpper(strings.TrimSpace(code))
 	if len(code) != 2 {
@@ -46,6 +73,21 @@ func wantsJSONResponse(r *http.Request) bool {
 	return strings.Contains(r.Header.Get(ContentType), JSONApplication) ||
 		strings.Contains(r.Header.Get("Accept"), JSONApplication) ||
 		strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest")
+}
+
+func (h *HandlersMap) decodeChallengeImportPayload(r *http.Request, payload *adminChallengesTransferPayload) error {
+	if strings.Contains(r.Header.Get(ContentType), "multipart/form-data") {
+		if err := r.ParseMultipartForm(20 << 20); err != nil {
+			return err
+		}
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		return json.NewDecoder(file).Decode(payload)
+	}
+	return json.NewDecoder(r.Body).Decode(payload)
 }
 
 // AdminTemplateHandler for admin dashboard page for GET requests
@@ -755,6 +797,483 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 	writeSuccess("User created")
 }
 
+// AdminChallengesExportHandler exports all categories and challenges as JSON
+func (h *HandlersMap) AdminChallengesExportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	categoriesList, err := h.Challenges.GetAllCategories(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading categories for export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to load categories",
+		})
+		return
+	}
+	challengesList, err := h.Challenges.GetAll(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading challenges for export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to load challenges",
+		})
+		return
+	}
+
+	sort.Slice(categoriesList, func(i, j int) bool {
+		return strings.ToLower(categoriesList[i].Name) < strings.ToLower(categoriesList[j].Name)
+	})
+	sort.Slice(challengesList, func(i, j int) bool {
+		return strings.ToLower(challengesList[i].Title) < strings.ToLower(challengesList[j].Title)
+	})
+
+	categoriesByID := make(map[uint]adminChallengesTransferCategory, len(categoriesList))
+	transferCategories := make([]adminChallengesTransferCategory, 0, len(categoriesList))
+	for _, category := range categoriesList {
+		entry := adminChallengesTransferCategory{
+			Name:        strings.TrimSpace(category.Name),
+			Description: strings.TrimSpace(category.Description),
+			Logo:        strings.TrimSpace(category.Logo),
+		}
+		categoriesByID[category.ID] = entry
+		transferCategories = append(transferCategories, entry)
+	}
+
+	transferChallenges := make([]adminChallengesTransferItem, 0, len(challengesList))
+	for _, challenge := range challengesList {
+		transferItem := adminChallengesTransferItem{
+			Title:       strings.TrimSpace(challenge.Title),
+			Description: strings.TrimSpace(challenge.Description),
+			Country:     strings.ToUpper(strings.TrimSpace(challenge.Country)),
+			Active:      challenge.Active,
+			Points:      challenge.Points,
+			Bonus:       challenge.Bonus,
+			BonusDecay:  challenge.BonusDecay,
+			Penalty:     challenge.Penalty,
+			Flag:        strings.TrimSpace(challenge.Flag),
+			Hint:        strings.TrimSpace(challenge.Hint),
+		}
+		if category, ok := categoriesByID[challenge.CategoryID]; ok {
+			transferItem.Category = category.Name
+		}
+		transferChallenges = append(transferChallenges, transferItem)
+	}
+
+	payload := adminChallengesTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Categories: transferCategories,
+		Challenges: transferChallenges,
+	}
+	output, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		log.Err(err).Msg("error marshaling challenges export JSON")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to generate export JSON",
+		})
+		return
+	}
+
+	fileName := "mapctf-challenges-export-" + time.Now().UTC().Format("20060102-150405") + ".json"
+	w.Header().Set(ContentType, JSONApplicationUTF8)
+	w.Header().Set("Content-Disposition", `attachment; filename="`+fileName+`"`)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(output)
+}
+
+// AdminChallengesImportHandler imports categories and challenges from a JSON payload/file
+func (h *HandlersMap) AdminChallengesImportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	var payload adminChallengesTransferPayload
+	if err := h.decodeChallengeImportPayload(r, &payload); err != nil {
+		log.Err(err).Msg("error parsing challenges import payload")
+		writeError(http.StatusBadRequest, "Invalid import payload")
+		return
+	}
+	if len(payload.Challenges) == 0 {
+		writeError(http.StatusBadRequest, "No challenges found in import payload")
+		return
+	}
+
+	existingCategories, err := h.Challenges.GetAllCategories(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading existing categories for import")
+		writeError(http.StatusInternalServerError, "Failed to load categories")
+		return
+	}
+
+	type categoryRef struct {
+		ID          uint
+		Description string
+		Logo        string
+	}
+	categoriesByName := make(map[string]categoryRef, len(existingCategories))
+	for _, category := range existingCategories {
+		key := strings.ToLower(strings.TrimSpace(category.Name))
+		if key == "" {
+			continue
+		}
+		categoriesByName[key] = categoryRef{
+			ID:          category.ID,
+			Description: strings.TrimSpace(category.Description),
+			Logo:        strings.TrimSpace(category.Logo),
+		}
+	}
+
+	createdCategories := 0
+	ensureCategory := func(name, description, logo string) (uint, error) {
+		key := strings.ToLower(strings.TrimSpace(name))
+		if key == "" {
+			return 0, errors.New("category name is required")
+		}
+		if existing, ok := categoriesByName[key]; ok {
+			return existing.ID, nil
+		}
+
+		newCategory, err := h.Challenges.NewCategory(strings.TrimSpace(name), strings.TrimSpace(description), strings.TrimSpace(logo), uuid)
+		if err != nil {
+			return 0, err
+		}
+		if err := h.Challenges.CreateCategory(newCategory); err != nil {
+			return 0, err
+		}
+		refreshedCategories, err := h.Challenges.GetAllCategories(uuid)
+		if err != nil {
+			return 0, err
+		}
+		var createdID uint
+		for _, refreshed := range refreshedCategories {
+			refreshedKey := strings.ToLower(strings.TrimSpace(refreshed.Name))
+			if refreshedKey != key {
+				continue
+			}
+			createdID = refreshed.ID
+			break
+		}
+		if createdID == 0 {
+			return 0, errors.New("created category not found")
+		}
+		createdCategories++
+		categoriesByName[key] = categoryRef{
+			ID:          createdID,
+			Description: strings.TrimSpace(description),
+			Logo:        strings.TrimSpace(logo),
+		}
+		return createdID, nil
+	}
+
+	for _, category := range payload.Categories {
+		if strings.TrimSpace(category.Name) == "" {
+			continue
+		}
+		if _, err := ensureCategory(category.Name, category.Description, category.Logo); err != nil {
+			log.Err(err).Msg("error creating category from import payload")
+			writeError(http.StatusBadRequest, "Failed to import categories")
+			return
+		}
+	}
+
+	importedChallenges := 0
+	skippedChallenges := 0
+	unassignedCountries := 0
+	for _, item := range payload.Challenges {
+		title := strings.TrimSpace(item.Title)
+		flag := strings.TrimSpace(item.Flag)
+		categoryName := strings.TrimSpace(item.Category)
+		if title == "" || flag == "" || categoryName == "" {
+			skippedChallenges++
+			continue
+		}
+
+		categoryID, err := ensureCategory(categoryName, "", "")
+		if err != nil || categoryID == 0 {
+			log.Err(err).Msg("error resolving category during challenge import")
+			skippedChallenges++
+			continue
+		}
+
+		countryCode := strings.ToUpper(strings.TrimSpace(item.Country))
+		if countryCode != "" {
+			selectedCountry, err := h.Countries.GetByCode(countryCode)
+			if err != nil || !selectedCountry.Active || selectedCountry.Assigned {
+				countryCode = ""
+				unassignedCountries++
+			}
+		}
+
+		challenge := h.Challenges.New(
+			title,
+			strings.TrimSpace(item.Description),
+			categoryID,
+			countryCode,
+			item.Active,
+			item.Points,
+			item.Bonus,
+			item.BonusDecay,
+			item.Penalty,
+			flag,
+			strings.TrimSpace(item.Hint),
+			uuid,
+		)
+
+		if err := h.Challenges.CreateAndReturn(&challenge); err != nil {
+			log.Err(err).Msg("error creating imported challenge")
+			writeError(http.StatusInternalServerError, "Failed to import challenges")
+			return
+		}
+		if countryCode != "" {
+			if err := h.Countries.AssignCountryToChallenge(countryCode, challenge.ID); err != nil {
+				log.Err(err).Msg("error assigning imported challenge country")
+				_ = h.Challenges.Delete(challenge.ID, uuid)
+				writeError(http.StatusInternalServerError, "Failed to assign imported challenge country")
+				return
+			}
+		}
+		importedChallenges++
+	}
+
+	messageParts := []string{
+		"Imported " + strconv.Itoa(importedChallenges) + " challenge(s)",
+		"created " + strconv.Itoa(createdCategories) + " category(ies)",
+	}
+	if skippedChallenges > 0 {
+		messageParts = append(messageParts, "skipped "+strconv.Itoa(skippedChallenges)+" invalid challenge(s)")
+	}
+	if unassignedCountries > 0 {
+		messageParts = append(messageParts, strconv.Itoa(unassignedCountries)+" challenge(s) imported without country assignment")
+	}
+	writeSuccess(strings.Join(messageParts, ", "))
+}
+
+// AdminChallengesDeleteAllPOSTHandler deletes all challenges and releases assigned countries
+func (h *HandlersMap) AdminChallengesDeleteAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	challengesList, err := h.Challenges.GetAll(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading challenges before bulk delete")
+		writeError(http.StatusInternalServerError, "Failed to load challenges")
+		return
+	}
+
+	for _, challenge := range challengesList {
+		countryCode := strings.ToUpper(strings.TrimSpace(challenge.Country))
+		if countryCode == "" {
+			continue
+		}
+		exists, err := h.Countries.Exists(countryCode)
+		if err != nil {
+			log.Err(err).Msg("error checking challenge country before bulk delete")
+			writeError(http.StatusInternalServerError, "Failed to release challenge countries")
+			return
+		}
+		if !exists {
+			continue
+		}
+		if err := h.Countries.ReleaseCountry(countryCode); err != nil {
+			log.Err(err).Msg("error releasing challenge country before bulk delete")
+			writeError(http.StatusInternalServerError, "Failed to release challenge countries")
+			return
+		}
+	}
+
+	deletedCount, err := h.Challenges.DeleteAll(uuid)
+	if err != nil {
+		log.Err(err).Msg("error deleting all challenges")
+		writeError(http.StatusInternalServerError, "Failed to delete all challenges")
+		return
+	}
+
+	writeSuccess("Deleted " + strconv.FormatInt(deletedCount, 10) + " challenge(s)")
+}
+
+// AdminChallengesEnableAllPOSTHandler enables all challenges
+func (h *HandlersMap) AdminChallengesEnableAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	updatedCount, err := h.Challenges.SetAllActive(uuid, true)
+	if err != nil {
+		log.Err(err).Msg("error enabling all challenges")
+		writeError(http.StatusInternalServerError, "Failed to enable all challenges")
+		return
+	}
+
+	writeSuccess("Enabled " + strconv.FormatInt(updatedCount, 10) + " challenge(s)")
+}
+
+// AdminChallengesDisableAllPOSTHandler disables all challenges
+func (h *HandlersMap) AdminChallengesDisableAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	updatedCount, err := h.Challenges.SetAllActive(uuid, false)
+	if err != nil {
+		log.Err(err).Msg("error disabling all challenges")
+		writeError(http.StatusInternalServerError, "Failed to disable all challenges")
+		return
+	}
+
+	writeSuccess("Disabled " + strconv.FormatInt(updatedCount, 10) + " challenge(s)")
+}
+
+// AdminChallengeCategoriesDeleteAllPOSTHandler deletes all categories after ensuring no challenges exist
+func (h *HandlersMap) AdminChallengeCategoriesDeleteAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	challengesList, err := h.Challenges.GetAll(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading challenges before category bulk delete")
+		writeError(http.StatusInternalServerError, "Failed to load challenges")
+		return
+	}
+	if len(challengesList) > 0 {
+		writeError(http.StatusBadRequest, "Delete all challenges before deleting categories")
+		return
+	}
+
+	deletedCount, err := h.Challenges.DeleteAllCategories(uuid)
+	if err != nil {
+		log.Err(err).Msg("error deleting all categories")
+		writeError(http.StatusInternalServerError, "Failed to delete all categories")
+		return
+	}
+
+	writeSuccess("Deleted " + strconv.FormatInt(deletedCount, 10) + " categor(ies)")
+}
+
 // AdminChallengesTemplateHandler for admin challenges page for GET requests
 func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
@@ -1327,6 +1846,141 @@ func (h *HandlersMap) AdminChallengeCategoriesPOSTHandler(w http.ResponseWriter,
 	}
 
 	writeSuccess("Category created")
+}
+
+// AdminChallengeCategoryUpdatePOSTHandler updates an existing challenge category via POST requests
+func (h *HandlersMap) AdminChallengeCategoryUpdatePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.Contains(r.Header.Get(ContentType), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	categoryIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
+	if err != nil || categoryID == 0 {
+		writeError(http.StatusBadRequest, "Invalid category id")
+		return
+	}
+
+	var req AdminCategoryCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin category update JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	name := strings.TrimSpace(req.Name)
+	description := strings.TrimSpace(req.Description)
+	logo := strings.TrimSpace(req.Logo)
+
+	if name == "" {
+		writeError(http.StatusBadRequest, "Category name is required")
+		return
+	}
+
+	category, err := h.Challenges.GetCategoryByID(uint(categoryID), uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading category to update")
+		writeError(http.StatusNotFound, "Category not found")
+		return
+	}
+
+	category.Name = name
+	category.Description = description
+	category.Logo = logo
+
+	if err := h.Challenges.UpdateCategory(category); err != nil {
+		log.Err(err).Msg("error updating category")
+		writeError(http.StatusInternalServerError, "Failed to update category")
+		return
+	}
+
+	writeSuccess("Category updated")
+}
+
+// AdminChallengeCategoryDeletePOSTHandler deletes a category if no challenges are assigned
+func (h *HandlersMap) AdminChallengeCategoryDeletePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	categoryIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
+	if err != nil || categoryID == 0 {
+		writeError(http.StatusBadRequest, "Invalid category id")
+		return
+	}
+
+	if _, err := h.Challenges.GetCategoryByID(uint(categoryID), uuid); err != nil {
+		log.Err(err).Msg("error loading category to delete")
+		writeError(http.StatusNotFound, "Category not found")
+		return
+	}
+
+	hasChallenges, err := h.Challenges.CategoryHasChallenges(uint(categoryID), uuid)
+	if err != nil {
+		log.Err(err).Msg("error checking category usage")
+		writeError(http.StatusInternalServerError, "Failed to verify category usage")
+		return
+	}
+	if hasChallenges {
+		writeError(http.StatusConflict, "Category is assigned to challenges and was not deleted")
+		return
+	}
+
+	if err := h.Challenges.DeleteCategory(uint(categoryID), uuid); err != nil {
+		log.Err(err).Msg("error deleting category")
+		writeError(http.StatusInternalServerError, "Failed to delete category")
+		return
+	}
+
+	writeSuccess("Category deleted")
 }
 
 // AdminActivityTemplateHandler for admin activity page for GET requests

@@ -384,6 +384,325 @@ function createAdminCategory(createURL, payload) {
   });
 }
 
+function updateAdminCategory(updateURL, payload) {
+  return fetch(updateURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify(payload),
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to update category");
+        }
+        return data;
+      });
+  });
+}
+
+function importAdminChallenges(importURL, formData) {
+  return fetch(importURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: formData,
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to import challenges");
+        }
+        return data;
+      });
+  });
+}
+
+function postAdminActionJSON(actionURL) {
+  return fetch(actionURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: "{}",
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Request failed");
+        }
+        return data;
+      });
+  });
+}
+
+function initAdminImportChallengesButton() {
+  var importBtn = document.querySelector('[data-action="import-all-challenges"]');
+  if (!importBtn) {
+    return;
+  }
+
+  var fileInput = document.getElementById("admin-challenges-import-file");
+  if (!fileInput) {
+    showTransientAdminStatus("error", "Import file input not found");
+    return;
+  }
+
+  importBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+    fileInput.click();
+  });
+
+  fileInput.addEventListener("change", function () {
+    var importURL = importBtn.getAttribute("data-import-url");
+    if (!importURL) {
+      showTransientAdminStatus("error", "Missing import URL");
+      fileInput.value = "";
+      return;
+    }
+
+    if (importBtn.dataset.submitting === "true") {
+      fileInput.value = "";
+      return;
+    }
+
+    if (!fileInput.files || !fileInput.files.length) {
+      return;
+    }
+
+    var importFile = fileInput.files[0];
+    var formData = new FormData();
+    formData.append("file", importFile);
+
+    importBtn.dataset.submitting = "true";
+    importBtn.disabled = true;
+
+    importAdminChallenges(importURL, formData)
+      .then(function (data) {
+        showTransientAdminStatus(data.status || "ok", data.message || "Challenges imported");
+        window.location.reload();
+      })
+      .catch(function (error) {
+        showTransientAdminStatus("error", error.message || "Failed to import challenges");
+      })
+      .finally(function () {
+        delete importBtn.dataset.submitting;
+        importBtn.disabled = false;
+        fileInput.value = "";
+      });
+  });
+}
+
+function initAdminChallengeActionsButtons() {
+  var enableAllChallengesBtn = document.querySelector('[data-action="enable-all-challenges"]');
+  if (enableAllChallengesBtn) {
+    enableAllChallengesBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var enableAllURL = enableAllChallengesBtn.getAttribute("data-enable-all-url");
+      if (!enableAllURL) {
+        showTransientAdminStatus("error", "Missing enable all challenges URL");
+        return;
+      }
+      if (enableAllChallengesBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      enableAllChallengesBtn.dataset.submitting = "true";
+      enableAllChallengesBtn.disabled = true;
+
+      postAdminActionJSON(enableAllURL)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || "All challenges enabled");
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to enable all challenges");
+        })
+        .finally(function () {
+          delete enableAllChallengesBtn.dataset.submitting;
+          enableAllChallengesBtn.disabled = false;
+        });
+    });
+  }
+
+  var disableAllChallengesBtn = document.querySelector('[data-action="disable-all-challenges"]');
+  if (disableAllChallengesBtn) {
+    disableAllChallengesBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var disableAllURL = disableAllChallengesBtn.getAttribute("data-disable-all-url");
+      if (!disableAllURL) {
+        showTransientAdminStatus("error", "Missing disable all challenges URL");
+        return;
+      }
+      if (disableAllChallengesBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      disableAllChallengesBtn.dataset.submitting = "true";
+      disableAllChallengesBtn.disabled = true;
+
+      postAdminActionJSON(disableAllURL)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || "All challenges disabled");
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to disable all challenges");
+        })
+        .finally(function () {
+          delete disableAllChallengesBtn.dataset.submitting;
+          disableAllChallengesBtn.disabled = false;
+        });
+    });
+  }
+
+  var deleteAllChallengesBtn = document.querySelector('[data-action="delete-all-challenges"]');
+  if (deleteAllChallengesBtn) {
+    deleteAllChallengesBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var deleteAllURL = deleteAllChallengesBtn.getAttribute("data-delete-all-url");
+      if (!deleteAllURL) {
+        showTransientAdminStatus("error", "Missing delete all challenges URL");
+        return;
+      }
+      if (deleteAllChallengesBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      function runDeleteAllChallenges() {
+        deleteAllChallengesBtn.dataset.submitting = "true";
+        deleteAllChallengesBtn.disabled = true;
+
+        postAdminActionJSON(deleteAllURL)
+          .then(function (data) {
+            showTransientAdminStatus(data.status || "ok", data.message || "All challenges deleted");
+            window.location.reload();
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to delete all challenges");
+          })
+          .finally(function () {
+            delete deleteAllChallengesBtn.dataset.submitting;
+            deleteAllChallengesBtn.disabled = false;
+            if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+              MAP_CTF.modal.close();
+            }
+          });
+      }
+
+      if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+        if (window.confirm("Delete all challenges? This cannot be undone.")) {
+          runDeleteAllChallenges();
+        }
+        return;
+      }
+
+      MAP_CTF.modal.loadPopup("action-delete-all-challenges", function () {
+        var modal = document.getElementById("mctf-modal");
+        if (!modal) {
+          return;
+        }
+
+        var confirmBtn = modal.querySelector(".js-confirm-delete-all-challenges");
+        if (!confirmBtn) {
+          return;
+        }
+        confirmBtn.addEventListener("click", function (confirmEvent) {
+          confirmEvent.preventDefault();
+          runDeleteAllChallenges();
+        });
+      });
+    });
+  }
+
+  var deleteAllCategoriesBtn = document.querySelector('[data-action="delete-all-categories"]');
+  if (!deleteAllCategoriesBtn) {
+    return;
+  }
+
+  deleteAllCategoriesBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+
+    var deleteAllCategoriesURL = deleteAllCategoriesBtn.getAttribute("data-delete-all-categories-url");
+    if (!deleteAllCategoriesURL) {
+      showTransientAdminStatus("error", "Missing delete all categories URL");
+      return;
+    }
+    if (deleteAllCategoriesBtn.dataset.submitting === "true") {
+      return;
+    }
+
+    function runDeleteAllCategories() {
+      deleteAllCategoriesBtn.dataset.submitting = "true";
+      deleteAllCategoriesBtn.disabled = true;
+
+      postAdminActionJSON(deleteAllCategoriesURL)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || "All categories deleted");
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to delete all categories");
+        })
+        .finally(function () {
+          delete deleteAllCategoriesBtn.dataset.submitting;
+          deleteAllCategoriesBtn.disabled = false;
+          if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+            MAP_CTF.modal.close();
+          }
+        });
+    }
+
+    if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+      if (window.confirm("Delete all categories? Challenges must be deleted first.")) {
+        runDeleteAllCategories();
+      }
+      return;
+    }
+
+    MAP_CTF.modal.loadPopup("action-delete-all-categories", function () {
+      var modal = document.getElementById("mctf-modal");
+      if (!modal) {
+        return;
+      }
+
+      var confirmBtn = modal.querySelector(".js-confirm-delete-all-categories");
+      if (!confirmBtn) {
+        return;
+      }
+      confirmBtn.addEventListener("click", function (confirmEvent) {
+        confirmEvent.preventDefault();
+        runDeleteAllCategories();
+      });
+    });
+  });
+}
+
 function initAdminAddChallengeModal() {
   var addChallengeBtn = document.querySelector('[data-action="add-new-challenge"]');
   if (!addChallengeBtn) {
@@ -663,6 +982,111 @@ function initAdminAddTeamModal() {
   });
 }
 
+function openAdminCategoryModal(options) {
+  if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+    showTransientAdminStatus("error", "Modal system unavailable");
+    return;
+  }
+
+  MAP_CTF.modal.loadPopup("add-category", function () {
+    var modal = document.getElementById("mctf-modal");
+    if (!modal) {
+      return;
+    }
+
+    var form = modal.querySelector("#admin-add-category-form");
+    if (!form) {
+      return;
+    }
+
+    var mode = options && options.mode === "edit" ? "edit" : "create";
+    var submitURL = (options && options.url) || "";
+    if (!submitURL) {
+      showTransientAdminStatus("error", "Missing category action URL");
+      return;
+    }
+
+    var modalTitle = modal.querySelector(".modal-title .highlighted");
+    if (modalTitle) {
+      modalTitle.textContent = mode === "edit" ? "Edit Category" : "Add Category";
+    }
+
+    var submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.textContent = mode === "edit" ? "Save Changes" : "Create Category";
+    }
+
+    var initialName = (options && options.name) || "";
+    var initialDescription = (options && options.description) || "";
+    var initialLogo = (options && options.logo) || "fa-solid fa-globe";
+
+    var nameInput = form.querySelector('input[name="name"]');
+    var descriptionInput = form.querySelector('input[name="description"]');
+    var logoSelect = form.querySelector('select[name="logo"]');
+    var logoPreview = form.querySelector("#admin-add-category-logo-preview i");
+
+    if (nameInput) {
+      nameInput.value = initialName;
+      nameInput.focus();
+    }
+    if (descriptionInput) {
+      descriptionInput.value = initialDescription;
+    }
+    if (logoSelect) {
+      logoSelect.value = initialLogo;
+    }
+
+    var updateLogoPreview = function () {
+      if (!logoSelect || !logoPreview) {
+        return;
+      }
+      logoPreview.className = logoSelect.value || "fa-solid fa-globe";
+    };
+    if (logoSelect) {
+      logoSelect.addEventListener("change", updateLogoPreview);
+    }
+    updateLogoPreview();
+
+    form.addEventListener("submit", function (submitEvent) {
+      submitEvent.preventDefault();
+
+      if (form.dataset.submitting === "true") {
+        return;
+      }
+
+      var name = (form.querySelector('input[name="name"]').value || "").trim();
+      var description = (form.querySelector('input[name="description"]').value || "").trim();
+      var logo = (form.querySelector('select[name="logo"]').value || "").trim();
+
+      if (!name) {
+        showTransientAdminStatus("error", "Category name is required");
+        return;
+      }
+
+      form.dataset.submitting = "true";
+
+      var request = mode === "edit" ? updateAdminCategory(submitURL, { name: name, description: description, logo: logo }) : createAdminCategory(submitURL, { name: name, description: description, logo: logo });
+
+      request
+        .then(function (data) {
+          var fallbackMessage = mode === "edit" ? "Category updated" : "Category created";
+          showTransientAdminStatus(data.status || "ok", data.message || fallbackMessage);
+          if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+            MAP_CTF.modal.close();
+          }
+          window.location.reload();
+        })
+        .catch(function (error) {
+          var fallbackError = mode === "edit" ? "Failed to update category" : "Failed to create category";
+          showTransientAdminStatus("error", error.message || fallbackError);
+        })
+        .finally(function () {
+          delete form.dataset.submitting;
+        });
+    });
+  });
+}
+
 function initAdminAddCategoryModal() {
   var addCategoryBtn = document.querySelector('[data-action="add-new-category"]');
   if (!addCategoryBtn) {
@@ -678,76 +1102,114 @@ function initAdminAddCategoryModal() {
       return;
     }
 
-    if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-      showTransientAdminStatus("error", "Modal system unavailable");
-      return;
-    }
+    openAdminCategoryModal({
+      mode: "create",
+      url: createURL,
+      name: "",
+      description: "",
+      logo: "fa-solid fa-globe",
+    });
+  });
+}
 
-    MAP_CTF.modal.loadPopup("add-category", function () {
-      var modal = document.getElementById("mctf-modal");
-      if (!modal) {
+function initAdminEditCategoryButtons() {
+  var editButtons = document.querySelectorAll('[data-action="edit-category"]');
+  if (!editButtons.length) {
+    return;
+  }
+
+  editButtons.forEach(function (editBtn) {
+    editBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var updateURL = editBtn.getAttribute("data-update-url");
+      if (!updateURL) {
+        showTransientAdminStatus("error", "Missing category update URL");
         return;
       }
 
-      var form = modal.querySelector("#admin-add-category-form");
-      if (!form) {
+      openAdminCategoryModal({
+        mode: "edit",
+        url: updateURL,
+        name: editBtn.getAttribute("data-category-name") || "",
+        description: editBtn.getAttribute("data-category-description") || "",
+        logo: editBtn.getAttribute("data-category-logo") || "fa-solid fa-globe",
+      });
+    });
+  });
+}
+
+function initAdminDeleteCategoryButtons() {
+  var deleteButtons = document.querySelectorAll('[data-action="delete-category"]');
+  if (!deleteButtons.length) {
+    return;
+  }
+
+  deleteButtons.forEach(function (deleteBtn) {
+    deleteBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var deleteURL = deleteBtn.getAttribute("data-delete-url");
+      if (!deleteURL) {
+        showTransientAdminStatus("error", "Missing category delete URL");
+        return;
+      }
+      if (deleteBtn.dataset.submitting === "true") {
         return;
       }
 
-      var logoSelect = form.querySelector('select[name="logo"]');
-      var logoPreview = form.querySelector("#admin-add-category-logo-preview i");
-      var updateLogoPreview = function () {
-        if (!logoSelect || !logoPreview) {
-          return;
-        }
-        logoPreview.className = logoSelect.value || "fa-solid fa-globe";
-      };
-      if (logoSelect) {
-        logoSelect.addEventListener("change", updateLogoPreview);
-      }
-      updateLogoPreview();
+      var categoryName = (deleteBtn.getAttribute("data-category-name") || "").trim();
+      function runDelete() {
+        deleteBtn.dataset.submitting = "true";
+        deleteBtn.disabled = true;
 
-      var nameInput = form.querySelector('input[name="name"]');
-      if (nameInput) {
-        nameInput.focus();
-      }
-
-      form.addEventListener("submit", function (submitEvent) {
-        submitEvent.preventDefault();
-
-        if (form.dataset.submitting === "true") {
-          return;
-        }
-
-        var name = (form.querySelector('input[name="name"]').value || "").trim();
-        var description = (form.querySelector('input[name="description"]').value || "").trim();
-        var logo = (form.querySelector('select[name="logo"]').value || "").trim();
-
-        if (!name) {
-          showTransientAdminStatus("error", "Category name is required");
-          return;
-        }
-
-        form.dataset.submitting = "true";
-
-        createAdminCategory(createURL, {
-          name: name,
-          description: description,
-          logo: logo,
-        })
+        postAdminActionJSON(deleteURL)
           .then(function (data) {
-            showTransientAdminStatus(data.status || "ok", data.message || "Category created");
+            var row = deleteBtn.closest(".admin-setting-row");
+            if (row) {
+              row.remove();
+            }
+            showTransientAdminStatus(data.status || "ok", data.message || "Category deleted");
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to delete category");
+          })
+          .finally(function () {
+            delete deleteBtn.dataset.submitting;
+            deleteBtn.disabled = false;
             if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
               MAP_CTF.modal.close();
             }
-            window.location.reload();
-          })
-          .catch(function (error) {
-            showTransientAdminStatus("error", error.message || "Failed to create category");
-          })
-          .finally(function () {
-            delete form.dataset.submitting;
           });
+      }
+
+      if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+        var promptMessage = "Delete category" + (categoryName ? " '" + categoryName + "'" : "") + "?";
+        if (window.confirm(promptMessage)) {
+          runDelete();
+        }
+        return;
+      }
+
+      MAP_CTF.modal.loadPopup("action-delete-category", function () {
+        var modal = document.getElementById("mctf-modal");
+        if (!modal) {
+          return;
+        }
+
+        var titlePlaceholder = modal.querySelector(".js-delete-category-title");
+        if (titlePlaceholder) {
+          titlePlaceholder.textContent = categoryName ? " " + categoryName : "";
+        }
+
+        var confirmBtn = modal.querySelector(".js-confirm-delete-category");
+        if (!confirmBtn) {
+          return;
+        }
+        confirmBtn.addEventListener("click", function (confirmEvent) {
+          confirmEvent.preventDefault();
+          runDelete();
+        });
       });
     });
   });
@@ -923,12 +1385,16 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminAjaxForms();
   initAdminUsersSearch();
   initAdminTeamsSearch();
+  initAdminImportChallengesButton();
+  initAdminChallengeActionsButtons();
   initAdminChallengeSaveButtons();
   initAdminChallengeDeleteButtons();
   initAdminAddChallengeModal();
   initAdminAddUserModal();
   initAdminAddTeamModal();
   initAdminAddCategoryModal();
+  initAdminEditCategoryButtons();
+  initAdminDeleteCategoryButtons();
 });
 
 function saveSettingValue(input) {

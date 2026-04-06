@@ -102,12 +102,63 @@ func (m *ChallengeManager) Delete(id uint, uuid string) error {
 	return nil
 }
 
+// DeleteAll soft-deletes all challenges for a specific UUID
+func (m *ChallengeManager) DeleteAll(uuid string) (int64, error) {
+	result := m.DB.Where("uuid = ?", uuid).Delete(&Challenge{})
+	if result.Error != nil {
+		return 0, fmt.Errorf("Delete All Challenges %w", result.Error)
+	}
+	return result.RowsAffected, nil
+}
+
+// SetAllActive updates active state for all challenges of a specific UUID
+func (m *ChallengeManager) SetAllActive(uuid string, active bool) (int64, error) {
+	result := m.DB.Model(&Challenge{}).Where("uuid = ?", uuid).Update("active", active)
+	if result.Error != nil {
+		return 0, fmt.Errorf("Set All Challenge Active %w", result.Error)
+	}
+	return result.RowsAffected, nil
+}
+
 // Create category
 func (m *ChallengeManager) CreateCategory(category Category) error {
 	if err := m.DB.Create(&category).Error; err != nil {
 		return fmt.Errorf("Create Category: %w", err)
 	}
 	return nil
+}
+
+// UpdateCategory updates an existing category by id and uuid
+func (m *ChallengeManager) UpdateCategory(category Category) error {
+	if err := m.DB.Model(&Category{}).
+		Where("id = ? AND uuid = ?", category.ID, category.UUID).
+		Updates(map[string]interface{}{
+			"name":        category.Name,
+			"description": category.Description,
+			"logo":        category.Logo,
+		}).Error; err != nil {
+		return fmt.Errorf("Update Category: %w", err)
+	}
+	return nil
+}
+
+// DeleteCategory deletes a category by id and uuid
+func (m *ChallengeManager) DeleteCategory(id uint, uuid string) error {
+	if err := m.DB.Where("id = ? AND uuid = ?", id, uuid).Delete(&Category{}).Error; err != nil {
+		return fmt.Errorf("Delete Category: %w", err)
+	}
+	return nil
+}
+
+// CategoryHasChallenges checks whether any challenge references the category
+func (m *ChallengeManager) CategoryHasChallenges(categoryID uint, uuid string) (bool, error) {
+	var count int64
+	if err := m.DB.Model(&Challenge{}).
+		Where("category_id = ? AND uuid = ?", categoryID, uuid).
+		Count(&count).Error; err != nil {
+		return false, fmt.Errorf("Category Has Challenges: %w", err)
+	}
+	return count > 0, nil
 }
 
 // GetByID to get a challenge by id and entity
@@ -135,6 +186,15 @@ func (m *ChallengeManager) GetAllCategories(uuid string) ([]Category, error) {
 		return categories, fmt.Errorf("Get All Categories by Entity: %w", err)
 	}
 	return categories, nil
+}
+
+// DeleteAllCategories soft-deletes all categories for a specific UUID
+func (m *ChallengeManager) DeleteAllCategories(uuid string) (int64, error) {
+	result := m.DB.Where("uuid = ?", uuid).Delete(&Category{})
+	if result.Error != nil {
+		return 0, fmt.Errorf("Delete All Categories %w", result.Error)
+	}
+	return result.RowsAffected, nil
 }
 
 // GetCategoryByID to get a category by id and entity id
