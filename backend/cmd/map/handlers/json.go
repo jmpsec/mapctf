@@ -70,7 +70,7 @@ func (h *HandlersMap) JSONTeamsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Get all teams for the given UUID
-	teams, err := h.Teams.GetAll(uuid)
+	teams, err := h.Teams.GetAll()
 	if err != nil {
 		log.Err(err).Msg("error retrieving teams")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving teams"})

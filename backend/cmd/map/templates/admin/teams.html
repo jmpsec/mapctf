@@ -161,15 +161,48 @@
             {{ else }}
             <section class="admin-box validate-form">
               <header class="admin-box-header">
-                <h3>No Teams Found</h3>
+                <h3>Teams</h3>
               </header>
               <div class="admin-row">
-                <p>No teams found.</p>
+                <label>No teams found.</label>
               </div>
             </section>
             {{ end }}
 
           </div>
+
+          <section id="team-logos" class="admin-box">
+            <header class="admin-box-header">
+              <h3>Team Logos</h3>
+            </header>
+            <div class="admin-row">
+              <div class="admin-settings-list">
+                {{ if .AllLogos }}
+                {{ range .AllLogos }}
+                <div class="admin-setting-row">
+                  <label>{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}</label>
+                  <div class="admin-team-title">
+                    <span class="admin-team-icon">
+                      <svg class="icon icon--badge">
+                        <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
+                      </svg>
+                    </span>
+                    <span>{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}</span>
+                  </div>
+                  <span>Enabled: {{ if .Enabled }}yes{{ else }}no{{ end }}</span>
+                  <span>Custom: {{ if .Custom }}yes{{ else }}no{{ end }}</span>
+                  <span>Protected: {{ if .Protected }}yes{{ else }}no{{ end }}</span>
+                  <span>Used: {{ if .Used }}yes{{ else }}no{{ end }}</span>
+                </div>
+                {{ end }}
+                {{ else }}
+                <div class="admin-setting-row">
+                  <label>No logos found</label>
+                </div>
+                {{ end }}
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>

@@ -27,6 +27,7 @@ RUN mkdir -p /opt/mapctf/config
 COPY backend/cmd/map/templates/ /opt/mapctf/templates
 COPY backend/cmd/map/templates/static/ /opt/mapctf/static
 COPY backend/pkg/countries/map-countries-seed.json /opt/mapctf/config/
+COPY backend/pkg/teams/team-logos-seed.json /opt/mapctf/config/
 
 # Build API server
 RUN go build -o /opt/mapctf/bin/mapctf-map cmd/map/*.go

@@ -27,8 +27,13 @@ func (h *HandlersAPI) TeamsHandler(w http.ResponseWriter, r *http.Request) {
 	if uuid == "" {
 		uuid = users.NoUUID
 	}
+	// Validate UUID
+	if uuid != h.Teams.UUID {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid UUID"})
+		return
+	}
 	// Get teams from database filtered by UUID
-	teams, err := h.Teams.GetAll(uuid)
+	teams, err := h.Teams.GetAll()
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, ApiErrorResponse{Error: "error getting teams"})
 		return

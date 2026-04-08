@@ -98,7 +98,6 @@ func (s *CountriesManager) InitializeCountries(seedFile string) (*Initialization
 		return stats, fmt.Errorf("failed to load countries seed data: %w", err)
 	}
 	// Insert countries into the database
-
 	for _, c := range countriesData {
 		stats.TotalCountries++
 		// Check if the country already exists in the database

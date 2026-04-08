@@ -190,10 +190,16 @@ func mapCTFService() {
 	}
 	// Team Manager
 	log.Info().Msg("Initialize teams")
-	teamsMgr, err := teams.CreateTeams(db.Conn)
+	teamsMgr, err := teams.CreateTeams(db.Conn, flagParams.ConfigValues.Map.UUID)
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize teams: %v", err)
 	}
+	// Team icons
+	logoStats, err := teamsMgr.InitializeLogos(flagParams.ConfigValues.Map.LogosFile)
+	if err != nil {
+		log.Fatal().Msgf("Failed to initialize team icons: %v", err)
+	}
+	log.Info().Msgf("Team icons initialization stats: Total=%d, Inserted=%d, Existing=%d", logoStats.TotalLogos, logoStats.InsertedLogos, logoStats.ExistingLogos)
 	// User Manager
 	log.Info().Msg("Initialize users")
 	usersMgr, err := users.CreateUserManager(db.Conn, &flagParams.ConfigValues.JWT)

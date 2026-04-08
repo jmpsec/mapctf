@@ -66,7 +66,7 @@ func (h *HandlersMap) RegistrationPOSTHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 	// Register team
-	nTeam, err := h.Teams.Register(req.Team, req.Logo, uuid)
+	nTeam, err := h.Teams.Register(req.Team, req.Logo)
 	if err != nil {
 		log.Err(err).Msg("error registering team")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to register team"})

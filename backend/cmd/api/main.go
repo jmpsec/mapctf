@@ -176,7 +176,7 @@ func mapCTFService() {
 	}
 	// Team Manager
 	log.Info().Msg("Initialize teams")
-	teamsMgr, err := teams.CreateTeams(db.Conn)
+	teamsMgr, err := teams.CreateTeams(db.Conn, flagParams.ConfigValues.Map.UUID)
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize teams: %v", err)
 	}

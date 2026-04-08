@@ -69,6 +69,28 @@ func countryCodeToFlagEmoji(code string) string {
 	})
 }
 
+func normalizeLogoSymbolName(logo string) string {
+	logo = strings.TrimSpace(logo)
+	if logo == "" {
+		return "invader"
+	}
+
+	logo = strings.TrimPrefix(logo, "#icon--badge-")
+	logo = strings.TrimPrefix(logo, "icon--badge-")
+
+	if idx := strings.LastIndex(logo, "/"); idx >= 0 && idx < len(logo)-1 {
+		logo = logo[idx+1:]
+	}
+
+	logo = strings.TrimSuffix(logo, ".svg")
+	logo = strings.TrimPrefix(logo, "badge-")
+
+	if logo == "" {
+		return "invader"
+	}
+	return logo
+}
+
 func wantsJSONResponse(r *http.Request) bool {
 	return strings.Contains(r.Header.Get(ContentType), JSONApplication) ||
 		strings.Contains(r.Header.Get("Accept"), JSONApplication) ||
@@ -532,17 +554,32 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		Status:        r.URL.Query().Get("status"),
 		Message:       r.URL.Query().Get("msg"),
 	}
-	teamList, err := h.Teams.GetAll(uuid)
+	teamList, err := h.Teams.GetAll()
 	if err != nil {
 		log.Warn().Err(err).Msg("error loading teams")
 	} else {
+		for i := range teamList {
+			teamList[i].Logo = normalizeLogoSymbolName(teamList[i].Logo)
+		}
 		templateData.Teams = teamList
 	}
 	var logos []teams.TeamLogo
 	if err := h.Teams.DB.Where("enabled = ? AND uuid = ?", true, uuid).Order("name ASC").Find(&logos).Error; err != nil {
 		log.Warn().Err(err).Msg("error loading team logos")
 	} else {
+		for i := range logos {
+			logos[i].Logo = normalizeLogoSymbolName(logos[i].Logo)
+		}
 		templateData.Logos = logos
+	}
+	var allLogos []teams.TeamLogo
+	if err := h.Teams.DB.Where("uuid = ?", uuid).Order("name ASC").Find(&allLogos).Error; err != nil {
+		log.Warn().Err(err).Msg("error loading all team logos")
+	} else {
+		for i := range allLogos {
+			allLogos[i].Logo = normalizeLogoSymbolName(allLogos[i].Logo)
+		}
+		templateData.AllLogos = allLogos
 	}
 	teamUsers, err := h.Users.GetAll(uuid)
 	if err != nil {
@@ -612,7 +649,7 @@ func (h *HandlersMap) AdminTeamsPOSTHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if _, err := h.Teams.Register(name, logo, uuid); err != nil {
+	if _, err := h.Teams.Register(name, logo); err != nil {
 		log.Err(err).Msg("error creating team")
 		writeError(http.StatusBadRequest, err.Error())
 		return
@@ -659,7 +696,7 @@ func (h *HandlersMap) AdminUsersTemplateHandler(w http.ResponseWriter, r *http.R
 	templateData.TeamNames = map[uint]string{
 		0: "None",
 	}
-	teams, err := h.Teams.GetAll(uuid)
+	teams, err := h.Teams.GetAll()
 	if err != nil {
 		log.Warn().Err(err).Msg("error loading teams for users view")
 	} else {

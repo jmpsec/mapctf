@@ -30,6 +30,8 @@ const (
 	defDebugHTTPFile string = "debug-http-mapctf.log"
 	// Default seed file for the countries data
 	defCountriesSeedFile string = "config/map-countries-seed.json"
+	// Default seed file for the teams logos data
+	defLogosSeedFile string = "config/team-logos-seed.json"
 )
 
 // ServiceFlagParams stores flag values for the each service
@@ -385,6 +387,13 @@ func initMapFlags(params *ServiceFlagParams) []cli.Flag {
 			Usage:       "File path to the countries seed JSON data",
 			Sources:     cli.EnvVars("MAP_COUNTRIES"),
 			Destination: &params.ConfigValues.Map.CountriesFile,
+		},
+		&cli.StringFlag{
+			Name:        "logos",
+			Value:       defLogosSeedFile,
+			Usage:       "File path to the team logos seed JSON data",
+			Sources:     cli.EnvVars("MAP_LOGOS"),
+			Destination: &params.ConfigValues.Map.LogosFile,
 		},
 	}
 }

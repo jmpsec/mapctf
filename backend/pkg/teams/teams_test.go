@@ -31,7 +31,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 func TestCreateTeams(t *testing.T) {
 	db := setupTestDB(t)
 
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestCreateTeams(t *testing.T) {
 
 // TestCreateTeamsWithNilDB tests CreateTeams with nil database
 func TestCreateTeamsWithNilDB(t *testing.T) {
-	_, err := CreateTeams(nil)
+	_, err := CreateTeams(nil, testUUID1)
 	if err == nil {
 		t.Error("Expected error when creating TeamManager with nil DB")
 	}
@@ -78,7 +78,7 @@ func TestCreateTeamsAutoMigrateErrors(t *testing.T) {
 	sqlDB.Close()
 
 	// Now try to create teams - should fail on AutoMigrate
-	_, err = CreateTeams(db)
+	_, err = CreateTeams(db, testUUID1)
 	if err == nil {
 		t.Error("Expected error when AutoMigrate fails")
 	}
@@ -192,7 +192,7 @@ func TestTeamScoreStructure(t *testing.T) {
 // TestCreate tests creating a new team
 func TestCreate(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -235,13 +235,13 @@ func TestCreate(t *testing.T) {
 // TestExists tests checking if a team exists
 func TestExists(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
 	// Team should not exist initially
-	if manager.Exists("nonexistent", testUUID1) {
+	if manager.Exists("nonexistent") {
 		t.Error("Expected team 'nonexistent' to not exist")
 	}
 
@@ -259,12 +259,12 @@ func TestExists(t *testing.T) {
 	}
 
 	// Now team should exist
-	if !manager.Exists("Existing Team", testUUID1) {
+	if !manager.Exists("Existing Team") {
 		t.Error("Expected team 'Existing Team' to exist")
 	}
 
 	// Different team name should not exist
-	if manager.Exists("Different Team", testUUID1) {
+	if manager.Exists("Different Team") {
 		t.Error("Expected team 'Different Team' to not exist")
 	}
 }
@@ -272,7 +272,7 @@ func TestExists(t *testing.T) {
 // TestGet tests retrieving a team by name
 func TestGet(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -294,7 +294,7 @@ func TestGet(t *testing.T) {
 	}
 
 	// Get the team
-	retrievedTeam, err := manager.Get("Get Team", testUUID1)
+	retrievedTeam, err := manager.Get("Get Team")
 	if err != nil {
 		t.Fatalf("Failed to get team: %v", err)
 	}
@@ -319,12 +319,12 @@ func TestGet(t *testing.T) {
 // TestGetNonExistent tests getting a non-existent team
 func TestGetNonExistent(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
-	_, err = manager.Get("nonexistent", testUUID1)
+	_, err = manager.Get("nonexistent")
 	if err == nil {
 		t.Error("Expected error when getting non-existent team")
 	}
@@ -333,7 +333,7 @@ func TestGetNonExistent(t *testing.T) {
 // TestGetByUUID tests retrieving a team by name and UUID
 func TestGetByUUID(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -366,7 +366,8 @@ func TestGetByUUID(t *testing.T) {
 	}
 
 	// Get team by entity ID 1
-	retrievedTeam1, err := manager.Get("Multi Team", testUUID1)
+	manager.UUID = testUUID1
+	retrievedTeam1, err := manager.Get("Multi Team")
 	if err != nil {
 		t.Fatalf("Failed to get team by entity ID 1: %v", err)
 	}
@@ -384,7 +385,8 @@ func TestGetByUUID(t *testing.T) {
 	}
 
 	// Get team by entity ID 2
-	retrievedTeam2, err := manager.Get("Multi Team", testUUID2)
+	manager.UUID = testUUID2
+	retrievedTeam2, err := manager.Get("Multi Team")
 	if err != nil {
 		t.Fatalf("Failed to get team by entity ID 2: %v", err)
 	}
@@ -405,12 +407,12 @@ func TestGetByUUID(t *testing.T) {
 // TestGetByUUIDNonExistent tests getting a non-existent team by UUID
 func TestGetByUUIDNonExistent(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
-	_, err = manager.Get("nonexistent", testUUID1)
+	_, err = manager.Get("nonexistent")
 	if err == nil {
 		t.Error("Expected error when getting non-existent team by entity ID")
 	}
@@ -419,13 +421,13 @@ func TestGetByUUIDNonExistent(t *testing.T) {
 // TestExistsGet tests the ExistsGet function
 func TestExistsGet(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
 	// Non-existent team
-	exists, team := manager.ExistsGet("nonexistent", testUUID1)
+	exists, team := manager.ExistsGet("nonexistent")
 	if exists {
 		t.Error("Expected team to not exist")
 	}
@@ -451,7 +453,7 @@ func TestExistsGet(t *testing.T) {
 	}
 
 	// Existing team
-	exists, team = manager.ExistsGet("ExistsGet Team", testUUID1)
+	exists, team = manager.ExistsGet("ExistsGet Team")
 	if !exists {
 		t.Error("Expected team to exist")
 	}
@@ -472,13 +474,13 @@ func TestExistsGet(t *testing.T) {
 // TestExistsGetByUUID tests the ExistsGetByUUID function
 func TestExistsGetByUUID(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
 	// Non-existent team
-	exists, team := manager.ExistsGetByUUID("nonexistent", testUUID1)
+	exists, team := manager.ExistsGetByUUID("nonexistent")
 	if exists {
 		t.Error("Expected team to not exist")
 	}
@@ -515,7 +517,8 @@ func TestExistsGetByUUID(t *testing.T) {
 	}
 
 	// Check entity 1
-	exists, team = manager.ExistsGetByUUID("Entity Team", testUUID1)
+	manager.UUID = testUUID1
+	exists, team = manager.ExistsGetByUUID("Entity Team")
 	if !exists {
 		t.Error("Expected team to exist for entity 1")
 	}
@@ -529,7 +532,8 @@ func TestExistsGetByUUID(t *testing.T) {
 	}
 
 	// Check entity 2
-	exists, team = manager.ExistsGetByUUID("Entity Team", testUUID2)
+	manager.UUID = testUUID2
+	exists, team = manager.ExistsGetByUUID("Entity Team")
 	if !exists {
 		t.Error("Expected team to exist for entity 2")
 	}
@@ -543,7 +547,8 @@ func TestExistsGetByUUID(t *testing.T) {
 	}
 
 	// Check non-existent entity
-	exists, team = manager.ExistsGetByUUID("Entity Team", "non-existent-uuid")
+	manager.UUID = "non-existent-uuid"
+	exists, team = manager.ExistsGetByUUID("Entity Team")
 	if exists {
 		t.Error("Expected team to not exist for entity 999")
 	}
@@ -552,12 +557,12 @@ func TestExistsGetByUUID(t *testing.T) {
 // TestNew tests creating a new team struct without persisting
 func TestNew(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
-	team, err := manager.New("New Team", "new-logo.png", true, true, testUUID1)
+	team, err := manager.New("New Team", "new-logo.png", true, true)
 	if err != nil {
 		t.Fatalf("Failed to create new team: %v", err)
 	}
@@ -590,7 +595,7 @@ func TestNew(t *testing.T) {
 // TestNewExistingTeam tests creating a new team that already exists
 func TestNewExistingTeam(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -609,7 +614,7 @@ func TestNewExistingTeam(t *testing.T) {
 	}
 
 	// Try to create a new team with the same name
-	_, err = manager.New("Existing", "new-logo.png", false, true, testUUID1)
+	_, err = manager.New("Existing", "new-logo.png", false, true)
 	if err == nil {
 		t.Error("Expected error when creating team with existing name")
 	}
@@ -623,12 +628,12 @@ func TestNewExistingTeam(t *testing.T) {
 // TestNewProtectedTeam tests creating a protected team
 func TestNewProtectedTeam(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
-	team, err := manager.New("Protected Team", "protected-logo.png", true, false, testUUID1)
+	team, err := manager.New("Protected Team", "protected-logo.png", true, false)
 	if err != nil {
 		t.Fatalf("Failed to create protected team: %v", err)
 	}
@@ -645,7 +650,7 @@ func TestNewProtectedTeam(t *testing.T) {
 // TestCreateMultipleTeams tests creating multiple teams
 func TestCreateMultipleTeams(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -665,7 +670,8 @@ func TestCreateMultipleTeams(t *testing.T) {
 
 	// Verify all teams exist
 	for _, team := range teams {
-		if !manager.Exists(team.Name, team.UUID) {
+		manager.UUID = team.UUID
+		if !manager.Exists(team.Name) {
 			t.Errorf("Expected team %s to exist", team.Name)
 		}
 	}
@@ -674,7 +680,7 @@ func TestCreateMultipleTeams(t *testing.T) {
 // TestCreateDuplicateTeam tests creating a team with duplicate name
 func TestCreateDuplicateTeam(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -712,18 +718,18 @@ func TestCreateDuplicateTeam(t *testing.T) {
 // TestTeamWorkflow tests a complete team workflow
 func TestTeamWorkflow(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
 
 	// Step 1: Verify team doesn't exist
-	if manager.Exists("Workflow Team", testUUID1) {
+	if manager.Exists("Workflow Team") {
 		t.Error("Team should not exist initially")
 	}
 
 	// Step 2: Create new team struct
-	team, err := manager.New("Workflow Team", "workflow-logo.png", false, true, testUUID1)
+	team, err := manager.New("Workflow Team", "workflow-logo.png", false, true)
 	if err != nil {
 		t.Fatalf("Failed to create new team: %v", err)
 	}
@@ -735,12 +741,12 @@ func TestTeamWorkflow(t *testing.T) {
 	}
 
 	// Step 4: Verify team exists
-	if !manager.Exists("Workflow Team", testUUID1) {
+	if !manager.Exists("Workflow Team") {
 		t.Error("Team should exist after creation")
 	}
 
 	// Step 5: Retrieve team
-	exists, retrievedTeam := manager.ExistsGet("Workflow Team", testUUID1)
+	exists, retrievedTeam := manager.ExistsGet("Workflow Team")
 	if !exists {
 		t.Error("Team should exist")
 	}
@@ -762,7 +768,7 @@ func TestTeamWorkflow(t *testing.T) {
 // TestMultiEntityTeamIsolation tests that teams are properly isolated by entity
 func TestMultiEntityTeamIsolation(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -786,7 +792,8 @@ func TestMultiEntityTeamIsolation(t *testing.T) {
 	}
 
 	// Verify entity isolation
-	entity1Admin, err := manager.Get("Admin Team", testUUID1)
+	manager.UUID = testUUID1
+	entity1Admin, err := manager.Get("Admin Team")
 	if err != nil {
 		t.Fatalf("Failed to get admin team for entity 1: %v", err)
 	}
@@ -797,7 +804,8 @@ func TestMultiEntityTeamIsolation(t *testing.T) {
 		t.Errorf("Expected entity 1 admin points 100, got %d", entity1Admin.Points)
 	}
 
-	entity2Admin, err := manager.Get("Admin Team", testUUID2)
+	manager.UUID = testUUID2
+	entity2Admin, err := manager.Get("Admin Team")
 	if err != nil {
 		t.Fatalf("Failed to get admin team for entity 2: %v", err)
 	}
@@ -817,7 +825,7 @@ func TestMultiEntityTeamIsolation(t *testing.T) {
 // TestTeamWithMembership tests team and membership relationship
 func TestTeamWithMembership(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -836,7 +844,7 @@ func TestTeamWithMembership(t *testing.T) {
 	}
 
 	// Get the created team to get its ID
-	createdTeam, err := manager.Get("Membership Team", testUUID1)
+	createdTeam, err := manager.Get("Membership Team")
 	if err != nil {
 		t.Fatalf("Failed to get team: %v", err)
 	}
@@ -875,7 +883,7 @@ func TestTeamWithMembership(t *testing.T) {
 // TestTeamWithScores tests team and score relationship
 func TestTeamWithScores(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -895,7 +903,7 @@ func TestTeamWithScores(t *testing.T) {
 	}
 
 	// Get the created team to get its ID
-	createdTeam, err := manager.Get("Score Team", testUUID1)
+	createdTeam, err := manager.Get("Score Team")
 	if err != nil {
 		t.Fatalf("Failed to get team: %v", err)
 	}
@@ -931,7 +939,7 @@ func TestTeamWithScores(t *testing.T) {
 // TestTeamPointsTracking tests tracking team points over time
 func TestTeamPointsTracking(t *testing.T) {
 	db := setupTestDB(t)
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		t.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -954,7 +962,7 @@ func TestTeamPointsTracking(t *testing.T) {
 	db.Model(&updatedTeam).Where("name = ?", "Points Team").Update("points", 100)
 
 	// Retrieve and verify
-	retrievedTeam, err := manager.Get("Points Team", testUUID1)
+	retrievedTeam, err := manager.Get("Points Team")
 	if err != nil {
 		t.Fatalf("Failed to get team: %v", err)
 	}
@@ -967,7 +975,7 @@ func TestTeamPointsTracking(t *testing.T) {
 // BenchmarkCreate benchmarks team creation
 func BenchmarkCreate(b *testing.B) {
 	db := setupTestDB(&testing.T{})
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		b.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -987,7 +995,7 @@ func BenchmarkCreate(b *testing.B) {
 // BenchmarkExists benchmarks the Exists check
 func BenchmarkExists(b *testing.B) {
 	db := setupTestDB(&testing.T{})
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		b.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -1003,14 +1011,14 @@ func BenchmarkExists(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = manager.Exists("Bench Team", testUUID1)
+		_ = manager.Exists("Bench Team")
 	}
 }
 
 // BenchmarkGet benchmarks the Get operation
 func BenchmarkGet(b *testing.B) {
 	db := setupTestDB(&testing.T{})
-	manager, err := CreateTeams(db)
+	manager, err := CreateTeams(db, testUUID1)
 	if err != nil {
 		b.Fatalf("Failed to create TeamManager: %v", err)
 	}
@@ -1026,6 +1034,6 @@ func BenchmarkGet(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = manager.Get("Bench Team", testUUID1)
+		_, _ = manager.Get("Bench Team")
 	}
 }

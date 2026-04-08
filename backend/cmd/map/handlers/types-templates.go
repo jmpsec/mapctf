@@ -137,6 +137,7 @@ type AdminTeamsTemplateData struct {
 	Message       string
 	Teams         []teams.PlatformTeam
 	Logos         []teams.TeamLogo
+	AllLogos      []teams.TeamLogo
 	Users         []users.PlatformUser
 	TeamMembers   map[uint][]users.PlatformUser
 }

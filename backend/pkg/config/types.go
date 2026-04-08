@@ -101,6 +101,7 @@ type ConfigurationMap struct {
 	StaticDir     string `yaml:"staticDir"`
 	TemplatesDir  string `yaml:"templatesDir"`
 	CountriesFile string `yaml:"countriesFile"`
+	LogosFile     string `yaml:"logosFile"`
 }
 
 // ConfigurationDebugHTTP to hold all HTTP debug configuration values
