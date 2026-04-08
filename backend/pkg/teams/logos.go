@@ -8,6 +8,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// ImporterCreatorID is the default user ID for created logos during initialization
+	ImporterCreatorID uint = 0
+)
+
 // TeamLogo to hold team logos
 type TeamLogo struct {
 	gorm.Model
@@ -64,6 +69,7 @@ func (s *TeamManager) InitializeLogos(seedFile string) (*InitializationStats, er
 		if err != nil {
 			return stats, fmt.Errorf("failed to create logo object %s: %w", logoData.Name, err)
 		}
+		logo.CreatedBy = ImporterCreatorID
 		if err := s.CreateLogo(logo); err != nil {
 			return stats, fmt.Errorf("failed to create logo %s: %w", logoData.Name, err)
 		}

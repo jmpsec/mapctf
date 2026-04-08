@@ -3709,6 +3709,68 @@ body {
   padding-bottom: 40px;
 }
 
+/* --------------------------------------------
+ * --edit logo modal
+ * -------------------------------------------- */
+.modal--edit-logo .mctf-modal-content {
+  max-width: 620px;
+}
+.edit-logo-modal .edit-logo-header {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+.edit-logo-modal .edit-logo-preview {
+  border: 1px solid #2b3d43;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 132px;
+}
+.edit-logo-modal .edit-logo-preview .icon--badge {
+  width: 92px;
+  height: 92px;
+}
+.edit-logo-modal .edit-logo-summary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.edit-logo-modal .edit-logo-summary input {
+  width: 100%;
+  margin: 0;
+}
+.edit-logo-modal .edit-logo-settings {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #2b3d43;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.edit-logo-modal .edit-logo-settings .admin-section-toggle {
+  margin: 0;
+}
+.edit-logo-modal .action-actionable {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #2b3d43;
+}
+@media (max-width: 700px) {
+  .edit-logo-modal .edit-logo-header {
+    grid-template-columns: 1fr;
+  }
+  .edit-logo-modal .edit-logo-preview {
+    min-height: 112px;
+  }
+  .edit-logo-modal .edit-logo-settings {
+    grid-template-columns: 1fr;
+  }
+}
+
 /**
  * --team
  */
@@ -5156,6 +5218,26 @@ General Admin
 .admin-box .admin-box-header .admin-section-toggle label {
   margin-left: 10px;
 }
+.admin-box .admin-box-header .admin-page-header-actions {
+  float: right;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.admin-box .admin-box-header .admin-page-header-actions .admin-management-search {
+  width: 260px;
+  margin: 0;
+}
+@media (max-width: 820px) {
+  .admin-box .admin-box-header .admin-page-header-actions {
+    float: none;
+    width: 100%;
+    margin-top: 12px;
+  }
+  .admin-box .admin-box-header .admin-page-header-actions .admin-management-search {
+    width: 100%;
+  }
+}
 .admin-box .admin-row {
   padding-left: 20px;
   padding-right: 20px;
@@ -5198,6 +5280,75 @@ General Admin
   width: 100%;
   resize: vertical;
   min-height: 72px;
+}
+
+/* Denser layout for Team Logos section */
+#team-logos .admin-settings-list {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+#team-logos .admin-setting-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 82px;
+  gap: 6px;
+  padding: 8px;
+  font-size: 0.9em;
+  text-align: center;
+}
+#team-logos .admin-logo-grid-item {
+  cursor: pointer;
+  width: 100%;
+  border: 1px solid #2b3d43;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 4px;
+  appearance: none;
+  color: inherit;
+}
+#team-logos .admin-logo-grid-item:focus-visible {
+  outline: 2px solid #ead44d;
+  outline-offset: 1px;
+}
+#team-logos .admin-setting-row .admin-team-icon {
+  width: 32px;
+  height: 32px;
+  transition: transform 160ms ease;
+  transform-origin: center center;
+}
+#team-logos .admin-logo-name {
+  color: #cff8fa;
+  font-size: 0.9em;
+  line-height: 1.2;
+}
+#team-logos .admin-logo-flags {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin-top: 2px;
+}
+#team-logos .admin-logo-flag-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 2px 5px;
+  border: 1px solid #2b3d43;
+  border-radius: 999px;
+  background: rgba(19, 36, 43, 0.6);
+  font-size: 0.68em;
+  line-height: 1;
+  white-space: nowrap;
+}
+#team-logos .admin-logo-flag-chip span {
+  color: #75a5ba;
+  letter-spacing: 0.06em;
+}
+#team-logos .admin-setting-row:hover .admin-team-icon {
+  transform: scale(1.7);
 }
 .admin-box .admin-challenges-subtitle {
   margin: 8px 0 10px;
@@ -5523,6 +5674,29 @@ General Admin
   position: fixed;
   left: 300px;
 }
+.admin-add-team-logo-select {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.admin-add-team-logo-select select {
+  flex: 1 1 auto;
+}
+.admin-add-team-logo-preview-wrap {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #2b3d43;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.18);
+  flex: 0 0 56px;
+}
+.admin-add-team-logo-preview-wrap .icon--badge {
+  width: 40px;
+  height: 40px;
+}
 
 /* --------------------------------------------
  * --mobile only
@@ -5565,5 +5739,14 @@ General Admin
     padding: 8px 0;
     border-top: 1px solid #cff8fa;
     border-bottom: 1px solid #cff8fa;
+  }
+  .admin-add-team-logo-select {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-add-team-logo-preview-wrap {
+    width: 100%;
+    height: 64px;
+    flex: 0 0 auto;
   }
 }

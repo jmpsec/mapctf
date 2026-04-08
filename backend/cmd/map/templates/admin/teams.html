@@ -75,7 +75,7 @@
           <div id="teams" class="admin-teams-compact">
             {{ if .Teams }}
             {{ range .Teams }}
-            <section class="admin-box validate-form" data-team-search="{{ .Name }} {{ .ID }} {{ .Points }} {{ .Logo }}">
+            <section class="admin-box validate-form" data-team-search="{{ .Name }}" data-team-update-url="/{{ $.UUID }}/admin/teams/{{ .ID }}">
               <header class="admin-box-header">
                 <h3 class="admin-team-title">
                   <span class="admin-team-icon">
@@ -83,7 +83,7 @@
                       <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
                     </svg>
                   </span>
-                  <span>{{ .Name }}</span>
+                  <span class="js-team-name-display">{{ .Name }}</span>
                 </h3>
                 <div class="admin-section-toggle radio-inline">
                   <input type="radio" name="team-active-{{ .ID }}" id="team-{{ .ID }}-on" {{ if .Active }}checked{{ end }} disabled />
@@ -93,42 +93,14 @@
                   <label for="team-{{ .ID }}-off">Off</label>
                 </div>
               </header>
+              <input type="hidden" value="{{ .ID }}" data-team-id />
 
               <div class="admin-row">
                 <div class="mctf-column-container">
                   <div class="col col-pad col-1-3">
                     <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Team ID</label>
-                      <input type="text" value="{{ .ID }}" disabled />
-                    </div>
-                  </div>
-                  <div class="col col-pad col-1-3">
-                    <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Points</label>
-                      <input type="text" value="{{ .Points }}" disabled />
-                    </div>
-                  </div>
-                  <div class="col col-pad col-1-3">
-                    <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Last Score</label>
-                      <input type="text" value="{{ if .LastScore.IsZero }}never{{ else }}{{ .LastScore.Format "2006-01-02 15:04" }}{{ end }}" disabled />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="admin-row">
-                <div class="mctf-column-container">
-                  <div class="col col-pad col-1-3">
-                    <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Visible</label>
-                      <input type="text" value="{{ if .Visible }}yes{{ else }}no{{ end }}" disabled />
-                    </div>
-                  </div>
-                  <div class="col col-pad col-1-3">
-                    <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Protected</label>
-                      <input type="text" value="{{ if .Protected }}yes{{ else }}no{{ end }}" disabled />
+                      <label class="admin-label">Team Name</label>
+                      <input type="text" value="{{ .Name }}" data-team-field="name" />
                     </div>
                   </div>
                   <div class="col col-pad col-1-3">
@@ -146,13 +118,60 @@
                       </select>
                     </div>
                   </div>
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Points</label>
+                      <input type="text" value="{{ .Points }}" disabled />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-row">
+                <div class="mctf-column-container">
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Last Score</label>
+                      <input type="text" value="{{ if .LastScore.IsZero }}never{{ else }}{{ .LastScore.Format "2006-01-02 15:04" }}{{ end }}" disabled />
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Logo</label>
+                      {{ $teamLogo := .Logo }}
+                      <select data-team-field="logo">
+                        <option value="random" {{ if eq $teamLogo "random" }}selected{{ end }}>Random (auto)</option>
+                        {{ range $.Logos }}
+                        <option value="{{ .Logo }}" {{ if eq .Logo $teamLogo }}selected{{ end }}>{{ .Name }}</option>
+                        {{ end }}
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text admin-section-toggle radio-inline">
+                      <label class="admin-label">Visible</label>
+                      <input type="radio" name="team-visible-{{ .ID }}" id="team-visible-{{ .ID }}-on" value="true" data-team-field="visible" {{ if .Visible }}checked{{ end }} />
+                      <label for="team-visible-{{ .ID }}-on">On</label>
+                      <input type="radio" name="team-visible-{{ .ID }}" id="team-visible-{{ .ID }}-off" value="false" data-team-field="visible" {{ if not .Visible }}checked{{ end }} />
+                      <label for="team-visible-{{ .ID }}-off">Off</label>
+                    </div>
+                  </div>
+                  <div class="col col-pad col-1-3">
+                    <div class="form-el el--block-label el--full-text admin-section-toggle radio-inline">
+                      <label class="admin-label">Protected</label>
+                      <input type="radio" name="team-protected-{{ .ID }}" id="team-protected-{{ .ID }}-on" value="true" data-team-field="protected" {{ if .Protected }}checked{{ end }} />
+                      <label for="team-protected-{{ .ID }}-on">On</label>
+                      <input type="radio" name="team-protected-{{ .ID }}" id="team-protected-{{ .ID }}-off" value="false" data-team-field="protected" {{ if not .Protected }}checked{{ end }} />
+                      <label for="team-protected-{{ .ID }}-off">Off</label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div class="admin-row">
                 <div class="admin-buttons">
                   <a href="#" class="admin--edit" data-action="edit">EDIT</a>
-                  <button class="mctf-cta cta--red" data-action="delete" type="button">Delete</button>
+                  <button class="mctf-cta cta--red" data-action="delete-team" data-delete-url="/{{ $.UUID }}/admin/teams/{{ .ID }}/delete" data-team-name="{{ .Name }}" type="button">Delete</button>
                   <button class="mctf-cta cta--yellow" data-action="save" type="button">Save</button>
                 </div>
               </div>
@@ -174,26 +193,52 @@
           <section id="team-logos" class="admin-box">
             <header class="admin-box-header">
               <h3>Team Logos</h3>
+              <div class="admin-page-header-actions">
+                <input id="admin-logos-search" class="admin-management-search" type="search" placeholder="Search logos..." autocomplete="off" />
+                <button class="mctf-cta" data-action="add-new-logo" data-create-url="/{{ .UUID }}/admin/teams/logos" type="button">Add Logo</button>
+              </div>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
                 {{ if .AllLogos }}
                 {{ range .AllLogos }}
-                <div class="admin-setting-row">
-                  <label>{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}</label>
-                  <div class="admin-team-title">
-                    <span class="admin-team-icon">
-                      <svg class="icon icon--badge">
-                        <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
-                      </svg>
+                <button
+                  class="admin-setting-row admin-logo-grid-item js-edit-logo"
+                  type="button"
+                  data-logo-search="{{ if .Name }}{{ .Name }}{{ end }} {{ if .Logo }}{{ .Logo }}{{ end }}"
+                  data-logo-id="{{ .ID }}"
+                  data-logo-name="{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}"
+                  data-logo-symbol="{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"
+                  data-logo-file="{{ if .Custom }}/static/svg/icons/custom/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ else }}/static/svg/icons/badges/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ end }}"
+                  data-logo-enabled="{{ if .Enabled }}true{{ else }}false{{ end }}"
+                  data-logo-protected="{{ if .Protected }}true{{ else }}false{{ end }}"
+                  data-logo-update-url="/{{ $.UUID }}/admin/teams/logos/{{ .ID }}"
+                  aria-label="Edit logo {{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}">
+                  <span class="admin-team-icon">
+                    <svg class="icon icon--badge">
+                      <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
+                    </svg>
+                  </span>
+                  <span class="admin-logo-name">{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}</span>
+                  <span class="admin-logo-flags">
+                    <span class="admin-logo-flag-chip" title="Enabled">
+                      {{ if .Enabled }}✅{{ else }}❌{{ end }}
+                      <span>{{ if .Enabled }}Enabled{{ else }}Not Enabled{{ end }}</span>
                     </span>
-                    <span>{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}</span>
-                  </div>
-                  <span>Enabled: {{ if .Enabled }}yes{{ else }}no{{ end }}</span>
-                  <span>Custom: {{ if .Custom }}yes{{ else }}no{{ end }}</span>
-                  <span>Protected: {{ if .Protected }}yes{{ else }}no{{ end }}</span>
-                  <span>Used: {{ if .Used }}yes{{ else }}no{{ end }}</span>
-                </div>
+                    <span class="admin-logo-flag-chip" title="Custom">
+                      {{ if .Custom }}🎨{{ else }}📦{{ end }}
+                      <span>{{ if .Custom }}Custom{{ else }}Not Custom{{ end }}</span>
+                    </span>
+                    <span class="admin-logo-flag-chip" title="Protected">
+                      {{ if .Protected }}🔒{{ else }}🔓{{ end }}
+                      <span>{{ if .Protected }}Protected{{ else }}Not Protected{{ end }}</span>
+                    </span>
+                    <span class="admin-logo-flag-chip" title="Used">
+                      {{ if .Used }}🔥{{ else }}🆓{{ end }}
+                      <span>{{ if .Used }}Used{{ else }}Not Used{{ end }}</span>
+                    </span>
+                  </span>
+                </button>
                 {{ end }}
                 {{ else }}
                 <div class="admin-setting-row">

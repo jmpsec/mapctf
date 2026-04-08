@@ -3,8 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -53,6 +58,16 @@ type adminChallengesTransferItem struct {
 	Hint        string `json:"hint"`
 }
 
+const maxCustomLogoUploadBytes int64 = 512 * 1024
+
+var (
+	logoSlugCleaner     = regexp.MustCompile(`[^a-z0-9-]+`)
+	logoSlugMultiDash   = regexp.MustCompile(`-+`)
+	svgScriptTagPattern = regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
+	svgViewBoxPatternD  = regexp.MustCompile(`(?i)viewBox\s*=\s*"([^"]+)"`)
+	svgViewBoxPatternS  = regexp.MustCompile(`(?i)viewBox\s*=\s*'([^']+)'`)
+)
+
 func countryCodeToFlagEmoji(code string) string {
 	code = strings.ToUpper(strings.TrimSpace(code))
 	if len(code) != 2 {
@@ -89,6 +104,93 @@ func normalizeLogoSymbolName(logo string) string {
 		return "invader"
 	}
 	return logo
+}
+
+func sanitizeLogoSlug(raw string) string {
+	slug := strings.ToLower(strings.TrimSpace(raw))
+	slug = strings.TrimPrefix(slug, "badge-")
+	slug = strings.TrimSuffix(slug, ".svg")
+	slug = strings.ReplaceAll(slug, "_", "-")
+	slug = strings.ReplaceAll(slug, " ", "-")
+	slug = logoSlugCleaner.ReplaceAllString(slug, "-")
+	slug = logoSlugMultiDash.ReplaceAllString(slug, "-")
+	slug = strings.Trim(slug, "-")
+	return slug
+}
+
+func buildUploadedLogoSymbol(slug string, svgData []byte) (string, error) {
+	source := strings.TrimSpace(string(svgData))
+	if source == "" {
+		return "", fmt.Errorf("empty svg file")
+	}
+
+	lower := strings.ToLower(source)
+	start := strings.Index(lower, "<svg")
+	if start < 0 {
+		return "", fmt.Errorf("invalid svg file")
+	}
+
+	openEndOffset := strings.Index(lower[start:], ">")
+	if openEndOffset < 0 {
+		return "", fmt.Errorf("invalid svg file")
+	}
+	openEnd := start + openEndOffset
+	closeIdx := strings.LastIndex(lower, "</svg>")
+	if closeIdx <= openEnd {
+		return "", fmt.Errorf("invalid svg file")
+	}
+
+	openTag := source[start : openEnd+1]
+	inner := strings.TrimSpace(source[openEnd+1 : closeIdx])
+	inner = svgScriptTagPattern.ReplaceAllString(inner, "")
+	if inner == "" {
+		return "", fmt.Errorf("svg has no drawable content")
+	}
+
+	viewBox := "0 0 64 48"
+	if match := svgViewBoxPatternD.FindStringSubmatch(openTag); len(match) > 1 {
+		viewBox = strings.TrimSpace(match[1])
+	} else if match := svgViewBoxPatternS.FindStringSubmatch(openTag); len(match) > 1 {
+		viewBox = strings.TrimSpace(match[1])
+	}
+
+	symbolID := "icon--badge-" + slug
+	return fmt.Sprintf(`<symbol id="%s" viewBox="%s">%s</symbol>`, symbolID, viewBox, inner), nil
+}
+
+func appendSymbolToSprite(spritePath, symbolID, symbolMarkup string) error {
+	data, err := os.ReadFile(spritePath)
+	if err != nil {
+		return fmt.Errorf("failed to read sprite file: %w", err)
+	}
+
+	content := string(data)
+	if strings.Contains(content, `id="`+symbolID+`"`) {
+		return fmt.Errorf("logo symbol already exists")
+	}
+
+	closeIdx := strings.LastIndex(strings.ToLower(content), "</svg>")
+	if closeIdx < 0 {
+		return fmt.Errorf("invalid sprite file")
+	}
+
+	updated := content[:closeIdx] + "\n" + symbolMarkup + "\n" + content[closeIdx:]
+	if err := os.WriteFile(spritePath, []byte(updated), 0o644); err != nil {
+		return fmt.Errorf("failed to update sprite file: %w", err)
+	}
+	return nil
+}
+
+func saveUploadedLogoFile(staticDir, slug string, svgData []byte) error {
+	customDir := filepath.Join(staticDir, "svg", "icons", "custom")
+	if err := os.MkdirAll(customDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create custom logo dir: %w", err)
+	}
+	outputPath := filepath.Join(customDir, "badge-"+slug+".svg")
+	if err := os.WriteFile(outputPath, svgData, 0o644); err != nil {
+		return fmt.Errorf("failed to save custom logo file: %w", err)
+	}
+	return nil
 }
 
 func wantsJSONResponse(r *http.Request) bool {
@@ -610,6 +712,71 @@ func (h *HandlersMap) AdminTeamsPOSTHandler(w http.ResponseWriter, r *http.Reque
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
+		writeError(http.StatusBadRequest, "AJAX requests only")
+		return
+	}
+	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+	var req AdminTeamCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin teams JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+	name := strings.TrimSpace(req.Name)
+	logo := strings.TrimSpace(req.Logo)
+	if name == "" {
+		writeError(http.StatusBadRequest, "Team name is required")
+		return
+	}
+	if _, err := h.Teams.Register(name, logo); err != nil {
+		log.Err(err).Msg("error creating team")
+		writeError(http.StatusBadRequest, err.Error())
+		return
+	}
+	writeSuccess("Team created")
+}
+
+// AdminTeamUpdatePOSTHandler updates editable team settings from admin view
+func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	teamIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	teamID, err := strconv.ParseUint(teamIDStr, 10, 64)
+	if err != nil || teamID == 0 {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Invalid team id",
+		})
+		return
+	}
 
 	writeError := func(code int, msg string) {
 		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
@@ -635,27 +802,440 @@ func (h *HandlersMap) AdminTeamsPOSTHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var req AdminTeamCreateRequest
+	var req AdminTeamUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Err(err).Msg("error parsing admin teams JSON payload")
+		log.Err(err).Msg("error parsing admin team update JSON payload")
 		writeError(http.StatusBadRequest, "Invalid JSON payload")
 		return
 	}
 
 	name := strings.TrimSpace(req.Name)
-	logo := strings.TrimSpace(req.Logo)
 	if name == "" {
 		writeError(http.StatusBadRequest, "Team name is required")
 		return
 	}
-
-	if _, err := h.Teams.Register(name, logo); err != nil {
-		log.Err(err).Msg("error creating team")
-		writeError(http.StatusBadRequest, err.Error())
+	var duplicateCount int64
+	if err := h.Teams.DB.Model(&teams.PlatformTeam{}).
+		Where("uuid = ? AND name = ? AND id <> ?", uuid, name, uint(teamID)).
+		Count(&duplicateCount).Error; err != nil {
+		log.Err(err).Msg("error validating team name uniqueness")
+		writeError(http.StatusInternalServerError, "Failed to validate team name")
+		return
+	}
+	if duplicateCount > 0 {
+		writeError(http.StatusBadRequest, "Team name already exists")
 		return
 	}
 
-	writeSuccess("Team created")
+	logoInput := strings.TrimSpace(req.Logo)
+	logo := normalizeLogoSymbolName(logoInput)
+	if logoInput == "" {
+		writeError(http.StatusBadRequest, "Logo is required")
+		return
+	}
+	if strings.EqualFold(logoInput, "random") {
+		randomLogo, err := h.Teams.RandomLogo()
+		if err != nil {
+			log.Err(err).Msg("error getting random logo for team update")
+			writeError(http.StatusInternalServerError, "Failed to resolve random logo")
+			return
+		}
+		logo = normalizeLogoSymbolName(randomLogo.Logo)
+	}
+
+	visible, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Visible)))
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid visible value")
+		return
+	}
+
+	protected, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Protected)))
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid protected value")
+		return
+	}
+
+	updateResult := h.Teams.DB.Model(&teams.PlatformTeam{}).
+		Where("id = ? AND uuid = ?", uint(teamID), uuid).
+		Updates(map[string]interface{}{
+			"name":      name,
+			"logo":      logo,
+			"visible":   visible,
+			"protected": protected,
+		})
+	if updateResult.Error != nil {
+		log.Err(updateResult.Error).Msg("error updating team")
+		writeError(http.StatusInternalServerError, "Failed to update team")
+		return
+	}
+	if updateResult.RowsAffected == 0 {
+		writeError(http.StatusNotFound, "Team not found")
+		return
+	}
+
+	writeSuccess("Team updated")
+}
+
+// AdminTeamDeletePOSTHandler deletes a team from the admin view
+func (h *HandlersMap) AdminTeamDeletePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	teamIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	teamID64, err := strconv.ParseUint(teamIDStr, 10, 64)
+	if err != nil || teamID64 == 0 {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Invalid team id",
+		})
+		return
+	}
+	teamID := uint(teamID64)
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
+		writeError(http.StatusBadRequest, "AJAX requests only")
+		return
+	}
+
+	var team teams.PlatformTeam
+	if err := h.Teams.DB.Where("id = ? AND uuid = ?", teamID, uuid).First(&team).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			writeError(http.StatusNotFound, "Team not found")
+			return
+		}
+		log.Err(err).Msg("error loading team to delete")
+		writeError(http.StatusInternalServerError, "Failed to load team")
+		return
+	}
+
+	tx := h.Teams.DB.Begin()
+	if tx.Error != nil {
+		log.Err(tx.Error).Msg("error starting team delete transaction")
+		writeError(http.StatusInternalServerError, "Failed to delete team")
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	if err := tx.Model(&users.PlatformUser{}).
+		Where("team_id = ? AND uuid = ?", teamID, uuid).
+		Update("team_id", users.NoTeamID).Error; err != nil {
+		tx.Rollback()
+		log.Err(err).Msg("error clearing users team assignment before delete")
+		writeError(http.StatusInternalServerError, "Failed to delete team")
+		return
+	}
+
+	if err := tx.Where("team_id = ? AND uuid = ?", teamID, uuid).Delete(&teams.TeamMembership{}).Error; err != nil {
+		tx.Rollback()
+		log.Err(err).Msg("error deleting team memberships before delete")
+		writeError(http.StatusInternalServerError, "Failed to delete team")
+		return
+	}
+
+	if err := tx.Where("team_id = ? AND uuid = ?", teamID, uuid).Delete(&teams.TeamScore{}).Error; err != nil {
+		tx.Rollback()
+		log.Err(err).Msg("error deleting team scores before delete")
+		writeError(http.StatusInternalServerError, "Failed to delete team")
+		return
+	}
+
+	deleteResult := tx.Where("id = ? AND uuid = ?", teamID, uuid).Delete(&teams.PlatformTeam{})
+	if deleteResult.Error != nil {
+		tx.Rollback()
+		log.Err(deleteResult.Error).Msg("error deleting team")
+		writeError(http.StatusInternalServerError, "Failed to delete team")
+		return
+	}
+	if deleteResult.RowsAffected == 0 {
+		tx.Rollback()
+		writeError(http.StatusNotFound, "Team not found")
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		log.Err(err).Msg("error committing team delete transaction")
+		writeError(http.StatusInternalServerError, "Failed to delete team")
+		return
+	}
+
+	writeSuccess("Team deleted")
+}
+
+// AdminTeamLogosPOSTHandler for admin team logos creation via POST requests
+func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
+		writeError(http.StatusBadRequest, "AJAX requests only")
+		return
+	}
+	contentType := strings.ToLower(r.Header.Get(ContentType))
+	isJSON := strings.Contains(contentType, JSONApplication)
+	isMultipart := strings.Contains(contentType, "multipart/form-data")
+	if !isJSON && !isMultipart {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json or multipart/form-data")
+		return
+	}
+
+	var (
+		name               string
+		rawLogo            string
+		uploadedLogoSlug   string
+		uploadedLogoData   []byte
+		uploadedLogoSymbol string
+	)
+
+	if isMultipart {
+		if err := r.ParseMultipartForm(maxCustomLogoUploadBytes * 2); err != nil {
+			writeError(http.StatusBadRequest, "Invalid multipart form payload")
+			return
+		}
+		name = strings.TrimSpace(r.FormValue("name"))
+		rawLogo = strings.TrimSpace(r.FormValue("logo"))
+
+		file, fileHeader, err := r.FormFile("logo_file")
+		if err == nil && file != nil {
+			defer file.Close()
+
+			svgData, readErr := io.ReadAll(io.LimitReader(file, maxCustomLogoUploadBytes+1))
+			if readErr != nil {
+				writeError(http.StatusBadRequest, "Failed to read uploaded logo file")
+				return
+			}
+			if int64(len(svgData)) > maxCustomLogoUploadBytes {
+				writeError(http.StatusBadRequest, "Uploaded logo file is too large")
+				return
+			}
+
+			slugInput := strings.TrimSpace(r.FormValue("logo_slug"))
+			if slugInput == "" && fileHeader != nil {
+				slugInput = strings.TrimSuffix(filepath.Base(fileHeader.Filename), filepath.Ext(fileHeader.Filename))
+			}
+			slug := sanitizeLogoSlug(slugInput)
+			if slug == "" {
+				writeError(http.StatusBadRequest, "Invalid logo slug")
+				return
+			}
+
+			symbolMarkup, symbolErr := buildUploadedLogoSymbol(slug, svgData)
+			if symbolErr != nil {
+				writeError(http.StatusBadRequest, "Invalid SVG file")
+				return
+			}
+
+			uploadedLogoSlug = slug
+			uploadedLogoData = svgData
+			uploadedLogoSymbol = symbolMarkup
+			rawLogo = slug
+		} else if err != nil && !errors.Is(err, http.ErrMissingFile) {
+			writeError(http.StatusBadRequest, "Invalid uploaded logo file")
+			return
+		}
+	} else {
+		var req AdminLogoCreateRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			log.Err(err).Msg("error parsing admin logos JSON payload")
+			writeError(http.StatusBadRequest, "Invalid JSON payload")
+			return
+		}
+		name = strings.TrimSpace(req.Name)
+		rawLogo = strings.TrimSpace(req.Logo)
+	}
+
+	if name == "" {
+		writeError(http.StatusBadRequest, "Logo name is required")
+		return
+	}
+	if strings.EqualFold(rawLogo, "random") {
+		writeError(http.StatusBadRequest, "Random is not a valid logo for logo creation")
+		return
+	}
+	logo := normalizeLogoSymbolName(rawLogo)
+	if rawLogo == "" || logo == "" {
+		writeError(http.StatusBadRequest, "Logo symbol is required")
+		return
+	}
+	if h.Teams.ExistsLogo(name) {
+		writeError(http.StatusBadRequest, "Logo already exists")
+		return
+	}
+	if uploadedLogoSlug != "" {
+		spritePath := filepath.Join(h.Config.Map.StaticDir, "svg", "icons", "icons.svg")
+		if err := appendSymbolToSprite(spritePath, "icon--badge-"+uploadedLogoSlug, uploadedLogoSymbol); err != nil {
+			if strings.Contains(strings.ToLower(err.Error()), "already exists") {
+				writeError(http.StatusBadRequest, "Logo symbol already exists")
+				return
+			}
+			log.Err(err).Msg("error appending custom logo symbol")
+			writeError(http.StatusInternalServerError, "Failed to register custom logo")
+			return
+		}
+		if err := saveUploadedLogoFile(h.Config.Map.StaticDir, uploadedLogoSlug, uploadedLogoData); err != nil {
+			log.Err(err).Msg("error saving custom logo file")
+			writeError(http.StatusInternalServerError, "Failed to store custom logo file")
+			return
+		}
+	}
+
+	newLogo, err := h.Teams.NewLogo(name, logo, true, true, 0)
+	if err != nil {
+		log.Err(err).Msg("error creating logo object")
+		writeError(http.StatusBadRequest, "Failed to create logo")
+		return
+	}
+	if err := h.Teams.CreateLogo(newLogo); err != nil {
+		log.Err(err).Msg("error saving logo")
+		writeError(http.StatusInternalServerError, "Failed to create logo")
+		return
+	}
+
+	writeSuccess("Logo created")
+}
+
+// AdminTeamLogoUpdatePOSTHandler updates editable team logo settings from admin view
+func (h *HandlersMap) AdminTeamLogoUpdatePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	logoIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	logoID, err := strconv.ParseUint(logoIDStr, 10, 64)
+	if err != nil || logoID == 0 {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Invalid logo id",
+		})
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
+		writeError(http.StatusBadRequest, "AJAX requests only")
+		return
+	}
+	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	var req AdminLogoUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin logo update JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		writeError(http.StatusBadRequest, "Logo name is required")
+		return
+	}
+
+	enabled, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Enabled)))
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid enabled value")
+		return
+	}
+
+	protected, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Protected)))
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid protected value")
+		return
+	}
+
+	updateResult := h.Teams.DB.Model(&teams.TeamLogo{}).
+		Where("id = ? AND uuid = ?", uint(logoID), uuid).
+		Updates(map[string]interface{}{
+			"name":      name,
+			"enabled":   enabled,
+			"protected": protected,
+		})
+	if updateResult.Error != nil {
+		log.Err(updateResult.Error).Msg("error updating logo")
+		writeError(http.StatusInternalServerError, "Failed to update logo")
+		return
+	}
+	if updateResult.RowsAffected == 0 {
+		writeError(http.StatusNotFound, "Logo not found")
+		return
+	}
+
+	writeSuccess("Logo updated")
 }
 
 // AdminUsersTemplateHandler for admin users page for GET requests
@@ -2133,7 +2713,6 @@ func (h *HandlersMap) AdminCountriesTemplateHandler(w http.ResponseWriter, r *ht
 		ChallengeName: make(map[uint]string),
 		CountryFlag:   make(map[string]string),
 	}
-
 	var countriesList []countries.MapCountry
 	if h.Countries != nil {
 		countriesList, err = h.Countries.GetAll()
@@ -2156,7 +2735,6 @@ func (h *HandlersMap) AdminCountriesTemplateHandler(w http.ResponseWriter, r *ht
 			templateData.ChallengeName[challenge.ID] = challenge.Title
 		}
 	}
-
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
 		return
@@ -2175,7 +2753,6 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-
 	jsonResponse := wantsJSONResponse(r)
 	redirectBase := "/" + uuid + "/admin/countries"
 	writeError := func(code int, msg string) {
@@ -2200,7 +2777,6 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 		}
 		http.Redirect(w, r, redirectBase+"?status=ok&msg="+url.QueryEscape(msg), http.StatusFound)
 	}
-
 	countryIDParam := strings.TrimSpace(chi.URLParam(r, "id"))
 	if countryIDParam == "" {
 		writeError(http.StatusBadRequest, "Missing country ID")
@@ -2211,12 +2787,10 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 		writeError(http.StatusBadRequest, "Invalid country ID")
 		return
 	}
-
 	if h.Countries == nil {
 		writeError(http.StatusInternalServerError, "Countries manager is not initialized")
 		return
 	}
-
 	activeValue := "false"
 	if strings.Contains(r.Header.Get(ContentType), JSONApplication) {
 		var req struct {
@@ -2239,7 +2813,6 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 			activeValue = "false"
 		}
 	}
-
 	active, err := strconv.ParseBool(strings.ToLower(activeValue))
 	if err != nil {
 		writeError(http.StatusBadRequest, "Invalid active value")
@@ -2250,6 +2823,5 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 		writeError(http.StatusInternalServerError, "Failed to update country status")
 		return
 	}
-
 	writeSuccess("Country status updated")
 }

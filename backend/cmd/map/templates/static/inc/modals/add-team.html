@@ -17,9 +17,16 @@
       </div>
       <div class="form-el el--block-label el--full-text">
         <label for="admin-add-team-logo">Logo</label>
-        <select id="admin-add-team-logo" name="logo" style="width: 100%">
-          <option value="random">Random (auto)</option>
-        </select>
+        <div class="admin-add-team-logo-select">
+          <select id="admin-add-team-logo" name="logo" style="width: 100%">
+            <option value="random">Random (auto)</option>
+          </select>
+          <div class="admin-add-team-logo-preview-wrap" aria-hidden="true">
+            <svg id="admin-add-team-logo-preview" class="icon icon--badge">
+              <use xlink:href="#icon--badge-invader"></use>
+            </svg>
+          </div>
+        </div>
       </div>
 
       <div class="action-actionable">

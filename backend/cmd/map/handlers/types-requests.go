@@ -79,3 +79,24 @@ type AdminTeamCreateRequest struct {
 	Name string `json:"name"`
 	Logo string `json:"logo"`
 }
+
+// AdminTeamUpdateRequest to receive admin team update requests
+type AdminTeamUpdateRequest struct {
+	Name      string `json:"name"`
+	Logo      string `json:"logo"`
+	Visible   string `json:"visible"`
+	Protected string `json:"protected"`
+}
+
+// AdminLogoCreateRequest to receive admin team logo creation requests
+type AdminLogoCreateRequest struct {
+	Name string `json:"name"`
+	Logo string `json:"logo"`
+}
+
+// AdminLogoUpdateRequest to receive admin team logo update requests
+type AdminLogoUpdateRequest struct {
+	Name      string `json:"name"`
+	Enabled   string `json:"enabled"`
+	Protected string `json:"protected"`
+}

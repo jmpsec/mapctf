@@ -234,6 +234,33 @@ function initAdminTeamsSearch() {
   searchInput.addEventListener("input", filterTeams);
 }
 
+function initAdminLogosSearch() {
+  var searchInput = document.getElementById("admin-logos-search");
+  if (!searchInput) {
+    return;
+  }
+
+  var logoRows = Array.prototype.slice.call(document.querySelectorAll("#team-logos .admin-setting-row[data-logo-search]"));
+  if (!logoRows.length) {
+    return;
+  }
+
+  function filterLogos() {
+    var query = (searchInput.value || "").trim().toLowerCase();
+    logoRows.forEach(function (row) {
+      if (!query) {
+        row.style.display = "";
+        return;
+      }
+
+      var haystack = (row.getAttribute("data-logo-search") || "").toLowerCase();
+      row.style.display = haystack.indexOf(query) !== -1 ? "" : "none";
+    });
+  }
+
+  searchInput.addEventListener("input", filterLogos);
+}
+
 function createAdminUser(createURL, payload) {
   return fetch(createURL, {
     method: "POST",
@@ -278,6 +305,88 @@ function createAdminTeam(createURL, payload) {
       .then(function (data) {
         if (!response.ok || data.success === false) {
           throw new Error(data.message || "Failed to create team");
+        }
+        return data;
+      });
+  });
+}
+
+function createAdminLogo(createURL, payload) {
+  var headers = {
+    Accept: "application/json",
+    "X-Requested-With": "XMLHttpRequest",
+  };
+  var body = payload;
+
+  if (!(payload instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(payload);
+  }
+
+  return fetch(createURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: headers,
+    body: body,
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to create logo");
+        }
+        return data;
+      });
+  });
+}
+
+function updateAdminLogo(updateURL, payload) {
+  return fetch(updateURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify(payload),
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to update logo");
+        }
+        return data;
+      });
+  });
+}
+
+function updateAdminTeam(updateURL, payload) {
+  return fetch(updateURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify(payload),
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to update team");
         }
         return data;
       });
@@ -936,6 +1045,30 @@ function initAdminAddTeamModal() {
       if (logoSelect && logosTemplate) {
         logoSelect.innerHTML = logosTemplate.innerHTML;
       }
+      var logoPreviewUse = form.querySelector("#admin-add-team-logo-preview use");
+
+      function updateAddTeamLogoPreview() {
+        if (!logoSelect || !logoPreviewUse) {
+          return;
+        }
+
+        var logo = (logoSelect.value || "").trim();
+        if (!logo || logo === "random") {
+          var firstLogoOption = form.querySelector('select[name="logo"] option[value]:not([value="random"])');
+          logo = firstLogoOption ? (firstLogoOption.value || "").trim() : "invader";
+        }
+
+        if (!logo) {
+          logo = "invader";
+        }
+
+        logoPreviewUse.setAttribute("xlink:href", "#icon--badge-" + logo);
+        logoPreviewUse.setAttribute("href", "#icon--badge-" + logo);
+      }
+      if (logoSelect) {
+        logoSelect.addEventListener("change", updateAddTeamLogoPreview);
+      }
+      updateAddTeamLogoPreview();
 
       var nameInput = form.querySelector('input[name="name"]');
       if (nameInput) {
@@ -977,6 +1110,381 @@ function initAdminAddTeamModal() {
           .finally(function () {
             delete form.dataset.submitting;
           });
+      });
+    });
+  });
+}
+
+function initAdminAddLogoButton() {
+  var addLogoBtn = document.querySelector('[data-action="add-new-logo"]');
+  if (!addLogoBtn) {
+    return;
+  }
+
+  addLogoBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+
+    var createURL = addLogoBtn.getAttribute("data-create-url");
+    if (!createURL) {
+      showTransientAdminStatus("error", "Missing logo creation URL");
+      return;
+    }
+    if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+      showTransientAdminStatus("error", "Modal system unavailable");
+      return;
+    }
+
+    MAP_CTF.modal.loadPopup("add-logo", function () {
+      var modal = document.getElementById("mctf-modal");
+      if (!modal) {
+        return;
+      }
+
+      var form = modal.querySelector("#admin-add-logo-form");
+      if (!form) {
+        return;
+      }
+
+      var nameInput = form.querySelector('input[name="name"]');
+      if (nameInput) {
+        nameInput.focus();
+      }
+
+      form.addEventListener("submit", function (submitEvent) {
+        submitEvent.preventDefault();
+
+        if (form.dataset.submitting === "true") {
+          return;
+        }
+
+        var logoName = (form.querySelector('input[name="name"]').value || "").trim();
+        var logoSymbol = (form.querySelector('input[name="logo"]').value || "").trim();
+        var logoFileInput = form.querySelector('input[name="logo_file"]');
+        var logoFile = logoFileInput && logoFileInput.files && logoFileInput.files.length ? logoFileInput.files[0] : null;
+
+        if (!logoName) {
+          showTransientAdminStatus("error", "Logo name is required");
+          return;
+        }
+        if (!logoSymbol && !logoFile) {
+          showTransientAdminStatus("error", "Provide a symbol slug or upload an SVG file");
+          return;
+        }
+
+        var formData = new FormData();
+        formData.append("name", logoName);
+        formData.append("logo", logoSymbol);
+        if (logoFile) {
+          formData.append("logo_file", logoFile);
+          formData.append("logo_slug", logoSymbol);
+        }
+
+        form.dataset.submitting = "true";
+
+        createAdminLogo(createURL, formData)
+          .then(function (data) {
+            showTransientAdminStatus(data.status || "ok", data.message || "Logo created");
+            if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+              MAP_CTF.modal.close();
+            }
+            window.location.reload();
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to create logo");
+          })
+          .finally(function () {
+            delete form.dataset.submitting;
+          });
+      });
+    });
+  });
+}
+
+function initAdminEditLogoGrid() {
+  var logoButtons = Array.prototype.slice.call(document.querySelectorAll("#team-logos .js-edit-logo[data-logo-update-url]"));
+  if (!logoButtons.length) {
+    return;
+  }
+
+  logoButtons.forEach(function (logoBtn) {
+    logoBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var updateURL = logoBtn.getAttribute("data-logo-update-url");
+      if (!updateURL) {
+        showTransientAdminStatus("error", "Missing logo update URL");
+        return;
+      }
+      if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+        showTransientAdminStatus("error", "Modal system unavailable");
+        return;
+      }
+
+      MAP_CTF.modal.loadPopup("edit-logo", function () {
+        var modal = document.getElementById("mctf-modal");
+        if (!modal) {
+          return;
+        }
+        var form = modal.querySelector("#admin-edit-logo-form");
+        if (!form) {
+          return;
+        }
+
+        var nameInput = form.querySelector('input[name="name"]');
+        var fileInput = form.querySelector('input[name="file"]');
+        var previewUse = form.querySelector("#admin-edit-logo-preview use");
+        var enabledOn = form.querySelector('input[name="enabled"][value="true"]');
+        var enabledOff = form.querySelector('input[name="enabled"][value="false"]');
+        var protectedOn = form.querySelector('input[name="protected"][value="true"]');
+        var protectedOff = form.querySelector('input[name="protected"][value="false"]');
+
+        var logoName = (logoBtn.getAttribute("data-logo-name") || "").trim();
+        var logoSymbol = (logoBtn.getAttribute("data-logo-symbol") || "").trim();
+        var logoFile = (logoBtn.getAttribute("data-logo-file") || "").trim();
+        var logoEnabled = (logoBtn.getAttribute("data-logo-enabled") || "false").toLowerCase() === "true";
+        var logoProtected = (logoBtn.getAttribute("data-logo-protected") || "false").toLowerCase() === "true";
+
+        if (nameInput) {
+          nameInput.value = logoName;
+          nameInput.focus();
+        }
+        if (fileInput) {
+          fileInput.value = logoFile;
+        }
+        if (previewUse) {
+          previewUse.setAttribute("xlink:href", "#icon--badge-" + (logoSymbol || "invader"));
+          previewUse.setAttribute("href", "#icon--badge-" + (logoSymbol || "invader"));
+        }
+        if (enabledOn && enabledOff) {
+          enabledOn.checked = logoEnabled;
+          enabledOff.checked = !logoEnabled;
+        }
+        if (protectedOn && protectedOff) {
+          protectedOn.checked = logoProtected;
+          protectedOff.checked = !logoProtected;
+        }
+
+        form.addEventListener("submit", function (submitEvent) {
+          submitEvent.preventDefault();
+
+          if (form.dataset.submitting === "true") {
+            return;
+          }
+
+          var nameValue = (form.querySelector('input[name="name"]').value || "").trim();
+          var enabledInput = form.querySelector('input[name="enabled"]:checked');
+          var protectedInput = form.querySelector('input[name="protected"]:checked');
+          var enabledValue = enabledInput ? String(enabledInput.value).trim() : "";
+          var protectedValue = protectedInput ? String(protectedInput.value).trim() : "";
+
+          if (!nameValue) {
+            showTransientAdminStatus("error", "Logo name is required");
+            return;
+          }
+          if (!enabledValue || !protectedValue) {
+            showTransientAdminStatus("error", "Enabled and protected values are required");
+            return;
+          }
+
+          form.dataset.submitting = "true";
+          updateAdminLogo(updateURL, {
+            name: nameValue,
+            enabled: enabledValue,
+            protected: protectedValue,
+          })
+            .then(function (data) {
+              showTransientAdminStatus(data.status || "ok", data.message || "Logo updated");
+              if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+                MAP_CTF.modal.close();
+              }
+              window.location.reload();
+            })
+            .catch(function (error) {
+              showTransientAdminStatus("error", error.message || "Failed to update logo");
+            })
+            .finally(function () {
+              delete form.dataset.submitting;
+            });
+        });
+      });
+    });
+  });
+}
+
+function initAdminTeamSettingsEditors() {
+  var teamCards = Array.prototype.slice.call(document.querySelectorAll("#teams section.admin-box[data-team-update-url]"));
+  if (!teamCards.length) {
+    return;
+  }
+
+  teamCards.forEach(function (card) {
+    var editBtn = card.querySelector('[data-action="edit"]');
+    var saveBtn = card.querySelector('[data-action="save"]');
+    var updateURL = card.getAttribute("data-team-update-url");
+    var editableFields = Array.prototype.slice.call(card.querySelectorAll("[data-team-field]"));
+    var nameInput = card.querySelector('input[data-team-field="name"]');
+    var logoSelect = card.querySelector('select[data-team-field="logo"]');
+    var iconUse = card.querySelector(".admin-team-icon use");
+    var nameDisplay = card.querySelector(".js-team-name-display");
+
+    function setEditing(editing) {
+      editableFields.forEach(function (field) {
+        field.disabled = !editing;
+      });
+      card.dataset.editing = editing ? "true" : "false";
+    }
+
+    function updateLogoPreview() {
+      if (!logoSelect || !iconUse) {
+        return;
+      }
+      var logo = (logoSelect.value || "").trim();
+      if (!logo || logo === "random") {
+        return;
+      }
+      iconUse.setAttribute("xlink:href", "#icon--badge-" + logo);
+      iconUse.setAttribute("href", "#icon--badge-" + logo);
+    }
+
+    setEditing(true);
+    if (logoSelect) {
+      logoSelect.addEventListener("change", updateLogoPreview);
+    }
+
+    if (editBtn) {
+      editBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        setEditing(true);
+      });
+    }
+
+    if (!saveBtn) {
+      return;
+    }
+
+    saveBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      if (!updateURL) {
+        showTransientAdminStatus("error", "Missing team update URL");
+        return;
+      }
+      if (saveBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      var nameValue = nameInput && typeof nameInput.value === "string" ? nameInput.value.trim() : "";
+      var logoValue = logoSelect && typeof logoSelect.value === "string" ? logoSelect.value.trim() : "";
+      var visibleInput = card.querySelector('input[data-team-field="visible"]:checked');
+      var protectedInput = card.querySelector('input[data-team-field="protected"]:checked');
+      var visibleValue = visibleInput ? String(visibleInput.value).trim() : "";
+      var protectedValue = protectedInput ? String(protectedInput.value).trim() : "";
+
+      if (!nameValue || !logoValue || !visibleValue || !protectedValue) {
+        showTransientAdminStatus("error", "Team name, logo, visible and protected values are required");
+        return;
+      }
+
+      saveBtn.dataset.submitting = "true";
+      saveBtn.disabled = true;
+
+      updateAdminTeam(updateURL, {
+        name: nameValue,
+        logo: logoValue,
+        visible: visibleValue,
+        protected: protectedValue,
+      })
+        .then(function (data) {
+          updateLogoPreview();
+          if (nameDisplay) {
+            nameDisplay.textContent = nameValue;
+          }
+          card.setAttribute("data-team-search", nameValue);
+          setEditing(true);
+          showTransientAdminStatus(data.status || "ok", data.message || "Team updated");
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to update team");
+        })
+        .finally(function () {
+          delete saveBtn.dataset.submitting;
+          saveBtn.disabled = false;
+        });
+    });
+  });
+}
+
+function initAdminTeamDeleteButtons() {
+  var deleteButtons = document.querySelectorAll('[data-action="delete-team"]');
+  if (!deleteButtons.length) {
+    return;
+  }
+
+  deleteButtons.forEach(function (deleteBtn) {
+    deleteBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var deleteURL = deleteBtn.getAttribute("data-delete-url");
+      if (!deleteURL) {
+        showTransientAdminStatus("error", "Missing team delete URL");
+        return;
+      }
+      if (deleteBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      var teamCard = deleteBtn.closest("#teams section.admin-box[data-team-update-url]");
+      var teamName = (deleteBtn.getAttribute("data-team-name") || "").trim();
+
+      function runDelete() {
+        deleteBtn.dataset.submitting = "true";
+        deleteBtn.disabled = true;
+
+        postAdminActionJSON(deleteURL)
+          .then(function (data) {
+            if (teamCard) {
+              teamCard.remove();
+            }
+            showTransientAdminStatus(data.status || "ok", data.message || "Team deleted");
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to delete team");
+          })
+          .finally(function () {
+            delete deleteBtn.dataset.submitting;
+            deleteBtn.disabled = false;
+            if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+              MAP_CTF.modal.close();
+            }
+          });
+      }
+
+      if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+        if (window.confirm("Delete team" + (teamName ? " '" + teamName + "'" : "") + "?")) {
+          runDelete();
+        }
+        return;
+      }
+
+      MAP_CTF.modal.loadPopup("action-delete-team", function () {
+        var modal = document.getElementById("mctf-modal");
+        if (!modal) {
+          return;
+        }
+
+        var titlePlaceholder = modal.querySelector(".js-delete-team-title");
+        if (titlePlaceholder) {
+          titlePlaceholder.textContent = teamName ? " " + teamName : "";
+        }
+
+        var confirmBtn = modal.querySelector(".js-confirm-delete-team");
+        if (!confirmBtn) {
+          return;
+        }
+        confirmBtn.addEventListener("click", function (confirmEvent) {
+          confirmEvent.preventDefault();
+          runDelete();
+        });
       });
     });
   });
@@ -1385,6 +1893,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminAjaxForms();
   initAdminUsersSearch();
   initAdminTeamsSearch();
+  initAdminLogosSearch();
   initAdminImportChallengesButton();
   initAdminChallengeActionsButtons();
   initAdminChallengeSaveButtons();
@@ -1392,6 +1901,10 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminAddChallengeModal();
   initAdminAddUserModal();
   initAdminAddTeamModal();
+  initAdminTeamSettingsEditors();
+  initAdminTeamDeleteButtons();
+  initAdminAddLogoButton();
+  initAdminEditLogoGrid();
   initAdminAddCategoryModal();
   initAdminEditCategoryButtons();
   initAdminDeleteCategoryButtons();

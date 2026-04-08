@@ -1,0 +1,37 @@
+<div class="mctf-modal-content">
+  <header class="modal-title">
+    <h4>
+      admin_
+      <span class="highlighted">Add Logo</span>
+    </h4>
+    <a href="#" class="js-close-modal">
+      <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
+    </a>
+  </header>
+
+  <div class="action-main">
+    <form id="admin-add-logo-form" class="validate-form">
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-logo-name">Logo Name</label>
+        <input id="admin-add-logo-name" name="name" type="text" style="width: 100%" required />
+      </div>
+
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-logo-symbol">Symbol Slug</label>
+        <input id="admin-add-logo-symbol" name="logo" type="text" style="width: 100%" placeholder="invader" />
+      </div>
+
+      <div class="form-el el--block-label el--full-text">
+        <label for="admin-add-logo-file">Upload Custom SVG (optional)</label>
+        <input id="admin-add-logo-file" name="logo_file" type="file" accept=".svg,image/svg+xml" style="width: 100%" />
+      </div>
+
+      <p class="admin-copy--small">Use a symbol slug for existing icons, or upload an SVG file for a custom logo.</p>
+
+      <div class="action-actionable">
+        <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>
+        <button class="mctf-cta cta--yellow js-create-logo" type="submit">Create Logo</button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,52 @@
+<div class="mctf-modal-content">
+  <header class="modal-title">
+    <h4>
+      admin_
+      <span class="highlighted">Edit Logo</span>
+    </h4>
+    <a href="#" class="js-close-modal">
+      <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
+    </a>
+  </header>
+
+  <div class="action-main">
+    <form id="admin-edit-logo-form" class="validate-form edit-logo-modal">
+      <div class="edit-logo-header">
+        <div class="edit-logo-preview">
+          <svg id="admin-edit-logo-preview" class="icon icon--badge">
+            <use xlink:href="#icon--badge-invader"></use>
+          </svg>
+        </div>
+        <div class="edit-logo-summary">
+          <label for="admin-edit-logo-name">Logo Name</label>
+          <input id="admin-edit-logo-name" name="name" type="text" required />
+          <label for="admin-edit-logo-file">File</label>
+          <input id="admin-edit-logo-file" name="file" type="text" readonly />
+        </div>
+      </div>
+
+      <div class="edit-logo-settings">
+        <div class="form-el el--block-label el--full-text admin-section-toggle radio-inline">
+          <label>Enabled</label>
+          <input type="radio" name="enabled" id="admin-edit-logo-enabled-on" value="true" />
+          <label for="admin-edit-logo-enabled-on">On</label>
+          <input type="radio" name="enabled" id="admin-edit-logo-enabled-off" value="false" />
+          <label for="admin-edit-logo-enabled-off">Off</label>
+        </div>
+
+        <div class="form-el el--block-label el--full-text admin-section-toggle radio-inline">
+          <label>Protected</label>
+          <input type="radio" name="protected" id="admin-edit-logo-protected-on" value="true" />
+          <label for="admin-edit-logo-protected-on">On</label>
+          <input type="radio" name="protected" id="admin-edit-logo-protected-off" value="false" />
+          <label for="admin-edit-logo-protected-off">Off</label>
+        </div>
+      </div>
+
+      <div class="action-actionable">
+        <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>
+        <button class="mctf-cta cta--yellow js-save-logo" type="submit">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
