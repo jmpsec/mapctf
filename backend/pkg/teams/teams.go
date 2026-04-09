@@ -99,6 +99,9 @@ func (m *TeamManager) Register(name, logo string) (PlatformTeam, error) {
 	if err := m.Create(newTeam); err != nil {
 		return PlatformTeam{}, err
 	}
+	if err := m.SyncLogoUsage(); err != nil {
+		return PlatformTeam{}, err
+	}
 	return newTeam, nil
 }
 

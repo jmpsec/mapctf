@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -130,4 +131,56 @@ func (m *TeamManager) RandomLogo() (TeamLogo, error) {
 		return logo, err
 	}
 	return logo, nil
+}
+
+func normalizeLogoSymbol(logo string) string {
+	logo = strings.TrimSpace(logo)
+	if logo == "" {
+		return ""
+	}
+	logo = strings.TrimPrefix(logo, "#icon--badge-")
+	logo = strings.TrimPrefix(logo, "icon--badge-")
+	if idx := strings.LastIndex(logo, "/"); idx >= 0 && idx < len(logo)-1 {
+		logo = logo[idx+1:]
+	}
+	logo = strings.TrimSuffix(logo, ".svg")
+	logo = strings.TrimPrefix(logo, "badge-")
+	return strings.TrimSpace(logo)
+}
+
+// SyncLogoUsage recalculates the Used flag of all logos for the manager UUID.
+func (m *TeamManager) SyncLogoUsage() error {
+	var teams []PlatformTeam
+	if err := m.DB.Where("uuid = ?", m.UUID).Find(&teams).Error; err != nil {
+		return fmt.Errorf("failed to load teams: %w", err)
+	}
+
+	var logos []TeamLogo
+	if err := m.DB.Where("uuid = ?", m.UUID).Find(&logos).Error; err != nil {
+		return fmt.Errorf("failed to load logos: %w", err)
+	}
+
+	usedBySymbol := make(map[string]bool, len(teams))
+	for _, team := range teams {
+		symbol := normalizeLogoSymbol(team.Logo)
+		if symbol == "" || strings.EqualFold(symbol, "random") {
+			continue
+		}
+		usedBySymbol[symbol] = true
+	}
+
+	for _, logo := range logos {
+		symbol := normalizeLogoSymbol(logo.Logo)
+		shouldBeUsed := usedBySymbol[symbol]
+		if logo.Used == shouldBeUsed {
+			continue
+		}
+		if err := m.DB.Model(&TeamLogo{}).
+			Where("id = ? AND uuid = ?", logo.ID, m.UUID).
+			Update("used", shouldBeUsed).Error; err != nil {
+			return fmt.Errorf("failed to update logo usage: %w", err)
+		}
+	}
+
+	return nil
 }

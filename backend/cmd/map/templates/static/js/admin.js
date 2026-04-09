@@ -812,6 +812,224 @@ function initAdminChallengeActionsButtons() {
   });
 }
 
+function initAdminTeamActionsButtons() {
+  function bindImportAction(buttonSelector, inputID, missingURLMsg, successMsg, errorMsg) {
+    var importBtn = document.querySelector(buttonSelector);
+    var importInput = document.getElementById(inputID);
+    if (!importBtn || !importInput) {
+      return;
+    }
+
+    importBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+      importInput.click();
+    });
+
+    importInput.addEventListener("change", function () {
+      var importURL = importBtn.getAttribute("data-import-url");
+      if (!importURL) {
+        showTransientAdminStatus("error", missingURLMsg);
+        return;
+      }
+
+      var file = importInput.files && importInput.files[0];
+      if (!file) {
+        return;
+      }
+
+      if (importBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      var formData = new FormData();
+      formData.append("file", file);
+
+      importBtn.dataset.submitting = "true";
+      importBtn.disabled = true;
+
+      importAdminChallenges(importURL, formData)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || successMsg);
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || errorMsg);
+        })
+        .finally(function () {
+          delete importBtn.dataset.submitting;
+          importBtn.disabled = false;
+          importInput.value = "";
+        });
+    });
+  }
+
+  bindImportAction('[data-action="import-all-teams"]', "admin-teams-import-file", "Missing teams import URL", "Teams and logos imported", "Failed to import teams and logos");
+
+  function bindSimpleAction(actionSelector, urlAttribute, successMessage, errorMessage) {
+    var btn = document.querySelector(actionSelector);
+    if (!btn) {
+      return;
+    }
+    btn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var actionURL = btn.getAttribute(urlAttribute);
+      if (!actionURL) {
+        showTransientAdminStatus("error", "Missing action URL");
+        return;
+      }
+      if (btn.dataset.submitting === "true") {
+        return;
+      }
+
+      btn.dataset.submitting = "true";
+      btn.disabled = true;
+
+      postAdminActionJSON(actionURL)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || successMessage);
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || errorMessage);
+        })
+        .finally(function () {
+          delete btn.dataset.submitting;
+          btn.disabled = false;
+        });
+    });
+  }
+
+  bindSimpleAction('[data-action="enable-all-teams"]', "data-enable-all-teams-url", "All teams enabled", "Failed to enable all teams");
+  bindSimpleAction('[data-action="disable-all-teams"]', "data-disable-all-teams-url", "All teams disabled", "Failed to disable all teams");
+  bindSimpleAction('[data-action="visible-all-teams"]', "data-visible-all-teams-url", "All teams set visible", "Failed to set all teams visible");
+  bindSimpleAction('[data-action="invisible-all-teams"]', "data-invisible-all-teams-url", "All teams set invisible", "Failed to set all teams invisible");
+  bindSimpleAction('[data-action="enable-all-logos"]', "data-enable-all-logos-url", "All logos enabled", "Failed to enable all logos");
+  bindSimpleAction('[data-action="disable-all-logos"]', "data-disable-all-logos-url", "All logos disabled", "Failed to disable all logos");
+
+  var deleteAllLogosBtn = document.querySelector('[data-action="delete-all-logos"]');
+  if (deleteAllLogosBtn) {
+    deleteAllLogosBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var deleteAllLogosURL = deleteAllLogosBtn.getAttribute("data-delete-all-logos-url");
+      if (!deleteAllLogosURL) {
+        showTransientAdminStatus("error", "Missing delete all logos URL");
+        return;
+      }
+      if (deleteAllLogosBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      function runDeleteAllLogos() {
+        deleteAllLogosBtn.dataset.submitting = "true";
+        deleteAllLogosBtn.disabled = true;
+
+        postAdminActionJSON(deleteAllLogosURL)
+          .then(function (data) {
+            showTransientAdminStatus(data.status || "ok", data.message || "All logos deleted");
+            window.location.reload();
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to delete all logos");
+          })
+          .finally(function () {
+            delete deleteAllLogosBtn.dataset.submitting;
+            deleteAllLogosBtn.disabled = false;
+            if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+              MAP_CTF.modal.close();
+            }
+          });
+      }
+
+      if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+        if (window.confirm("Delete all logos? This cannot be undone.")) {
+          runDeleteAllLogos();
+        }
+        return;
+      }
+
+      MAP_CTF.modal.loadPopup("action-delete-all-logos", function () {
+        var modal = document.getElementById("mctf-modal");
+        if (!modal) {
+          return;
+        }
+
+        var confirmBtn = modal.querySelector(".js-confirm-delete-all-logos");
+        if (!confirmBtn) {
+          return;
+        }
+        confirmBtn.addEventListener("click", function (confirmEvent) {
+          confirmEvent.preventDefault();
+          runDeleteAllLogos();
+        });
+      });
+    });
+  }
+
+  var deleteAllTeamsBtn = document.querySelector('[data-action="delete-all-teams"]');
+  if (!deleteAllTeamsBtn) {
+    return;
+  }
+
+  deleteAllTeamsBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+
+    var deleteAllTeamsURL = deleteAllTeamsBtn.getAttribute("data-delete-all-teams-url");
+    if (!deleteAllTeamsURL) {
+      showTransientAdminStatus("error", "Missing delete all teams URL");
+      return;
+    }
+    if (deleteAllTeamsBtn.dataset.submitting === "true") {
+      return;
+    }
+
+    function runDeleteAllTeams() {
+      deleteAllTeamsBtn.dataset.submitting = "true";
+      deleteAllTeamsBtn.disabled = true;
+
+      postAdminActionJSON(deleteAllTeamsURL)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || "All teams deleted");
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to delete all teams");
+        })
+        .finally(function () {
+          delete deleteAllTeamsBtn.dataset.submitting;
+          deleteAllTeamsBtn.disabled = false;
+          if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+            MAP_CTF.modal.close();
+          }
+        });
+    }
+
+    if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+      if (window.confirm("Delete all teams? This cannot be undone.")) {
+        runDeleteAllTeams();
+      }
+      return;
+    }
+
+    MAP_CTF.modal.loadPopup("action-delete-all-teams", function () {
+      var modal = document.getElementById("mctf-modal");
+      if (!modal) {
+        return;
+      }
+
+      var confirmBtn = modal.querySelector(".js-confirm-delete-all-teams");
+      if (!confirmBtn) {
+        return;
+      }
+      confirmBtn.addEventListener("click", function (confirmEvent) {
+        confirmEvent.preventDefault();
+        runDeleteAllTeams();
+      });
+    });
+  });
+}
+
 function initAdminAddChallengeModal() {
   var addChallengeBtn = document.querySelector('[data-action="add-new-challenge"]');
   if (!addChallengeBtn) {
@@ -1894,6 +2112,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminUsersSearch();
   initAdminTeamsSearch();
   initAdminLogosSearch();
+  initAdminTeamActionsButtons();
   initAdminImportChallengesButton();
   initAdminChallengeActionsButtons();
   initAdminChallengeSaveButtons();

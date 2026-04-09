@@ -58,6 +58,30 @@ type adminChallengesTransferItem struct {
 	Hint        string `json:"hint"`
 }
 
+type adminTeamsTransferPayload struct {
+	Version    int                      `json:"version"`
+	ExportedAt string                   `json:"exported_at"`
+	Logos      []adminTeamsTransferLogo `json:"logos"`
+	Teams      []adminTeamsTransferTeam `json:"teams"`
+}
+
+type adminTeamsTransferLogo struct {
+	Name      string `json:"name"`
+	Logo      string `json:"logo"`
+	Enabled   bool   `json:"enabled"`
+	Custom    bool   `json:"custom"`
+	Protected bool   `json:"protected"`
+	Used      bool   `json:"used"`
+}
+
+type adminTeamsTransferTeam struct {
+	Name      string `json:"name"`
+	Logo      string `json:"logo"`
+	Active    bool   `json:"active"`
+	Visible   bool   `json:"visible"`
+	Protected bool   `json:"protected"`
+}
+
 const maxCustomLogoUploadBytes int64 = 512 * 1024
 
 var (
@@ -200,6 +224,21 @@ func wantsJSONResponse(r *http.Request) bool {
 }
 
 func (h *HandlersMap) decodeChallengeImportPayload(r *http.Request, payload *adminChallengesTransferPayload) error {
+	if strings.Contains(r.Header.Get(ContentType), "multipart/form-data") {
+		if err := r.ParseMultipartForm(20 << 20); err != nil {
+			return err
+		}
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		return json.NewDecoder(file).Decode(payload)
+	}
+	return json.NewDecoder(r.Body).Decode(payload)
+}
+
+func (h *HandlersMap) decodeTeamsImportPayload(r *http.Request, payload *adminTeamsTransferPayload) error {
 	if strings.Contains(r.Header.Get(ContentType), "multipart/form-data") {
 		if err := r.ParseMultipartForm(20 << 20); err != nil {
 			return err
@@ -754,6 +793,838 @@ func (h *HandlersMap) AdminTeamsPOSTHandler(w http.ResponseWriter, r *http.Reque
 	writeSuccess("Team created")
 }
 
+func (h *HandlersMap) importAdminTeamLogosFromPayload(uuid string, logos []adminTeamsTransferLogo) (int, int, int, error) {
+	var existingLogos []teams.TeamLogo
+	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&existingLogos).Error; err != nil {
+		return 0, 0, 0, err
+	}
+	logosByName := make(map[string]teams.TeamLogo, len(existingLogos))
+	for _, l := range existingLogos {
+		key := strings.ToLower(strings.TrimSpace(l.Name))
+		if key == "" {
+			continue
+		}
+		logosByName[key] = l
+	}
+
+	createdLogos := 0
+	updatedLogos := 0
+	skippedLogos := 0
+	for _, inLogo := range logos {
+		name := strings.TrimSpace(inLogo.Name)
+		logo := normalizeLogoSymbolName(strings.TrimSpace(inLogo.Logo))
+		if name == "" || logo == "" {
+			skippedLogos++
+			continue
+		}
+		key := strings.ToLower(name)
+		if existing, ok := logosByName[key]; ok {
+			result := h.Teams.DB.Model(&teams.TeamLogo{}).
+				Where("id = ? AND uuid = ?", existing.ID, uuid).
+				Updates(map[string]interface{}{
+					"logo":      logo,
+					"enabled":   inLogo.Enabled,
+					"custom":    inLogo.Custom,
+					"protected": inLogo.Protected,
+					"used":      inLogo.Used,
+				})
+			if result.Error != nil {
+				return createdLogos, updatedLogos, skippedLogos, result.Error
+			}
+			updatedLogos++
+			continue
+		}
+
+		newLogo, err := h.Teams.NewLogo(name, logo, inLogo.Enabled, inLogo.Custom, 0)
+		if err != nil {
+			return createdLogos, updatedLogos, skippedLogos, err
+		}
+		newLogo.Protected = inLogo.Protected
+		newLogo.Used = inLogo.Used
+		if err := h.Teams.CreateLogo(newLogo); err != nil {
+			return createdLogos, updatedLogos, skippedLogos, err
+		}
+		createdLogos++
+	}
+	return createdLogos, updatedLogos, skippedLogos, nil
+}
+
+func (h *HandlersMap) importAdminTeamsFromPayload(uuid string, inTeams []adminTeamsTransferTeam) (int, int, int, error) {
+	var existingTeams []teams.PlatformTeam
+	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&existingTeams).Error; err != nil {
+		return 0, 0, 0, err
+	}
+	teamsByName := make(map[string]teams.PlatformTeam, len(existingTeams))
+	for _, t := range existingTeams {
+		key := strings.ToLower(strings.TrimSpace(t.Name))
+		if key == "" {
+			continue
+		}
+		teamsByName[key] = t
+	}
+
+	createdTeams := 0
+	updatedTeams := 0
+	skippedTeams := 0
+	for _, inTeam := range inTeams {
+		name := strings.TrimSpace(inTeam.Name)
+		if name == "" {
+			skippedTeams++
+			continue
+		}
+		logo := normalizeLogoSymbolName(strings.TrimSpace(inTeam.Logo))
+		if logo == "" || strings.EqualFold(logo, "random") {
+			randomLogo, err := h.Teams.RandomLogo()
+			if err != nil {
+				logo = "invader"
+			} else {
+				logo = normalizeLogoSymbolName(randomLogo.Logo)
+			}
+		}
+
+		key := strings.ToLower(name)
+		if existing, ok := teamsByName[key]; ok {
+			result := h.Teams.DB.Model(&teams.PlatformTeam{}).
+				Where("id = ? AND uuid = ?", existing.ID, uuid).
+				Updates(map[string]interface{}{
+					"logo":      logo,
+					"active":    inTeam.Active,
+					"visible":   inTeam.Visible,
+					"protected": inTeam.Protected,
+				})
+			if result.Error != nil {
+				return createdTeams, updatedTeams, skippedTeams, result.Error
+			}
+			updatedTeams++
+			continue
+		}
+
+		newTeam, err := h.Teams.New(name, logo, inTeam.Protected, inTeam.Visible)
+		if err != nil {
+			return createdTeams, updatedTeams, skippedTeams, err
+		}
+		newTeam.Active = inTeam.Active
+		if err := h.Teams.Create(newTeam); err != nil {
+			return createdTeams, updatedTeams, skippedTeams, err
+		}
+		createdTeams++
+	}
+	return createdTeams, updatedTeams, skippedTeams, nil
+}
+
+// AdminTeamsExportHandler exports teams and logos as JSON
+func (h *HandlersMap) AdminTeamsExportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	teamsList, err := h.Teams.GetAll()
+	if err != nil {
+		log.Err(err).Msg("error loading teams for export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to load teams",
+		})
+		return
+	}
+	var logosList []teams.TeamLogo
+	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&logosList).Error; err != nil {
+		log.Err(err).Msg("error loading logos for export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to load logos",
+		})
+		return
+	}
+
+	sort.Slice(teamsList, func(i, j int) bool {
+		return strings.ToLower(teamsList[i].Name) < strings.ToLower(teamsList[j].Name)
+	})
+	sort.Slice(logosList, func(i, j int) bool {
+		return strings.ToLower(logosList[i].Name) < strings.ToLower(logosList[j].Name)
+	})
+
+	payload := adminTeamsTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Logos:      make([]adminTeamsTransferLogo, 0, len(logosList)),
+		Teams:      make([]adminTeamsTransferTeam, 0, len(teamsList)),
+	}
+
+	for _, logo := range logosList {
+		payload.Logos = append(payload.Logos, adminTeamsTransferLogo{
+			Name:      strings.TrimSpace(logo.Name),
+			Logo:      normalizeLogoSymbolName(strings.TrimSpace(logo.Logo)),
+			Enabled:   logo.Enabled,
+			Custom:    logo.Custom,
+			Protected: logo.Protected,
+			Used:      logo.Used,
+		})
+	}
+	for _, team := range teamsList {
+		payload.Teams = append(payload.Teams, adminTeamsTransferTeam{
+			Name:      strings.TrimSpace(team.Name),
+			Logo:      normalizeLogoSymbolName(strings.TrimSpace(team.Logo)),
+			Active:    team.Active,
+			Visible:   team.Visible,
+			Protected: team.Protected,
+		})
+	}
+
+	output, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		log.Err(err).Msg("error marshaling teams export JSON")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to generate export JSON",
+		})
+		return
+	}
+
+	fileName := "mapctf-teams-export-" + time.Now().UTC().Format("20060102-150405") + ".json"
+	w.Header().Set(ContentType, JSONApplicationUTF8)
+	w.Header().Set("Content-Disposition", `attachment; filename="`+fileName+`"`)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(output)
+}
+
+// AdminTeamsExportTeamsHandler exports teams only as JSON
+func (h *HandlersMap) AdminTeamsExportTeamsHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	teamsList, err := h.Teams.GetAll()
+	if err != nil {
+		log.Err(err).Msg("error loading teams for export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to load teams",
+		})
+		return
+	}
+	sort.Slice(teamsList, func(i, j int) bool {
+		return strings.ToLower(teamsList[i].Name) < strings.ToLower(teamsList[j].Name)
+	})
+
+	payload := adminTeamsTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Teams:      make([]adminTeamsTransferTeam, 0, len(teamsList)),
+	}
+	for _, team := range teamsList {
+		payload.Teams = append(payload.Teams, adminTeamsTransferTeam{
+			Name:      strings.TrimSpace(team.Name),
+			Logo:      normalizeLogoSymbolName(strings.TrimSpace(team.Logo)),
+			Active:    team.Active,
+			Visible:   team.Visible,
+			Protected: team.Protected,
+		})
+	}
+
+	output, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		log.Err(err).Msg("error marshaling teams export JSON")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to generate export JSON",
+		})
+		return
+	}
+
+	fileName := "mapctf-teams-only-export-" + time.Now().UTC().Format("20060102-150405") + ".json"
+	w.Header().Set(ContentType, JSONApplicationUTF8)
+	w.Header().Set("Content-Disposition", `attachment; filename="`+fileName+`"`)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(output)
+}
+
+// AdminTeamsExportLogosHandler exports team logos only as JSON
+func (h *HandlersMap) AdminTeamsExportLogosHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	var logosList []teams.TeamLogo
+	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&logosList).Error; err != nil {
+		log.Err(err).Msg("error loading logos for export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to load logos",
+		})
+		return
+	}
+	sort.Slice(logosList, func(i, j int) bool {
+		return strings.ToLower(logosList[i].Name) < strings.ToLower(logosList[j].Name)
+	})
+
+	payload := adminTeamsTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Logos:      make([]adminTeamsTransferLogo, 0, len(logosList)),
+	}
+	for _, logo := range logosList {
+		payload.Logos = append(payload.Logos, adminTeamsTransferLogo{
+			Name:      strings.TrimSpace(logo.Name),
+			Logo:      normalizeLogoSymbolName(strings.TrimSpace(logo.Logo)),
+			Enabled:   logo.Enabled,
+			Custom:    logo.Custom,
+			Protected: logo.Protected,
+			Used:      logo.Used,
+		})
+	}
+
+	output, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		log.Err(err).Msg("error marshaling logos export JSON")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to generate export JSON",
+		})
+		return
+	}
+
+	fileName := "mapctf-logos-only-export-" + time.Now().UTC().Format("20060102-150405") + ".json"
+	w.Header().Set(ContentType, JSONApplicationUTF8)
+	w.Header().Set("Content-Disposition", `attachment; filename="`+fileName+`"`)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(output)
+}
+
+// AdminTeamsImportHandler imports teams and logos from a JSON payload/file
+func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	var payload adminTeamsTransferPayload
+	if err := h.decodeTeamsImportPayload(r, &payload); err != nil {
+		log.Err(err).Msg("error parsing teams import payload")
+		writeError(http.StatusBadRequest, "Invalid import payload")
+		return
+	}
+	if len(payload.Logos) == 0 && len(payload.Teams) == 0 {
+		writeError(http.StatusBadRequest, "No teams or logos found in import payload")
+		return
+	}
+
+	var existingLogos []teams.TeamLogo
+	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&existingLogos).Error; err != nil {
+		log.Err(err).Msg("error loading existing logos for import")
+		writeError(http.StatusInternalServerError, "Failed to load logos")
+		return
+	}
+	logosByName := make(map[string]teams.TeamLogo, len(existingLogos))
+	for _, l := range existingLogos {
+		key := strings.ToLower(strings.TrimSpace(l.Name))
+		if key == "" {
+			continue
+		}
+		logosByName[key] = l
+	}
+
+	createdLogos := 0
+	updatedLogos := 0
+	skippedLogos := 0
+	for _, inLogo := range payload.Logos {
+		name := strings.TrimSpace(inLogo.Name)
+		logo := normalizeLogoSymbolName(strings.TrimSpace(inLogo.Logo))
+		if name == "" || logo == "" {
+			skippedLogos++
+			continue
+		}
+		key := strings.ToLower(name)
+		if existing, ok := logosByName[key]; ok {
+			result := h.Teams.DB.Model(&teams.TeamLogo{}).
+				Where("id = ? AND uuid = ?", existing.ID, uuid).
+				Updates(map[string]interface{}{
+					"logo":      logo,
+					"enabled":   inLogo.Enabled,
+					"custom":    inLogo.Custom,
+					"protected": inLogo.Protected,
+					"used":      inLogo.Used,
+				})
+			if result.Error != nil {
+				log.Err(result.Error).Msg("error updating logo from import")
+				writeError(http.StatusInternalServerError, "Failed to import logos")
+				return
+			}
+			updatedLogos++
+			continue
+		}
+
+		newLogo, err := h.Teams.NewLogo(name, logo, inLogo.Enabled, inLogo.Custom, 0)
+		if err != nil {
+			log.Err(err).Msg("error creating logo from import")
+			writeError(http.StatusBadRequest, "Failed to import logos")
+			return
+		}
+		newLogo.Protected = inLogo.Protected
+		newLogo.Used = inLogo.Used
+		if err := h.Teams.CreateLogo(newLogo); err != nil {
+			log.Err(err).Msg("error saving logo from import")
+			writeError(http.StatusInternalServerError, "Failed to import logos")
+			return
+		}
+		createdLogos++
+	}
+
+	var existingTeams []teams.PlatformTeam
+	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&existingTeams).Error; err != nil {
+		log.Err(err).Msg("error loading existing teams for import")
+		writeError(http.StatusInternalServerError, "Failed to load teams")
+		return
+	}
+	teamsByName := make(map[string]teams.PlatformTeam, len(existingTeams))
+	for _, t := range existingTeams {
+		key := strings.ToLower(strings.TrimSpace(t.Name))
+		if key == "" {
+			continue
+		}
+		teamsByName[key] = t
+	}
+
+	createdTeams := 0
+	updatedTeams := 0
+	skippedTeams := 0
+	for _, inTeam := range payload.Teams {
+		name := strings.TrimSpace(inTeam.Name)
+		if name == "" {
+			skippedTeams++
+			continue
+		}
+		logo := normalizeLogoSymbolName(strings.TrimSpace(inTeam.Logo))
+		if logo == "" || strings.EqualFold(logo, "random") {
+			randomLogo, err := h.Teams.RandomLogo()
+			if err != nil {
+				log.Err(err).Msg("error resolving random logo during team import")
+				logo = "invader"
+			} else {
+				logo = normalizeLogoSymbolName(randomLogo.Logo)
+			}
+		}
+
+		key := strings.ToLower(name)
+		if existing, ok := teamsByName[key]; ok {
+			result := h.Teams.DB.Model(&teams.PlatformTeam{}).
+				Where("id = ? AND uuid = ?", existing.ID, uuid).
+				Updates(map[string]interface{}{
+					"logo":      logo,
+					"active":    inTeam.Active,
+					"visible":   inTeam.Visible,
+					"protected": inTeam.Protected,
+				})
+			if result.Error != nil {
+				log.Err(result.Error).Msg("error updating team from import")
+				writeError(http.StatusInternalServerError, "Failed to import teams")
+				return
+			}
+			updatedTeams++
+			continue
+		}
+
+		newTeam, err := h.Teams.New(name, logo, inTeam.Protected, inTeam.Visible)
+		if err != nil {
+			log.Err(err).Msg("error creating team object from import")
+			writeError(http.StatusBadRequest, "Failed to import teams")
+			return
+		}
+		newTeam.Active = inTeam.Active
+		if err := h.Teams.Create(newTeam); err != nil {
+			log.Err(err).Msg("error saving team from import")
+			writeError(http.StatusInternalServerError, "Failed to import teams")
+			return
+		}
+		createdTeams++
+	}
+
+	messageParts := []string{
+		"logos created " + strconv.Itoa(createdLogos),
+		"logos updated " + strconv.Itoa(updatedLogos),
+		"teams created " + strconv.Itoa(createdTeams),
+		"teams updated " + strconv.Itoa(updatedTeams),
+	}
+	if skippedLogos > 0 {
+		messageParts = append(messageParts, "logos skipped "+strconv.Itoa(skippedLogos))
+	}
+	if skippedTeams > 0 {
+		messageParts = append(messageParts, "teams skipped "+strconv.Itoa(skippedTeams))
+	}
+	if err := h.Teams.SyncLogoUsage(); err != nil {
+		log.Err(err).Msg("error syncing logo usage after teams import")
+		writeError(http.StatusInternalServerError, "Import completed but failed to sync logo usage")
+		return
+	}
+
+	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
+}
+
+// AdminTeamsImportTeamsHandler imports teams only from JSON payload/file
+func (h *HandlersMap) AdminTeamsImportTeamsHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{Success: false, Status: "error", Message: msg})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: msg})
+	}
+
+	var payload adminTeamsTransferPayload
+	if err := h.decodeTeamsImportPayload(r, &payload); err != nil {
+		log.Err(err).Msg("error parsing teams-only import payload")
+		writeError(http.StatusBadRequest, "Invalid import payload")
+		return
+	}
+	if len(payload.Teams) == 0 {
+		writeError(http.StatusBadRequest, "No teams found in import payload")
+		return
+	}
+
+	createdTeams, updatedTeams, skippedTeams, err := h.importAdminTeamsFromPayload(uuid, payload.Teams)
+	if err != nil {
+		log.Err(err).Msg("error importing teams")
+		writeError(http.StatusInternalServerError, "Failed to import teams")
+		return
+	}
+
+	messageParts := []string{
+		"teams created " + strconv.Itoa(createdTeams),
+		"teams updated " + strconv.Itoa(updatedTeams),
+	}
+	if skippedTeams > 0 {
+		messageParts = append(messageParts, "teams skipped "+strconv.Itoa(skippedTeams))
+	}
+	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
+}
+
+// AdminTeamsImportLogosHandler imports logos only from JSON payload/file
+func (h *HandlersMap) AdminTeamsImportLogosHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{Success: false, Status: "error", Message: msg})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: msg})
+	}
+
+	var payload adminTeamsTransferPayload
+	if err := h.decodeTeamsImportPayload(r, &payload); err != nil {
+		log.Err(err).Msg("error parsing logos-only import payload")
+		writeError(http.StatusBadRequest, "Invalid import payload")
+		return
+	}
+	if len(payload.Logos) == 0 {
+		writeError(http.StatusBadRequest, "No logos found in import payload")
+		return
+	}
+
+	createdLogos, updatedLogos, skippedLogos, err := h.importAdminTeamLogosFromPayload(uuid, payload.Logos)
+	if err != nil {
+		log.Err(err).Msg("error importing logos")
+		writeError(http.StatusInternalServerError, "Failed to import logos")
+		return
+	}
+
+	messageParts := []string{
+		"logos created " + strconv.Itoa(createdLogos),
+		"logos updated " + strconv.Itoa(updatedLogos),
+	}
+	if skippedLogos > 0 {
+		messageParts = append(messageParts, "logos skipped "+strconv.Itoa(skippedLogos))
+	}
+	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
+}
+
+// AdminTeamsEnableAllPOSTHandler enables all teams
+func (h *HandlersMap) AdminTeamsEnableAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	result := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("uuid = ?", uuid).Update("active", true)
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error enabling all teams")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to enable all teams"})
+		return
+	}
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Enabled " + strconv.FormatInt(result.RowsAffected, 10) + " team(s)"})
+}
+
+// AdminTeamsDisableAllPOSTHandler disables all teams
+func (h *HandlersMap) AdminTeamsDisableAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	result := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("uuid = ?", uuid).Update("active", false)
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error disabling all teams")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to disable all teams"})
+		return
+	}
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Disabled " + strconv.FormatInt(result.RowsAffected, 10) + " team(s)"})
+}
+
+// AdminTeamsVisibleAllPOSTHandler sets all teams visible
+func (h *HandlersMap) AdminTeamsVisibleAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	result := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("uuid = ?", uuid).Update("visible", true)
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error setting all teams visible")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to make all teams visible"})
+		return
+	}
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Set visible for " + strconv.FormatInt(result.RowsAffected, 10) + " team(s)"})
+}
+
+// AdminTeamsInvisibleAllPOSTHandler sets all teams invisible
+func (h *HandlersMap) AdminTeamsInvisibleAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	result := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("uuid = ?", uuid).Update("visible", false)
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error setting all teams invisible")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to make all teams invisible"})
+		return
+	}
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Set invisible for " + strconv.FormatInt(result.RowsAffected, 10) + " team(s)"})
+}
+
+// AdminTeamLogosEnableAllPOSTHandler enables all team logos
+func (h *HandlersMap) AdminTeamLogosEnableAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	result := h.Teams.DB.Model(&teams.TeamLogo{}).Where("uuid = ?", uuid).Update("enabled", true)
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error enabling all logos")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to enable all logos"})
+		return
+	}
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Enabled " + strconv.FormatInt(result.RowsAffected, 10) + " logo(s)"})
+}
+
+// AdminTeamLogosDisableAllPOSTHandler disables all team logos
+func (h *HandlersMap) AdminTeamLogosDisableAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	result := h.Teams.DB.Model(&teams.TeamLogo{}).Where("uuid = ?", uuid).Update("enabled", false)
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error disabling all logos")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to disable all logos"})
+		return
+	}
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Disabled " + strconv.FormatInt(result.RowsAffected, 10) + " logo(s)"})
+}
+
+// AdminTeamLogosDeleteAllPOSTHandler deletes all team logos
+func (h *HandlersMap) AdminTeamLogosDeleteAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	result := h.Teams.DB.Where("uuid = ?", uuid).Delete(&teams.TeamLogo{})
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error deleting all logos")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to delete all logos"})
+		return
+	}
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Deleted " + strconv.FormatInt(result.RowsAffected, 10) + " logo(s)"})
+}
+
+// AdminTeamsDeleteAllPOSTHandler deletes all teams and unassigns related users
+func (h *HandlersMap) AdminTeamsDeleteAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	tx := h.Teams.DB.Begin()
+	if tx.Error != nil {
+		log.Err(tx.Error).Msg("error starting delete-all-teams transaction")
+		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	if err := tx.Model(&users.PlatformUser{}).Where("uuid = ?", uuid).Update("team_id", users.NoTeamID).Error; err != nil {
+		tx.Rollback()
+		log.Err(err).Msg("error clearing user teams before bulk delete")
+		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		return
+	}
+	if err := tx.Where("uuid = ?", uuid).Delete(&teams.TeamMembership{}).Error; err != nil {
+		tx.Rollback()
+		log.Err(err).Msg("error deleting memberships before bulk delete")
+		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		return
+	}
+	if err := tx.Where("uuid = ?", uuid).Delete(&teams.TeamScore{}).Error; err != nil {
+		tx.Rollback()
+		log.Err(err).Msg("error deleting scores before bulk delete")
+		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		return
+	}
+	deleteResult := tx.Where("uuid = ?", uuid).Delete(&teams.PlatformTeam{})
+	if deleteResult.Error != nil {
+		tx.Rollback()
+		log.Err(deleteResult.Error).Msg("error deleting all teams")
+		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		return
+	}
+	if err := tx.Commit().Error; err != nil {
+		log.Err(err).Msg("error committing delete-all-teams transaction")
+		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		return
+	}
+	if err := h.Teams.SyncLogoUsage(); err != nil {
+		log.Err(err).Msg("error syncing logo usage after delete-all-teams")
+		writeError(http.StatusInternalServerError, "Deleted teams but failed to sync logo usage")
+		return
+	}
+
+	writeSuccess("Deleted " + strconv.FormatInt(deleteResult.RowsAffected, 10) + " team(s)")
+}
+
 // AdminTeamUpdatePOSTHandler updates editable team settings from admin view
 func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
@@ -872,6 +1743,11 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		writeError(http.StatusNotFound, "Team not found")
 		return
 	}
+	if err := h.Teams.SyncLogoUsage(); err != nil {
+		log.Err(err).Msg("error syncing logo usage after team update")
+		writeError(http.StatusInternalServerError, "Team updated but failed to sync logo usage")
+		return
+	}
 
 	writeSuccess("Team updated")
 }
@@ -984,6 +1860,11 @@ func (h *HandlersMap) AdminTeamDeletePOSTHandler(w http.ResponseWriter, r *http.
 	if err := tx.Commit().Error; err != nil {
 		log.Err(err).Msg("error committing team delete transaction")
 		writeError(http.StatusInternalServerError, "Failed to delete team")
+		return
+	}
+	if err := h.Teams.SyncLogoUsage(); err != nil {
+		log.Err(err).Msg("error syncing logo usage after team delete")
+		writeError(http.StatusInternalServerError, "Team deleted but failed to sync logo usage")
 		return
 	}
 
