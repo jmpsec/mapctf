@@ -82,6 +82,23 @@ type adminTeamsTransferTeam struct {
 	Protected bool   `json:"protected"`
 }
 
+type adminUsersTransferPayload struct {
+	Version    int                      `json:"version"`
+	ExportedAt string                   `json:"exported_at"`
+	Users      []adminUsersTransferUser `json:"users"`
+}
+
+type adminUsersTransferUser struct {
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	TeamID   uint   `json:"team_id"`
+	Admin    bool   `json:"admin"`
+	Service  bool   `json:"service"`
+	Active   bool   `json:"active"`
+	PassHash string `json:"pass_hash,omitempty"`
+}
+
 const maxCustomLogoUploadBytes int64 = 512 * 1024
 
 var (
@@ -239,6 +256,21 @@ func (h *HandlersMap) decodeChallengeImportPayload(r *http.Request, payload *adm
 }
 
 func (h *HandlersMap) decodeTeamsImportPayload(r *http.Request, payload *adminTeamsTransferPayload) error {
+	if strings.Contains(r.Header.Get(ContentType), "multipart/form-data") {
+		if err := r.ParseMultipartForm(20 << 20); err != nil {
+			return err
+		}
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		return json.NewDecoder(file).Decode(payload)
+	}
+	return json.NewDecoder(r.Body).Decode(payload)
+}
+
+func (h *HandlersMap) decodeUsersImportPayload(r *http.Request, payload *adminUsersTransferPayload) error {
 	if strings.Contains(r.Header.Get(ContentType), "multipart/form-data") {
 		if err := r.ParseMultipartForm(20 << 20); err != nil {
 			return err
@@ -2293,6 +2325,424 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeSuccess("User created")
+}
+
+// AdminUserUpdatePOSTHandler updates editable user settings from admin view
+func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	userIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	userID, err := strconv.ParseUint(userIDStr, 10, 64)
+	if err != nil || userID == 0 {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Invalid user id",
+		})
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
+		writeError(http.StatusBadRequest, "AJAX requests only")
+		return
+	}
+	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	var req AdminUserUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin user update JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	teamIDStr := strings.TrimSpace(req.TeamID)
+	if teamIDStr == "" {
+		teamIDStr = "0"
+	}
+	adminStr := strings.TrimSpace(req.Admin)
+	serviceStr := strings.TrimSpace(req.Service)
+	if adminStr == "" || serviceStr == "" {
+		writeError(http.StatusBadRequest, "Admin and service values are required")
+		return
+	}
+
+	teamID64, err := strconv.ParseUint(teamIDStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid team_id")
+		return
+	}
+	teamID := uint(teamID64)
+	adminValue, err := strconv.ParseBool(strings.ToLower(adminStr))
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid admin value")
+		return
+	}
+	serviceValue, err := strconv.ParseBool(strings.ToLower(serviceStr))
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid service value")
+		return
+	}
+
+	if teamID != users.NoTeamID {
+		var teamCount int64
+		if err := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("id = ? AND uuid = ?", teamID, uuid).Count(&teamCount).Error; err != nil {
+			log.Err(err).Msg("error validating team for user update")
+			writeError(http.StatusInternalServerError, "Failed to validate team")
+			return
+		}
+		if teamCount == 0 {
+			writeError(http.StatusBadRequest, "Team not found")
+			return
+		}
+	}
+
+	updateResult := h.Users.DB.Model(&users.PlatformUser{}).
+		Where("id = ? AND uuid = ?", uint(userID), uuid).
+		Updates(map[string]interface{}{
+			"team_id": teamID,
+			"admin":   adminValue,
+			"service": serviceValue,
+		})
+	if updateResult.Error != nil {
+		log.Err(updateResult.Error).Msg("error updating user")
+		writeError(http.StatusInternalServerError, "Failed to update user")
+		return
+	}
+	if updateResult.RowsAffected == 0 {
+		writeError(http.StatusNotFound, "User not found")
+		return
+	}
+
+	writeSuccess("User updated")
+}
+
+// AdminUsersExportHandler exports users as JSON
+func (h *HandlersMap) AdminUsersExportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	usersList, err := h.Users.GetAll(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading users for export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to load users",
+		})
+		return
+	}
+
+	sort.Slice(usersList, func(i, j int) bool {
+		return strings.ToLower(usersList[i].Username) < strings.ToLower(usersList[j].Username)
+	})
+
+	payload := adminUsersTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Users:      make([]adminUsersTransferUser, 0, len(usersList)),
+	}
+	for _, user := range usersList {
+		payload.Users = append(payload.Users, adminUsersTransferUser{
+			Username: strings.TrimSpace(user.Username),
+			Name:     strings.TrimSpace(user.Name),
+			Email:    strings.TrimSpace(user.Email),
+			TeamID:   user.TeamID,
+			Admin:    user.Admin,
+			Service:  user.Service,
+			Active:   user.Active,
+			PassHash: strings.TrimSpace(user.PassHash),
+		})
+	}
+
+	output, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		log.Err(err).Msg("error marshaling users export JSON")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to generate export JSON",
+		})
+		return
+	}
+
+	fileName := "mapctf-users-export-" + time.Now().UTC().Format("20060102-150405") + ".json"
+	w.Header().Set(ContentType, JSONApplicationUTF8)
+	w.Header().Set("Content-Disposition", `attachment; filename="`+fileName+`"`)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(output)
+}
+
+// AdminUsersImportHandler imports users from JSON payload/file
+func (h *HandlersMap) AdminUsersImportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	var payload adminUsersTransferPayload
+	if err := h.decodeUsersImportPayload(r, &payload); err != nil {
+		log.Err(err).Msg("error parsing users import payload")
+		writeError(http.StatusBadRequest, "Invalid import payload")
+		return
+	}
+	if len(payload.Users) == 0 {
+		writeError(http.StatusBadRequest, "No users found in import payload")
+		return
+	}
+
+	createdUsers := 0
+	updatedUsers := 0
+	skippedUsers := 0
+
+	for _, inUser := range payload.Users {
+		username := strings.TrimSpace(inUser.Username)
+		if username == "" {
+			skippedUsers++
+			continue
+		}
+
+		teamID := inUser.TeamID
+		if teamID != users.NoTeamID {
+			var teamCount int64
+			if err := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("id = ? AND uuid = ?", teamID, uuid).Count(&teamCount).Error; err != nil {
+				log.Err(err).Msg("error validating team during users import")
+				writeError(http.StatusInternalServerError, "Failed to validate teams for import")
+				return
+			}
+			if teamCount == 0 {
+				teamID = users.NoTeamID
+			}
+		}
+
+		exists, existingUser := h.Users.ExistsGet(username, uuid)
+		if exists {
+			updates := map[string]interface{}{
+				"name":    strings.TrimSpace(inUser.Name),
+				"email":   strings.TrimSpace(inUser.Email),
+				"team_id": teamID,
+				"admin":   inUser.Admin,
+				"service": inUser.Service,
+				"active":  inUser.Active,
+			}
+			if strings.TrimSpace(inUser.PassHash) != "" {
+				updates["pass_hash"] = strings.TrimSpace(inUser.PassHash)
+			}
+			result := h.Users.DB.Model(&users.PlatformUser{}).
+				Where("id = ? AND uuid = ?", existingUser.ID, uuid).
+				Updates(updates)
+			if result.Error != nil {
+				log.Err(result.Error).Msg("error updating user from import")
+				writeError(http.StatusInternalServerError, "Failed to import users")
+				return
+			}
+			updatedUsers++
+			continue
+		}
+
+		passHash := strings.TrimSpace(inUser.PassHash)
+		if passHash == "" {
+			skippedUsers++
+			continue
+		}
+		newUser := users.PlatformUser{
+			Username: username,
+			Name:     strings.TrimSpace(inUser.Name),
+			Email:    strings.TrimSpace(inUser.Email),
+			TeamID:   teamID,
+			PassHash: passHash,
+			Admin:    inUser.Admin,
+			Service:  inUser.Service,
+			Active:   inUser.Active,
+			UUID:     uuid,
+		}
+		if err := h.Users.Create(newUser); err != nil {
+			log.Err(err).Msg("error creating user from import")
+			writeError(http.StatusInternalServerError, "Failed to import users")
+			return
+		}
+		createdUsers++
+	}
+
+	messageParts := []string{
+		"users created " + strconv.Itoa(createdUsers),
+		"users updated " + strconv.Itoa(updatedUsers),
+	}
+	if skippedUsers > 0 {
+		messageParts = append(messageParts, "users skipped "+strconv.Itoa(skippedUsers))
+	}
+
+	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
+}
+
+// AdminUsersEnableAllPOSTHandler enables all users
+func (h *HandlersMap) AdminUsersEnableAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	result := h.Users.DB.Model(&users.PlatformUser{}).Where("uuid = ?", uuid).Update("active", true)
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error enabling all users")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to enable all users",
+		})
+		return
+	}
+
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+		Success: true,
+		Status:  "ok",
+		Message: "Enabled " + strconv.FormatInt(result.RowsAffected, 10) + " user(s)",
+	})
+}
+
+// AdminUsersDisableAllPOSTHandler disables all users
+func (h *HandlersMap) AdminUsersDisableAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	currentUsername := strings.TrimSpace(h.Sessions.GetString(r.Context(), string(ContextKeyUser)))
+	if currentUsername == "" {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Not authenticated",
+		})
+		return
+	}
+
+	result := h.Users.DB.Model(&users.PlatformUser{}).
+		Where("uuid = ? AND username <> ?", uuid, currentUsername).
+		Update("active", false)
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error disabling all users")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to disable all users",
+		})
+		return
+	}
+
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+		Success: true,
+		Status:  "ok",
+		Message: "Disabled " + strconv.FormatInt(result.RowsAffected, 10) + " user(s). Current user not modified.",
+	})
+}
+
+// AdminUsersDeleteAllPOSTHandler deletes all users
+func (h *HandlersMap) AdminUsersDeleteAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	currentUsername := strings.TrimSpace(h.Sessions.GetString(r.Context(), string(ContextKeyUser)))
+	if currentUsername == "" {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Not authenticated",
+		})
+		return
+	}
+
+	result := h.Users.DB.Where("uuid = ? AND username <> ?", uuid, currentUsername).Delete(&users.PlatformUser{})
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error deleting all users")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to delete all users",
+		})
+		return
+	}
+
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+		Success: true,
+		Status:  "ok",
+		Message: "Deleted " + strconv.FormatInt(result.RowsAffected, 10) + " user(s). Current user preserved.",
+	})
 }
 
 // AdminChallengesExportHandler exports all categories and challenges as JSON

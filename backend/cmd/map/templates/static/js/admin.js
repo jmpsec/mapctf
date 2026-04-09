@@ -393,6 +393,31 @@ function updateAdminTeam(updateURL, payload) {
   });
 }
 
+function updateAdminUser(updateURL, payload) {
+  return fetch(updateURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify(payload),
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to update user");
+        }
+        return data;
+      });
+  });
+}
+
 function createAdminChallenge(createURL, payload) {
   return fetch(createURL, {
     method: "POST",
@@ -1030,6 +1055,208 @@ function initAdminTeamActionsButtons() {
   });
 }
 
+function initAdminUserActionsButtons() {
+  var importBtn = document.querySelector('[data-action="import-all-users"]');
+  var importInput = document.getElementById("admin-users-import-file");
+  if (importBtn && importInput) {
+    importBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+      importInput.click();
+    });
+
+    importInput.addEventListener("change", function () {
+      var importURL = importBtn.getAttribute("data-import-url");
+      if (!importURL) {
+        showTransientAdminStatus("error", "Missing users import URL");
+        return;
+      }
+
+      var file = importInput.files && importInput.files[0];
+      if (!file) {
+        return;
+      }
+
+      if (importBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      var formData = new FormData();
+      formData.append("file", file);
+
+      importBtn.dataset.submitting = "true";
+      importBtn.disabled = true;
+
+      importAdminChallenges(importURL, formData)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || "Users imported");
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to import users");
+        })
+        .finally(function () {
+          delete importBtn.dataset.submitting;
+          importBtn.disabled = false;
+          importInput.value = "";
+        });
+    });
+  }
+
+  var disableAllUsersBtn = document.querySelector('[data-action="disable-all-users"]');
+  var enableAllUsersBtn = document.querySelector('[data-action="enable-all-users"]');
+  if (enableAllUsersBtn) {
+    enableAllUsersBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var enableAllUsersURL = enableAllUsersBtn.getAttribute("data-enable-all-users-url");
+      if (!enableAllUsersURL) {
+        showTransientAdminStatus("error", "Missing enable all users URL");
+        return;
+      }
+      if (enableAllUsersBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      enableAllUsersBtn.dataset.submitting = "true";
+      enableAllUsersBtn.disabled = true;
+
+      postAdminActionJSON(enableAllUsersURL)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || "All users enabled");
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to enable all users");
+        })
+        .finally(function () {
+          delete enableAllUsersBtn.dataset.submitting;
+          enableAllUsersBtn.disabled = false;
+        });
+    });
+  }
+
+  if (disableAllUsersBtn) {
+    disableAllUsersBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var disableAllUsersURL = disableAllUsersBtn.getAttribute("data-disable-all-users-url");
+      if (!disableAllUsersURL) {
+        showTransientAdminStatus("error", "Missing disable all users URL");
+        return;
+      }
+      if (disableAllUsersBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      function runDisableAllUsers() {
+        disableAllUsersBtn.dataset.submitting = "true";
+        disableAllUsersBtn.disabled = true;
+
+        postAdminActionJSON(disableAllUsersURL)
+          .then(function (data) {
+            showTransientAdminStatus(data.status || "ok", data.message || "All users disabled");
+            window.location.reload();
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to disable all users");
+          })
+          .finally(function () {
+            delete disableAllUsersBtn.dataset.submitting;
+            disableAllUsersBtn.disabled = false;
+            if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+              MAP_CTF.modal.close();
+            }
+          });
+      }
+
+      if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+        if (window.confirm("Disable all users?")) {
+          runDisableAllUsers();
+        }
+        return;
+      }
+
+      MAP_CTF.modal.loadPopup("action-disable-all-users", function () {
+        var modal = document.getElementById("mctf-modal");
+        if (!modal) {
+          return;
+        }
+
+        var confirmBtn = modal.querySelector(".js-confirm-disable-all-users");
+        if (!confirmBtn) {
+          return;
+        }
+        confirmBtn.addEventListener("click", function (confirmEvent) {
+          confirmEvent.preventDefault();
+          runDisableAllUsers();
+        });
+      });
+    });
+  }
+
+  var deleteAllUsersBtn = document.querySelector('[data-action="delete-all-users"]');
+  if (!deleteAllUsersBtn) {
+    return;
+  }
+
+  deleteAllUsersBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+
+    var deleteAllUsersURL = deleteAllUsersBtn.getAttribute("data-delete-all-users-url");
+    if (!deleteAllUsersURL) {
+      showTransientAdminStatus("error", "Missing delete all users URL");
+      return;
+    }
+    if (deleteAllUsersBtn.dataset.submitting === "true") {
+      return;
+    }
+
+    function runDeleteAllUsers() {
+      deleteAllUsersBtn.dataset.submitting = "true";
+      deleteAllUsersBtn.disabled = true;
+
+      postAdminActionJSON(deleteAllUsersURL)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || "All users deleted");
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to delete all users");
+        })
+        .finally(function () {
+          delete deleteAllUsersBtn.dataset.submitting;
+          deleteAllUsersBtn.disabled = false;
+          if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+            MAP_CTF.modal.close();
+          }
+        });
+    }
+
+    if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+      if (window.confirm("Delete all users? This cannot be undone.")) {
+        runDeleteAllUsers();
+      }
+      return;
+    }
+
+    MAP_CTF.modal.loadPopup("action-delete-all-users", function () {
+      var modal = document.getElementById("mctf-modal");
+      if (!modal) {
+        return;
+      }
+
+      var confirmBtn = modal.querySelector(".js-confirm-delete-all-users");
+      if (!confirmBtn) {
+        return;
+      }
+      confirmBtn.addEventListener("click", function (confirmEvent) {
+        confirmEvent.preventDefault();
+        runDeleteAllUsers();
+      });
+    });
+  });
+}
+
 function initAdminAddChallengeModal() {
   var addChallengeBtn = document.querySelector('[data-action="add-new-challenge"]');
   if (!addChallengeBtn) {
@@ -1329,6 +1556,68 @@ function initAdminAddTeamModal() {
             delete form.dataset.submitting;
           });
       });
+    });
+  });
+}
+
+function initAdminUserSettingsEditors() {
+  var userCards = Array.prototype.slice.call(document.querySelectorAll("#users section.admin-box[data-user-update-url]"));
+  if (!userCards.length) {
+    return;
+  }
+
+  userCards.forEach(function (card) {
+    var saveBtn = card.querySelector('[data-action="save"]');
+    var updateURL = card.getAttribute("data-user-update-url");
+    var teamSelect = card.querySelector('select[data-user-field="team_id"]');
+
+    if (!saveBtn || !teamSelect) {
+      return;
+    }
+
+    saveBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      if (!updateURL) {
+        showTransientAdminStatus("error", "Missing user update URL");
+        return;
+      }
+      if (saveBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      var teamValue = typeof teamSelect.value === "string" ? teamSelect.value.trim() : "";
+      if (teamValue === "") {
+        teamValue = "0";
+      }
+      var adminInput = card.querySelector('input[data-user-field="admin"]:checked');
+      var serviceInput = card.querySelector('input[data-user-field="service"]:checked');
+      var adminValue = adminInput ? String(adminInput.value).trim() : "";
+      var serviceValue = serviceInput ? String(serviceInput.value).trim() : "";
+
+      if (!adminValue || !serviceValue) {
+        showTransientAdminStatus("error", "Admin and service values are required");
+        return;
+      }
+
+      saveBtn.dataset.submitting = "true";
+      saveBtn.disabled = true;
+
+      updateAdminUser(updateURL, {
+        team_id: teamValue,
+        admin: adminValue,
+        service: serviceValue,
+      })
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || "User updated");
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to update user");
+        })
+        .finally(function () {
+          delete saveBtn.dataset.submitting;
+          saveBtn.disabled = false;
+        });
     });
   });
 }
@@ -2110,6 +2399,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminLogoutModal();
   initAdminAjaxForms();
   initAdminUsersSearch();
+  initAdminUserActionsButtons();
   initAdminTeamsSearch();
   initAdminLogosSearch();
   initAdminTeamActionsButtons();
@@ -2119,6 +2409,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminChallengeDeleteButtons();
   initAdminAddChallengeModal();
   initAdminAddUserModal();
+  initAdminUserSettingsEditors();
   initAdminAddTeamModal();
   initAdminTeamSettingsEditors();
   initAdminTeamDeleteButtons();
