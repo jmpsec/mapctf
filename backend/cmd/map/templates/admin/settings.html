@@ -8,6 +8,37 @@
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
     <link rel="stylesheet" href="/static/css/mapctf.css" />
+    <style>
+      #settings-actions .admin-settings-list {
+        grid-template-columns: 1fr;
+      }
+
+      #settings-actions .admin-setting-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      #settings-actions .admin-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-self: flex-start;
+        margin-top: 0;
+      }
+
+      #settings-actions .admin-buttons .mctf-cta {
+        margin: 0;
+      }
+
+      #settings-actions .admin-buttons button + button,
+      #settings-actions .admin-buttons button + a,
+      #settings-actions .admin-buttons a + button,
+      #settings-actions .admin-buttons a + a {
+        margin-left: 0;
+      }
+    </style>
   </head>
   <body data-section="admin">
     <div class="mctf-sprite" id="mctf-svg-sprite"></div>
@@ -58,6 +89,25 @@
               <span class="admin-section--status-message"></span>
             </span>
           </header>
+
+          <section id="settings-actions" class="admin-box">
+            <header class="admin-box-header mctf-cf">
+              <h3>Settings Actions</h3>
+            </header>
+            <div class="admin-row">
+              <div class="admin-settings-list">
+                <div class="admin-setting-row">
+                  <label>Import / Export</label>
+                  <div class="admin-buttons" style="margin-top: 0">
+                    <button class="mctf-cta cta--yellow" data-action="import-all-settings" data-import-url="/{{ .UUID }}/admin/settings/import" type="button">Import Settings</button>
+                    <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/settings/export">Export Settings</a>
+                    <button class="mctf-cta cta--red" data-action="reset-settings-defaults" data-reset-defaults-url="/{{ .UUID }}/admin/settings/reset-defaults" type="button">Reset to Defaults</button>
+                  </div>
+                  <input id="admin-settings-import-file" type="file" accept=".json,application/json" style="display: none" />
+                </div>
+              </div>
+            </div>
+          </section>
 
           <section id="settings-login" class="admin-box">
             <header class="admin-box-header mctf-cf">

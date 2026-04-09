@@ -649,6 +649,125 @@ function initAdminImportChallengesButton() {
   });
 }
 
+function initAdminSettingsActionsButtons() {
+  var importBtn = document.querySelector('[data-action="import-all-settings"]');
+  var resetDefaultsBtn = document.querySelector('[data-action="reset-settings-defaults"]');
+  if (!importBtn && !resetDefaultsBtn) {
+    return;
+  }
+
+  if (importBtn) {
+    var fileInput = document.getElementById("admin-settings-import-file");
+    if (!fileInput) {
+      showTransientAdminStatus("error", "Settings import file input not found");
+      return;
+    }
+
+    importBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", function () {
+      var importURL = importBtn.getAttribute("data-import-url");
+      if (!importURL) {
+        showTransientAdminStatus("error", "Missing settings import URL");
+        fileInput.value = "";
+        return;
+      }
+
+      if (importBtn.dataset.submitting === "true") {
+        fileInput.value = "";
+        return;
+      }
+
+      if (!fileInput.files || !fileInput.files.length) {
+        return;
+      }
+
+      var importFile = fileInput.files[0];
+      var formData = new FormData();
+      formData.append("file", importFile);
+
+      importBtn.dataset.submitting = "true";
+      importBtn.disabled = true;
+
+      importAdminChallenges(importURL, formData)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || "Settings imported");
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to import settings");
+        })
+        .finally(function () {
+          delete importBtn.dataset.submitting;
+          importBtn.disabled = false;
+          fileInput.value = "";
+        });
+    });
+  }
+
+  if (resetDefaultsBtn) {
+    resetDefaultsBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var resetDefaultsURL = resetDefaultsBtn.getAttribute("data-reset-defaults-url");
+      if (!resetDefaultsURL) {
+        showTransientAdminStatus("error", "Missing reset defaults URL");
+        return;
+      }
+      if (resetDefaultsBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      function runResetDefaults() {
+        resetDefaultsBtn.dataset.submitting = "true";
+        resetDefaultsBtn.disabled = true;
+
+        postAdminActionJSON(resetDefaultsURL)
+          .then(function (data) {
+            showTransientAdminStatus(data.status || "ok", data.message || "Settings reset to defaults");
+            window.location.reload();
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to reset settings");
+          })
+          .finally(function () {
+            delete resetDefaultsBtn.dataset.submitting;
+            resetDefaultsBtn.disabled = false;
+            if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+              MAP_CTF.modal.close();
+            }
+          });
+      }
+
+      if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+        if (window.confirm("Reset all settings to defaults?")) {
+          runResetDefaults();
+        }
+        return;
+      }
+
+      MAP_CTF.modal.loadPopup("action-reset-settings-defaults", function () {
+        var modal = document.getElementById("mctf-modal");
+        if (!modal) {
+          return;
+        }
+
+        var confirmBtn = modal.querySelector(".js-confirm-reset-settings-defaults");
+        if (!confirmBtn) {
+          return;
+        }
+        confirmBtn.addEventListener("click", function (confirmEvent) {
+          confirmEvent.preventDefault();
+          runResetDefaults();
+        });
+      });
+    });
+  }
+}
+
 function initAdminChallengeActionsButtons() {
   var enableAllChallengesBtn = document.querySelector('[data-action="enable-all-challenges"]');
   if (enableAllChallengesBtn) {
@@ -2398,6 +2517,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminStatusFromServerState();
   initAdminLogoutModal();
   initAdminAjaxForms();
+  initAdminSettingsActionsButtons();
   initAdminUsersSearch();
   initAdminUserActionsButtons();
   initAdminTeamsSearch();

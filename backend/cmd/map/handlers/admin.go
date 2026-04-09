@@ -99,6 +99,22 @@ type adminUsersTransferUser struct {
 	PassHash string `json:"pass_hash,omitempty"`
 }
 
+type adminSettingsTransferPayload struct {
+	Version    int                         `json:"version"`
+	ExportedAt string                      `json:"exported_at"`
+	Settings   []adminSettingsTransferItem `json:"settings"`
+}
+
+type adminSettingsTransferItem struct {
+	Name        string  `json:"name"`
+	ValueType   string  `json:"value_type"`
+	ValueString string  `json:"value_string,omitempty"`
+	ValueInt    int     `json:"value_int,omitempty"`
+	ValueBool   bool    `json:"value_bool,omitempty"`
+	ValueFloat  float64 `json:"value_float,omitempty"`
+	ValueDate   string  `json:"value_date,omitempty"`
+}
+
 const maxCustomLogoUploadBytes int64 = 512 * 1024
 
 var (
@@ -271,6 +287,21 @@ func (h *HandlersMap) decodeTeamsImportPayload(r *http.Request, payload *adminTe
 }
 
 func (h *HandlersMap) decodeUsersImportPayload(r *http.Request, payload *adminUsersTransferPayload) error {
+	if strings.Contains(r.Header.Get(ContentType), "multipart/form-data") {
+		if err := r.ParseMultipartForm(20 << 20); err != nil {
+			return err
+		}
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		return json.NewDecoder(file).Decode(payload)
+	}
+	return json.NewDecoder(r.Body).Decode(payload)
+}
+
+func (h *HandlersMap) decodeSettingsImportPayload(r *http.Request, payload *adminSettingsTransferPayload) error {
 	if strings.Contains(r.Header.Get(ContentType), "multipart/form-data") {
 		if err := r.ParseMultipartForm(20 << 20); err != nil {
 			return err
@@ -661,6 +692,258 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	writeSuccess("Updated " + settingName)
+}
+
+// AdminSettingsExportHandler exports settings as JSON
+func (h *HandlersMap) AdminSettingsExportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	settingsList, err := h.Settings.GetAll(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading settings for export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to load settings",
+		})
+		return
+	}
+
+	sort.Slice(settingsList, func(i, j int) bool {
+		return settingsList[i].Name < settingsList[j].Name
+	})
+
+	payload := adminSettingsTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Settings:   make([]adminSettingsTransferItem, 0, len(settingsList)),
+	}
+	for _, s := range settingsList {
+		item := adminSettingsTransferItem{
+			Name:        s.Name,
+			ValueType:   s.ValueType,
+			ValueString: s.ValueString,
+			ValueInt:    s.ValueInt,
+			ValueBool:   s.ValueBool,
+			ValueFloat:  s.ValueFloat,
+		}
+		if !s.ValueDate.IsZero() {
+			item.ValueDate = s.ValueDate.UTC().Format(time.RFC3339)
+		}
+		payload.Settings = append(payload.Settings, item)
+	}
+
+	filename := "mapctf-settings-export-" + time.Now().UTC().Format("20060102-150405") + ".json"
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, payload)
+}
+
+// AdminSettingsImportHandler imports settings from JSON payload/file
+func (h *HandlersMap) AdminSettingsImportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	contentType := strings.ToLower(r.Header.Get(ContentType))
+	isJSON := strings.Contains(contentType, JSONApplication)
+	isMultipart := strings.Contains(contentType, "multipart/form-data")
+	if !isJSON && !isMultipart {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json or multipart/form-data")
+		return
+	}
+
+	var payload adminSettingsTransferPayload
+	if err := h.decodeSettingsImportPayload(r, &payload); err != nil {
+		log.Err(err).Msg("error parsing settings import payload")
+		writeError(http.StatusBadRequest, "Invalid settings import payload")
+		return
+	}
+
+	username := strings.TrimSpace(h.Sessions.GetString(r.Context(), string(ContextKeyUser)))
+	if username == "" {
+		username = h.ServiceName
+	}
+
+	updatedSettings := 0
+	skippedSettings := 0
+
+	for _, in := range payload.Settings {
+		name := strings.TrimSpace(in.Name)
+		if name == "" {
+			skippedSettings++
+			continue
+		}
+
+		var err error
+		switch name {
+		case "login_enabled":
+			err = h.Settings.SetLoginEnabled(in.ValueBool, username)
+		case "login_strong_passwords":
+			err = h.Settings.SetLoginStrongPasswords(in.ValueBool, username)
+		case "registration_enabled":
+			err = h.Settings.SetRegistrationEnabled(in.ValueBool, username)
+		case "registration_names":
+			err = h.Settings.SetRegistrationNames(in.ValueBool, username)
+		case "registration_emails":
+			err = h.Settings.SetRegistrationEmails(in.ValueBool, username)
+		case "registration_type":
+			err = h.Settings.SetRegistrationType(in.ValueInt, username)
+		case "registration_token":
+			err = h.Settings.SetRegistrationToken(in.ValueString, username)
+		case "scoring_enabled":
+			err = h.Settings.SetScoringEnabled(in.ValueBool, username)
+		case "game_paused":
+			err = h.Settings.SetGamePaused(in.ValueBool, username)
+		case "game_started":
+			err = h.Settings.SetGameStarted(in.ValueBool, username)
+		case "game_start_time":
+			var t time.Time
+			if strings.TrimSpace(in.ValueDate) != "" {
+				t, err = time.Parse(time.RFC3339, strings.TrimSpace(in.ValueDate))
+				if err != nil {
+					t, err = time.ParseInLocation("2006-01-02T15:04", strings.TrimSpace(in.ValueDate), time.Local)
+				}
+				if err != nil {
+					writeError(http.StatusBadRequest, "Invalid game_start_time format in import")
+					return
+				}
+			}
+			err = h.Settings.SetGameStartTime(t, username)
+		case "game_end_time":
+			var t time.Time
+			if strings.TrimSpace(in.ValueDate) != "" {
+				t, err = time.Parse(time.RFC3339, strings.TrimSpace(in.ValueDate))
+				if err != nil {
+					t, err = time.ParseInLocation("2006-01-02T15:04", strings.TrimSpace(in.ValueDate), time.Local)
+				}
+				if err != nil {
+					writeError(http.StatusBadRequest, "Invalid game_end_time format in import")
+					return
+				}
+			}
+			err = h.Settings.SetGameEndTime(t, username)
+		case "custom_org":
+			err = h.Settings.SetCustomOrg(in.ValueString, username)
+		case "custom_logo":
+			err = h.Settings.SetCustomLogo(in.ValueString, username)
+		case "language":
+			err = h.Settings.SetLanguage(in.ValueString, username)
+		case "leaderboard_limit":
+			err = h.Settings.SetLeaderboardLimit(in.ValueInt, username)
+		default:
+			skippedSettings++
+			continue
+		}
+
+		if err != nil {
+			log.Err(err).Msgf("error importing setting %s", name)
+			writeError(http.StatusInternalServerError, "Failed importing setting "+name)
+			return
+		}
+		updatedSettings++
+	}
+
+	messageParts := []string{"settings updated " + strconv.Itoa(updatedSettings)}
+	if skippedSettings > 0 {
+		messageParts = append(messageParts, "settings skipped "+strconv.Itoa(skippedSettings))
+	}
+	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
+}
+
+// AdminSettingsResetDefaultsPOSTHandler resets settings to default values
+func (h *HandlersMap) AdminSettingsResetDefaultsPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	username := strings.TrimSpace(h.Sessions.GetString(r.Context(), string(ContextKeyUser)))
+	if username == "" {
+		username = h.ServiceName
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	defaultStartTime := time.Time{}
+	defaultEndTime := time.Time{}
+	updates := []func() error{
+		func() error { return h.Settings.SetLoginEnabled(false, username) },
+		func() error { return h.Settings.SetLoginStrongPasswords(false, username) },
+		func() error { return h.Settings.SetRegistrationEnabled(false, username) },
+		func() error { return h.Settings.SetRegistrationNames(false, username) },
+		func() error { return h.Settings.SetRegistrationEmails(false, username) },
+		func() error { return h.Settings.SetRegistrationType(0, username) },
+		func() error { return h.Settings.SetRegistrationToken("", username) },
+		func() error { return h.Settings.SetScoringEnabled(false, username) },
+		func() error { return h.Settings.SetGamePaused(false, username) },
+		func() error { return h.Settings.SetGameStarted(false, username) },
+		func() error { return h.Settings.SetGameStartTime(defaultStartTime, username) },
+		func() error { return h.Settings.SetGameEndTime(defaultEndTime, username) },
+		func() error { return h.Settings.SetCustomOrg("", username) },
+		func() error { return h.Settings.SetCustomLogo("", username) },
+		func() error { return h.Settings.SetLanguage("en", username) },
+		func() error { return h.Settings.SetLeaderboardLimit(10, username) },
+	}
+
+	for _, update := range updates {
+		if err := update(); err != nil {
+			log.Err(err).Msg("error resetting settings to defaults")
+			writeError(http.StatusInternalServerError, "Failed resetting settings to defaults")
+			return
+		}
+	}
+
+	writeSuccess("Settings reset to defaults")
 }
 
 // AdminControlsTemplateHandler for admin controls page for GET requests
