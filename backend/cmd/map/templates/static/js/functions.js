@@ -1,8 +1,20 @@
+var ajaxRedirectTimeout = null;
+var ajaxRedirectCountdownInterval = null;
+
 function getAjaxMessageBox() {
   return $("#ajax-message-box");
 }
 
 function clearAjaxMessage() {
+  if (ajaxRedirectTimeout !== null) {
+    clearTimeout(ajaxRedirectTimeout);
+    ajaxRedirectTimeout = null;
+  }
+  if (ajaxRedirectCountdownInterval !== null) {
+    clearInterval(ajaxRedirectCountdownInterval);
+    ajaxRedirectCountdownInterval = null;
+  }
+
   var $messageBox = getAjaxMessageBox();
   if ($messageBox.length === 0) {
     return;
@@ -78,10 +90,40 @@ function sendPostRequest(req_data, req_url, _redir, _modal, _callback) {
         _redirectUrl = data.redirect;
       }
       if (_redirectUrl !== "") {
-        showAjaxMessage(data.message || "Success. Redirecting...", "success");
-        setTimeout(function () {
-          window.location.replace(_redirectUrl);
-        }, 900);
+        var _isAdminRedirect = /\/admin(?:\/|$)/.test(_redirectUrl);
+        if (_isAdminRedirect) {
+          var _secondsLeft = 3;
+          var _baseMessage = data.message || "Login successful";
+          var _countdownLabel = _secondsLeft === 1 ? "second" : "seconds";
+
+          showAjaxMessage(_baseMessage + ". Redirecting in " + _secondsLeft + " " + _countdownLabel + "...", "success");
+
+          ajaxRedirectCountdownInterval = setInterval(function () {
+            _secondsLeft -= 1;
+            if (_secondsLeft <= 0) {
+              clearInterval(ajaxRedirectCountdownInterval);
+              ajaxRedirectCountdownInterval = null;
+              return;
+            }
+            _countdownLabel = _secondsLeft === 1 ? "second" : "seconds";
+            showAjaxMessage(_baseMessage + ". Redirecting in " + _secondsLeft + " " + _countdownLabel + "...", "success");
+          }, 1000);
+
+          ajaxRedirectTimeout = setTimeout(function () {
+            if (ajaxRedirectCountdownInterval !== null) {
+              clearInterval(ajaxRedirectCountdownInterval);
+              ajaxRedirectCountdownInterval = null;
+            }
+            ajaxRedirectTimeout = null;
+            window.location.replace(_redirectUrl);
+          }, 3000);
+        } else {
+          showAjaxMessage(data.message || "Success. Redirecting...", "success");
+          ajaxRedirectTimeout = setTimeout(function () {
+            ajaxRedirectTimeout = null;
+            window.location.replace(_redirectUrl);
+          }, 900);
+        }
       }
       if (_callback) {
         _callback(data);
