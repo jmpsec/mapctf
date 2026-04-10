@@ -649,6 +649,57 @@ function initAdminImportChallengesButton() {
   });
 }
 
+function initAdminGameActionsButtons() {
+  var importBtn = document.querySelector('[data-action="import-full-game"]');
+  var importInput = document.getElementById("admin-game-import-file");
+  if (!importBtn || !importInput) {
+    return;
+  }
+
+  importBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+    importInput.click();
+  });
+
+  importInput.addEventListener("change", function () {
+    var importURL = importBtn.getAttribute("data-import-url");
+    if (!importURL) {
+      showTransientAdminStatus("error", "Missing full-game import URL");
+      importInput.value = "";
+      return;
+    }
+    if (importBtn.dataset.submitting === "true") {
+      importInput.value = "";
+      return;
+    }
+
+    if (!importInput.files || !importInput.files.length) {
+      return;
+    }
+
+    var importFile = importInput.files[0];
+    var formData = new FormData();
+    formData.append("file", importFile);
+
+    importBtn.dataset.submitting = "true";
+    importBtn.disabled = true;
+
+    importAdminChallenges(importURL, formData)
+      .then(function (data) {
+        showTransientAdminStatus(data.status || "ok", data.message || "Full game imported");
+        window.location.reload();
+      })
+      .catch(function (error) {
+        showTransientAdminStatus("error", error.message || "Failed to import full game");
+      })
+      .finally(function () {
+        delete importBtn.dataset.submitting;
+        importBtn.disabled = false;
+        importInput.value = "";
+      });
+  });
+}
+
 function initAdminSettingsActionsButtons() {
   var importBtn = document.querySelector('[data-action="import-all-settings"]');
   var resetDefaultsBtn = document.querySelector('[data-action="reset-settings-defaults"]');
@@ -2517,6 +2568,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminStatusFromServerState();
   initAdminLogoutModal();
   initAdminAjaxForms();
+  initAdminGameActionsButtons();
   initAdminSettingsActionsButtons();
   initAdminUsersSearch();
   initAdminUserActionsButtons();

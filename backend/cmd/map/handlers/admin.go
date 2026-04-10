@@ -105,6 +105,15 @@ type adminSettingsTransferPayload struct {
 	Settings   []adminSettingsTransferItem `json:"settings"`
 }
 
+type adminGameTransferPayload struct {
+	Version    int                            `json:"version"`
+	ExportedAt string                         `json:"exported_at"`
+	Settings   adminSettingsTransferPayload   `json:"settings"`
+	Users      adminUsersTransferPayload      `json:"users"`
+	Teams      adminTeamsTransferPayload      `json:"teams"`
+	Challenges adminChallengesTransferPayload `json:"challenges"`
+}
+
 type adminSettingsTransferItem struct {
 	Name        string  `json:"name"`
 	ValueType   string  `json:"value_type"`
@@ -302,6 +311,21 @@ func (h *HandlersMap) decodeUsersImportPayload(r *http.Request, payload *adminUs
 }
 
 func (h *HandlersMap) decodeSettingsImportPayload(r *http.Request, payload *adminSettingsTransferPayload) error {
+	if strings.Contains(r.Header.Get(ContentType), "multipart/form-data") {
+		if err := r.ParseMultipartForm(20 << 20); err != nil {
+			return err
+		}
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		return json.NewDecoder(file).Decode(payload)
+	}
+	return json.NewDecoder(r.Body).Decode(payload)
+}
+
+func (h *HandlersMap) decodeGameImportPayload(r *http.Request, payload *adminGameTransferPayload) error {
 	if strings.Contains(r.Header.Get(ContentType), "multipart/form-data") {
 		if err := r.ParseMultipartForm(20 << 20); err != nil {
 			return err
@@ -694,28 +718,10 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	writeSuccess("Updated " + settingName)
 }
 
-// AdminSettingsExportHandler exports settings as JSON
-func (h *HandlersMap) AdminSettingsExportHandler(w http.ResponseWriter, r *http.Request) {
-	if h.Config.DebugHTTP.Enabled {
-		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
-	}
-
-	uuid := chi.URLParam(r, "uuid")
-	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
-		h.ErrorInvalidUUID(w, r)
-		return
-	}
-
+func (h *HandlersMap) buildAdminSettingsTransferPayload(uuid string) (adminSettingsTransferPayload, error) {
 	settingsList, err := h.Settings.GetAll(uuid)
 	if err != nil {
-		log.Err(err).Msg("error loading settings for export")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
-			Success: false,
-			Status:  "error",
-			Message: "Failed to load settings",
-		})
-		return
+		return adminSettingsTransferPayload{}, err
 	}
 
 	sort.Slice(settingsList, func(i, j int) bool {
@@ -740,6 +746,632 @@ func (h *HandlersMap) AdminSettingsExportHandler(w http.ResponseWriter, r *http.
 			item.ValueDate = s.ValueDate.UTC().Format(time.RFC3339)
 		}
 		payload.Settings = append(payload.Settings, item)
+	}
+
+	return payload, nil
+}
+
+func (h *HandlersMap) buildAdminUsersTransferPayload(uuid string) (adminUsersTransferPayload, error) {
+	usersList, err := h.Users.GetAll(uuid)
+	if err != nil {
+		return adminUsersTransferPayload{}, err
+	}
+
+	sort.Slice(usersList, func(i, j int) bool {
+		return strings.ToLower(usersList[i].Username) < strings.ToLower(usersList[j].Username)
+	})
+
+	payload := adminUsersTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Users:      make([]adminUsersTransferUser, 0, len(usersList)),
+	}
+	for _, user := range usersList {
+		payload.Users = append(payload.Users, adminUsersTransferUser{
+			Username: strings.TrimSpace(user.Username),
+			Name:     strings.TrimSpace(user.Name),
+			Email:    strings.TrimSpace(user.Email),
+			TeamID:   user.TeamID,
+			Admin:    user.Admin,
+			Service:  user.Service,
+			Active:   user.Active,
+			PassHash: strings.TrimSpace(user.PassHash),
+		})
+	}
+
+	return payload, nil
+}
+
+func (h *HandlersMap) buildAdminTeamsTransferPayload(uuid string) (adminTeamsTransferPayload, error) {
+	teamsList, err := h.Teams.GetAll()
+	if err != nil {
+		return adminTeamsTransferPayload{}, err
+	}
+
+	var logosList []teams.TeamLogo
+	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&logosList).Error; err != nil {
+		return adminTeamsTransferPayload{}, err
+	}
+
+	sort.Slice(teamsList, func(i, j int) bool {
+		return strings.ToLower(teamsList[i].Name) < strings.ToLower(teamsList[j].Name)
+	})
+	sort.Slice(logosList, func(i, j int) bool {
+		return strings.ToLower(logosList[i].Name) < strings.ToLower(logosList[j].Name)
+	})
+
+	payload := adminTeamsTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Logos:      make([]adminTeamsTransferLogo, 0, len(logosList)),
+		Teams:      make([]adminTeamsTransferTeam, 0, len(teamsList)),
+	}
+
+	for _, logo := range logosList {
+		payload.Logos = append(payload.Logos, adminTeamsTransferLogo{
+			Name:      strings.TrimSpace(logo.Name),
+			Logo:      normalizeLogoSymbolName(strings.TrimSpace(logo.Logo)),
+			Enabled:   logo.Enabled,
+			Custom:    logo.Custom,
+			Protected: logo.Protected,
+			Used:      logo.Used,
+		})
+	}
+	for _, team := range teamsList {
+		payload.Teams = append(payload.Teams, adminTeamsTransferTeam{
+			Name:      strings.TrimSpace(team.Name),
+			Logo:      normalizeLogoSymbolName(strings.TrimSpace(team.Logo)),
+			Active:    team.Active,
+			Visible:   team.Visible,
+			Protected: team.Protected,
+		})
+	}
+
+	return payload, nil
+}
+
+func (h *HandlersMap) buildAdminChallengesTransferPayload(uuid string) (adminChallengesTransferPayload, error) {
+	categoriesList, err := h.Challenges.GetAllCategories(uuid)
+	if err != nil {
+		return adminChallengesTransferPayload{}, err
+	}
+	challengesList, err := h.Challenges.GetAll(uuid)
+	if err != nil {
+		return adminChallengesTransferPayload{}, err
+	}
+
+	sort.Slice(categoriesList, func(i, j int) bool {
+		return strings.ToLower(categoriesList[i].Name) < strings.ToLower(categoriesList[j].Name)
+	})
+	sort.Slice(challengesList, func(i, j int) bool {
+		return strings.ToLower(challengesList[i].Title) < strings.ToLower(challengesList[j].Title)
+	})
+
+	categoriesByID := make(map[uint]adminChallengesTransferCategory, len(categoriesList))
+	transferCategories := make([]adminChallengesTransferCategory, 0, len(categoriesList))
+	for _, category := range categoriesList {
+		entry := adminChallengesTransferCategory{
+			Name:        strings.TrimSpace(category.Name),
+			Description: strings.TrimSpace(category.Description),
+			Logo:        strings.TrimSpace(category.Logo),
+		}
+		categoriesByID[category.ID] = entry
+		transferCategories = append(transferCategories, entry)
+	}
+
+	transferChallenges := make([]adminChallengesTransferItem, 0, len(challengesList))
+	for _, challenge := range challengesList {
+		transferItem := adminChallengesTransferItem{
+			Title:       strings.TrimSpace(challenge.Title),
+			Description: strings.TrimSpace(challenge.Description),
+			Country:     strings.ToUpper(strings.TrimSpace(challenge.Country)),
+			Active:      challenge.Active,
+			Points:      challenge.Points,
+			Bonus:       challenge.Bonus,
+			BonusDecay:  challenge.BonusDecay,
+			Penalty:     challenge.Penalty,
+			Flag:        strings.TrimSpace(challenge.Flag),
+			Hint:        strings.TrimSpace(challenge.Hint),
+		}
+		if category, ok := categoriesByID[challenge.CategoryID]; ok {
+			transferItem.Category = category.Name
+		}
+		transferChallenges = append(transferChallenges, transferItem)
+	}
+
+	return adminChallengesTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Categories: transferCategories,
+		Challenges: transferChallenges,
+	}, nil
+}
+
+func (h *HandlersMap) importAdminSettingsFromPayload(payload adminSettingsTransferPayload, username string) (int, int, error) {
+	updatedSettings := 0
+	skippedSettings := 0
+
+	for _, in := range payload.Settings {
+		name := strings.TrimSpace(in.Name)
+		if name == "" {
+			skippedSettings++
+			continue
+		}
+
+		var err error
+		switch name {
+		case "login_enabled":
+			err = h.Settings.SetLoginEnabled(in.ValueBool, username)
+		case "login_strong_passwords":
+			err = h.Settings.SetLoginStrongPasswords(in.ValueBool, username)
+		case "registration_enabled":
+			err = h.Settings.SetRegistrationEnabled(in.ValueBool, username)
+		case "registration_names":
+			err = h.Settings.SetRegistrationNames(in.ValueBool, username)
+		case "registration_emails":
+			err = h.Settings.SetRegistrationEmails(in.ValueBool, username)
+		case "registration_type":
+			err = h.Settings.SetRegistrationType(in.ValueInt, username)
+		case "registration_token":
+			err = h.Settings.SetRegistrationToken(in.ValueString, username)
+		case "scoring_enabled":
+			err = h.Settings.SetScoringEnabled(in.ValueBool, username)
+		case "game_paused":
+			err = h.Settings.SetGamePaused(in.ValueBool, username)
+		case "game_started":
+			err = h.Settings.SetGameStarted(in.ValueBool, username)
+		case "game_start_time":
+			var t time.Time
+			if strings.TrimSpace(in.ValueDate) != "" {
+				t, err = time.Parse(time.RFC3339, strings.TrimSpace(in.ValueDate))
+				if err != nil {
+					t, err = time.ParseInLocation("2006-01-02T15:04", strings.TrimSpace(in.ValueDate), time.Local)
+				}
+				if err != nil {
+					return updatedSettings, skippedSettings, fmt.Errorf("invalid game_start_time format in import")
+				}
+			}
+			err = h.Settings.SetGameStartTime(t, username)
+		case "game_end_time":
+			var t time.Time
+			if strings.TrimSpace(in.ValueDate) != "" {
+				t, err = time.Parse(time.RFC3339, strings.TrimSpace(in.ValueDate))
+				if err != nil {
+					t, err = time.ParseInLocation("2006-01-02T15:04", strings.TrimSpace(in.ValueDate), time.Local)
+				}
+				if err != nil {
+					return updatedSettings, skippedSettings, fmt.Errorf("invalid game_end_time format in import")
+				}
+			}
+			err = h.Settings.SetGameEndTime(t, username)
+		case "custom_org":
+			err = h.Settings.SetCustomOrg(in.ValueString, username)
+		case "custom_logo":
+			err = h.Settings.SetCustomLogo(in.ValueString, username)
+		case "language":
+			err = h.Settings.SetLanguage(in.ValueString, username)
+		case "leaderboard_limit":
+			err = h.Settings.SetLeaderboardLimit(in.ValueInt, username)
+		default:
+			skippedSettings++
+			continue
+		}
+
+		if err != nil {
+			return updatedSettings, skippedSettings, fmt.Errorf("failed importing setting %s", name)
+		}
+		updatedSettings++
+	}
+
+	return updatedSettings, skippedSettings, nil
+}
+
+func (h *HandlersMap) importAdminUsersFromPayload(uuid string, inUsers []adminUsersTransferUser) (int, int, int, error) {
+	createdUsers := 0
+	updatedUsers := 0
+	skippedUsers := 0
+
+	for _, inUser := range inUsers {
+		username := strings.TrimSpace(inUser.Username)
+		if username == "" {
+			skippedUsers++
+			continue
+		}
+
+		teamID := inUser.TeamID
+		if teamID != users.NoTeamID {
+			var teamCount int64
+			if err := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("id = ? AND uuid = ?", teamID, uuid).Count(&teamCount).Error; err != nil {
+				return createdUsers, updatedUsers, skippedUsers, err
+			}
+			if teamCount == 0 {
+				teamID = users.NoTeamID
+			}
+		}
+
+		exists, existingUser := h.Users.ExistsGet(username, uuid)
+		if exists {
+			updates := map[string]interface{}{
+				"name":    strings.TrimSpace(inUser.Name),
+				"email":   strings.TrimSpace(inUser.Email),
+				"team_id": teamID,
+				"admin":   inUser.Admin,
+				"service": inUser.Service,
+				"active":  inUser.Active,
+			}
+			if strings.TrimSpace(inUser.PassHash) != "" {
+				updates["pass_hash"] = strings.TrimSpace(inUser.PassHash)
+			}
+			result := h.Users.DB.Model(&users.PlatformUser{}).
+				Where("id = ? AND uuid = ?", existingUser.ID, uuid).
+				Updates(updates)
+			if result.Error != nil {
+				return createdUsers, updatedUsers, skippedUsers, result.Error
+			}
+			updatedUsers++
+			continue
+		}
+
+		passHash := strings.TrimSpace(inUser.PassHash)
+		if passHash == "" {
+			skippedUsers++
+			continue
+		}
+		newUser := users.PlatformUser{
+			Username: username,
+			Name:     strings.TrimSpace(inUser.Name),
+			Email:    strings.TrimSpace(inUser.Email),
+			TeamID:   teamID,
+			PassHash: passHash,
+			Admin:    inUser.Admin,
+			Service:  inUser.Service,
+			Active:   inUser.Active,
+			UUID:     uuid,
+		}
+		if err := h.Users.Create(newUser); err != nil {
+			return createdUsers, updatedUsers, skippedUsers, err
+		}
+		createdUsers++
+	}
+
+	return createdUsers, updatedUsers, skippedUsers, nil
+}
+
+func (h *HandlersMap) importAdminChallengesFromPayload(uuid string, payload adminChallengesTransferPayload) (int, int, int, int, error) {
+	existingCategories, err := h.Challenges.GetAllCategories(uuid)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	type categoryRef struct {
+		ID          uint
+		Description string
+		Logo        string
+	}
+	categoriesByName := make(map[string]categoryRef, len(existingCategories))
+	for _, category := range existingCategories {
+		key := strings.ToLower(strings.TrimSpace(category.Name))
+		if key == "" {
+			continue
+		}
+		categoriesByName[key] = categoryRef{
+			ID:          category.ID,
+			Description: strings.TrimSpace(category.Description),
+			Logo:        strings.TrimSpace(category.Logo),
+		}
+	}
+
+	createdCategories := 0
+	ensureCategory := func(name, description, logo string) (uint, error) {
+		key := strings.ToLower(strings.TrimSpace(name))
+		if key == "" {
+			return 0, errors.New("category name is required")
+		}
+		if existing, ok := categoriesByName[key]; ok {
+			return existing.ID, nil
+		}
+
+		newCategory, err := h.Challenges.NewCategory(strings.TrimSpace(name), strings.TrimSpace(description), strings.TrimSpace(logo), uuid)
+		if err != nil {
+			return 0, err
+		}
+		if err := h.Challenges.CreateCategory(newCategory); err != nil {
+			return 0, err
+		}
+		refreshedCategories, err := h.Challenges.GetAllCategories(uuid)
+		if err != nil {
+			return 0, err
+		}
+		var createdID uint
+		for _, refreshed := range refreshedCategories {
+			refreshedKey := strings.ToLower(strings.TrimSpace(refreshed.Name))
+			if refreshedKey != key {
+				continue
+			}
+			createdID = refreshed.ID
+			break
+		}
+		if createdID == 0 {
+			return 0, errors.New("created category not found")
+		}
+		createdCategories++
+		categoriesByName[key] = categoryRef{
+			ID:          createdID,
+			Description: strings.TrimSpace(description),
+			Logo:        strings.TrimSpace(logo),
+		}
+		return createdID, nil
+	}
+
+	for _, category := range payload.Categories {
+		if strings.TrimSpace(category.Name) == "" {
+			continue
+		}
+		if _, err := ensureCategory(category.Name, category.Description, category.Logo); err != nil {
+			return 0, createdCategories, 0, 0, err
+		}
+	}
+
+	importedChallenges := 0
+	skippedChallenges := 0
+	unassignedCountries := 0
+	for _, item := range payload.Challenges {
+		title := strings.TrimSpace(item.Title)
+		flag := strings.TrimSpace(item.Flag)
+		categoryName := strings.TrimSpace(item.Category)
+		if title == "" || flag == "" || categoryName == "" {
+			skippedChallenges++
+			continue
+		}
+
+		categoryID, err := ensureCategory(categoryName, "", "")
+		if err != nil || categoryID == 0 {
+			skippedChallenges++
+			continue
+		}
+
+		countryCode := strings.ToUpper(strings.TrimSpace(item.Country))
+		if countryCode != "" {
+			selectedCountry, err := h.Countries.GetByCode(countryCode)
+			if err != nil || !selectedCountry.Active || selectedCountry.Assigned {
+				countryCode = ""
+				unassignedCountries++
+			}
+		}
+
+		challenge := h.Challenges.New(
+			title,
+			strings.TrimSpace(item.Description),
+			categoryID,
+			countryCode,
+			item.Active,
+			item.Points,
+			item.Bonus,
+			item.BonusDecay,
+			item.Penalty,
+			flag,
+			strings.TrimSpace(item.Hint),
+			uuid,
+		)
+
+		if err := h.Challenges.CreateAndReturn(&challenge); err != nil {
+			return importedChallenges, createdCategories, skippedChallenges, unassignedCountries, err
+		}
+		if countryCode != "" {
+			if err := h.Countries.AssignCountryToChallenge(countryCode, challenge.ID); err != nil {
+				_ = h.Challenges.Delete(challenge.ID, uuid)
+				return importedChallenges, createdCategories, skippedChallenges, unassignedCountries, err
+			}
+		}
+		importedChallenges++
+	}
+
+	return importedChallenges, createdCategories, skippedChallenges, unassignedCountries, nil
+}
+
+// AdminGameExportHandler exports settings, users, teams/logos and challenges/categories as one JSON payload
+func (h *HandlersMap) AdminGameExportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	settingsPayload, err := h.buildAdminSettingsTransferPayload(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading settings for full-game export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to load settings"})
+		return
+	}
+	usersPayload, err := h.buildAdminUsersTransferPayload(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading users for full-game export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to load users"})
+		return
+	}
+	teamsPayload, err := h.buildAdminTeamsTransferPayload(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading teams for full-game export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to load teams/logos"})
+		return
+	}
+	challengesPayload, err := h.buildAdminChallengesTransferPayload(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading challenges for full-game export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to load challenges/categories"})
+		return
+	}
+
+	payload := adminGameTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Settings:   settingsPayload,
+		Users:      usersPayload,
+		Teams:      teamsPayload,
+		Challenges: challengesPayload,
+	}
+
+	output, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		log.Err(err).Msg("error marshaling full-game export JSON")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to generate export JSON"})
+		return
+	}
+
+	fileName := "mapctf-full-game-export-" + time.Now().UTC().Format("20060102-150405") + ".json"
+	w.Header().Set(ContentType, JSONApplicationUTF8)
+	w.Header().Set("Content-Disposition", `attachment; filename="`+fileName+`"`)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(output)
+}
+
+// AdminGameImportHandler imports a full game payload with settings, users, teams/logos and challenges/categories
+func (h *HandlersMap) AdminGameImportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	contentType := strings.ToLower(r.Header.Get(ContentType))
+	isJSON := strings.Contains(contentType, JSONApplication)
+	isMultipart := strings.Contains(contentType, "multipart/form-data")
+	if !isJSON && !isMultipart {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json or multipart/form-data")
+		return
+	}
+
+	var payload adminGameTransferPayload
+	if err := h.decodeGameImportPayload(r, &payload); err != nil {
+		log.Err(err).Msg("error parsing full-game import payload")
+		writeError(http.StatusBadRequest, "Invalid full-game import payload")
+		return
+	}
+
+	username := strings.TrimSpace(h.Sessions.GetString(r.Context(), string(ContextKeyUser)))
+	if username == "" {
+		username = h.ServiceName
+	}
+
+	settingsUpdated, settingsSkipped, err := h.importAdminSettingsFromPayload(payload.Settings, username)
+	if err != nil {
+		log.Err(err).Msg("error importing full-game settings")
+		writeError(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	logosCreated, logosUpdated, logosSkipped, err := h.importAdminTeamLogosFromPayload(uuid, payload.Teams.Logos)
+	if err != nil {
+		log.Err(err).Msg("error importing full-game logos")
+		writeError(http.StatusInternalServerError, "Failed importing logos")
+		return
+	}
+	teamsCreated, teamsUpdated, teamsSkipped, err := h.importAdminTeamsFromPayload(uuid, payload.Teams.Teams)
+	if err != nil {
+		log.Err(err).Msg("error importing full-game teams")
+		writeError(http.StatusInternalServerError, "Failed importing teams")
+		return
+	}
+	if err := h.Teams.SyncLogoUsage(); err != nil {
+		log.Err(err).Msg("error syncing logo usage after full-game teams import")
+		writeError(http.StatusInternalServerError, "Import completed but failed to sync logo usage")
+		return
+	}
+
+	usersCreated, usersUpdated, usersSkipped, err := h.importAdminUsersFromPayload(uuid, payload.Users.Users)
+	if err != nil {
+		log.Err(err).Msg("error importing full-game users")
+		writeError(http.StatusInternalServerError, "Failed importing users")
+		return
+	}
+
+	challengesImported, categoriesCreated, challengesSkipped, challengesNoCountry, err := h.importAdminChallengesFromPayload(uuid, payload.Challenges)
+	if err != nil {
+		log.Err(err).Msg("error importing full-game challenges")
+		writeError(http.StatusInternalServerError, "Failed importing challenges")
+		return
+	}
+
+	messageParts := []string{
+		"settings updated " + strconv.Itoa(settingsUpdated),
+		"logos created " + strconv.Itoa(logosCreated),
+		"logos updated " + strconv.Itoa(logosUpdated),
+		"teams created " + strconv.Itoa(teamsCreated),
+		"teams updated " + strconv.Itoa(teamsUpdated),
+		"users created " + strconv.Itoa(usersCreated),
+		"users updated " + strconv.Itoa(usersUpdated),
+		"challenges imported " + strconv.Itoa(challengesImported),
+		"categories created " + strconv.Itoa(categoriesCreated),
+	}
+	if settingsSkipped > 0 {
+		messageParts = append(messageParts, "settings skipped "+strconv.Itoa(settingsSkipped))
+	}
+	if logosSkipped > 0 {
+		messageParts = append(messageParts, "logos skipped "+strconv.Itoa(logosSkipped))
+	}
+	if teamsSkipped > 0 {
+		messageParts = append(messageParts, "teams skipped "+strconv.Itoa(teamsSkipped))
+	}
+	if usersSkipped > 0 {
+		messageParts = append(messageParts, "users skipped "+strconv.Itoa(usersSkipped))
+	}
+	if challengesSkipped > 0 {
+		messageParts = append(messageParts, "challenges skipped "+strconv.Itoa(challengesSkipped))
+	}
+	if challengesNoCountry > 0 {
+		messageParts = append(messageParts, "challenges without country "+strconv.Itoa(challengesNoCountry))
+	}
+
+	writeSuccess("Full game import complete: " + strings.Join(messageParts, ", "))
+}
+
+// AdminSettingsExportHandler exports settings as JSON
+func (h *HandlersMap) AdminSettingsExportHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	payload, err := h.buildAdminSettingsTransferPayload(uuid)
+	if err != nil {
+		log.Err(err).Msg("error loading settings for export")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Failed to load settings",
+		})
+		return
 	}
 
 	filename := "mapctf-settings-export-" + time.Now().UTC().Format("20060102-150405") + ".json"
@@ -795,83 +1427,11 @@ func (h *HandlersMap) AdminSettingsImportHandler(w http.ResponseWriter, r *http.
 		username = h.ServiceName
 	}
 
-	updatedSettings := 0
-	skippedSettings := 0
-
-	for _, in := range payload.Settings {
-		name := strings.TrimSpace(in.Name)
-		if name == "" {
-			skippedSettings++
-			continue
-		}
-
-		var err error
-		switch name {
-		case "login_enabled":
-			err = h.Settings.SetLoginEnabled(in.ValueBool, username)
-		case "login_strong_passwords":
-			err = h.Settings.SetLoginStrongPasswords(in.ValueBool, username)
-		case "registration_enabled":
-			err = h.Settings.SetRegistrationEnabled(in.ValueBool, username)
-		case "registration_names":
-			err = h.Settings.SetRegistrationNames(in.ValueBool, username)
-		case "registration_emails":
-			err = h.Settings.SetRegistrationEmails(in.ValueBool, username)
-		case "registration_type":
-			err = h.Settings.SetRegistrationType(in.ValueInt, username)
-		case "registration_token":
-			err = h.Settings.SetRegistrationToken(in.ValueString, username)
-		case "scoring_enabled":
-			err = h.Settings.SetScoringEnabled(in.ValueBool, username)
-		case "game_paused":
-			err = h.Settings.SetGamePaused(in.ValueBool, username)
-		case "game_started":
-			err = h.Settings.SetGameStarted(in.ValueBool, username)
-		case "game_start_time":
-			var t time.Time
-			if strings.TrimSpace(in.ValueDate) != "" {
-				t, err = time.Parse(time.RFC3339, strings.TrimSpace(in.ValueDate))
-				if err != nil {
-					t, err = time.ParseInLocation("2006-01-02T15:04", strings.TrimSpace(in.ValueDate), time.Local)
-				}
-				if err != nil {
-					writeError(http.StatusBadRequest, "Invalid game_start_time format in import")
-					return
-				}
-			}
-			err = h.Settings.SetGameStartTime(t, username)
-		case "game_end_time":
-			var t time.Time
-			if strings.TrimSpace(in.ValueDate) != "" {
-				t, err = time.Parse(time.RFC3339, strings.TrimSpace(in.ValueDate))
-				if err != nil {
-					t, err = time.ParseInLocation("2006-01-02T15:04", strings.TrimSpace(in.ValueDate), time.Local)
-				}
-				if err != nil {
-					writeError(http.StatusBadRequest, "Invalid game_end_time format in import")
-					return
-				}
-			}
-			err = h.Settings.SetGameEndTime(t, username)
-		case "custom_org":
-			err = h.Settings.SetCustomOrg(in.ValueString, username)
-		case "custom_logo":
-			err = h.Settings.SetCustomLogo(in.ValueString, username)
-		case "language":
-			err = h.Settings.SetLanguage(in.ValueString, username)
-		case "leaderboard_limit":
-			err = h.Settings.SetLeaderboardLimit(in.ValueInt, username)
-		default:
-			skippedSettings++
-			continue
-		}
-
-		if err != nil {
-			log.Err(err).Msgf("error importing setting %s", name)
-			writeError(http.StatusInternalServerError, "Failed importing setting "+name)
-			return
-		}
-		updatedSettings++
+	updatedSettings, skippedSettings, err := h.importAdminSettingsFromPayload(payload, username)
+	if err != nil {
+		log.Err(err).Msg("error importing settings")
+		writeError(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	messageParts := []string{"settings updated " + strconv.Itoa(updatedSettings)}
@@ -1240,59 +1800,15 @@ func (h *HandlersMap) AdminTeamsExportHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	teamsList, err := h.Teams.GetAll()
+	payload, err := h.buildAdminTeamsTransferPayload(uuid)
 	if err != nil {
-		log.Err(err).Msg("error loading teams for export")
+		log.Err(err).Msg("error loading teams/logos for export")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to load teams",
+			Message: "Failed to load teams/logos",
 		})
 		return
-	}
-	var logosList []teams.TeamLogo
-	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&logosList).Error; err != nil {
-		log.Err(err).Msg("error loading logos for export")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
-			Success: false,
-			Status:  "error",
-			Message: "Failed to load logos",
-		})
-		return
-	}
-
-	sort.Slice(teamsList, func(i, j int) bool {
-		return strings.ToLower(teamsList[i].Name) < strings.ToLower(teamsList[j].Name)
-	})
-	sort.Slice(logosList, func(i, j int) bool {
-		return strings.ToLower(logosList[i].Name) < strings.ToLower(logosList[j].Name)
-	})
-
-	payload := adminTeamsTransferPayload{
-		Version:    1,
-		ExportedAt: time.Now().UTC().Format(time.RFC3339),
-		Logos:      make([]adminTeamsTransferLogo, 0, len(logosList)),
-		Teams:      make([]adminTeamsTransferTeam, 0, len(teamsList)),
-	}
-
-	for _, logo := range logosList {
-		payload.Logos = append(payload.Logos, adminTeamsTransferLogo{
-			Name:      strings.TrimSpace(logo.Name),
-			Logo:      normalizeLogoSymbolName(strings.TrimSpace(logo.Logo)),
-			Enabled:   logo.Enabled,
-			Custom:    logo.Custom,
-			Protected: logo.Protected,
-			Used:      logo.Used,
-		})
-	}
-	for _, team := range teamsList {
-		payload.Teams = append(payload.Teams, adminTeamsTransferTeam{
-			Name:      strings.TrimSpace(team.Name),
-			Logo:      normalizeLogoSymbolName(strings.TrimSpace(team.Logo)),
-			Active:    team.Active,
-			Visible:   team.Visible,
-			Protected: team.Protected,
-		})
 	}
 
 	output, err := json.MarshalIndent(payload, "", "  ")
@@ -2739,7 +3255,7 @@ func (h *HandlersMap) AdminUsersExportHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	usersList, err := h.Users.GetAll(uuid)
+	payload, err := h.buildAdminUsersTransferPayload(uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading users for export")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
@@ -2748,28 +3264,6 @@ func (h *HandlersMap) AdminUsersExportHandler(w http.ResponseWriter, r *http.Req
 			Message: "Failed to load users",
 		})
 		return
-	}
-
-	sort.Slice(usersList, func(i, j int) bool {
-		return strings.ToLower(usersList[i].Username) < strings.ToLower(usersList[j].Username)
-	})
-
-	payload := adminUsersTransferPayload{
-		Version:    1,
-		ExportedAt: time.Now().UTC().Format(time.RFC3339),
-		Users:      make([]adminUsersTransferUser, 0, len(usersList)),
-	}
-	for _, user := range usersList {
-		payload.Users = append(payload.Users, adminUsersTransferUser{
-			Username: strings.TrimSpace(user.Username),
-			Name:     strings.TrimSpace(user.Name),
-			Email:    strings.TrimSpace(user.Email),
-			TeamID:   user.TeamID,
-			Admin:    user.Admin,
-			Service:  user.Service,
-			Active:   user.Active,
-			PassHash: strings.TrimSpace(user.PassHash),
-		})
 	}
 
 	output, err := json.MarshalIndent(payload, "", "  ")
@@ -2829,77 +3323,11 @@ func (h *HandlersMap) AdminUsersImportHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	createdUsers := 0
-	updatedUsers := 0
-	skippedUsers := 0
-
-	for _, inUser := range payload.Users {
-		username := strings.TrimSpace(inUser.Username)
-		if username == "" {
-			skippedUsers++
-			continue
-		}
-
-		teamID := inUser.TeamID
-		if teamID != users.NoTeamID {
-			var teamCount int64
-			if err := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("id = ? AND uuid = ?", teamID, uuid).Count(&teamCount).Error; err != nil {
-				log.Err(err).Msg("error validating team during users import")
-				writeError(http.StatusInternalServerError, "Failed to validate teams for import")
-				return
-			}
-			if teamCount == 0 {
-				teamID = users.NoTeamID
-			}
-		}
-
-		exists, existingUser := h.Users.ExistsGet(username, uuid)
-		if exists {
-			updates := map[string]interface{}{
-				"name":    strings.TrimSpace(inUser.Name),
-				"email":   strings.TrimSpace(inUser.Email),
-				"team_id": teamID,
-				"admin":   inUser.Admin,
-				"service": inUser.Service,
-				"active":  inUser.Active,
-			}
-			if strings.TrimSpace(inUser.PassHash) != "" {
-				updates["pass_hash"] = strings.TrimSpace(inUser.PassHash)
-			}
-			result := h.Users.DB.Model(&users.PlatformUser{}).
-				Where("id = ? AND uuid = ?", existingUser.ID, uuid).
-				Updates(updates)
-			if result.Error != nil {
-				log.Err(result.Error).Msg("error updating user from import")
-				writeError(http.StatusInternalServerError, "Failed to import users")
-				return
-			}
-			updatedUsers++
-			continue
-		}
-
-		passHash := strings.TrimSpace(inUser.PassHash)
-		if passHash == "" {
-			skippedUsers++
-			continue
-		}
-		newUser := users.PlatformUser{
-			Username: username,
-			Name:     strings.TrimSpace(inUser.Name),
-			Email:    strings.TrimSpace(inUser.Email),
-			TeamID:   teamID,
-			PassHash: passHash,
-			Admin:    inUser.Admin,
-			Service:  inUser.Service,
-			Active:   inUser.Active,
-			UUID:     uuid,
-		}
-		if err := h.Users.Create(newUser); err != nil {
-			log.Err(err).Msg("error creating user from import")
-			writeError(http.StatusInternalServerError, "Failed to import users")
-			return
-		}
-		createdUsers++
+	createdUsers, updatedUsers, skippedUsers, err := h.importAdminUsersFromPayload(uuid, payload.Users)
+	if err != nil {
+		log.Err(err).Msg("error importing users")
+		writeError(http.StatusInternalServerError, "Failed to import users")
+		return
 	}
 
 	messageParts := []string{
@@ -3041,71 +3469,15 @@ func (h *HandlersMap) AdminChallengesExportHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	categoriesList, err := h.Challenges.GetAllCategories(uuid)
+	payload, err := h.buildAdminChallengesTransferPayload(uuid)
 	if err != nil {
-		log.Err(err).Msg("error loading categories for export")
+		log.Err(err).Msg("error loading categories/challenges for export")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to load categories",
+			Message: "Failed to load challenges/categories",
 		})
 		return
-	}
-	challengesList, err := h.Challenges.GetAll(uuid)
-	if err != nil {
-		log.Err(err).Msg("error loading challenges for export")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
-			Success: false,
-			Status:  "error",
-			Message: "Failed to load challenges",
-		})
-		return
-	}
-
-	sort.Slice(categoriesList, func(i, j int) bool {
-		return strings.ToLower(categoriesList[i].Name) < strings.ToLower(categoriesList[j].Name)
-	})
-	sort.Slice(challengesList, func(i, j int) bool {
-		return strings.ToLower(challengesList[i].Title) < strings.ToLower(challengesList[j].Title)
-	})
-
-	categoriesByID := make(map[uint]adminChallengesTransferCategory, len(categoriesList))
-	transferCategories := make([]adminChallengesTransferCategory, 0, len(categoriesList))
-	for _, category := range categoriesList {
-		entry := adminChallengesTransferCategory{
-			Name:        strings.TrimSpace(category.Name),
-			Description: strings.TrimSpace(category.Description),
-			Logo:        strings.TrimSpace(category.Logo),
-		}
-		categoriesByID[category.ID] = entry
-		transferCategories = append(transferCategories, entry)
-	}
-
-	transferChallenges := make([]adminChallengesTransferItem, 0, len(challengesList))
-	for _, challenge := range challengesList {
-		transferItem := adminChallengesTransferItem{
-			Title:       strings.TrimSpace(challenge.Title),
-			Description: strings.TrimSpace(challenge.Description),
-			Country:     strings.ToUpper(strings.TrimSpace(challenge.Country)),
-			Active:      challenge.Active,
-			Points:      challenge.Points,
-			Bonus:       challenge.Bonus,
-			BonusDecay:  challenge.BonusDecay,
-			Penalty:     challenge.Penalty,
-			Flag:        strings.TrimSpace(challenge.Flag),
-			Hint:        strings.TrimSpace(challenge.Hint),
-		}
-		if category, ok := categoriesByID[challenge.CategoryID]; ok {
-			transferItem.Category = category.Name
-		}
-		transferChallenges = append(transferChallenges, transferItem)
-	}
-
-	payload := adminChallengesTransferPayload{
-		Version:    1,
-		ExportedAt: time.Now().UTC().Format(time.RFC3339),
-		Categories: transferCategories,
-		Challenges: transferChallenges,
 	}
 	output, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
@@ -3164,141 +3536,11 @@ func (h *HandlersMap) AdminChallengesImportHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	existingCategories, err := h.Challenges.GetAllCategories(uuid)
+	importedChallenges, createdCategories, skippedChallenges, unassignedCountries, err := h.importAdminChallengesFromPayload(uuid, payload)
 	if err != nil {
-		log.Err(err).Msg("error loading existing categories for import")
-		writeError(http.StatusInternalServerError, "Failed to load categories")
+		log.Err(err).Msg("error importing challenges")
+		writeError(http.StatusInternalServerError, "Failed to import challenges")
 		return
-	}
-
-	type categoryRef struct {
-		ID          uint
-		Description string
-		Logo        string
-	}
-	categoriesByName := make(map[string]categoryRef, len(existingCategories))
-	for _, category := range existingCategories {
-		key := strings.ToLower(strings.TrimSpace(category.Name))
-		if key == "" {
-			continue
-		}
-		categoriesByName[key] = categoryRef{
-			ID:          category.ID,
-			Description: strings.TrimSpace(category.Description),
-			Logo:        strings.TrimSpace(category.Logo),
-		}
-	}
-
-	createdCategories := 0
-	ensureCategory := func(name, description, logo string) (uint, error) {
-		key := strings.ToLower(strings.TrimSpace(name))
-		if key == "" {
-			return 0, errors.New("category name is required")
-		}
-		if existing, ok := categoriesByName[key]; ok {
-			return existing.ID, nil
-		}
-
-		newCategory, err := h.Challenges.NewCategory(strings.TrimSpace(name), strings.TrimSpace(description), strings.TrimSpace(logo), uuid)
-		if err != nil {
-			return 0, err
-		}
-		if err := h.Challenges.CreateCategory(newCategory); err != nil {
-			return 0, err
-		}
-		refreshedCategories, err := h.Challenges.GetAllCategories(uuid)
-		if err != nil {
-			return 0, err
-		}
-		var createdID uint
-		for _, refreshed := range refreshedCategories {
-			refreshedKey := strings.ToLower(strings.TrimSpace(refreshed.Name))
-			if refreshedKey != key {
-				continue
-			}
-			createdID = refreshed.ID
-			break
-		}
-		if createdID == 0 {
-			return 0, errors.New("created category not found")
-		}
-		createdCategories++
-		categoriesByName[key] = categoryRef{
-			ID:          createdID,
-			Description: strings.TrimSpace(description),
-			Logo:        strings.TrimSpace(logo),
-		}
-		return createdID, nil
-	}
-
-	for _, category := range payload.Categories {
-		if strings.TrimSpace(category.Name) == "" {
-			continue
-		}
-		if _, err := ensureCategory(category.Name, category.Description, category.Logo); err != nil {
-			log.Err(err).Msg("error creating category from import payload")
-			writeError(http.StatusBadRequest, "Failed to import categories")
-			return
-		}
-	}
-
-	importedChallenges := 0
-	skippedChallenges := 0
-	unassignedCountries := 0
-	for _, item := range payload.Challenges {
-		title := strings.TrimSpace(item.Title)
-		flag := strings.TrimSpace(item.Flag)
-		categoryName := strings.TrimSpace(item.Category)
-		if title == "" || flag == "" || categoryName == "" {
-			skippedChallenges++
-			continue
-		}
-
-		categoryID, err := ensureCategory(categoryName, "", "")
-		if err != nil || categoryID == 0 {
-			log.Err(err).Msg("error resolving category during challenge import")
-			skippedChallenges++
-			continue
-		}
-
-		countryCode := strings.ToUpper(strings.TrimSpace(item.Country))
-		if countryCode != "" {
-			selectedCountry, err := h.Countries.GetByCode(countryCode)
-			if err != nil || !selectedCountry.Active || selectedCountry.Assigned {
-				countryCode = ""
-				unassignedCountries++
-			}
-		}
-
-		challenge := h.Challenges.New(
-			title,
-			strings.TrimSpace(item.Description),
-			categoryID,
-			countryCode,
-			item.Active,
-			item.Points,
-			item.Bonus,
-			item.BonusDecay,
-			item.Penalty,
-			flag,
-			strings.TrimSpace(item.Hint),
-			uuid,
-		)
-
-		if err := h.Challenges.CreateAndReturn(&challenge); err != nil {
-			log.Err(err).Msg("error creating imported challenge")
-			writeError(http.StatusInternalServerError, "Failed to import challenges")
-			return
-		}
-		if countryCode != "" {
-			if err := h.Countries.AssignCountryToChallenge(countryCode, challenge.ID); err != nil {
-				log.Err(err).Msg("error assigning imported challenge country")
-				_ = h.Challenges.Delete(challenge.ID, uuid)
-				writeError(http.StatusInternalServerError, "Failed to assign imported challenge country")
-				return
-			}
-		}
-		importedChallenges++
 	}
 
 	messageParts := []string{

@@ -80,6 +80,8 @@ const (
 	settingsPath = "/settings"
 	// Controls path
 	controlsPath = "/controls"
+	// Game path
+	gamePath = "/game"
 	// Users path
 	usersPath = "/users"
 	// Challenges path
@@ -321,6 +323,8 @@ func mapCTFService() {
 				r.Post(settingsPath+"/import", handlersMap.AdminSettingsImportHandler)
 				r.Post(settingsPath+"/reset-defaults", handlersMap.AdminSettingsResetDefaultsPOSTHandler)
 				r.Get(controlsPath, handlersMap.AdminControlsTemplateHandler)
+				r.Get(gamePath+"/export", handlersMap.AdminGameExportHandler)
+				r.Post(gamePath+"/import", handlersMap.AdminGameImportHandler)
 				r.Get(challengesPath, handlersMap.AdminChallengesTemplateHandler)
 				r.Post(challengesPath, handlersMap.AdminChallengesPOSTHandler)
 				r.Get(challengesPath+"/export", handlersMap.AdminChallengesExportHandler)
