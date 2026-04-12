@@ -1,5 +1,137 @@
 var adminStatusResetTimer = null;
 var adminStatusResetDelayMs = 5000;
+var adminBypassBeforeUnloadWarning = false;
+
+function allowAdminPageExit() {
+  adminBypassBeforeUnloadWarning = true;
+}
+
+function collectEditorState(container, fieldSelector) {
+  var state = {};
+  if (!container) {
+    return state;
+  }
+
+  var fields = container.querySelectorAll(fieldSelector);
+  var processedRadioNames = {};
+
+  Array.prototype.forEach.call(fields, function (field) {
+    if (!field) {
+      return;
+    }
+
+    var key = field.getAttribute("data-user-field") || field.getAttribute("data-team-field") || field.name || field.id;
+    if (!key) {
+      return;
+    }
+
+    if (field.type === "radio") {
+      if (processedRadioNames[field.name]) {
+        return;
+      }
+      processedRadioNames[field.name] = true;
+
+      var checked = container.querySelector('input[name="' + field.name + '"]:checked');
+      state[key] = checked ? String(checked.value || "") : "";
+      return;
+    }
+
+    state[key] = typeof field.value === "string" ? field.value : "";
+  });
+
+  return state;
+}
+
+function refreshEditorDirtyState(container, fieldSelector) {
+  if (!container) {
+    return false;
+  }
+
+  var initialState = container.dataset.initialState || "{}";
+  var currentState = JSON.stringify(collectEditorState(container, fieldSelector));
+  var isDirty = initialState !== currentState;
+
+  container.dataset.unsavedChanges = isDirty ? "true" : "false";
+  return isDirty;
+}
+
+function initializeEditorDirtyTracking(container, fieldSelector) {
+  if (!container) {
+    return;
+  }
+
+  var syncInitialState = function () {
+    container.dataset.initialState = JSON.stringify(collectEditorState(container, fieldSelector));
+    container.dataset.unsavedChanges = "false";
+  };
+
+  syncInitialState();
+
+  container.addEventListener("input", function () {
+    refreshEditorDirtyState(container, fieldSelector);
+  });
+
+  container.addEventListener("change", function () {
+    refreshEditorDirtyState(container, fieldSelector);
+  });
+
+  return syncInitialState;
+}
+
+function initializeAdminFormDirtyTracking(form) {
+  if (!form) {
+    return;
+  }
+
+  return initializeEditorDirtyTracking(form, 'input, select, textarea');
+}
+
+function hasUnsavedAdminEditorChanges() {
+  return document.querySelector('[data-unsaved-changes="true"]') !== null;
+}
+
+function showDiscardUnsavedAdminChangesModal(onConfirm) {
+  if (typeof onConfirm !== "function") {
+    return;
+  }
+
+  if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+    if (window.confirm("You have unsaved changes. Leave this page and discard them?")) {
+      allowAdminPageExit();
+      onConfirm();
+    }
+    return;
+  }
+
+  MAP_CTF.modal.loadPopup("action-cancel", function () {
+    var modal = document.getElementById("mctf-modal");
+    if (!modal) {
+      return;
+    }
+
+    var confirmBtn = modal.querySelector(".js-confirm-discard-changes");
+    if (!confirmBtn) {
+      return;
+    }
+
+    confirmBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+      if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+        MAP_CTF.modal.close();
+      }
+      allowAdminPageExit();
+      onConfirm();
+    });
+  });
+}
+
+function confirmDiscardUnsavedAdminChanges() {
+  if (!hasUnsavedAdminEditorChanges()) {
+    return true;
+  }
+
+  return window.confirm("You have unsaved changes. Leave this page and discard them?");
+}
 
 function setAdminStatus(status, message) {
   var statusEl = document.querySelector(".admin-section--status");
@@ -57,6 +189,7 @@ function initAdminStatusFromServerState() {
 }
 
 function doAdminLogout(logoutURL) {
+  allowAdminPageExit();
   fetch(logoutURL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -95,21 +228,30 @@ function initAdminLogoutModal() {
           return;
         }
 
-        if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-          doAdminLogout(logoutURL);
+        var proceedWithLogout = function () {
+          if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+            doAdminLogout(logoutURL);
+            return;
+          }
+
+          MAP_CTF.modal.loadPopup("action-logout", function () {
+            var confirmBtn = document.querySelector("#mctf-modal .js-confirm-logout");
+            if (!confirmBtn) {
+              return;
+            }
+            confirmBtn.addEventListener("click", function (confirmEvent) {
+              confirmEvent.preventDefault();
+              doAdminLogout(logoutURL);
+            });
+          });
+        };
+
+        if (hasUnsavedAdminEditorChanges()) {
+          showDiscardUnsavedAdminChangesModal(proceedWithLogout);
           return;
         }
 
-        MAP_CTF.modal.loadPopup("action-logout", function () {
-          var confirmBtn = document.querySelector("#mctf-modal .js-confirm-logout");
-          if (!confirmBtn) {
-            return;
-          }
-          confirmBtn.addEventListener("click", function (confirmEvent) {
-            confirmEvent.preventDefault();
-            doAdminLogout(logoutURL);
-          });
-        });
+        proceedWithLogout();
       },
       true,
     );
@@ -159,6 +301,9 @@ function submitAdminForm(form) {
           if (!response.ok || data.success === false) {
             throw new Error(data.message || "Request failed");
           }
+          if (typeof form._syncInitialState === "function") {
+            form._syncInitialState();
+          }
           showTransientAdminStatus(data.status || "ok", data.message || "Updated");
         });
     })
@@ -173,6 +318,7 @@ function submitAdminForm(form) {
 function initAdminAjaxForms() {
   var forms = document.querySelectorAll(".mctf-admin-main form");
   forms.forEach(function (form) {
+    form._syncInitialState = initializeAdminFormDirtyTracking(form);
     form.addEventListener("submit", function (event) {
       event.preventDefault();
       submitAdminForm(form);
@@ -1740,6 +1886,7 @@ function initAdminUserSettingsEditors() {
     var saveBtn = card.querySelector('[data-action="save"]');
     var updateURL = card.getAttribute("data-user-update-url");
     var teamSelect = card.querySelector('select[data-user-field="team_id"]');
+    var syncInitialState = initializeEditorDirtyTracking(card, "[data-user-field]");
 
     if (!saveBtn || !teamSelect) {
       return;
@@ -1782,6 +1929,9 @@ function initAdminUserSettingsEditors() {
         active: activeValue,
       })
         .then(function (data) {
+          if (typeof syncInitialState === "function") {
+            syncInitialState();
+          }
           showTransientAdminStatus(data.status || "ok", data.message || "User updated");
         })
         .catch(function (error) {
@@ -2006,6 +2156,7 @@ function initAdminTeamSettingsEditors() {
     var logoSelect = card.querySelector('select[data-team-field="logo"]');
     var iconUse = card.querySelector(".admin-team-icon use");
     var nameDisplay = card.querySelector(".js-team-name-display");
+    var syncInitialState = initializeEditorDirtyTracking(card, "[data-team-field]");
 
     function setEditing(editing) {
       editableFields.forEach(function (field) {
@@ -2083,6 +2234,9 @@ function initAdminTeamSettingsEditors() {
             nameDisplay.textContent = nameValue;
           }
           card.setAttribute("data-team-search", nameValue);
+          if (typeof syncInitialState === "function") {
+            syncInitialState();
+          }
           setEditing(true);
           showTransientAdminStatus(data.status || "ok", data.message || "Team updated");
         })
@@ -2413,6 +2567,11 @@ function initAdminChallengeSaveButtons() {
   }
 
   saveButtons.forEach(function (saveBtn) {
+    var challengeRow = saveBtn.closest(".admin-challenge-row");
+    if (challengeRow && typeof challengeRow._syncInitialState !== "function") {
+      challengeRow._syncInitialState = initializeEditorDirtyTracking(challengeRow, '.admin-challenge-form input, .admin-challenge-form select, .admin-challenge-form textarea, .admin-activity-status-toggle input[type="radio"]');
+    }
+
     saveBtn.addEventListener("click", function (event) {
       event.preventDefault();
 
@@ -2477,6 +2636,9 @@ function initAdminChallengeSaveButtons() {
         hint: hint,
       })
         .then(function (data) {
+          if (challengeRow && typeof challengeRow._syncInitialState === "function") {
+            challengeRow._syncInitialState();
+          }
           showTransientAdminStatus(data.status || "ok", data.message || "Challenge updated");
         })
         .catch(function (error) {
@@ -2571,6 +2733,36 @@ function initAdminChallengeDeleteButtons() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  window.addEventListener("beforeunload", function (event) {
+    if (adminBypassBeforeUnloadWarning || !hasUnsavedAdminEditorChanges()) {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = "";
+  });
+
+  document.addEventListener("click", function (event) {
+    var link = event.target.closest("a[href]");
+    if (!link) {
+      return;
+    }
+
+    var href = (link.getAttribute("href") || "").trim();
+    if (!href || href === "#" || href.indexOf("javascript:") === 0 || link.classList.contains("js-prompt-logout")) {
+      return;
+    }
+
+    if (!hasUnsavedAdminEditorChanges()) {
+      return;
+    }
+
+    event.preventDefault();
+    showDiscardUnsavedAdminChangesModal(function () {
+      window.location.assign(href);
+    });
+  });
+
   initAdminStatusFromServerState();
   initAdminLogoutModal();
   initAdminAjaxForms();
