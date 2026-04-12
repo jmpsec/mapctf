@@ -317,8 +317,7 @@
       }
 
       var $teamgrid = $('aside[data-module="teams"] .grid-list');
-
-      console.log("test");
+      $teamgrid.empty();
 
       //
       // build the team module in the gameboard, which will
@@ -346,8 +345,6 @@
         if (team === undefined || team === "") {
           team = "Tank SF";
         }
-
-        console.log(team);
 
         var teamData = TEAM_DATA[team];
 
@@ -388,6 +385,95 @@
           $(".points--total", $modal).text(teamData.points.total);
         });
       });
+    }
+
+    function getCurrentUUID() {
+      var path = (window.location.pathname || "").toString();
+      var segments = path.split("/");
+
+      if (segments.length > 1 && segments[1] !== "") {
+        return segments[1];
+      }
+
+      return "";
+    }
+
+    function normalizeBadgeName(logoValue) {
+      var badge = (logoValue || "").toString().trim();
+
+      if (!badge) {
+        return "invader";
+      }
+
+      if (badge.indexOf("/") > -1) {
+        badge = badge.substring(badge.lastIndexOf("/") + 1);
+      }
+
+      badge = badge.replace(/^#icon--badge-/, "");
+      badge = badge.replace(/^icon--badge-/, "");
+      badge = badge.replace(/^badge-/, "");
+      badge = badge.replace(/\.svg$/i, "");
+
+      if (!badge) {
+        return "invader";
+      }
+
+      return badge;
+    }
+
+    function mapServerTeamsToTeamData(serverTeams) {
+      if (!$.isArray(serverTeams)) {
+        return serverTeams || {};
+      }
+
+      var mapped = {};
+      var sortedTeams = serverTeams.slice(0);
+
+      sortedTeams.sort(function (a, b) {
+        var pointsA = parseInt(a && a.Points, 10);
+        var pointsB = parseInt(b && b.Points, 10);
+        var safePointsA = isNaN(pointsA) ? 0 : pointsA;
+        var safePointsB = isNaN(pointsB) ? 0 : pointsB;
+
+        if (safePointsB !== safePointsA) {
+          return safePointsB - safePointsA;
+        }
+
+        var nameA = (a && a.Name ? a.Name : "").toString().toLowerCase();
+        var nameB = (b && b.Name ? b.Name : "").toString().toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      var rank = 1;
+      $.each(sortedTeams, function (_, team) {
+        if (!team || !team.Name) {
+          return;
+        }
+
+        if (team.Active === false || team.Visible === false) {
+          return;
+        }
+
+        var teamName = team.Name.toString();
+        var totalPoints = parseInt(team.Points, 10);
+        var safeTotalPoints = isNaN(totalPoints) ? 0 : totalPoints;
+
+        mapped[teamName] = {
+          badge: normalizeBadgeName(team.Logo),
+          team_members: [],
+          rank: rank,
+          school_level: "unknown",
+          points: {
+            base: 0,
+            quiz: 0,
+            flag: 0,
+            total: safeTotalPoints,
+          },
+        };
+        rank += 1;
+      });
+
+      return mapped;
     }
 
     /* --------------------------------------------
@@ -1107,27 +1193,50 @@
      * load the team data
      */
     function loadTeamData() {
-      var df = $.Deferred();
-
       if (TEAM_DATA) {
-        return df.resolve(TEAM_DATA);
+        return $.Deferred().resolve(TEAM_DATA).promise();
       }
 
-      var loadPath = "/static/data/teams.json";
+      var df = $.Deferred();
+      var uuid = getCurrentUUID();
+      var serverPath = uuid ? "/" + encodeURIComponent(uuid) + "/json/teams" : "";
+      var fallbackPath = "/static/data/teams.json";
 
-      return $.get(
-        loadPath,
+      function loadFallbackData() {
+        return $.get(
+          fallbackPath,
+          function (data) {
+            TEAM_DATA = mapServerTeamsToTeamData(data);
+            df.resolve(TEAM_DATA);
+          },
+          "json",
+        ).fail(function (jqhxr, status, error) {
+          console.error("There was a problem retrieving the team data.");
+          console.log(fallbackPath);
+          console.log(status);
+          console.log(error);
+          console.error("/error");
+          df.reject(jqhxr, status, error);
+        });
+      }
+
+      if (!serverPath) {
+        loadFallbackData();
+        return df.promise();
+      }
+
+      $.get(
+        serverPath,
         function (data, status, jqxhr) {
-          TEAM_DATA = data;
+          TEAM_DATA = mapServerTeamsToTeamData(data);
+          df.resolve(TEAM_DATA);
         },
         "json",
-      ).fail(function (jqhxr, status, error) {
-        console.error("There was a problem retrieving the team data.");
-        console.log(loadPath);
-        console.log(status);
-        console.log(error);
-        console.error("/error");
+      ).fail(function () {
+        loadFallbackData();
       });
+
+      return df.promise();
     }
 
     /**
