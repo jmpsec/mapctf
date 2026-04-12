@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/static/css/mapctf.css" />
   </head>
 
-  <body data-section="gameboard">
+  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}">
     <!--
      *
      * SVG icon sprite object

@@ -3,11 +3,20 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
+
+type JSONTeamResponse struct {
+	Name        string    `json:"name"`
+	Logo        string    `json:"logo"`
+	Points      int       `json:"points"`
+	LastScore   time.Time `json:"last_score"`
+	TeamMembers []string  `json:"team_members,omitempty"`
+}
 
 // JSONActivityHandler to return all activity logs for a given UUID in JSON format
 func (h *HandlersMap) JSONActivityHandler(w http.ResponseWriter, r *http.Request) {
@@ -77,12 +86,42 @@ func (h *HandlersMap) JSONTeamsHandler(w http.ResponseWriter, r *http.Request) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving teams"})
 		return
 	}
-	filteredTeams := make([]teams.PlatformTeam, 0, len(allTeams))
+
+	showTeamMembers, err := h.Settings.GetGameboardShowTeamMembers()
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Err(err).Msg("error retrieving gameboard_show_team_members setting")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving team settings"})
+		return
+	}
+
+	membersByTeamID := make(map[uint][]string)
+	if showTeamMembers {
+		allUsers, err := h.Users.GetAll(uuid)
+		if err != nil {
+			log.Err(err).Msg("error retrieving users for teams JSON")
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving team members"})
+			return
+		}
+		for _, user := range allUsers {
+			if user.TeamID == 0 || !user.Active || user.Service {
+				continue
+			}
+			membersByTeamID[user.TeamID] = append(membersByTeamID[user.TeamID], user.Username)
+		}
+	}
+
+	filteredTeams := make([]JSONTeamResponse, 0, len(allTeams))
 	for _, team := range allTeams {
 		if !team.Active || !team.Visible {
 			continue
 		}
-		filteredTeams = append(filteredTeams, team)
+		filteredTeams = append(filteredTeams, JSONTeamResponse{
+			Name:        team.Name,
+			Logo:        team.Logo,
+			Points:      team.Points,
+			LastScore:   team.LastScore,
+			TeamMembers: membersByTeamID[team.ID],
+		})
 	}
 	// Send response
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, filteredTeams)

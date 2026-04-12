@@ -503,6 +503,13 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 		log.Warn().Err(err).Msg("error loading leaderboard_limit")
 	}
 
+	gameboardShowTeamMembers, err := h.Settings.GetGameboardShowTeamMembers()
+	if err == nil {
+		templateData.GameboardShowTeamMembers = gameboardShowTeamMembers
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading gameboard_show_team_members")
+	}
+
 	gameStartTime, err := h.Settings.GetGameStartTime()
 	if err == nil && !gameStartTime.IsZero() {
 		templateData.GameStartTime = gameStartTime.Format("2006-01-02T15:04")
@@ -686,6 +693,10 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 		}
 	case "leaderboard_limit":
 		if !setIntSetting(h.Settings.SetLeaderboardLimit, settingName) {
+			return
+		}
+	case "gameboard_show_team_members":
+		if !setBoolSetting(h.Settings.SetGameboardShowTeamMembers, settingName) {
 			return
 		}
 	case "game_start_time":
@@ -952,6 +963,8 @@ func (h *HandlersMap) importAdminSettingsFromPayload(payload adminSettingsTransf
 			err = h.Settings.SetLanguage(in.ValueString, username)
 		case "leaderboard_limit":
 			err = h.Settings.SetLeaderboardLimit(in.ValueInt, username)
+		case "gameboard_show_team_members":
+			err = h.Settings.SetGameboardShowTeamMembers(in.ValueBool, username)
 		default:
 			skippedSettings++
 			continue
@@ -1493,6 +1506,7 @@ func (h *HandlersMap) AdminSettingsResetDefaultsPOSTHandler(w http.ResponseWrite
 		func() error { return h.Settings.SetCustomLogo("", username) },
 		func() error { return h.Settings.SetLanguage("en", username) },
 		func() error { return h.Settings.SetLeaderboardLimit(10, username) },
+		func() error { return h.Settings.SetGameboardShowTeamMembers(false, username) },
 	}
 
 	for _, update := range updates {

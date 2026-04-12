@@ -3783,55 +3783,71 @@ body {
 .modal--team .mctf-modal-main {
   padding-bottom: 20px;
 }
-.modal--team .mctf-modal-main .col {
-  padding-top: 10px;
-  padding-bottom: 20px;
+.modal--team .team-modal-main {
+  padding: 24px;
 }
-.modal--team .mctf-modal-main header {
+.modal--team .modal-title h4 {
+  text-transform: uppercase;
+}
+.modal--team .team-modal-card {
+  border: 1px solid #21b4ba;
+  background: rgba(19, 36, 43, 0.82);
+  padding: 22px;
+}
+.modal--team .team-modal-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+.modal--team .team-modal-top .icon--badge {
+  flex: 0 0 124px;
+  width: 124px;
+  height: 124px;
+}
+.modal--team .team-points-panel {
+  min-width: 180px;
+  padding: 16px 20px;
+  text-align: center;
+  border-left: 1px solid rgba(33, 180, 186, 0.35);
+}
+.modal--team .team-points-panel .points-number {
+  display: block;
+  color: #ead44d;
+  font-size: 4em;
+  line-height: 0.9;
+}
+.modal--team .team-points-panel .points-label {
+  display: block;
+  margin-top: 8px;
+}
+.modal--team .team-last-score-panel {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(33, 180, 186, 0.35);
+}
+.modal--team .team-last-score-panel header, .modal--team .team-members-section header {
   padding-bottom: 10px;
 }
-.modal--team .mctf-modal-main .badge-column, .modal--team .mctf-modal-main .rank-column {
-  text-align: center;
-  padding: 20px 10px;
-}
-.modal--team .mctf-modal-main .points-display {
-  margin: 0 auto 10px;
-  width: 92px;
-  height: 92px;
-}
-.modal--team .mctf-modal-main .points-display .points-number {
-  line-height: 0.8;
+.modal--team .team-members-section {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(33, 180, 186, 0.35);
 }
 .modal--team .mctf-modal-main .team-members li + li {
   margin-top: 6px;
 }
-.modal--team .modal-footer .col {
-  text-align: center;
-  padding: 10px 20px 20px;
-}
-.modal--team .modal-footer .col .point-total {
-  color: #21b4ba;
-  font-size: 3.5em;
-  line-height: 1.2;
-}
-.modal--team .modal-footer .col .point-total.points--total {
-  color: #ead44d;
-}
-.modal--team .js-launch-modal {
-  font-size: 0.8em;
-  font-family: "puristasemibold", Courier, monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-}
-.modal--team .js-launch-modal:hover {
-  color: #cff8fa;
-}
-.modal--team .js-launch-modal:after {
-  font-family: "Source Code Pro", Courier, monospace;
-  font-weight: 400;
-  content: ">";
-  display: inline-block;
-  margin-left: 0.5em;
+@media (max-width: 767px) {
+  .modal--team .team-modal-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .modal--team .team-points-panel {
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid rgba(33, 180, 186, 0.35);
+    padding: 18px 0 0;
+  }
 }
 
 /* ==============================================================
@@ -4230,10 +4246,17 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
   height: calc(97vh - 62px);
 }
 .mctf-gameboard aside[data-module][data-module=teams] .grid-list {
-  padding-top: 20px;
+  display: block;
+  padding: 12px 0;
 }
 .mctf-gameboard aside[data-module][data-module=teams] li {
-  text-align: center;
+  text-align: left;
+  width: 100%;
+  flex: none;
+  padding: 0 10px;
+}
+.mctf-gameboard aside[data-module][data-module=teams] li + li {
+  margin-top: 10px;
 }
 .mctf-gameboard aside[data-module][data-module=teams] li.alert {
   position: relative;
@@ -4246,6 +4269,73 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
 }
 .mctf-gameboard aside[data-module][data-module=teams] a:hover .icon--badge {
   stroke: #ead44d;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card {
+  display: block;
+  padding: 14px;
+  border: 1px solid #21b4ba;
+  background: rgba(19, 36, 43, 0.78);
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-identity {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-identity .icon--badge {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-text {
+  min-width: 0;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-name {
+  color: #ead44d;
+  font-family: "puristasemibold", Courier, monospace;
+  text-transform: uppercase;
+  word-break: break-word;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-members {
+  margin-top: 6px;
+  font-size: 0.85em;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-members li {
+  padding: 0;
+  margin: 0;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-points {
+  flex: 0 0 auto;
+  min-width: 80px;
+  text-align: right;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-points-value {
+  display: block;
+  color: #ead44d;
+  font-size: 2.3em;
+  line-height: 0.9;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-points-label, .mctf-gameboard aside[data-module][data-module=teams] .team-card-last-score-label {
+  display: block;
+  font-size: 0.72em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(33, 180, 186, 0.35);
+  font-size: 0.85em;
+}
+.mctf-gameboard aside[data-module][data-module=teams] .team-card-last-score-value {
+  text-align: right;
 }
 .mctf-gameboard aside[data-module][data-module=leaderboard] .module-top {
   padding: 10px;

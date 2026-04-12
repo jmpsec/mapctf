@@ -325,12 +325,24 @@
             </div>
           </section>
 
-          <section id="settings-leaderboard" class="admin-box">
+          <section id="settings-gameboard" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Leaderboard Settings</h3>
+              <h3>Gameboard Settings</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
+                <div class="admin-setting-row">
+                  <label for="gameboard_show_team_members_on">gameboard_show_team_members</label>
+                  <form id="form_gameboard_show_team_members" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="gameboard_show_team_members" />
+                    <div class="admin-section-toggle radio-inline">
+                      <input type="radio" name="setting_value" id="gameboard_show_team_members_on" value="true" {{ if .GameboardShowTeamMembers }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="gameboard_show_team_members_on">On</label>
+                      <input type="radio" name="setting_value" id="gameboard_show_team_members_off" value="false" {{ if not .GameboardShowTeamMembers }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="gameboard_show_team_members_off">Off</label>
+                    </div>
+                  </form>
+                </div>
                 <div class="admin-setting-row">
                   <label for="leaderboard_limit">leaderboard_limit</label>
                   <form id="form_leaderboard_limit" action="/{{ .UUID }}/admin/settings" method="post">

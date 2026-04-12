@@ -41,6 +41,8 @@ const (
 	Language string = "language"
 	// LeaderboardLimit is the setting name for the number of teams to show on the leaderboard
 	LeaderboardLimit string = "leaderboard_limit"
+	// GameboardShowTeamMembers is the setting name for showing team members on the gameboard
+	GameboardShowTeamMembers string = "gameboard_show_team_members"
 )
 
 const (
@@ -52,14 +54,15 @@ const (
 
 // BooleanSettings to be used as check for valid setting and to keep default value, if needed
 var BooleanSettings = map[string]bool{
-	LoginEnabled:         false,
-	LoginStrongPasswords: false,
-	RegistrationEnabled:  false,
-	RegistrationNames:    false,
-	RegistrationEmails:   false,
-	ScoringEnabled:       false,
-	GamePaused:           false,
-	GameStarted:          false,
+	LoginEnabled:             false,
+	LoginStrongPasswords:     false,
+	RegistrationEnabled:      false,
+	RegistrationNames:        false,
+	RegistrationEmails:       false,
+	ScoringEnabled:           false,
+	GamePaused:               false,
+	GameStarted:              false,
+	GameboardShowTeamMembers: false,
 }
 
 // StringSettings to be used as check for valid setting and to keep default value
@@ -582,6 +585,16 @@ func (m *SettingsManager) SetLeaderboardLimit(limit int, username string) error 
 
 func (m *SettingsManager) GetLeaderboardLimit() (int, error) {
 	return m.getIntSetting(LeaderboardLimit)
+}
+
+func (m *SettingsManager) SetGameboardShowTeamMembers(show bool, username string) error {
+	return m.upsertSetting(GameboardShowTeamMembers, TypeBool, GameboardShowTeamMembers+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = show
+	})
+}
+
+func (m *SettingsManager) GetGameboardShowTeamMembers() (bool, error) {
+	return m.getBoolSetting(GameboardShowTeamMembers)
 }
 
 func (m *SettingsManager) SetRegistrationToken(token, username string) error {

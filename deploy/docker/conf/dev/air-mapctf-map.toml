@@ -9,7 +9,7 @@ tmp_dir = "/tmp"
 bin = "./bin/mapctf-map"
 pre_cmd = [
   "cp -R /usr/src/app/backend/cmd/map/templates/ /opt/mapctf/templates",
-  "cp -R /usr/src/app/backend/cmd/map/static/ /opt/mapctf/static",
+  "cp -R /usr/src/app/backend/cmd/map/templates/static/ /opt/mapctf/static",
   "cp /usr/src/app/backend/pkg/countries/map-countries-seed.json /opt/mapctf/config/",
   "cp /usr/src/app/backend/pkg/teams/team-logos-seed.json /opt/mapctf/config/",
 ]
@@ -23,7 +23,7 @@ exclude_unchanged = false
 follow_symlink = false
 full_bin = "cd /opt/mapctf && ./bin/mapctf-map"
 include_dir = []
-include_ext = ["go"]
+include_ext = ["go", "html", "js", "css"]
 kill_delay = "0s"
 log = "build-errors.log"
 send_interrupt = false

@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 // IndexTemplateHandler for root requests
@@ -263,6 +264,12 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         isAdmin,
+	}
+	showTeamMembers, err := h.Settings.GetGameboardShowTeamMembers()
+	if err == nil {
+		templateData.GameboardShowTeamMembers = showTeamMembers
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading gameboard_show_team_members")
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")

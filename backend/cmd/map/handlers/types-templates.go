@@ -47,10 +47,11 @@ type RulesTemplateData struct {
 
 // GameboardTemplateData for passing data to the gameboard template
 type GameboardTemplateData struct {
-	Title         string
-	UUID          string
-	Authenticated bool
-	Admin         bool
+	Title                    string
+	UUID                     string
+	Authenticated            bool
+	Admin                    bool
+	GameboardShowTeamMembers bool
 }
 
 // RegistrationTemplateData for passing data to the registration template
@@ -70,28 +71,29 @@ type RegistrationTemplateData struct {
 
 // AdminSettingsTemplateData for passing data to the admin settings template
 type AdminSettingsTemplateData struct {
-	Title                string
-	UUID                 string
-	Authenticated        bool
-	Admin                bool
-	Status               string
-	Message              string
-	LoginEnabled         bool
-	LoginStrongPasswords bool
-	RegistrationEnabled  bool
-	RegistrationNames    bool
-	RegistrationEmails   bool
-	RegistrationType     int
-	RegistrationToken    string
-	ScoringEnabled       bool
-	GamePaused           bool
-	GameStarted          bool
-	CustomOrg            string
-	CustomLogo           string
-	Language             string
-	LeaderboardLimit     int
-	GameStartTime        string
-	GameEndTime          string
+	Title                    string
+	UUID                     string
+	Authenticated            bool
+	Admin                    bool
+	Status                   string
+	Message                  string
+	LoginEnabled             bool
+	LoginStrongPasswords     bool
+	RegistrationEnabled      bool
+	RegistrationNames        bool
+	RegistrationEmails       bool
+	RegistrationType         int
+	RegistrationToken        string
+	ScoringEnabled           bool
+	GamePaused               bool
+	GameStarted              bool
+	CustomOrg                string
+	CustomLogo               string
+	Language                 string
+	LeaderboardLimit         int
+	GameboardShowTeamMembers bool
+	GameStartTime            string
+	GameEndTime              string
 }
 
 // AdminTemplateData for passing data to the admin template

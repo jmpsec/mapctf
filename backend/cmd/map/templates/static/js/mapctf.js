@@ -317,6 +317,7 @@
       }
 
       var $teamgrid = $('aside[data-module="teams"] .grid-list');
+      var showTeamMembers = shouldShowTeamMembers();
       $teamgrid.empty();
 
       //
@@ -324,10 +325,43 @@
       //  list the active teams
       //
       $.each(TEAM_DATA, function (teamName, teamData) {
-        var alertClass = teamData.has_alert ? ' class="alert"' : "",
-          markup = "<li" + alertClass + '><a href="#" data-team="' + teamName + '">' + '<svg class="icon--badge"><use xlink:href="#icon--badge-' + teamData.badge + '"/></svg>' + "</a></li>";
+        var $item = $("<li></li>");
+        var $link = $('<a href="#" class="team-card"></a>').attr("data-team", teamName);
+        var $header = $('<div class="team-card-header"></div>');
+        var $identity = $('<div class="team-card-identity"></div>');
+        var $badge = $('<svg class="icon--badge"><use xlink:href=""></use></svg>');
+        var $text = $('<div class="team-card-text"></div>');
+        var $name = $('<div class="team-card-name"></div>').text(teamName);
+        var $points = $('<div class="team-card-points"></div>');
+        var $members = $('<ul class="team-card-members"></ul>');
+        var $footer = $('<div class="team-card-footer"></div>');
+        var members = $.isArray(teamData.team_members) ? teamData.team_members : [];
 
-        $teamgrid.append(markup);
+        if (teamData.has_alert) {
+          $item.addClass("alert");
+        }
+
+        $("use", $badge).attr("xlink:href", "#icon--badge-" + teamData.badge);
+        $points.append('<span class="team-card-points-value mctf-numbers"></span>');
+        $(".team-card-points-value", $points).text(teamData.points);
+        $points.append('<span class="team-card-points-label">Points</span>');
+
+        $text.append($name);
+        if (showTeamMembers && members.length) {
+          $.each(members, function (_, memberName) {
+            $members.append($("<li></li>").text(memberName));
+          });
+          $text.append($members);
+        }
+
+        $identity.append($badge, $text);
+        $header.append($identity, $points);
+        $footer.append($('<span class="team-card-last-score-label">Last score</span>'));
+        $footer.append($('<span class="team-card-last-score-value"></span>').text(teamData.last_score_label));
+
+        $link.append($header, $footer);
+        $item.append($link);
+        $teamgrid.append($item);
       });
 
       //
@@ -355,34 +389,29 @@
 
         MAP_CTF.modal.loadPopup("team", function () {
           var $modal = $("#mctf-modal"),
-            rank = teamData.rank + "",
             $teamMembers = $(".team-members", $modal);
 
           // team name
-          $(".team-name", $modal).text(team.replace(" ", "_"));
+          $(".team-name", $modal).text(team);
 
           // team badge
           $(".icon--badge use", $modal).attr("xlink:href", "#icon--badge-" + teamData.badge);
 
           // team members
-          $.each(teamData.team_members, function () {
-            $teamMembers.append("<li>" + this + "</li>");
-          });
-
-          // school level
-          $(".school-level", $modal).text(teamData.school_level);
-
-          // rank
-          if (rank.length === 1) {
-            rank = "0" + rank;
+          $teamMembers.empty();
+          if (showTeamMembers) {
+            $.each(teamData.team_members, function () {
+              $teamMembers.append("<li>" + this + "</li>");
+            });
           }
-          $(".points-number", $modal).text(rank);
+          if (showTeamMembers && teamData.team_members.length) {
+            $(".team-members-section", $modal).show();
+          } else {
+            $(".team-members-section", $modal).hide();
+          }
 
-          // team points
-          $(".points--base", $modal).text(teamData.points.base);
-          $(".points--quiz", $modal).text(teamData.points.quiz);
-          $(".points--flag", $modal).text(teamData.points.flag);
-          $(".points--total", $modal).text(teamData.points.total);
+          $(".team-points-value", $modal).text(teamData.points);
+          $(".last-score", $modal).text(teamData.last_score_label);
         });
       });
     }
@@ -421,6 +450,42 @@
       return badge;
     }
 
+    function normalizeTeamMembers(team) {
+      if ($.isArray(team && team.TeamMembers)) {
+        return team.TeamMembers;
+      }
+
+      if ($.isArray(team && team.team_members)) {
+        return team.team_members;
+      }
+
+      return [];
+    }
+
+    function shouldShowTeamMembers() {
+      return $body && $body.attr("data-show-team-members") === "true";
+    }
+
+    function formatLastScoreLabel(lastScoreValue) {
+      if (!lastScoreValue) {
+        return "No score yet";
+      }
+
+      var lastScoreDate = new Date(lastScoreValue);
+
+      if (isNaN(lastScoreDate.getTime())) {
+        return "No score yet";
+      }
+
+      return lastScoreDate.toLocaleString([], {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
     function mapServerTeamsToTeamData(serverTeams) {
       if (!$.isArray(serverTeams)) {
         return serverTeams || {};
@@ -430,8 +495,8 @@
       var sortedTeams = serverTeams.slice(0);
 
       sortedTeams.sort(function (a, b) {
-        var pointsA = parseInt(a && a.Points, 10);
-        var pointsB = parseInt(b && b.Points, 10);
+        var pointsA = parseInt(a && (a.Points !== undefined ? a.Points : a.points), 10);
+        var pointsB = parseInt(b && (b.Points !== undefined ? b.Points : b.points), 10);
         var safePointsA = isNaN(pointsA) ? 0 : pointsA;
         var safePointsB = isNaN(pointsB) ? 0 : pointsB;
 
@@ -439,14 +504,15 @@
           return safePointsB - safePointsA;
         }
 
-        var nameA = (a && a.Name ? a.Name : "").toString().toLowerCase();
-        var nameB = (b && b.Name ? b.Name : "").toString().toLowerCase();
+        var nameA = (a && (a.Name || a.name) ? a.Name || a.name : "").toString().toLowerCase();
+        var nameB = (b && (b.Name || b.name) ? b.Name || b.name : "").toString().toLowerCase();
         return nameA.localeCompare(nameB);
       });
 
-      var rank = 1;
       $.each(sortedTeams, function (_, team) {
-        if (!team || !team.Name) {
+        var teamName = team && (team.Name || team.name);
+
+        if (!team || !teamName) {
           return;
         }
 
@@ -454,23 +520,19 @@
           return;
         }
 
-        var teamName = team.Name.toString();
-        var totalPoints = parseInt(team.Points, 10);
+        teamName = teamName.toString();
+        var totalPoints = parseInt(team.Points !== undefined ? team.Points : team.points, 10);
         var safeTotalPoints = isNaN(totalPoints) ? 0 : totalPoints;
+        var teamMembers = normalizeTeamMembers(team);
+        var lastScoreValue = team.LastScore || team.last_score || "";
 
         mapped[teamName] = {
-          badge: normalizeBadgeName(team.Logo),
-          team_members: [],
-          rank: rank,
-          school_level: "unknown",
-          points: {
-            base: 0,
-            quiz: 0,
-            flag: 0,
-            total: safeTotalPoints,
-          },
+          badge: normalizeBadgeName(team.Logo || team.logo),
+          team_members: teamMembers,
+          last_score: lastScoreValue,
+          last_score_label: formatLastScoreLabel(lastScoreValue),
+          points: safeTotalPoints,
         };
-        rank += 1;
       });
 
       return mapped;
