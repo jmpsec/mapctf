@@ -2545,6 +2545,12 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		logo = normalizeLogoSymbolName(randomLogo.Logo)
 	}
 
+	active, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Active)))
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid active value")
+		return
+	}
+
 	visible, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Visible)))
 	if err != nil {
 		writeError(http.StatusBadRequest, "Invalid visible value")
@@ -2562,6 +2568,7 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		Updates(map[string]interface{}{
 			"name":      name,
 			"logo":      logo,
+			"active":    active,
 			"visible":   visible,
 			"protected": protected,
 		})
@@ -3187,8 +3194,9 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 	}
 	adminStr := strings.TrimSpace(req.Admin)
 	serviceStr := strings.TrimSpace(req.Service)
-	if adminStr == "" || serviceStr == "" {
-		writeError(http.StatusBadRequest, "Admin and service values are required")
+	activeStr := strings.TrimSpace(req.Active)
+	if adminStr == "" || serviceStr == "" || activeStr == "" {
+		writeError(http.StatusBadRequest, "Admin, service and active values are required")
 		return
 	}
 
@@ -3206,6 +3214,11 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 	serviceValue, err := strconv.ParseBool(strings.ToLower(serviceStr))
 	if err != nil {
 		writeError(http.StatusBadRequest, "Invalid service value")
+		return
+	}
+	activeValue, err := strconv.ParseBool(strings.ToLower(activeStr))
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid active value")
 		return
 	}
 
@@ -3228,6 +3241,7 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 			"team_id": teamID,
 			"admin":   adminValue,
 			"service": serviceValue,
+			"active":  activeValue,
 		})
 	if updateResult.Error != nil {
 		log.Err(updateResult.Error).Msg("error updating user")

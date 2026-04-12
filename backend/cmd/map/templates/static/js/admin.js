@@ -1762,11 +1762,13 @@ function initAdminUserSettingsEditors() {
       }
       var adminInput = card.querySelector('input[data-user-field="admin"]:checked');
       var serviceInput = card.querySelector('input[data-user-field="service"]:checked');
+      var activeInput = card.querySelector('input[data-user-field="active"]:checked');
       var adminValue = adminInput ? String(adminInput.value).trim() : "";
       var serviceValue = serviceInput ? String(serviceInput.value).trim() : "";
+      var activeValue = activeInput ? String(activeInput.value).trim() : "";
 
-      if (!adminValue || !serviceValue) {
-        showTransientAdminStatus("error", "Admin and service values are required");
+      if (!adminValue || !serviceValue || !activeValue) {
+        showTransientAdminStatus("error", "Admin, service and active values are required");
         return;
       }
 
@@ -1777,6 +1779,7 @@ function initAdminUserSettingsEditors() {
         team_id: teamValue,
         admin: adminValue,
         service: serviceValue,
+        active: activeValue,
       })
         .then(function (data) {
           showTransientAdminStatus(data.status || "ok", data.message || "User updated");
@@ -2052,13 +2055,15 @@ function initAdminTeamSettingsEditors() {
 
       var nameValue = nameInput && typeof nameInput.value === "string" ? nameInput.value.trim() : "";
       var logoValue = logoSelect && typeof logoSelect.value === "string" ? logoSelect.value.trim() : "";
+      var activeInput = card.querySelector('input[data-team-field="active"]:checked');
       var visibleInput = card.querySelector('input[data-team-field="visible"]:checked');
       var protectedInput = card.querySelector('input[data-team-field="protected"]:checked');
+      var activeValue = activeInput ? String(activeInput.value).trim() : "";
       var visibleValue = visibleInput ? String(visibleInput.value).trim() : "";
       var protectedValue = protectedInput ? String(protectedInput.value).trim() : "";
 
-      if (!nameValue || !logoValue || !visibleValue || !protectedValue) {
-        showTransientAdminStatus("error", "Team name, logo, visible and protected values are required");
+      if (!nameValue || !logoValue || !activeValue || !visibleValue || !protectedValue) {
+        showTransientAdminStatus("error", "Team name, logo, active, visible and protected values are required");
         return;
       }
 
@@ -2068,6 +2073,7 @@ function initAdminTeamSettingsEditors() {
       updateAdminTeam(updateURL, {
         name: nameValue,
         logo: logoValue,
+        active: activeValue,
         visible: visibleValue,
         protected: protectedValue,
       })

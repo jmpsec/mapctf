@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/rs/zerolog/log"
 )
 
@@ -70,14 +71,21 @@ func (h *HandlersMap) JSONTeamsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Get all teams for the given UUID
-	teams, err := h.Teams.GetAll()
+	allTeams, err := h.Teams.GetAll()
 	if err != nil {
 		log.Err(err).Msg("error retrieving teams")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving teams"})
 		return
 	}
+	filteredTeams := make([]teams.PlatformTeam, 0, len(allTeams))
+	for _, team := range allTeams {
+		if !team.Active || !team.Visible {
+			continue
+		}
+		filteredTeams = append(filteredTeams, team)
+	}
 	// Send response
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, teams)
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, filteredTeams)
 }
 
 // JSONChallengesHandler to return all challenges for a given UUID in JSON format

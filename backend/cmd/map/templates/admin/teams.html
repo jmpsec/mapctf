@@ -117,10 +117,10 @@
                   <span class="js-team-name-display">{{ .Name }}</span>
                 </h3>
                 <div class="admin-section-toggle radio-inline">
-                  <input type="radio" name="team-active-{{ .ID }}" id="team-{{ .ID }}-on" {{ if .Active }}checked{{ end }} disabled />
+                  <input type="radio" name="team-active-{{ .ID }}" id="team-{{ .ID }}-on" value="true" data-team-field="active" {{ if .Active }}checked{{ end }} />
                   <label for="team-{{ .ID }}-on">On</label>
 
-                  <input type="radio" name="team-active-{{ .ID }}" id="team-{{ .ID }}-off" {{ if not .Active }}checked{{ end }} disabled />
+                  <input type="radio" name="team-active-{{ .ID }}" id="team-{{ .ID }}-off" value="false" data-team-field="active" {{ if not .Active }}checked{{ end }} />
                   <label for="team-{{ .ID }}-off">Off</label>
                 </div>
               </header>

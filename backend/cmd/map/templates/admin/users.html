@@ -110,10 +110,10 @@
               <header class="admin-box-header">
                 <h3>{{ .Username }}</h3>
                 <div class="admin-section-toggle radio-inline">
-                  <input type="radio" name="user-active-{{ .ID }}" id="user-{{ .ID }}-on" {{ if .Active }}checked{{ end }} disabled />
+                  <input type="radio" name="user-active-{{ .ID }}" id="user-{{ .ID }}-on" value="true" data-user-field="active" {{ if .Active }}checked{{ end }} />
                   <label for="user-{{ .ID }}-on">On</label>
 
-                  <input type="radio" name="user-active-{{ .ID }}" id="user-{{ .ID }}-off" {{ if not .Active }}checked{{ end }} disabled />
+                  <input type="radio" name="user-active-{{ .ID }}" id="user-{{ .ID }}-off" value="false" data-user-field="active" {{ if not .Active }}checked{{ end }} />
                   <label for="user-{{ .ID }}-off">Off</label>
                 </div>
               </header>
