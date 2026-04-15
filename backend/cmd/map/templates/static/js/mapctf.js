@@ -1419,79 +1419,6 @@
     }
 
     /* --------------------------------------------
-     * --tutorial
-     * -------------------------------------------- */
-
-    /**
-     * init the tutorial modals
-     */
-    function initTutorial(event) {
-      if (event) event.preventDefault();
-
-      var firstTutorial = "tool-bars",
-        tutorialSteps = 8,
-        currStepIndex = 1;
-
-      MAP_CTF.modal.load("tutorial--" + firstTutorial, function () {
-        buildTutorial();
-
-        // enable the "skip tutorial" button
-        $("#mctf-initkit").on("click", ".mctf-tutorial .js-close-tutorial", closeTutorial);
-
-        // enable the "next tutorial" button
-        $("#mctf-initkit").on("click", "a[data-next-tutorial]", function (event) {
-          event.preventDefault();
-          var next = $(this).data("nextTutorial");
-
-          if (next) {
-            var loadPath = "/static/inc/modals/tutorial--" + next + ".html";
-            currStepIndex++;
-            MAP_CTF.loadComponent("#mctf-modal", loadPath, buildTutorial);
-          } else {
-            closeTutorial();
-          }
-        });
-      });
-
-      /**
-       * things to do after the tutorial step gets loaded
-       */
-      function buildTutorial() {
-        var $tutorial = $(".mctf-tutorial"),
-          $progressBar = $(".tutorial-progress", $tutorial),
-          currStep = $tutorial.data("tutorialStep");
-
-        // build the tutorial progress bar
-        for (var i = 0; i < tutorialSteps; i++) {
-          var markup = i < currStepIndex ? '<li class="step-filled" />' : "<li />";
-          $progressBar.append(markup);
-        }
-
-        $body
-          .removeClass(function () {
-            var stepName = $(this).data("tutorial");
-            return "tutorial-step--" + stepName;
-          })
-          .data("tutorial", currStep)
-          .addClass("tutorial-active tutorial-step--" + currStep);
-      }
-    }
-
-    /**
-     * close the tutorial
-     *
-     * @param event (object)
-     *   - if this function is called from an event listener,
-     *      prevent the default action
-     */
-    function closeTutorial(event) {
-      if (event) event.preventDefault();
-
-      $body.removeAttr("class").removeData("tutorial");
-      MAP_CTF.modal.close();
-    }
-
-    /* --------------------------------------------
      * --init
      * -------------------------------------------- */
 
@@ -1522,11 +1449,7 @@
       data: getCountryData,
       captureCountry: captureCountry,
       resetCapture: removeCaptured,
-      initTutorial: initTutorial,
       toggleListView: toggleListView,
-
-      // clos the tutorial
-      closeTutorial: closeTutorial,
 
       // enable the zoomable stuff from console
       enableClickAndDrag: enableClickAndDrag,
@@ -2051,7 +1974,6 @@
         // esc closes the command prompt
         else if (key === 27) {
           clearCommandPrompt();
-          MAP_CTF.gameboard.closeTutorial();
           MAP_CTF.modal.closeActive();
         }
       }); // window.on('keyup')
@@ -2831,14 +2753,6 @@
           return hasCat;
         })
         .addClass("hidden");
-    });
-
-    //
-    // init the tutorial
-    //
-    $(".mctf-init-tutorial").on("click", function (event) {
-      event.preventDefault();
-      MAP_CTF.gameboard.initTutorial();
     });
 
     //
