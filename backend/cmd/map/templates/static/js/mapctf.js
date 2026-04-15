@@ -50,7 +50,6 @@
    */
   MAP_CTF.gameboard = (function () {
     var GAMEBOARD_LOADED = false,
-      LOADING_CLASS = "loading",
       LIST_VIEW = false,
       VIEW_ONLY = false,
       CURRENT_ZOOM = 1,
@@ -244,8 +243,7 @@
     //
 
     /**
-     * build the gameboard, and display the loading screen while
-     *  it's being built
+     * build the gameboard
      */
     function build() {
       var countryDataLoaded = getCountryData();
@@ -256,16 +254,15 @@
       var modulesLoaded = loadModules(),
         mapLoaded = loadMap(),
         listViewLoaded = loadListView(),
-        teamDataLoaded = loadTeamData(),
-        loadingLoaded = loadIn();
+        teamDataLoaded = loadTeamData();
 
       $.when(mapLoaded, countryDataLoaded).done(function () {
         renderCountryData();
       });
 
       // do stuff when the map and modules are loaded
-      $.when(modulesLoaded, mapLoaded, listViewLoaded, teamDataLoaded, loadingLoaded).done(function () {
-        console.log("modules, map, list view, team data, and loading screen are loaded");
+      $.when(modulesLoaded, mapLoaded, listViewLoaded, teamDataLoaded).done(function () {
+        console.log("modules, map, list view, and team data are loaded");
 
         // trigger an event for the gameboard loaded, so
         //  external things know that everything has been
@@ -282,12 +279,6 @@
         if (!VIEW_ONLY) {
           gameEventListeners();
         }
-
-        //
-        // initialize the tutorial, if the query string is present
-        //
-        // Tutorial disabled - always skip
-        loadOut();
 
         //
         // init some other stuff
@@ -1136,30 +1127,6 @@
      * -------------------------------------------- */
 
     /**
-     * the gameboard is loading. load the loading screen, and
-     *  ensure the loading animation completes before we resolve
-     *  this deferred.
-     *
-     * @return Deferred
-     *   - indicate that this jqxhr request is all done
-     */
-    function loadIn() {
-      var df = $.Deferred();
-
-      // Loading animation disabled - immediately resolve
-      df.resolve();
-
-      return df;
-    }
-
-    /**
-     * the gameboard is done loading. Hide the loading screen
-     */
-    function loadOut() {
-      $gameboard.removeClass(LOADING_CLASS);
-    }
-
-    /**
      * load up all the modules
      *
      * @return Promise
@@ -1466,9 +1433,6 @@
         currStepIndex = 1;
 
       MAP_CTF.modal.load("tutorial--" + firstTutorial, function () {
-        // we're done loading stuff, so remove the laoding class
-        loadOut();
-
         buildTutorial();
 
         // enable the "skip tutorial" button

@@ -1142,11 +1142,11 @@ ul + .mctf-actionable {
  * --paragraphs and stuff
  */
 .typed-text,
-.boot-sequence {
+.typed-text {
   display: none;
 }
 .typed-text.typing-initialized,
-.boot-sequence.typing-initialized {
+.typed-text.typing-initialized {
   display: block;
 }
 
@@ -4829,51 +4829,6 @@ body[data-section=gameboard] .mctf-page {
   display: -webkit-flex;
   display: flex;
   background-color: #111e23;
-}
-
-/* --------------------------------------------
- * --loading
- * -------------------------------------------- */
-.mctf-loading {
-  display: -webkit-box;
-  display: -moz-box;
-  display: -ms-flexbox;
-  display: -webkit-flex;
-  display: flex;
-  -webkit-align-items: center;
-  -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  left: 0;
-  background: #13242b;
-  z-index: 10;
-  visibility: hidden;
-  opacity: 0;
-}
-.mctf-loading .gameboard-loading {
-  max-width: 520px;
-}
-.loading .mctf-loading {
-  visibility: visible;
-  opacity: 1;
-}
-.mctf-loading h2 {
-  color: #ead44d;
-  font-family: "puristabold", Courier, monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  padding: 0;
-}
-.mctf-loading .game-progress {
-  margin-top: 2em;
-}
-.mctf-loading .boot-sequence {
-  margin-top: 2em;
-  font-size: 0.8em;
 }
 
 /* --------------------------------------------
