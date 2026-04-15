@@ -55,6 +55,7 @@
       CURRENT_ZOOM = 1,
       PRE_CAPTURE_TRANSFORM = null,
       COUNTRY_DATA,
+      ACTIVITY_DATA,
       TEAM_DATA,
       $gameboard,
       $listview,
@@ -254,6 +255,7 @@
       var modulesLoaded = loadModules(),
         mapLoaded = loadMap(),
         listViewLoaded = loadListView(),
+        activityDataLoaded = loadActivityData(),
         teamDataLoaded = loadTeamData();
 
       $.when(mapLoaded, countryDataLoaded).done(function () {
@@ -261,8 +263,8 @@
       });
 
       // do stuff when the map and modules are loaded
-      $.when(modulesLoaded, mapLoaded, listViewLoaded, teamDataLoaded).done(function () {
-        console.log("modules, map, list view, and team data are loaded");
+      $.when(modulesLoaded, mapLoaded, listViewLoaded, teamDataLoaded, activityDataLoaded).done(function () {
+        console.log("modules, map, list view, team data, and activity data are loaded");
 
         // trigger an event for the gameboard loaded, so
         //  external things know that everything has been
@@ -289,6 +291,7 @@
 
         // popuplate the team module
         setupTeams();
+        setupActivity();
       });
     }
 
@@ -405,6 +408,73 @@
           $(".last-score", $modal).text(teamData.last_score_label);
         });
       });
+    }
+
+    function getCurrentTeamName() {
+      if (MAP_CTF.data && MAP_CTF.data.CONF && MAP_CTF.data.CONF.currentTeam) {
+        return MAP_CTF.data.CONF.currentTeam;
+      }
+
+      return "";
+    }
+
+    function buildActivityText(entry) {
+      var parts = [];
+
+      if (entry && entry.Message) {
+        parts.push(entry.Message);
+      }
+      if (entry && entry.Action) {
+        parts.push(entry.Action);
+      }
+      if (entry && entry.Arguments) {
+        parts.push(entry.Arguments);
+      }
+
+      return $.trim(parts.join(" "));
+    }
+
+    function setupActivity() {
+      var $activityStream = $('aside[data-module="activity"] .activity-stream');
+      var currentTeam = getCurrentTeamName();
+
+      $activityStream.empty();
+      $activityStream.append('<li class="activity-empty" style="display: none">No activity yet</li>');
+
+      if ($.isArray(ACTIVITY_DATA) && ACTIVITY_DATA.length) {
+        $.each(ACTIVITY_DATA, function (_, entry) {
+          var subject = entry && entry.Subject ? entry.Subject.toString() : "";
+          var messageText = buildActivityText(entry);
+          var isYourTeam = currentTeam && subject === currentTeam;
+          var itemClass = isYourTeam ? "your-team" : "opponent-team";
+          var subjectClass = isYourTeam ? "your-name" : "opponent-name";
+          var $item = $("<li></li>").addClass(itemClass + " activity-entry");
+
+          if (subject) {
+            $item.append($("<span></span>").addClass(subjectClass).text(subject));
+            if (messageText) {
+              $item.append(document.createTextNode(" " + messageText));
+            }
+          } else if (messageText) {
+            $item.text(messageText);
+          }
+
+          if (!subject && !messageText) {
+            return;
+          }
+
+          $activityStream.append($item);
+        });
+      }
+
+      updateActivityEmptyState($activityStream);
+    }
+
+    function updateActivityEmptyState($activityStream) {
+      var $emptyState = $activityStream.find(".activity-empty");
+      var hasVisibleEntries = $activityStream.find(".activity-entry:visible").length > 0;
+
+      $emptyState.toggle(!hasVisibleEntries);
     }
 
     function getCurrentUUID() {
@@ -760,7 +830,8 @@
         event.preventDefault();
         var $self = $(this),
           select = $self.val(),
-          $li = $self.closest(".module-content").find(".activity-stream li").show();
+          $activityStream = $self.closest(".module-content").find(".activity-stream"),
+          $li = $activityStream.find(".activity-entry").show();
 
         if (select !== "all") {
           $li
@@ -769,6 +840,8 @@
             })
             .hide();
         }
+
+        updateActivityEmptyState($activityStream);
       });
 
       /* --------------------------------------------
@@ -1263,6 +1336,43 @@
         "json",
       ).fail(function () {
         loadFallbackData();
+      });
+
+      return df.promise();
+    }
+
+    function loadActivityData() {
+      if (ACTIVITY_DATA) {
+        return $.Deferred().resolve(ACTIVITY_DATA).promise();
+      }
+
+      var df = $.Deferred();
+      var uuid = getCurrentUUID();
+
+      if (!uuid) {
+        ACTIVITY_DATA = [];
+        return df.resolve(ACTIVITY_DATA).promise();
+      }
+
+      $.get(
+        "/" + encodeURIComponent(uuid) + "/json/activity",
+        function (data) {
+          var activityEntries = $.isArray(data) ? data.slice(0) : [];
+
+          activityEntries.sort(function (a, b) {
+            var dateA = new Date(a && a.CreatedAt ? a.CreatedAt : 0).getTime();
+            var dateB = new Date(b && b.CreatedAt ? b.CreatedAt : 0).getTime();
+
+            return dateB - dateA;
+          });
+
+          ACTIVITY_DATA = activityEntries;
+          df.resolve(ACTIVITY_DATA);
+        },
+        "json",
+      ).fail(function () {
+        ACTIVITY_DATA = [];
+        df.resolve(ACTIVITY_DATA);
       });
 
       return df.promise();
