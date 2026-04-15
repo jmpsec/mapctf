@@ -52,6 +52,7 @@ type GameboardTemplateData struct {
 	Authenticated            bool
 	Admin                    bool
 	GameboardShowTeamMembers bool
+	Countries                []countries.MapCountry
 }
 
 // RegistrationTemplateData for passing data to the registration template

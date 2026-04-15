@@ -271,6 +271,14 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading gameboard_show_team_members")
 	}
+	if h.Countries != nil {
+		countriesList, err := h.Countries.GetAll()
+		if err != nil {
+			log.Warn().Err(err).Msg("error loading countries for gameboard")
+		} else {
+			templateData.Countries = countriesList
+		}
+	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
 		return
