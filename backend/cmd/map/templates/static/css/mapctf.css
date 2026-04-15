@@ -3252,11 +3252,40 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.2em;
 }
+.player-info .player-rank,
+.player-info .player-score {
+  display: block;
+}
+.player-info .stat-label {
+  display: inline-block;
+  min-width: 60px;
+  color: rgba(207, 248, 250, 0.55);
+  font-size: 0.78em;
+}
+.player-info .stat-value {
+  display: inline-block;
+  font-family: "puristabold", Courier, monospace;
+  letter-spacing: 0.08em;
+}
 .player-info .player-rank {
   color: #ead44d;
 }
 .player-info .player-score {
   color: #21b4ba;
+}
+.mctf-gameboard aside[data-module][data-module=leaderboard] .module-top.player-info .stat-label {
+  min-width: auto;
+  margin-right: 8px;
+}
+.mctf-gameboard aside[data-module][data-module=leaderboard] .module-top.player-info .stat-value {
+  font-size: 1.25em;
+}
+.mctf-gameboard aside[data-module][data-module=leaderboard] .module-scrollable .player-info .stat-label {
+  min-width: 52px;
+  font-size: 0.68em;
+}
+.mctf-gameboard aside[data-module][data-module=leaderboard] .module-scrollable .player-info .stat-value {
+  font-size: 1em;
 }
 
 /**
@@ -4185,6 +4214,15 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
 .mctf-gameboard aside[data-module][data-module=leaderboard] .module-top {
   padding: 10px;
   border-bottom: 1px solid #21b4ba;
+}
+.mctf-gameboard aside[data-module][data-module=leaderboard] .leaderboard-empty {
+  padding: 12px;
+  border: 1px solid rgba(33, 180, 186, 0.28);
+  background: rgba(19, 36, 43, 0.5);
+  color: rgba(207, 248, 250, 0.7);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
 }
 .mctf-gameboard aside[data-module][data-module=announcements] .activity-stream li {
   position: relative;

@@ -289,6 +289,9 @@
         // load the command line
         MAP_CTF.command_line.init();
 
+        // populate the leaderboard module
+        setupLeaderboard();
+
         // popuplate the team module
         setupTeams();
         setupActivity();
@@ -407,6 +410,73 @@
           $(".team-points-value", $modal).text(teamData.points);
           $(".last-score", $modal).text(teamData.last_score_label);
         });
+      });
+    }
+
+    function setupLeaderboard() {
+      if (TEAM_DATA === undefined) {
+        console.error("No team data available for leaderboard.");
+        return;
+      }
+
+      var $leaderboard = $('aside[data-module="leaderboard"]');
+      var $leaderboardList = $(".leaderboard-list", $leaderboard);
+      var currentTeam = getCurrentTeamName();
+      var currentTeamData = currentTeam && TEAM_DATA[currentTeam] ? TEAM_DATA[currentTeam] : null;
+      var sortedTeams = [];
+
+      $leaderboardList.empty();
+
+      $.each(TEAM_DATA, function (teamName, teamData) {
+        sortedTeams.push({
+          name: teamName,
+          data: teamData,
+        });
+      });
+
+      sortedTeams.sort(function (a, b) {
+        return a.data.rank - b.data.rank;
+      });
+
+      if (currentTeamData) {
+        $(".player-name", $leaderboard).text(currentTeam);
+        $(".module-top .player-rank .stat-value", $leaderboard).text(currentTeamData.rank);
+        $(".module-top .player-score .stat-value", $leaderboard).text(currentTeamData.points);
+      } else {
+        $(".player-name", $leaderboard).text("No Team");
+        $(".module-top .player-rank .stat-value", $leaderboard).text("--");
+        $(".module-top .player-score .stat-value", $leaderboard).text("0");
+      }
+
+      if (!sortedTeams.length) {
+        $leaderboardList.append('<li class="leaderboard-empty">No teams yet</li>');
+        return;
+      }
+
+      $.each(sortedTeams, function (_, teamEntry) {
+        var teamName = teamEntry.name;
+        var teamData = teamEntry.data;
+        var markup =
+          '<li class="mctf-user-card">' +
+          '<div class="user-avatar">' +
+          '<svg class="icon--badge"><use xlink:href="#icon--badge-' +
+          teamData.badge +
+          '"></use></svg>' +
+          "</div>" +
+          '<div class="player-info">' +
+          "<h6>" +
+          teamName +
+          "</h6>" +
+          '<span class="player-rank"><span class="stat-label">Rank</span><span class="stat-value">' +
+          teamData.rank +
+          "</span></span>" +
+          '<span class="player-score"><span class="stat-label">Points</span><span class="stat-value">' +
+          teamData.points +
+          "</span></span>" +
+          "</div>" +
+          "</li>";
+
+        $leaderboardList.append(markup);
       });
     }
 
@@ -570,6 +640,7 @@
         return nameA.localeCompare(nameB);
       });
 
+      var rank = 1;
       $.each(sortedTeams, function (_, team) {
         var teamName = team && (team.Name || team.name);
 
@@ -590,10 +661,12 @@
         mapped[teamName] = {
           badge: normalizeBadgeName(team.Logo || team.logo),
           team_members: teamMembers,
+          rank: rank,
           last_score: lastScoreValue,
           last_score_label: formatLastScoreLabel(lastScoreValue),
           points: safeTotalPoints,
         };
+        rank += 1;
       });
 
       return mapped;
