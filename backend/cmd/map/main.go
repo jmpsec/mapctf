@@ -20,6 +20,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/backend"
 	"github.com/jmpsec/mapctf/pkg/cache"
 	"github.com/jmpsec/mapctf/pkg/challenges"
+	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/config"
 	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/logs"
@@ -96,6 +97,8 @@ const (
 	activityPath = "/activity"
 	// Announcements path
 	announcementsPath = "/announcements"
+	// Chat path
+	chatPath = "/chat"
 	// JSON data path
 	jsonPath = "/json"
 )
@@ -240,7 +243,12 @@ func mapCTFService() {
 		log.Fatal().Msgf("Failed to initialize countries: %v", err)
 	}
 	log.Info().Msgf("Countries initialization stats: Total=%d, Inserted=%d, Existing=%d", countryStats.TotalCountries, countryStats.InsertedCountries, countryStats.ExistingCountries)
-	// Session manager
+	// Chat Manager
+	chatMgr, err := chat.CreateChatManager(db.Conn, flagParams.ConfigValues.Map.UUID)
+	if err != nil {
+		log.Fatal().Msgf("Failed to initialize chat manager: %v", err)
+	}
+	// Session Manager
 	sessionManager := scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
 	sessionManager.IdleTimeout = 30 * time.Minute
@@ -262,6 +270,7 @@ func mapCTFService() {
 		handlers.WithChallenges(challengesMgr),
 		handlers.WithSettings(settingsMgr),
 		handlers.WithLogs(logsMgr),
+		handlers.WithChat(chatMgr),
 		handlers.WithCountries(countriesMgr),
 		handlers.WithSessions(sessionManager),
 		handlers.WithDebugHTTP(&flagParams.ConfigValues.DebugHTTP),
@@ -305,13 +314,17 @@ func mapCTFService() {
 		r.Group(func(r chi.Router) {
 			r.Use(handlersMap.RequireAuth)
 			// Protected gameboard routes
-			r.Get(mapGameboardPath, handlersMap.GameboardTemplateHandler)
+			r.Route(mapGameboardPath, func(r chi.Router) {
+				r.Get(rootPath, handlersMap.GameboardTemplateHandler)
+				r.Post(chatPath, handlersMap.ChatPOSTHandler)
+			})
 			// Protected JSON routes
 			r.Route(jsonPath, func(r chi.Router) {
 				r.Get(activityPath, handlersMap.JSONActivityHandler)
 				r.Get(announcementsPath, handlersMap.JSONAnnouncementsHandler)
 				r.Get(challengesPath, handlersMap.JSONChallengesHandler)
 				r.Get(teamsPath, handlersMap.JSONTeamsHandler)
+				r.Get(chatPath, handlersMap.JSONChatHandler)
 			})
 			// Protected admin routes
 			r.Route(adminPath, func(r chi.Router) {

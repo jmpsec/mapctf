@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/static/css/mapctf.css" />
   </head>
 
-  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}">
+  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ .CurrentUsername }}">
     <!--
      *
      * SVG icon sprite object
@@ -2441,77 +2441,7 @@
               </div>
             </div>
           </aside>
-          <aside data-name="World Chat" class="module--inner" data-module="world-chat">
-            <div class="world-chat-box">
-              <header class="module-header">
-                <h6>World Chat</h6>
-              </header>
-              <div class="module-content mctf-row-container">
-                <div class="chat-box row-fluid">
-                  <ul class="chat-list">
-                    <li>
-                      <span class="message-time">21:11:08</span>
-                      <span class="message-author opponent-name">da invaderz</span>
-                      Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-                    </li>
-                    <li>
-                      <span class="message-time">21:04:25</span>
-                      <span class="message-author opponent-name">da invaderz</span>
-                      Aliquam, ipsam adipisci a nam dolor.
-                    </li>
-                    <li>
-                      <span class="message-time">20:11:08</span>
-                      <span class="message-author your-name">Tank SF</span>
-                      Quisquam eos sequi saepe deleniti debitis rerum ex facilis, ad, nulla, numquam, soluta dolorum esse fugit.
-                    </li>
-                    <li>
-                      <span class="message-time">20:05:48</span>
-                      <span class="message-author opponent-name">DEATH HAXX</span>
-                      Laudantium quo sunt, eaque veritatis, ullam nobis officia porro facilis fuga quas soluta nam distinctio nisi sapiente odio eos impedit maiores praesentium.
-                    </li>
-                    <li>
-                      <span class="message-time">19:30:41</span>
-                      <span class="message-author your-name">Tank SF</span>
-                      Quod aut, rem
-                    </li>
-                    <li>
-                      <span class="message-time">21:11:08</span>
-                      <span class="message-author opponent-name">da invaderz</span>
-                      Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-                    </li>
-                    <li>
-                      <span class="message-time">21:04:25</span>
-                      <span class="message-author opponent-name">da invaderz</span>
-                      Aliquam, ipsam adipisci a nam dolor.
-                    </li>
-                    <li>
-                      <span class="message-time">20:11:08</span>
-                      <span class="message-author your-name">Tank SF</span>
-                      Quisquam eos sequi saepe deleniti debitis rerum ex facilis, ad, nulla, numquam, soluta dolorum esse fugit.
-                    </li>
-                    <li>
-                      <span class="message-time">20:05:48</span>
-                      <span class="message-author opponent-name">DEATH HAXX</span>
-                      Laudantium quo sunt, eaque veritatis, ullam nobis officia porro facilis fuga quas soluta nam distinctio nisi sapiente odio eos impedit maiores praesentium.
-                    </li>
-                    <li>
-                      <span class="message-time">19:30:41</span>
-                      <span class="message-author your-name">Tank SF</span>
-                      Quod aut, rem
-                    </li>
-                  </ul>
-                </div>
-                <div class="row-fixed">
-                  <form class="chat-input">
-                    <div class="input-container">
-                      <input type="text" placeholder="Type to chat" />
-                    </div>
-                    <button class="mctf-cta" type="submit">Submit</button>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </aside>
+          <aside data-name="World Chat" class="module--inner" data-module="world-chat"></aside>
           <aside data-name="Game Clock" class="module--outer-right" data-module="game-clock">
             <header class="module-header">
               <h6>Game Clock</h6>
@@ -2699,6 +2629,176 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>
     <script type="text/javascript" src="/static/js/mapctf.js"></script>
+    <script type="text/javascript">
+      (function () {
+        var body = document.body;
+        var currentUsername = body.getAttribute("data-current-username") || "";
+        var chatMaxLen = parseInt(body.getAttribute("data-chat-max-len") || "0", 10);
+        var chatURL = "/{{ .UUID }}/gameboard/chat";
+        var chatJSONURL = "/{{ .UUID }}/json/chat";
+        var chatInitialized = false;
+        var chatInitAttempts = 0;
+        var maxChatInitAttempts = 20;
+
+        function escapeText(value) {
+          return value == null ? "" : String(value);
+        }
+
+        function formatChatTime(value) {
+          var parsed = value ? new Date(value) : null;
+          if (!parsed || Number.isNaN(parsed.getTime())) {
+            return "--:--:--";
+          }
+          return parsed.toLocaleTimeString([], {
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+        }
+
+        function scrollChatToBottom(chatList) {
+          chatList.scrollTop = chatList.scrollHeight;
+        }
+
+        function renderChatEntries(chatList, entries) {
+          chatList.innerHTML = "";
+
+          if (!Array.isArray(entries) || entries.length === 0) {
+            var emptyItem = document.createElement("li");
+            emptyItem.textContent = "No chat messages yet.";
+            chatList.appendChild(emptyItem);
+            return;
+          }
+
+          entries.forEach(function (entry) {
+            var item = document.createElement("li");
+            var time = document.createElement("span");
+            var author = document.createElement("span");
+            var authorName = escapeText(entry.Username);
+            var messageBody = escapeText(entry.Body);
+
+            time.className = "message-time";
+            time.textContent = formatChatTime(entry.CreatedAt);
+
+            author.className = "message-author " + (authorName === currentUsername ? "your-name" : "opponent-name");
+            author.textContent = authorName || "unknown";
+
+            item.appendChild(time);
+            item.appendChild(author);
+            item.appendChild(document.createTextNode(" " + messageBody));
+            chatList.appendChild(item);
+          });
+
+          scrollChatToBottom(chatList);
+        }
+
+        function updateCounter(chatInput, chatCounter) {
+          if (chatInput.value.length > chatMaxLen) {
+            chatInput.value = chatInput.value.slice(0, chatMaxLen);
+          }
+
+          chatCounter.textContent = String(chatMaxLen - chatInput.value.length) + " left";
+        }
+
+        function loadChat(chatList) {
+          return fetch(chatJSONURL, {
+            credentials: "same-origin",
+          })
+            .then(function (response) {
+              if (!response.ok) {
+                throw new Error("failed to load chat");
+              }
+              return response.json();
+            })
+            .then(function (entries) {
+              renderChatEntries(chatList, entries);
+            })
+            .catch(function () {
+              chatList.innerHTML = "";
+              var errorItem = document.createElement("li");
+              errorItem.textContent = "Unable to load chat right now.";
+              chatList.appendChild(errorItem);
+            });
+        }
+
+        function initChat() {
+          var chatList = document.querySelector("[data-chat-list]");
+          var chatForm = document.querySelector("[data-chat-form]");
+          var chatInput = document.querySelector("[data-chat-input]");
+          var chatCounter = document.querySelector("[data-chat-counter]");
+
+          if (chatInitialized || !chatMaxLen) {
+            return;
+          }
+
+          if (!chatList || !chatForm || !chatInput || !chatCounter) {
+            if (chatInitAttempts < maxChatInitAttempts) {
+              chatInitAttempts += 1;
+              window.setTimeout(initChat, 250);
+            }
+            return;
+          }
+
+          chatInitialized = true;
+          chatInput.maxLength = chatMaxLen;
+
+          chatInput.addEventListener("input", function () {
+            updateCounter(chatInput, chatCounter);
+          });
+
+          chatForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            var message = chatInput.value.trim();
+            if (!message) {
+              updateCounter(chatInput, chatCounter);
+              return;
+            }
+
+            if (message.length > chatMaxLen) {
+              message = message.slice(0, chatMaxLen);
+              chatInput.value = message;
+            }
+
+            fetch(chatURL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "same-origin",
+              body: JSON.stringify({ message: message }),
+            })
+              .then(function (response) {
+                if (!response.ok) {
+                  throw new Error("failed to send chat");
+                }
+                return response.json();
+              })
+              .then(function () {
+                chatInput.value = "";
+                updateCounter(chatInput, chatCounter);
+                return loadChat(chatList);
+              })
+              .catch(function () {
+                updateCounter(chatInput, chatCounter);
+              });
+          });
+
+          updateCounter(chatInput, chatCounter);
+          loadChat(chatList);
+        }
+
+        if (window.jQuery) {
+          window.jQuery(function () {
+            window.jQuery("body").on("content-loaded gameboard-loaded", initChat);
+            initChat();
+          });
+        }
+
+        document.addEventListener("DOMContentLoaded", initChat);
+        initChat();
+      })();
+
+    </script>
     <script type="text/javascript">
       (function () {
         var logoutLink = document.getElementById("gameboard-logout-link");

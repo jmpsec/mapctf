@@ -4,6 +4,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/jmpsec/mapctf/pkg/cache"
 	"github.com/jmpsec/mapctf/pkg/challenges"
+	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/config"
 	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/logs"
@@ -39,6 +40,7 @@ type HandlersMap struct {
 	Settings    *settings.SettingsManager
 	Countries   *countries.CountriesManager
 	Logs        *logs.LogManager
+	Chat        *chat.ChatManager
 	Config      config.MapCTFConfiguration
 	Sessions    *scs.SessionManager
 	DebugHTTP   *zerolog.Logger
@@ -109,6 +111,12 @@ func WithSettings(settings *settings.SettingsManager) HandlersOption {
 func WithLogs(logs *logs.LogManager) HandlersOption {
 	return func(h *HandlersMap) {
 		h.Logs = logs
+	}
+}
+
+func WithChat(chat *chat.ChatManager) HandlersOption {
+	return func(h *HandlersMap) {
+		h.Chat = chat
 	}
 }
 

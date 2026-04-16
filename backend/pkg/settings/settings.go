@@ -43,6 +43,8 @@ const (
 	LeaderboardLimit string = "leaderboard_limit"
 	// GameboardShowTeamMembers is the setting name for showing team members on the gameboard
 	GameboardShowTeamMembers string = "gameboard_show_team_members"
+	// GameboardChatMaxLen is the setting name for the maximum length of chat messages on the gameboard
+	GameboardChatMaxLen string = "gameboard_chat_max_len"
 )
 
 const (
@@ -81,8 +83,9 @@ var DateSettings = map[string]time.Time{
 
 // IntSettings to be used as check for valid setting and to keep default value
 var IntSettings = map[string]int{
-	RegistrationType: OpenRegistration,
-	LeaderboardLimit: 10,
+	RegistrationType:    OpenRegistration,
+	LeaderboardLimit:    10,
+	GameboardChatMaxLen: 200,
 }
 
 const (
@@ -605,4 +608,14 @@ func (m *SettingsManager) SetRegistrationToken(token, username string) error {
 
 func (m *SettingsManager) GetRegistrationToken() (string, error) {
 	return m.getStringSetting(RegistrationToken)
+}
+
+func (m *SettingsManager) SetGameboardChatMaxLen(maxLen int, username string) error {
+	return m.upsertSetting(GameboardChatMaxLen, TypeInt, GameboardChatMaxLen+" int setting", username, func(s *PlatformSetting) {
+		s.ValueInt = maxLen
+	})
+}
+
+func (m *SettingsManager) GetGameboardChatMaxLen() (int, error) {
+	return m.getIntSetting(GameboardChatMaxLen)
 }

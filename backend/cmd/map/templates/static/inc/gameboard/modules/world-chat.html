@@ -4,63 +4,17 @@
   </header>
   <div class="module-content mctf-row-container">
     <div class="chat-box row-fluid">
-      <ul class="chat-list">
-        <li>
-          <span class="message-time">21:11:08</span>
-          <span class="message-author opponent-name">da invaderz</span>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-        </li>
-        <li>
-          <span class="message-time">21:04:25</span>
-          <span class="message-author opponent-name">da invaderz</span>
-          Aliquam, ipsam adipisci a nam dolor.
-        </li>
-        <li>
-          <span class="message-time">20:11:08</span>
-          <span class="message-author your-name">Tank SF</span>
-          Quisquam eos sequi saepe deleniti debitis rerum ex facilis, ad, nulla, numquam, soluta dolorum esse fugit.
-        </li>
-        <li>
-          <span class="message-time">20:05:48</span>
-          <span class="message-author opponent-name">DEATH HAXX</span>
-          Laudantium quo sunt, eaque veritatis, ullam nobis officia porro facilis fuga quas soluta nam distinctio nisi sapiente odio eos impedit maiores praesentium.
-        </li>
-        <li>
-          <span class="message-time">19:30:41</span>
-          <span class="message-author your-name">Tank SF</span>
-          Quod aut, rem
-        </li>
-        <li>
-          <span class="message-time">21:11:08</span>
-          <span class="message-author opponent-name">da invaderz</span>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-        </li>
-        <li>
-          <span class="message-time">21:04:25</span>
-          <span class="message-author opponent-name">da invaderz</span>
-          Aliquam, ipsam adipisci a nam dolor.
-        </li>
-        <li>
-          <span class="message-time">20:11:08</span>
-          <span class="message-author your-name">Tank SF</span>
-          Quisquam eos sequi saepe deleniti debitis rerum ex facilis, ad, nulla, numquam, soluta dolorum esse fugit.
-        </li>
-        <li>
-          <span class="message-time">20:05:48</span>
-          <span class="message-author opponent-name">DEATH HAXX</span>
-          Laudantium quo sunt, eaque veritatis, ullam nobis officia porro facilis fuga quas soluta nam distinctio nisi sapiente odio eos impedit maiores praesentium.
-        </li>
-        <li>
-          <span class="message-time">19:30:41</span>
-          <span class="message-author your-name">Tank SF</span>
-          Quod aut, rem
-        </li>
+      <ul class="chat-list" data-chat-list>
+        <li data-chat-placeholder>Loading chat...</li>
       </ul>
     </div>
     <div class="row-fixed">
-      <form class="chat-input">
-        <div class="input-container"><input type="text" placeholder="Type to chat" /></div>
-        <button class="mctf-cta" type="submit">Submit</button>
+      <form class="chat-input" data-chat-form>
+        <div class="chat-input-shell">
+          <div class="input-container"><input type="text" placeholder="Type to chat" autocomplete="off" data-chat-input /></div>
+          <span class="mctf-numbers" data-chat-counter></span>
+        </div>
+        <button class="mctf-cta cta--light-blue" type="submit">Send</button>
       </form>
     </div>
   </div>

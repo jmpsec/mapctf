@@ -29,6 +29,16 @@ type MapLoginResponse struct {
 	Redirect string `json:"redirect,omitempty"`
 }
 
+// MapErrorResponse to be returned to map requests with the error message
+type MapErrorResponse struct {
+	Error string `json:"error"`
+}
+
+// MapChatResponse to be returned to map requests after a successful chat message creation
+type MapChatResponse struct {
+	Success bool `json:"success"`
+}
+
 // MapLogoutResponse to be returned to map requests after a successful logout
 type MapLogoutResponse MapLoginResponse
 
@@ -108,4 +118,9 @@ type AdminLogoUpdateRequest struct {
 	Name      string `json:"name"`
 	Enabled   string `json:"enabled"`
 	Protected string `json:"protected"`
+}
+
+// ChatEntryRequest to receive chat entry requests
+type ChatEntryRequest struct {
+	Message string `json:"message"`
 }

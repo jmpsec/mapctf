@@ -150,3 +150,27 @@ func (h *HandlersMap) JSONChallengesHandler(w http.ResponseWriter, r *http.Reque
 	// Send response
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, challenges)
 }
+
+// JSONChatHandler to return all chat entries for a given UUID in JSON format
+func (h *HandlersMap) JSONChatHandler(w http.ResponseWriter, r *http.Request) {
+	// Debug HTTP if enabled
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		log.Err(errors.New("UUID is required")).Msg("UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+		return
+	}
+	// Get all chat entries for the given UUID
+	chatEntries, err := h.Chat.GetAll()
+	if err != nil {
+		log.Err(err).Msg("error retrieving chat entries")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving chat entries"})
+		return
+	}
+	// Send response
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, chatEntries)
+}

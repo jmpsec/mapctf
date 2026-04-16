@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -24,20 +25,16 @@ type ChatEntry struct {
 
 // ChatManager have all chat entries of the system
 type ChatManager struct {
-	DB     *gorm.DB
-	UUID   string
-	MaxLen int
+	DB   *gorm.DB
+	UUID string
 }
 
 // CreateChatManager to initialize the chat manager struct and tables
-func CreateChatManager(backend *gorm.DB, uuid string, maxLen int) (*ChatManager, error) {
+func CreateChatManager(backend *gorm.DB, uuid string) (*ChatManager, error) {
 	if backend == nil {
 		return nil, fmt.Errorf("database connection cannot be nil")
 	}
-	if maxLen <= 0 {
-		maxLen = DefaultMaxLen
-	}
-	c := &ChatManager{DB: backend, UUID: uuid, MaxLen: maxLen}
+	c := &ChatManager{DB: backend, UUID: uuid}
 	// table chat_entries
 	if err := backend.AutoMigrate(&ChatEntry{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (chat_entries): %w", err)
@@ -56,20 +53,34 @@ func (m *ChatManager) Create(entry ChatEntry) error {
 // GetAll users by UUID
 func (m *ChatManager) GetAll() ([]ChatEntry, error) {
 	var entries []ChatEntry
-	if err := m.DB.Where("uuid = ?", m.UUID).Find(&entries).Error; err != nil {
+	if err := m.DB.Where("uuid = ?", m.UUID).Order("created_at ASC").Find(&entries).Error; err != nil {
+		return entries, err
+	}
+	return entries, nil
+}
+
+// GetAllAfter a specific timestamp by UUID
+func (m *ChatManager) GetAllAfter(afterTs string) ([]ChatEntry, error) {
+	var entries []ChatEntry
+	// Parse afterTs to time.Time
+	afterTime, err := time.Parse(time.RFC3339, afterTs)
+	if err != nil {
+		return entries, fmt.Errorf("invalid timestamp format: %w", err)
+	}
+	if err := m.DB.Where("uuid = ? AND created_at > ?", m.UUID, afterTime).Order("created_at ASC").Find(&entries).Error; err != nil {
 		return entries, err
 	}
 	return entries, nil
 }
 
 // New chat entry with all the required fields and UUID
-func (m *ChatManager) New(username, body string, uuid string, teamID uint) (ChatEntry, error) {
+func (m *ChatManager) New(username, body string, uuid string, teamID uint, maxLen int) (ChatEntry, error) {
 	if username == "" || body == "" {
 		return ChatEntry{}, fmt.Errorf("username and body cannot be empty")
 	}
 	// Truncate body if it exceeds MaxLen
-	if len(body) > m.MaxLen {
-		body = body[:m.MaxLen]
+	if len(body) > maxLen {
+		body = body[:maxLen]
 	}
 	return ChatEntry{
 		Username: username,
@@ -77,6 +88,15 @@ func (m *ChatManager) New(username, body string, uuid string, teamID uint) (Chat
 		UUID:     uuid,
 		TeamID:   teamID,
 	}, nil
+}
+
+// CreateNew chat entry with all the required fields and UUID and store it in the database
+func (m *ChatManager) CreateNew(username, body string, teamID uint, maxLen int) error {
+	entry, err := m.New(username, body, m.UUID, teamID, maxLen)
+	if err != nil {
+		return fmt.Errorf("CreateNew ChatEntry %w", err)
+	}
+	return m.Create(entry)
 }
 
 // Delete chat entry by ID

@@ -51,6 +51,8 @@ type GameboardTemplateData struct {
 	UUID                     string
 	Authenticated            bool
 	Admin                    bool
+	CurrentUsername          string
+	GameboardChatMaxLen      int
 	GameboardShowTeamMembers bool
 	Countries                []countries.MapCountry
 }

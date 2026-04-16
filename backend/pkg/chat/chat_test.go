@@ -2,6 +2,7 @@ package chat
 
 import (
 	"testing"
+	"time"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -26,11 +27,11 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func setupTestManager(t *testing.T, uuid string, maxLen int) (*ChatManager, *gorm.DB) {
+func setupTestManager(t *testing.T, uuid string) (*ChatManager, *gorm.DB) {
 	t.Helper()
 
 	db := setupTestDB(t)
-	manager, err := CreateChatManager(db, uuid, maxLen)
+	manager, err := CreateChatManager(db, uuid)
 	if err != nil {
 		t.Fatalf("Failed to create ChatManager: %v", err)
 	}
@@ -40,7 +41,7 @@ func setupTestManager(t *testing.T, uuid string, maxLen int) (*ChatManager, *gor
 
 func TestCreateChatManager(t *testing.T) {
 	t.Run("nil db returns error", func(t *testing.T) {
-		manager, err := CreateChatManager(nil, testUUIDA, DefaultMaxLen)
+		manager, err := CreateChatManager(nil, testUUIDA)
 		if err == nil {
 			t.Fatal("expected error when database is nil")
 		}
@@ -49,14 +50,14 @@ func TestCreateChatManager(t *testing.T) {
 		}
 	})
 
-	t.Run("defaults max len when invalid", func(t *testing.T) {
+	t.Run("successfully migrates", func(t *testing.T) {
 		db := setupTestDB(t)
-		manager, err := CreateChatManager(db, testUUIDA, 0)
+		manager, err := CreateChatManager(db, testUUIDA)
 		if err != nil {
 			t.Fatalf("unexpected error creating manager: %v", err)
 		}
-		if manager.MaxLen != DefaultMaxLen {
-			t.Fatalf("expected MaxLen %d, got %d", DefaultMaxLen, manager.MaxLen)
+		if manager.UUID != testUUIDA {
+			t.Fatalf("expected UUID %s, got %s", testUUIDA, manager.UUID)
 		}
 		if !db.Migrator().HasTable(&ChatEntry{}) {
 			t.Fatal("expected chat_entries table to be created")
@@ -73,7 +74,7 @@ func TestCreateChatManager(t *testing.T) {
 			t.Fatalf("failed to close sql db: %v", err)
 		}
 
-		manager, err := CreateChatManager(db, testUUIDA, DefaultMaxLen)
+		manager, err := CreateChatManager(db, testUUIDA)
 		if err == nil {
 			t.Fatal("expected automigrate error on closed db")
 		}
@@ -84,9 +85,9 @@ func TestCreateChatManager(t *testing.T) {
 }
 
 func TestNewChatEntry(t *testing.T) {
-	manager, _ := setupTestManager(t, testUUIDA, 5)
+	manager, _ := setupTestManager(t, testUUIDA)
 
-	entry, err := manager.New("alice", "hello world", testUUIDA, 7)
+	entry, err := manager.New("alice", "hello world", testUUIDA, 7, 5)
 	if err != nil {
 		t.Fatalf("unexpected error from New: %v", err)
 	}
@@ -106,7 +107,7 @@ func TestNewChatEntry(t *testing.T) {
 }
 
 func TestNewChatEntryRejectsEmptyFields(t *testing.T) {
-	manager, _ := setupTestManager(t, testUUIDA, DefaultMaxLen)
+	manager, _ := setupTestManager(t, testUUIDA)
 
 	tests := []struct {
 		name     string
@@ -120,7 +121,7 @@ func TestNewChatEntryRejectsEmptyFields(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := manager.New(tc.username, tc.body, testUUIDA, NoTeamID)
+			_, err := manager.New(tc.username, tc.body, testUUIDA, NoTeamID, DefaultMaxLen)
 			if err == nil {
 				t.Fatal("expected error for empty username/body")
 			}
@@ -129,9 +130,9 @@ func TestNewChatEntryRejectsEmptyFields(t *testing.T) {
 }
 
 func TestCreateAndGetAllScopeByUUID(t *testing.T) {
-	manager, db := setupTestManager(t, testUUIDA, DefaultMaxLen)
+	manager, db := setupTestManager(t, testUUIDA)
 
-	entryA, err := manager.New("alice", "hello", testUUIDA, 1)
+	entryA, err := manager.New("alice", "hello", testUUIDA, 1, DefaultMaxLen)
 	if err != nil {
 		t.Fatalf("unexpected error creating entryA: %v", err)
 	}
@@ -160,8 +161,34 @@ func TestCreateAndGetAllScopeByUUID(t *testing.T) {
 	}
 }
 
+func TestGetAllReturnsEntriesInCreationOrder(t *testing.T) {
+	manager, db := setupTestManager(t, testUUIDA)
+
+	baseTime := time.Date(2026, 4, 16, 12, 0, 0, 0, time.UTC)
+	seed := []ChatEntry{
+		{Username: "second", Body: "later", TeamID: 1, UUID: testUUIDA, Model: gorm.Model{CreatedAt: baseTime.Add(2 * time.Minute)}},
+		{Username: "first", Body: "earlier", TeamID: 1, UUID: testUUIDA, Model: gorm.Model{CreatedAt: baseTime}},
+	}
+	for _, entry := range seed {
+		if err := db.Create(&entry).Error; err != nil {
+			t.Fatalf("unexpected seed error: %v", err)
+		}
+	}
+
+	entries, err := manager.GetAll()
+	if err != nil {
+		t.Fatalf("unexpected error from GetAll: %v", err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+	if entries[0].Username != "first" || entries[1].Username != "second" {
+		t.Fatalf("expected chronological order, got %+v", entries)
+	}
+}
+
 func TestDeleteByID(t *testing.T) {
-	manager, db := setupTestManager(t, testUUIDA, DefaultMaxLen)
+	manager, db := setupTestManager(t, testUUIDA)
 
 	entry := ChatEntry{Username: "alice", Body: "hello", TeamID: 1, UUID: testUUIDA}
 	if err := db.Create(&entry).Error; err != nil {
@@ -182,7 +209,7 @@ func TestDeleteByID(t *testing.T) {
 }
 
 func TestDeleteAllByManagerUUID(t *testing.T) {
-	manager, db := setupTestManager(t, testUUIDA, DefaultMaxLen)
+	manager, db := setupTestManager(t, testUUIDA)
 
 	seed := []ChatEntry{
 		{Username: "alice", Body: "a", TeamID: 1, UUID: testUUIDA},
@@ -215,7 +242,7 @@ func TestDeleteAllByManagerUUID(t *testing.T) {
 }
 
 func TestDeleteAllByTeamID(t *testing.T) {
-	manager, db := setupTestManager(t, testUUIDA, DefaultMaxLen)
+	manager, db := setupTestManager(t, testUUIDA)
 
 	seed := []ChatEntry{
 		{Username: "alice", Body: "a", TeamID: 1, UUID: testUUIDA},
@@ -250,7 +277,7 @@ func TestDeleteAllByTeamID(t *testing.T) {
 }
 
 func TestDeleteAllByUsername(t *testing.T) {
-	manager, db := setupTestManager(t, testUUIDA, DefaultMaxLen)
+	manager, db := setupTestManager(t, testUUIDA)
 
 	seed := []ChatEntry{
 		{Username: "alice", Body: "a", TeamID: 1, UUID: testUUIDA},
@@ -285,7 +312,7 @@ func TestDeleteAllByUsername(t *testing.T) {
 }
 
 func TestClosedDBErrorPaths(t *testing.T) {
-	manager, db := setupTestManager(t, testUUIDA, DefaultMaxLen)
+	manager, db := setupTestManager(t, testUUIDA)
 
 	sqlDB, err := db.DB()
 	if err != nil {
@@ -312,5 +339,27 @@ func TestClosedDBErrorPaths(t *testing.T) {
 	}
 	if err := manager.DeleteAllByUsername("alice"); err == nil {
 		t.Fatal("expected deleteall by username error on closed db")
+	}
+}
+
+func TestCreateNew(t *testing.T) {
+	manager, db := setupTestManager(t, testUUIDA)
+
+	if err := manager.CreateNew("alice", "hello world", 3, 5); err != nil {
+		t.Fatalf("unexpected error from CreateNew: %v", err)
+	}
+
+	var entries []ChatEntry
+	if err := db.Where("uuid = ?", testUUIDA).Find(&entries).Error; err != nil {
+		t.Fatalf("unexpected query error: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(entries))
+	}
+	if entries[0].Body != "hello" {
+		t.Fatalf("expected truncated stored body hello, got %s", entries[0].Body)
+	}
+	if entries[0].TeamID != 3 {
+		t.Fatalf("expected team id 3, got %d", entries[0].TeamID)
 	}
 }

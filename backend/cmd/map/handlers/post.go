@@ -85,3 +85,52 @@ func (h *HandlersMap) RegistrationPOSTHandler(w http.ResponseWriter, r *http.Req
 		Redirect: "/" + uuid + "/login",
 	})
 }
+
+func (h *HandlersMap) ChatPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	// Debug HTTP if enabled
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	// Get UUID from URL path parameters and validate it
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	// Parse request body
+	var req ChatEntryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing request body")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid request body"})
+		return
+	}
+	chatMaxLen, err := h.Settings.GetGameboardChatMaxLen()
+	if err != nil {
+		log.Err(err).Msg("error getting gameboard chat max length setting")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get gameboard chat max length	 setting"})
+		return
+	}
+	// Get user from session
+	username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
+	if username == "" {
+		log.Err(errors.New("user not authenticated")).Msg("user not authenticated")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "user not authenticated"})
+		return
+	}
+	// Get user team
+	teamID, err := h.Users.Get(username, uuid)
+	if err != nil {
+		log.Err(err).Msg("error getting user for chat message")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get user for chat message"})
+		return
+	}
+	if err := h.Chat.CreateNew(username, req.Message, teamID.TeamID, chatMaxLen); err != nil {
+		log.Err(err).Msg("error creating chat message")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to create chat message"})
+		return
+	}
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapChatResponse{
+		Success: true,
+	})
+}

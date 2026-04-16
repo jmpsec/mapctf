@@ -2,6 +2,9 @@ package settings
 
 import (
 	"database/sql"
+	"reflect"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -467,11 +470,63 @@ func TestTypedGettersAndSetters(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 25, leaderboardLimit)
 
+	require.NoError(t, m.SetGameboardShowTeamMembers(true, "alice"))
+	gameboardShowTeamMembers, err := m.GetGameboardShowTeamMembers()
+	require.NoError(t, err)
+	require.True(t, gameboardShowTeamMembers)
+
+	require.NoError(t, m.SetGameboardChatMaxLen(500, "alice"))
+	gameboardChatMaxLen, err := m.GetGameboardChatMaxLen()
+	require.NoError(t, err)
+	require.Equal(t, 500, gameboardChatMaxLen)
+
 	// update path
 	require.NoError(t, m.SetLoginEnabled(false, "alice"))
 	loginEnabled, err = m.GetLoginEnabled()
 	require.NoError(t, err)
 	require.False(t, loginEnabled)
+}
+
+func TestAllDeclaredSettingsHaveTypedAccessors(t *testing.T) {
+	managerType := reflect.TypeOf(&SettingsManager{})
+
+	var settingNames []string
+	for name := range BooleanSettings {
+		settingNames = append(settingNames, name)
+	}
+	for name := range StringSettings {
+		settingNames = append(settingNames, name)
+	}
+	for name := range DateSettings {
+		settingNames = append(settingNames, name)
+	}
+	for name := range IntSettings {
+		settingNames = append(settingNames, name)
+	}
+	sort.Strings(settingNames)
+
+	for _, settingName := range settingNames {
+		methodSuffix := settingNameToMethodSuffix(settingName)
+
+		setterName := "Set" + methodSuffix
+		_, hasSetter := managerType.MethodByName(setterName)
+		require.Truef(t, hasSetter, "missing setter %s for setting %s", setterName, settingName)
+
+		getterName := "Get" + methodSuffix
+		_, hasGetter := managerType.MethodByName(getterName)
+		require.Truef(t, hasGetter, "missing getter %s for setting %s", getterName, settingName)
+	}
+}
+
+func settingNameToMethodSuffix(name string) string {
+	parts := strings.Split(name, "_")
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, "")
 }
 
 func TestTypedGettersTypeMismatch(t *testing.T) {

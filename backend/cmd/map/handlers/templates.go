@@ -6,6 +6,7 @@ import (
 	"text/template"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -260,10 +261,18 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
 	templateData := GameboardTemplateData{
-		Title:         "MapCTF: Gameboard",
-		UUID:          uuid,
-		Authenticated: authenticated,
-		Admin:         isAdmin,
+		Title:               "MapCTF: Gameboard",
+		UUID:                uuid,
+		Authenticated:       authenticated,
+		Admin:               isAdmin,
+		CurrentUsername:     h.Sessions.GetString(r.Context(), string(ContextKeyUser)),
+		GameboardChatMaxLen: chat.DefaultMaxLen,
+	}
+	chatMaxLen, err := h.Settings.GetGameboardChatMaxLen()
+	if err == nil {
+		templateData.GameboardChatMaxLen = chatMaxLen
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading gameboard_chat_max_len")
 	}
 	showTeamMembers, err := h.Settings.GetGameboardShowTeamMembers()
 	if err == nil {
