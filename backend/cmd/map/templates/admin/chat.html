@@ -34,8 +34,8 @@
               <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
               <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
               <li><a href="/{{ .UUID }}/admin/countries">Countries</a></li>
-              <li class="active"><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
-              <li><a href="/{{ .UUID }}/admin/chat">Chat</a></li>
+              <li><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/chat">Chat</a></li>
               <li><a href="/{{ .UUID }}/admin/announcements">Announcements</a></li>
             </ul>
           </nav>
@@ -52,7 +52,7 @@
       <div id="mctf-main-content" class="mctf-page mctf-admin-main">
         <div class="admin-sections">
           <header class="admin-page-header">
-            <h3>Game Controls</h3>
+            <h3>World Chat</h3>
             <span class="admin-section--status" data-ready-status="ready">
               status_
               <span class="highlighted">ready</span>
@@ -60,13 +60,36 @@
             </span>
           </header>
 
-          <section id="activity" class="admin-box">
+          <section id="chat" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Activity Log</h3>
+              <h3>Recent Messages</h3>
             </header>
 
             <div class="admin-row">
-              <p>Activity log coming soon...</p>
+              {{ if .RecentChat }}
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Team</th>
+                    <th>Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {{ range .RecentChat }}
+                  <tr>
+                    <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+                    <td>{{ .Username }}</td>
+                    <td>{{ if eq .TeamID 0 }}No team{{ else if index $.ChatTeamNames .TeamID }}{{ index $.ChatTeamNames .TeamID }}{{ else }}Team #{{ .TeamID }}{{ end }}</td>
+                    <td>{{ .Body }}</td>
+                  </tr>
+                  {{ end }}
+                </tbody>
+              </table>
+              {{ else }}
+              <p>No chat messages yet.</p>
+              {{ end }}
             </div>
           </section>
         </div>

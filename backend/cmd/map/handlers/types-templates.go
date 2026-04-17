@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/jmpsec/mapctf/pkg/challenges"
+	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
@@ -185,6 +186,18 @@ type AdminAnnouncementsTemplateData struct {
 	Status        string
 	Message       string
 	Announcements []logs.Announcement
+}
+
+// AdminChatTemplateData for passing data to the admin chat template
+type AdminChatTemplateData struct {
+	Title         string
+	UUID          string
+	Authenticated bool
+	Admin         bool
+	Status        string
+	Message       string
+	RecentChat    []chat.ChatEntry
+	ChatTeamNames map[uint]string
 }
 
 // AdminCountriesTemplateData for passing data to the admin countries template

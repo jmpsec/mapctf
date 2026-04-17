@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
@@ -4559,6 +4560,64 @@ func (h *HandlersMap) AdminAnnouncementsTemplateHandler(w http.ResponseWriter, r
 		log.Warn().Err(err).Msg("error loading announcements")
 	} else {
 		templateData.Announcements = announcements
+	}
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("template error")
+		return
+	}
+}
+
+// AdminChatTemplateHandler for admin chat page for GET requests
+func (h *HandlersMap) AdminChatTemplateHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	t, err := template.ParseFiles(
+		h.Config.Map.TemplatesDir + "/admin/chat.html")
+	if err != nil {
+		log.Err(err).Msg("error getting admin chat template")
+		return
+	}
+	templateData := AdminChatTemplateData{
+		Title:         "MapCTF Admin: Chat",
+		UUID:          uuid,
+		Authenticated: h.IsAuthenticated(r.Context()),
+		Admin:         h.IsAdmin(r.Context()),
+		Status:        r.URL.Query().Get("status"),
+		Message:       r.URL.Query().Get("msg"),
+		ChatTeamNames: map[uint]string{},
+	}
+	if h.Chat != nil {
+		chatEntries, err := h.Chat.GetAll()
+		if err != nil {
+			log.Warn().Err(err).Msg("error loading chat for admin chat")
+		} else {
+			start := 0
+			if len(chatEntries) > 100 {
+				start = len(chatEntries) - 100
+			}
+			recentChat := append([]chat.ChatEntry(nil), chatEntries[start:]...)
+			for left, right := 0, len(recentChat)-1; left < right; left, right = left+1, right-1 {
+				recentChat[left], recentChat[right] = recentChat[right], recentChat[left]
+			}
+			templateData.RecentChat = recentChat
+		}
+	}
+	if h.Teams != nil {
+		allTeams, err := h.Teams.GetAll()
+		if err != nil {
+			log.Warn().Err(err).Msg("error loading teams for admin chat")
+		} else {
+			for _, team := range allTeams {
+				templateData.ChatTeamNames[team.ID] = team.Name
+			}
+		}
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
