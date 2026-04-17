@@ -165,7 +165,7 @@ func (h *HandlersMap) JSONChatHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Get all chat entries for the given UUID
-	chatEntries, err := h.Chat.GetAll()
+	chatEntries, err := h.Chat.GetVisible()
 	if err != nil {
 		log.Err(err).Msg("error retrieving chat entries")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving chat entries"})

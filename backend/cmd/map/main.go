@@ -377,6 +377,8 @@ func mapCTFService() {
 				r.Post(teamsPath+"/logos/delete-all", handlersMap.AdminTeamLogosDeleteAllPOSTHandler)
 				r.Get(activityPath, handlersMap.AdminActivityTemplateHandler)
 				r.Get(chatPath, handlersMap.AdminChatTemplateHandler)
+				r.Post(chatPath+"/{id}/visibility", handlersMap.AdminChatSetHiddenPOSTHandler)
+				r.Post(chatPath+"/{id}/delete", handlersMap.AdminChatDeletePOSTHandler)
 				r.Get(announcementsPath, handlersMap.AdminAnnouncementsTemplateHandler)
 				r.Get(countriesPath, handlersMap.AdminCountriesTemplateHandler)
 				r.Post(countriesPath+"/{id}", handlersMap.AdminCountryUpdatePOSTHandler)

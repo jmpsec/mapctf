@@ -104,6 +104,9 @@ func TestNewChatEntry(t *testing.T) {
 	if entry.TeamID != 7 {
 		t.Fatalf("expected team id 7, got %d", entry.TeamID)
 	}
+	if entry.Hidden {
+		t.Fatal("expected new chat entries to be visible by default")
+	}
 }
 
 func TestNewChatEntryRejectsEmptyFields(t *testing.T) {
@@ -161,6 +164,32 @@ func TestCreateAndGetAllScopeByUUID(t *testing.T) {
 	}
 }
 
+func TestGetVisibleExcludesHiddenEntries(t *testing.T) {
+	manager, db := setupTestManager(t, testUUIDA)
+
+	seed := []ChatEntry{
+		{Username: "shown", Body: "visible", TeamID: 1, UUID: testUUIDA, Hidden: false},
+		{Username: "hidden", Body: "secret", TeamID: 1, UUID: testUUIDA, Hidden: true},
+		{Username: "other", Body: "other uuid", TeamID: 1, UUID: testUUIDB, Hidden: false},
+	}
+	for _, entry := range seed {
+		if err := db.Create(&entry).Error; err != nil {
+			t.Fatalf("unexpected seed error: %v", err)
+		}
+	}
+
+	entries, err := manager.GetVisible()
+	if err != nil {
+		t.Fatalf("unexpected error from GetVisible: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 visible entry, got %d", len(entries))
+	}
+	if entries[0].Username != "shown" {
+		t.Fatalf("expected shown entry, got %+v", entries[0])
+	}
+}
+
 func TestGetAllReturnsEntriesInCreationOrder(t *testing.T) {
 	manager, db := setupTestManager(t, testUUIDA)
 
@@ -187,6 +216,42 @@ func TestGetAllReturnsEntriesInCreationOrder(t *testing.T) {
 	}
 }
 
+func TestGetAllAfterReturnsScopedEntriesInCreationOrder(t *testing.T) {
+	manager, db := setupTestManager(t, testUUIDA)
+
+	baseTime := time.Date(2026, 4, 17, 9, 0, 0, 0, time.UTC)
+	seed := []ChatEntry{
+		{Username: "before", Body: "first", TeamID: 1, UUID: testUUIDA, Model: gorm.Model{CreatedAt: baseTime}},
+		{Username: "after-one", Body: "second", TeamID: 1, UUID: testUUIDA, Model: gorm.Model{CreatedAt: baseTime.Add(2 * time.Minute)}},
+		{Username: "other-uuid", Body: "third", TeamID: 1, UUID: testUUIDB, Model: gorm.Model{CreatedAt: baseTime.Add(3 * time.Minute)}},
+		{Username: "after-two", Body: "fourth", TeamID: 1, UUID: testUUIDA, Model: gorm.Model{CreatedAt: baseTime.Add(4 * time.Minute)}},
+	}
+	for _, entry := range seed {
+		if err := db.Create(&entry).Error; err != nil {
+			t.Fatalf("unexpected seed error: %v", err)
+		}
+	}
+
+	entries, err := manager.GetAllAfter(baseTime.Add(time.Minute).Format(time.RFC3339))
+	if err != nil {
+		t.Fatalf("unexpected error from GetAllAfter: %v", err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+	if entries[0].Username != "after-one" || entries[1].Username != "after-two" {
+		t.Fatalf("expected chronological filtered order, got %+v", entries)
+	}
+}
+
+func TestGetAllAfterRejectsInvalidTimestamp(t *testing.T) {
+	manager, _ := setupTestManager(t, testUUIDA)
+
+	if _, err := manager.GetAllAfter("not-a-timestamp"); err == nil {
+		t.Fatal("expected invalid timestamp error")
+	}
+}
+
 func TestDeleteByID(t *testing.T) {
 	manager, db := setupTestManager(t, testUUIDA)
 
@@ -205,6 +270,27 @@ func TestDeleteByID(t *testing.T) {
 	}
 	if count != 0 {
 		t.Fatalf("expected deleted entry count 0, got %d", count)
+	}
+}
+
+func TestDeleteByIDDoesNotAffectOtherUUIDs(t *testing.T) {
+	manager, db := setupTestManager(t, testUUIDA)
+
+	entry := ChatEntry{Username: "alice", Body: "hello", TeamID: 1, UUID: testUUIDB}
+	if err := db.Create(&entry).Error; err != nil {
+		t.Fatalf("unexpected error creating entry: %v", err)
+	}
+
+	if err := manager.Delete(entry.ID); err != nil {
+		t.Fatalf("unexpected error deleting by id: %v", err)
+	}
+
+	var count int64
+	if err := db.Model(&ChatEntry{}).Where("id = ?", entry.ID).Count(&count).Error; err != nil {
+		t.Fatalf("unexpected count error: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected entry to remain for other uuid, got count %d", count)
 	}
 }
 
@@ -361,5 +447,80 @@ func TestCreateNew(t *testing.T) {
 	}
 	if entries[0].TeamID != 3 {
 		t.Fatalf("expected team id 3, got %d", entries[0].TeamID)
+	}
+	if entries[0].Hidden {
+		t.Fatal("expected stored chat entry to default to hidden=false")
+	}
+}
+
+func TestSetHiddenByID(t *testing.T) {
+	manager, db := setupTestManager(t, testUUIDA)
+
+	entry := ChatEntry{Username: "alice", Body: "hello", TeamID: 1, UUID: testUUIDA, Hidden: false}
+	if err := db.Create(&entry).Error; err != nil {
+		t.Fatalf("unexpected error creating entry: %v", err)
+	}
+
+	if err := manager.SetHiddenByID(entry.ID, true); err != nil {
+		t.Fatalf("unexpected error setting hidden: %v", err)
+	}
+
+	var updated ChatEntry
+	if err := db.First(&updated, entry.ID).Error; err != nil {
+		t.Fatalf("unexpected error loading updated entry: %v", err)
+	}
+	if !updated.Hidden {
+		t.Fatal("expected hidden flag to be updated to true")
+	}
+}
+
+func TestSetHiddenByIDDoesNotAffectOtherUUIDs(t *testing.T) {
+	manager, db := setupTestManager(t, testUUIDA)
+
+	entry := ChatEntry{Username: "alice", Body: "hello", TeamID: 1, UUID: testUUIDB, Hidden: false}
+	if err := db.Create(&entry).Error; err != nil {
+		t.Fatalf("unexpected error creating entry: %v", err)
+	}
+
+	if err := manager.SetHiddenByID(entry.ID, true); err != nil {
+		t.Fatalf("unexpected error setting hidden: %v", err)
+	}
+
+	var unchanged ChatEntry
+	if err := db.First(&unchanged, entry.ID).Error; err != nil {
+		t.Fatalf("unexpected error loading unchanged entry: %v", err)
+	}
+	if unchanged.Hidden {
+		t.Fatal("expected hidden flag to remain unchanged for other UUIDs")
+	}
+}
+
+func TestGetByIDReturnsScopedEntry(t *testing.T) {
+	manager, db := setupTestManager(t, testUUIDA)
+
+	entry := ChatEntry{Username: "alice", Body: "hello", TeamID: 1, UUID: testUUIDA}
+	if err := db.Create(&entry).Error; err != nil {
+		t.Fatalf("unexpected error creating entry: %v", err)
+	}
+
+	found, err := manager.GetByID(entry.ID)
+	if err != nil {
+		t.Fatalf("unexpected error loading entry: %v", err)
+	}
+	if found.ID != entry.ID || found.UUID != testUUIDA {
+		t.Fatalf("unexpected entry loaded: %+v", found)
+	}
+}
+
+func TestGetByIDRejectsOtherUUID(t *testing.T) {
+	manager, db := setupTestManager(t, testUUIDA)
+
+	entry := ChatEntry{Username: "alice", Body: "hello", TeamID: 1, UUID: testUUIDB}
+	if err := db.Create(&entry).Error; err != nil {
+		t.Fatalf("unexpected error creating entry: %v", err)
+	}
+
+	if _, err := manager.GetByID(entry.ID); err == nil {
+		t.Fatal("expected scoped get by id error")
 	}
 }

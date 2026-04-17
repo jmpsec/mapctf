@@ -32,6 +32,35 @@ type adminActionResponse struct {
 	Message string `json:"message"`
 }
 
+type adminChatVisibilityRequest struct {
+	Hidden json.RawMessage `json:"hidden"`
+}
+
+func parseAdminChatHiddenValue(raw json.RawMessage) (bool, error) {
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" || trimmed == "null" {
+		return false, errors.New("missing hidden value")
+	}
+
+	var boolValue bool
+	if err := json.Unmarshal(raw, &boolValue); err == nil {
+		return boolValue, nil
+	}
+
+	var stringValue string
+	if err := json.Unmarshal(raw, &stringValue); err == nil {
+		stringValue = strings.TrimSpace(stringValue)
+		switch {
+		case strings.EqualFold(stringValue, "true"):
+			return true, nil
+		case strings.EqualFold(stringValue, "false"):
+			return false, nil
+		}
+	}
+
+	return false, errors.New("invalid hidden value")
+}
+
 type adminChallengesTransferPayload struct {
 	Version    int                               `json:"version"`
 	ExportedAt string                            `json:"exported_at"`
@@ -4623,6 +4652,150 @@ func (h *HandlersMap) AdminChatTemplateHandler(w http.ResponseWriter, r *http.Re
 		log.Err(err).Msg("template error")
 		return
 	}
+}
+
+// AdminChatSetHiddenPOSTHandler toggles chat visibility for an entry
+func (h *HandlersMap) AdminChatSetHiddenPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	redirectBase := "/" + uuid + "/admin/chat"
+	writeError := func(code int, msg string) {
+		if wantsJSONResponse(r) {
+			HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+				Success: false,
+				Status:  "error",
+				Message: msg,
+			})
+			return
+		}
+		http.Redirect(w, r, redirectBase+"?status=error&msg="+url.QueryEscape(msg), http.StatusFound)
+	}
+	writeSuccess := func(msg string) {
+		if wantsJSONResponse(r) {
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+				Success: true,
+				Status:  "ok",
+				Message: msg,
+			})
+			return
+		}
+		http.Redirect(w, r, redirectBase+"?status=ok&msg="+url.QueryEscape(msg), http.StatusFound)
+	}
+
+	idStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil || id == 0 {
+		writeError(http.StatusBadRequest, "Invalid chat id")
+		return
+	}
+
+	entry, err := h.Chat.GetByID(uint(id))
+	if err != nil {
+		log.Err(err).Msg("error loading chat entry")
+		writeError(http.StatusNotFound, "Chat message not found")
+		return
+	}
+
+	hiddenValue := false
+	if strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
+		var req adminChatVisibilityRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			log.Err(err).Msg("error parsing admin chat visibility JSON payload")
+			writeError(http.StatusBadRequest, "Invalid JSON payload")
+			return
+		}
+		parsedHiddenValue, err := parseAdminChatHiddenValue(req.Hidden)
+		if err != nil {
+			log.Err(err).Msg("error parsing admin chat hidden value")
+			writeError(http.StatusBadRequest, "Invalid hidden value")
+			return
+		}
+		hiddenValue = parsedHiddenValue
+	} else {
+		hiddenValue = strings.EqualFold(strings.TrimSpace(r.FormValue("hidden")), "true")
+	}
+
+	if err := h.Chat.SetHiddenByID(uint(id), hiddenValue); err != nil {
+		log.Err(err).Msg("error updating chat visibility")
+		writeError(http.StatusInternalServerError, "Failed to update chat visibility")
+		return
+	}
+
+	if hiddenValue {
+		writeSuccess("Chat message hidden")
+		return
+	}
+	if entry.Hidden {
+		writeSuccess("Chat message unhidden")
+		return
+	}
+	writeSuccess("Chat visibility updated")
+}
+
+// AdminChatDeletePOSTHandler deletes a chat entry
+func (h *HandlersMap) AdminChatDeletePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	redirectBase := "/" + uuid + "/admin/chat"
+	writeError := func(code int, msg string) {
+		if wantsJSONResponse(r) {
+			HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+				Success: false,
+				Status:  "error",
+				Message: msg,
+			})
+			return
+		}
+		http.Redirect(w, r, redirectBase+"?status=error&msg="+url.QueryEscape(msg), http.StatusFound)
+	}
+	writeSuccess := func(msg string) {
+		if wantsJSONResponse(r) {
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+				Success: true,
+				Status:  "ok",
+				Message: msg,
+			})
+			return
+		}
+		http.Redirect(w, r, redirectBase+"?status=ok&msg="+url.QueryEscape(msg), http.StatusFound)
+	}
+
+	idStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil || id == 0 {
+		writeError(http.StatusBadRequest, "Invalid chat id")
+		return
+	}
+
+	if _, err := h.Chat.GetByID(uint(id)); err != nil {
+		log.Err(err).Msg("error loading chat entry for delete")
+		writeError(http.StatusNotFound, "Chat message not found")
+		return
+	}
+
+	if err := h.Chat.Delete(uint(id)); err != nil {
+		log.Err(err).Msg("error deleting chat entry")
+		writeError(http.StatusInternalServerError, "Failed to delete chat message")
+		return
+	}
+
+	writeSuccess("Chat message deleted")
 }
 
 // AdminCountriesTemplateHandler for admin countries page for GET requests

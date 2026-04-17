@@ -20,6 +20,7 @@ type ChatEntry struct {
 	Username string `gorm:"index"`
 	Body     string
 	TeamID   uint
+	Hidden   bool
 	UUID     string `gorm:"index"`
 }
 
@@ -59,6 +60,15 @@ func (m *ChatManager) GetAll() ([]ChatEntry, error) {
 	return entries, nil
 }
 
+// GetVisible returns all non-hidden chat entries by UUID
+func (m *ChatManager) GetVisible() ([]ChatEntry, error) {
+	var entries []ChatEntry
+	if err := m.DB.Where("uuid = ? AND hidden = ?", m.UUID, false).Order("created_at ASC").Find(&entries).Error; err != nil {
+		return entries, err
+	}
+	return entries, nil
+}
+
 // GetAllAfter a specific timestamp by UUID
 func (m *ChatManager) GetAllAfter(afterTs string) ([]ChatEntry, error) {
 	var entries []ChatEntry
@@ -86,6 +96,7 @@ func (m *ChatManager) New(username, body string, uuid string, teamID uint, maxLe
 		Username: username,
 		Body:     body,
 		UUID:     uuid,
+		Hidden:   false,
 		TeamID:   teamID,
 	}, nil
 }
@@ -99,9 +110,18 @@ func (m *ChatManager) CreateNew(username, body string, teamID uint, maxLen int) 
 	return m.Create(entry)
 }
 
+// GetByID retrieves a chat entry by ID scoped to the manager UUID
+func (m *ChatManager) GetByID(id uint) (ChatEntry, error) {
+	var entry ChatEntry
+	if err := m.DB.Where("id = ? AND uuid = ?", id, m.UUID).First(&entry).Error; err != nil {
+		return entry, err
+	}
+	return entry, nil
+}
+
 // Delete chat entry by ID
 func (m *ChatManager) Delete(id uint) error {
-	if err := m.DB.Delete(&ChatEntry{}, id).Error; err != nil {
+	if err := m.DB.Where("id = ? AND uuid = ?", id, m.UUID).Delete(&ChatEntry{}).Error; err != nil {
 		return fmt.Errorf("Delete ChatEntry %w", err)
 	}
 	return nil
@@ -127,6 +147,14 @@ func (m *ChatManager) DeleteAllByTeamID(teamID uint) error {
 func (m *ChatManager) DeleteAllByUsername(username string) error {
 	if err := m.DB.Where("username = ? AND uuid = ?", username, m.UUID).Delete(&ChatEntry{}).Error; err != nil {
 		return fmt.Errorf("DeleteAllByUsername ChatEntries %w", err)
+	}
+	return nil
+}
+
+// SetHiddenByID sets the Hidden field of a chat entry by ID
+func (m *ChatManager) SetHiddenByID(id uint, hidden bool) error {
+	if err := m.DB.Model(&ChatEntry{}).Where("id = ? AND uuid = ?", id, m.UUID).Update("hidden", hidden).Error; err != nil {
+		return fmt.Errorf("SetHiddenByID ChatEntry %w", err)
 	}
 	return nil
 }

@@ -305,6 +305,10 @@ function submitAdminForm(form) {
             form._syncInitialState();
           }
           showTransientAdminStatus(data.status || "ok", data.message || "Updated");
+          if (form.dataset.reloadOnSuccess === "true" || form.dataset.adminReloadOnSuccess === "true") {
+            window.location.reload();
+            return;
+          }
         });
     })
     .catch(function (error) {
