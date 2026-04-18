@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
@@ -82,4 +83,52 @@ func TestGameboardTemplateHandlerFallsBackToDefaultChatMaxLen(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rr.Code)
 	require.Contains(t, rr.Body.String(), `data-chat-max-len="`+strconv.Itoa(chat.DefaultMaxLen)+`"`)
+}
+
+func TestCountdownTemplateHandlerUsesStartTimeBeforeGameStarts(t *testing.T) {
+	handler, sessions, settingsManager := newGameboardTemplateHandler(t)
+
+	startTime := time.Date(2030, time.January, 2, 15, 4, 5, 0, time.FixedZone("UTC+2", 2*60*60))
+	require.NoError(t, settingsManager.SetGameStartTime(startTime, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameStarted(false, jsonSettingsAuthor))
+
+	req := newTemplateRequestWithUUID(http.MethodGet, "/countdown", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	handler.CountdownTemplateHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	body := rr.Body.String()
+	require.Contains(t, body, `data-countdown-mode="start"`)
+	require.Contains(t, body, `data-target-time="2030-01-02T15:04:05+02:00"`)
+	require.Contains(t, body, "Event start time:")
+	require.Contains(t, body, "Countdown to game start")
+}
+
+func TestCountdownTemplateHandlerUsesEndTimeAfterGameStarts(t *testing.T) {
+	handler, sessions, settingsManager := newGameboardTemplateHandler(t)
+
+	startTime := time.Now().Add(-2 * time.Hour)
+	endTime := time.Date(2030, time.January, 2, 18, 30, 0, 0, time.FixedZone("UTC+2", 2*60*60))
+	require.NoError(t, settingsManager.SetGameStartTime(startTime, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameEndTime(endTime, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameStarted(true, jsonSettingsAuthor))
+
+	req := newTemplateRequestWithUUID(http.MethodGet, "/countdown", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	handler.CountdownTemplateHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	body := rr.Body.String()
+	require.Contains(t, body, `data-countdown-mode="end"`)
+	require.Contains(t, body, `data-target-time="2030-01-02T18:30:00+02:00"`)
+	require.Contains(t, body, "The game is live. It will end at")
+	require.Contains(t, body, "Countdown to game end")
 }

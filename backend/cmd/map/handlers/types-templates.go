@@ -34,12 +34,24 @@ type IndexTemplateData struct {
 
 // CountdownTemplateData for passing data to the countdown template
 type CountdownTemplateData struct {
-	Title         string
-	UUID          string
-	StartSet      bool
-	StartTime     time.Time
-	Authenticated bool
-	Admin         bool
+	Title          string
+	UUID           string
+	StartSet       bool
+	EndSet         bool
+	AlreadyStarted bool
+	StartTime      time.Time
+	EndTime        time.Time
+	Units          CountdownUnits
+	Authenticated  bool
+	Admin          bool
+}
+
+// CountdownUnits for passing data to the countdown units template
+type CountdownUnits struct {
+	Days    string
+	Hours   string
+	Minutes string
+	Seconds string
 }
 
 // RulesTemplateData for passing data to the rules template

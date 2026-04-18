@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"text/template"
 	"time"
@@ -198,13 +199,48 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 		log.Err(err).Msg("error getting game start time")
 		startTime = time.Time{}
 	}
+	// Calculate countdown units if start time is set and in the future
+	var units CountdownUnits
+	if !startTime.IsZero() && startTime.After(time.Now()) {
+		duration := time.Until(startTime)
+		units = CountdownUnits{
+			Days:    fmt.Sprintf("%02d", int(duration.Hours())/24),
+			Hours:   fmt.Sprintf("%02d", int(duration.Hours())%24),
+			Minutes: fmt.Sprintf("%02d", int(duration.Minutes())%60),
+			Seconds: fmt.Sprintf("%02d", int(duration.Seconds())%60),
+		}
+	}
+	// Get if game has already started to show message on countdown page
+	alreadyStarted, err := h.Settings.GetGameStarted()
+	if err != nil {
+		log.Err(err).Msg("error getting game started setting")
+		alreadyStarted = false
+	}
+	endTime, err := h.Settings.GetGameEndTime()
+	if err != nil {
+		log.Err(err).Msg("error getting game end time")
+		endTime = time.Time{}
+	}
+	if alreadyStarted && !endTime.IsZero() && endTime.After(time.Now()) {
+		duration := time.Until(endTime)
+		units = CountdownUnits{
+			Days:    fmt.Sprintf("%02d", int(duration.Hours())/24),
+			Hours:   fmt.Sprintf("%02d", int(duration.Hours())%24),
+			Minutes: fmt.Sprintf("%02d", int(duration.Minutes())%60),
+			Seconds: fmt.Sprintf("%02d", int(duration.Seconds())%60),
+		}
+	}
 	templateData := CountdownTemplateData{
-		Title:         "MapCTF: Countdown to event",
-		UUID:          uuid,
-		StartTime:     startTime,
-		StartSet:      !startTime.IsZero(),
-		Authenticated: authenticated,
-		Admin:         isAdmin,
+		Title:          "MapCTF: Countdown to event",
+		UUID:           uuid,
+		StartTime:      startTime,
+		EndTime:        endTime,
+		EndSet:         !endTime.IsZero(),
+		AlreadyStarted: alreadyStarted,
+		StartSet:       !startTime.IsZero(),
+		Units:          units,
+		Authenticated:  authenticated,
+		Admin:          isAdmin,
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")

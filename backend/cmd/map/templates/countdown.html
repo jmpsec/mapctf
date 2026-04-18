@@ -8,6 +8,86 @@
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
     <link rel="stylesheet" href="/static/css/mapctf.css" />
+    <style>
+      .countdown-page .title-lead {
+        margin-bottom: 14px;
+      }
+
+      .countdown-page .countdown-start-message {
+        max-width: 620px;
+        margin: 16px auto 0;
+        padding: 14px 18px;
+        border: 1px solid rgba(126, 208, 224, 0.28);
+        border-radius: 10px;
+        background: rgba(6, 18, 24, 0.72);
+        line-height: 1.5;
+      }
+
+      .countdown-page .countdown-status-message {
+        max-width: 620px;
+        margin: 16px auto 0;
+        color: #ead44d;
+        font-size: 0.92rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .countdown-page .upcoming-game-countdown {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(120px, 1fr));
+        gap: 16px;
+        max-width: 720px;
+        margin: 34px auto 0;
+      }
+
+      .countdown-page .upcoming-game-countdown li {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 18px 14px 16px;
+        border: 1px solid rgba(126, 208, 224, 0.18);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.34);
+      }
+
+      .countdown-page .upcoming-game-countdown li + li {
+        margin-left: 0;
+        padding-left: 14px;
+        border-left: 1px solid rgba(126, 208, 224, 0.18);
+      }
+
+      .countdown-page .upcoming-game-countdown .count-number {
+        display: block;
+        min-width: 2.6ch;
+        font-size: clamp(2rem, 4vw, 3rem);
+        line-height: 1;
+      }
+
+      .countdown-page .count-unit-label {
+        font-size: 0.8rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #cff8fa;
+        opacity: 0.82;
+      }
+
+      .countdown-page .mctf-actionable {
+        margin-top: 30px;
+      }
+
+      @media (max-width: 760px) {
+        .countdown-page .upcoming-game-countdown {
+          grid-template-columns: repeat(2, minmax(120px, 1fr));
+        }
+      }
+
+      @media (max-width: 460px) {
+        .countdown-page .upcoming-game-countdown {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </head>
   <body data-section="pages">
     <div class="mctf-sprite" id="mctf-svg-sprite"></div>
@@ -54,44 +134,51 @@
         </nav>
       </div>
       <div id="mctf-main-content" class="mctf-page">
-        <main role="main" class="mctf-main page--game-status row-fluid no-shrink center-vertically mctf-img-glitch full-height">
+        <main role="main" class="mctf-main countdown-page page--game-status row-fluid no-shrink center-vertically mctf-img-glitch full-height">
           <div class="mctf-container mctf-centered-main">
             <h3 class="title-lead">Upcoming Game</h3>
-            <h1 class="mctf-glitch" data-text="July 30, 2015">July 30, 2015</h1>
+            {{ if and .AlreadyStarted .EndSet }}
+            <h1 class="mctf-glitch" data-text="{{ .EndTime.Format "January 2, 2006" }}">{{ .EndTime.Format "January 2, 2006" }}</h1>
+            <p class="inner-container countdown-start-message">The game is live. It will end at {{ .EndTime.Format "15:04 MST" }}.</p>
+            {{ else if .AlreadyStarted }}
+            <h1 class="mctf-glitch" data-text="Game In Progress">Game In Progress</h1>
+            <p class="inner-container countdown-start-message">The game has already started. An end time has not been set yet.</p>
+            {{ else if .StartSet }}
+            <h1 class="mctf-glitch" data-text="{{ .StartTime.Format "January 2, 2006" }}">{{ .StartTime.Format "January 2, 2006" }}</h1>
+            <p class="inner-container countdown-start-message">Event start time: {{ .StartTime.Format "15:04 MST" }}</p>
+            {{ else }}
+            <h1 class="mctf-glitch" data-text="To Be Announced">To Be Announced</h1>
+            <p class="inner-container countdown-start-message">Event start time has not been set yet.</p>
+            {{ end }}
+            <p class="inner-container countdown-status-message" {{ if or .StartSet .AlreadyStarted }}data-countdown-status{{ end }}>
+              {{ if and .AlreadyStarted .EndSet }}Countdown to game end{{ else if .AlreadyStarted }}Game already started{{ else if .StartSet }}Countdown to game start{{ else }}Countdown unavailable until the event start time is set{{ end }}
+            </p>
 
-            <ul class="upcoming-game-countdown">
+            <ul class="upcoming-game-countdown"
+              {{ if and .AlreadyStarted .EndSet }}data-target-time="{{ .EndTime.Format "2006-01-02T15:04:05Z07:00" }}" data-countdown-mode="end"
+              {{ else if .StartSet }}data-target-time="{{ .StartTime.Format "2006-01-02T15:04:05Z07:00" }}" data-countdown-mode="start"
+              {{ end }}>
               <li>
-                <span class="count-number">03</span>
-                _days
+                <span class="count-number" data-count-unit="days">{{ if or .StartSet .EndSet }}00{{ else }}--{{ end }}</span>
+                <span class="count-unit-label">Days</span>
               </li>
               <li>
-                <span class="count-number">06</span>
-                _hours
+                <span class="count-number" data-count-unit="hours">{{ if or .StartSet .EndSet }}00{{ else }}--{{ end }}</span>
+                <span class="count-unit-label">Hours</span>
               </li>
               <li>
-                <span class="count-number">20</span>
-                _minutes
+                <span class="count-number" data-count-unit="minutes">{{ if or .StartSet .EndSet }}00{{ else }}--{{ end }}</span>
+                <span class="count-unit-label">Minutes</span>
               </li>
               <li>
-                <span class="count-number">39</span>
-                _seconds
+                <span class="count-number" data-count-unit="seconds">{{ if or .StartSet .EndSet }}00{{ else }}--{{ end }}</span>
+                <span class="count-unit-label">Seconds</span>
               </li>
             </ul>
-
-            <form class="mctf-form inner-container">
-              <p>Please wait for your CTF competition to commence. Unitl then, stay informed and sign up for our newsletter!</p>
-
-              <fieldset class="form-set">
-                <div class="form-el el--text el--single">
-                  <label for="">Email</label>
-                  <input type="email" />
-                </div>
-              </fieldset>
-
-              <div class="form-el--actions">
-                <button class="mctf-cta cta--yellow" type="submit">Sign Up</button>
-              </div>
-            </form>
+            <div class="mctf-actionable">
+              <a href="/{{ .UUID }}/registration" class="mctf-cta cta--yellow">Sign Up</a>
+              <a href="/{{ .UUID }}/login" class="mctf-cta">Login</a>
+            </div>
           </div>
         </main>
       </div>
@@ -100,5 +187,71 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>
     <script type="text/javascript" src="/static/js/mapctf.js"></script>
+    <script>
+      (function () {
+        var countdown = document.querySelector(".upcoming-game-countdown");
+        var statusMessage = document.querySelector("[data-countdown-status]");
+        if (!countdown) {
+          return;
+        }
+
+        var targetTimeValue = countdown.getAttribute("data-target-time");
+        var countdownMode = countdown.getAttribute("data-countdown-mode");
+        if (!targetTimeValue) {
+          return;
+        }
+
+        var targetTime = new Date(targetTimeValue);
+        if (Number.isNaN(targetTime.getTime())) {
+          return;
+        }
+
+        function pad(value) {
+          return String(value).padStart(2, "0");
+        }
+
+        function render() {
+          var remainingMs = Math.max(0, targetTime.getTime() - Date.now());
+          var totalSeconds = Math.floor(remainingMs / 1000);
+          var days = Math.floor(totalSeconds / 86400);
+          var hours = Math.floor((totalSeconds % 86400) / 3600);
+          var minutes = Math.floor((totalSeconds % 3600) / 60);
+          var seconds = totalSeconds % 60;
+
+          var daysEl = countdown.querySelector('[data-count-unit="days"]');
+          var hoursEl = countdown.querySelector('[data-count-unit="hours"]');
+          var minutesEl = countdown.querySelector('[data-count-unit="minutes"]');
+          var secondsEl = countdown.querySelector('[data-count-unit="seconds"]');
+
+          if (daysEl) {
+            daysEl.textContent = pad(days);
+          }
+          if (hoursEl) {
+            hoursEl.textContent = pad(hours);
+          }
+          if (minutesEl) {
+            minutesEl.textContent = pad(minutes);
+          }
+          if (secondsEl) {
+            secondsEl.textContent = pad(seconds);
+          }
+
+          if (statusMessage) {
+            if (remainingMs <= 0) {
+              statusMessage.textContent = countdownMode === "end" ? "The game has ended" : "The game has already started";
+            } else {
+              statusMessage.textContent = countdownMode === "end" ? "Countdown to game end" : "Countdown to game start";
+            }
+          }
+
+          if (remainingMs <= 0) {
+            window.clearInterval(intervalId);
+          }
+        }
+
+        render();
+        var intervalId = window.setInterval(render, 1000);
+      })();
+    </script>
   </body>
 </html>
