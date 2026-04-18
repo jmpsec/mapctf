@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"time"
+
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/countries"
@@ -34,6 +36,8 @@ type IndexTemplateData struct {
 type CountdownTemplateData struct {
 	Title         string
 	UUID          string
+	StartSet      bool
+	StartTime     time.Time
 	Authenticated bool
 	Admin         bool
 }

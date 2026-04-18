@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"text/template"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmpsec/mapctf/pkg/chat"
@@ -192,9 +193,16 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
+	startTime, err := h.Settings.GetGameStartTime()
+	if err != nil {
+		log.Err(err).Msg("error getting game start time")
+		startTime = time.Time{}
+	}
 	templateData := CountdownTemplateData{
 		Title:         "MapCTF: Countdown to event",
 		UUID:          uuid,
+		StartTime:     startTime,
+		StartSet:      !startTime.IsZero(),
 		Authenticated: authenticated,
 		Admin:         isAdmin,
 	}

@@ -3745,6 +3745,17 @@ body {
   background-size: auto 60vh;
 }
 
+.page--landing.center-vertically,
+.page--game-status.center-vertically,
+.page--mobile.center-vertically {
+  -webkit-align-items: flex-start;
+  -webkit-box-align: start;
+  -ms-flex-align: start;
+  align-items: flex-start;
+  padding-top: clamp(48px, 10vh, 112px);
+  padding-bottom: 48px;
+}
+
 .page--mobile {
   background-size: 960px;
   background-position: -80px -80px;
