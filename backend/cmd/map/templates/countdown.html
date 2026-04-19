@@ -10,12 +10,12 @@
     <link rel="stylesheet" href="/static/css/mapctf.css" />
     <style>
       .countdown-page .title-lead {
-        margin-bottom: 14px;
+        margin-bottom: 18px;
       }
 
       .countdown-page .countdown-start-message {
         max-width: 620px;
-        margin: 16px auto 0;
+        margin: 0 auto;
         padding: 14px 18px;
         border: 1px solid rgba(126, 208, 224, 0.28);
         border-radius: 10px;
@@ -136,24 +136,21 @@
       <div id="mctf-main-content" class="mctf-page">
         <main role="main" class="mctf-main countdown-page page--game-status row-fluid no-shrink center-vertically mctf-img-glitch full-height">
           <div class="mctf-container mctf-centered-main">
-            <h3 class="title-lead">Upcoming Game</h3>
+            <h1 class="mctf-glitch" data-text="{{ if .AlreadyStarted }}Game In Progress{{ else }}To Be Announced{{ end }}">{{ if .AlreadyStarted }}Game In Progress{{ else }}To Be Announced{{ end }}</h1>
             {{ if and .AlreadyStarted .EndSet }}
-            <h1 class="mctf-glitch" data-text="{{ .EndTime.Format "January 2, 2006" }}">{{ .EndTime.Format "January 2, 2006" }}</h1>
-            <p class="inner-container countdown-start-message">The game is live. It will end at {{ .EndTime.Format "15:04 MST" }}.</p>
+            <p class="inner-container countdown-start-message">Ends {{ .EndTime.Format "January 2, 2006" }} at {{ .EndTime.Format "15:04 MST" }}.</p>
             {{ else if .AlreadyStarted }}
-            <h1 class="mctf-glitch" data-text="Game In Progress">Game In Progress</h1>
-            <p class="inner-container countdown-start-message">The game has already started. An end time has not been set yet.</p>
+            <p class="inner-container countdown-start-message">The game is live. End time not set yet.</p>
             {{ else if .StartSet }}
-            <h1 class="mctf-glitch" data-text="{{ .StartTime.Format "January 2, 2006" }}">{{ .StartTime.Format "January 2, 2006" }}</h1>
-            <p class="inner-container countdown-start-message">Event start time: {{ .StartTime.Format "15:04 MST" }}</p>
+            <p class="inner-container countdown-start-message">Starts {{ .StartTime.Format "January 2, 2006" }} at {{ .StartTime.Format "15:04 MST" }}.</p>
             {{ else }}
-            <h1 class="mctf-glitch" data-text="To Be Announced">To Be Announced</h1>
-            <p class="inner-container countdown-start-message">Event start time has not been set yet.</p>
+            <p class="inner-container countdown-start-message">Start time not set yet.</p>
             {{ end }}
-            <p class="inner-container countdown-status-message" {{ if or .StartSet .AlreadyStarted }}data-countdown-status{{ end }}>
-              {{ if and .AlreadyStarted .EndSet }}Countdown to game end{{ else if .AlreadyStarted }}Game already started{{ else if .StartSet }}Countdown to game start{{ else }}Countdown unavailable until the event start time is set{{ end }}
+            <p class="inner-container countdown-status-message" data-countdown-status>
+              {{ if and .AlreadyStarted .EndSet }}Countdown to game end{{ else if .AlreadyStarted }}Game already started{{ else }}Game on Standby{{ end }}
             </p>
 
+            {{ if or (and .AlreadyStarted .EndSet) .StartSet }}
             <ul class="upcoming-game-countdown"
               {{ if and .AlreadyStarted .EndSet }}data-target-time="{{ .EndTime.Format "2006-01-02T15:04:05Z07:00" }}" data-countdown-mode="end"
               {{ else if .StartSet }}data-target-time="{{ .StartTime.Format "2006-01-02T15:04:05Z07:00" }}" data-countdown-mode="start"
@@ -175,6 +172,7 @@
                 <span class="count-unit-label">Seconds</span>
               </li>
             </ul>
+            {{ end }}
             <div class="mctf-actionable">
               <a href="/{{ .UUID }}/registration" class="mctf-cta cta--yellow">Sign Up</a>
               <a href="/{{ .UUID }}/login" class="mctf-cta">Login</a>
@@ -240,7 +238,7 @@
             if (remainingMs <= 0) {
               statusMessage.textContent = countdownMode === "end" ? "The game has ended" : "The game has already started";
             } else {
-              statusMessage.textContent = countdownMode === "end" ? "Countdown to game end" : "Countdown to game start";
+              statusMessage.textContent = countdownMode === "end" ? "Countdown to game end" : "Game on Standby";
             }
           }
 

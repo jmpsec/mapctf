@@ -230,6 +230,9 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 			Seconds: fmt.Sprintf("%02d", int(duration.Seconds())%60),
 		}
 	}
+	if !alreadyStarted && !startTime.IsZero() && startTime.Before(time.Now()) {
+		startTime = time.Time{}
+	}
 	templateData := CountdownTemplateData{
 		Title:          "MapCTF: Countdown to event",
 		UUID:           uuid,
