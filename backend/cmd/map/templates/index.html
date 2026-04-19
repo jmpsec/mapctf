@@ -8,6 +8,69 @@
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
     <link rel="stylesheet" href="/static/css/mapctf.css" />
+    <style>
+      .landing-page .mctf-centered-main {
+        max-width: 760px;
+        text-align: center;
+      }
+
+      .landing-page .title-lead {
+        display: inline-block;
+        margin-bottom: 16px;
+        padding: 8px 14px;
+        border: 1px solid rgba(126, 208, 224, 0.24);
+        border-radius: 999px;
+        background: rgba(7, 20, 26, 0.55);
+      }
+
+      .landing-page .mctf-glitch {
+        margin-bottom: 20px;
+      }
+
+      .landing-page .landing-copy {
+        max-width: 42rem;
+        margin: 0 auto;
+      }
+
+      .landing-page .typed-text {
+        max-width: 40rem;
+        margin: 0 auto;
+        font-size: 1.04rem;
+        line-height: 1.65;
+      }
+
+      .landing-page .landing-actions {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .landing-page .landing-actions .mctf-cta {
+        min-width: 160px;
+        text-align: center;
+      }
+
+      .landing-page .landing-note {
+        max-width: 640px;
+        margin: 10px auto 0;
+        padding-top: 18px;
+        border-top: 1px solid rgba(126, 208, 224, 0.18);
+        color: rgba(207, 248, 250, 0.8);
+        line-height: 1.55;
+      }
+
+      .landing-page .landing-note strong {
+        color: #ead44d;
+      }
+
+      @media (max-width: 900px) {
+        .landing-page .mctf-centered-main {
+          max-width: 100%;
+        }
+      }
+    </style>
   </head>
   <body data-section="pages">
     <div class="mctf-sprite" id="mctf-svg-sprite"></div>
@@ -55,14 +118,18 @@
       </div>
       <div id="mctf-main-content" class="mctf-page">
         <div class="mctf-row-container full-height mctf-scroll">
-          <main role="main" class="mctf-main page--landing row-fluid no-shrink center-vertically mctf-img-glitch">
+          <main role="main" class="mctf-main landing-page page--landing row-fluid no-shrink center-vertically mctf-img-glitch">
             <div class="mctf-container mctf-centered-main">
-              <h3 class="title-lead">Get ready to</h3>
+              <h3 class="title-lead">Global Capture The Flag</h3>
               <h1 class="mctf-glitch" data-text="Conquer the world">Conquer the world</h1>
-              <p class="typed-text">Welcome to the MAPCTF Capture the Flag Competition. By clicking &quot;Play,&quot; you will be entered into the official CTF challenge. Good luck in your conquest.</p>
-              <div class="mctf-actionable">
-                <a href="/{{ .UUID }}/countdown" class="mctf-cta cta--yellow">Play</a>
+              <div class="landing-copy">
+                <p class="typed-text">Build your team, enter the map, and turn challenge solves into territory. MAPCTF keeps the experience simple: register, deploy, and take control before time runs out.</p>
               </div>
+              <div class="landing-actions">
+                <a href="/{{ .UUID }}/countdown" class="mctf-cta cta--yellow">Enter</a>
+                <a href="/{{ .UUID }}/rules" class="mctf-cta">Rules</a>
+              </div>
+              <p class="landing-note"><strong>Mission brief:</strong> review the event status, assemble your team, and be ready to move when the map goes live.</p>
             </div>
           </main>
         </div>
