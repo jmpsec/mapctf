@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/static/css/mapctf.css" />
   </head>
 
-  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ .CurrentUsername }}">
+  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ .CurrentUsername }}" data-game-started="{{ if .GameStarted }}true{{ else }}false{{ end }}"{{ if .GameStartSet }} data-game-start-time="{{ .GameStartTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}{{ if .GameEndSet }} data-game-end-time="{{ .GameEndTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}>
     <!--
      *
      * SVG icon sprite object
@@ -2448,13 +2448,15 @@
             </header>
             <div class="module-content module-scrollable">
               <div class="game-clock mctf-numbers">
-                <span class="clock-hours">01</span>
+                <span class="clock-days is-empty">--</span>
                 :
-                <span class="clock-minutes">03</span>
+                <span class="clock-hours is-empty">--</span>
                 :
-                <span class="clock-seconds">09</span>
+                <span class="clock-minutes is-empty">--</span>
                 :
-                <span class="clock-milliseconds">47</span>
+                <span class="clock-seconds is-empty">--</span>
+                :
+                <span class="clock-milliseconds three-digit is-empty">---</span>
               </div>
 
               <div class="game-progress mctf-progress-bar">
@@ -2462,9 +2464,9 @@
                 <span class="label label--right">[End]</span>
 
                 <div class="indicator game-progress-indicator">
-                  <span class="indicator-cell active"></span>
-                  <span class="indicator-cell active"></span>
-                  <span class="indicator-cell active current-spot"></span>
+                  <span class="indicator-cell"></span>
+                  <span class="indicator-cell"></span>
+                  <span class="indicator-cell"></span>
                   <span class="indicator-cell"></span>
                   <span class="indicator-cell"></span>
                   <span class="indicator-cell"></span>
@@ -2798,6 +2800,135 @@
         initChat();
       })();
 
+    </script>
+    <script type="text/javascript">
+      (function () {
+        var body = document.body;
+        if (!body) {
+          return;
+        }
+
+        var gameStarted = body.getAttribute("data-game-started") === "true";
+        var gameStartTimeValue = body.getAttribute("data-game-start-time");
+        var gameEndTimeValue = body.getAttribute("data-game-end-time");
+        if (!gameStarted || !gameEndTimeValue) {
+          return;
+        }
+
+        var gameStartTime = gameStartTimeValue ? new Date(gameStartTimeValue) : null;
+        var gameEndTime = new Date(gameEndTimeValue);
+        if ((gameStartTime && Number.isNaN(gameStartTime.getTime())) || Number.isNaN(gameEndTime.getTime())) {
+          return;
+        }
+
+        function pad(value) {
+          return String(value).padStart(2, "0");
+        }
+
+        function padMilliseconds(value) {
+          return String(value).padStart(3, "0");
+        }
+
+        var animationFrameId = null;
+
+        function render() {
+          var remainingMs = Math.max(0, gameEndTime.getTime() - Date.now());
+          var totalSeconds = Math.floor(remainingMs / 1000);
+          var days = Math.floor(totalSeconds / 86400);
+          var hours = Math.floor((totalSeconds % 86400) / 3600);
+          var minutes = Math.floor((totalSeconds % 3600) / 60);
+          var seconds = totalSeconds % 60;
+          var milliseconds = remainingMs % 1000;
+          var listviewFormatted = [pad(days), pad(hours), pad(minutes), pad(seconds)].join(":");
+
+          Array.prototype.slice.call(document.querySelectorAll(".status--timer")).forEach(function (timer) {
+            if (!timer.classList.contains("timer--expired") || remainingMs <= 0) {
+              timer.textContent = listviewFormatted;
+            }
+            if (remainingMs <= 0) {
+              timer.classList.add("timer--expired");
+            }
+          });
+
+          Array.prototype.slice.call(document.querySelectorAll(".game-clock")).forEach(function (clock) {
+            var daysEl = clock.querySelector(".clock-days");
+            var hoursEl = clock.querySelector(".clock-hours");
+            var minutesEl = clock.querySelector(".clock-minutes");
+            var secondsEl = clock.querySelector(".clock-seconds");
+            var millisecondsEl = clock.querySelector(".clock-milliseconds");
+            var moduleContent = clock.closest(".module-content");
+            var indicatorCells = moduleContent
+              ? Array.prototype.slice.call(moduleContent.querySelectorAll(".game-progress-indicator .indicator-cell"))
+              : [];
+
+            if (daysEl) {
+              daysEl.classList.remove("is-empty");
+              daysEl.textContent = pad(days);
+            }
+            if (hoursEl) {
+              hoursEl.classList.remove("is-empty");
+              hoursEl.textContent = pad(hours);
+            }
+            if (minutesEl) {
+              minutesEl.classList.remove("is-empty");
+              minutesEl.textContent = pad(minutes);
+            }
+            if (secondsEl) {
+              secondsEl.classList.remove("is-empty");
+              secondsEl.textContent = pad(seconds);
+            }
+            if (millisecondsEl) {
+              millisecondsEl.classList.remove("is-empty");
+              millisecondsEl.textContent = padMilliseconds(milliseconds);
+            }
+            if (indicatorCells.length && gameStartTime && gameEndTime.getTime() > gameStartTime.getTime()) {
+              var progress = (Date.now() - gameStartTime.getTime()) / (gameEndTime.getTime() - gameStartTime.getTime());
+              var clampedProgress = Math.max(0, Math.min(1, progress));
+              var activeCells = Math.floor(clampedProgress * indicatorCells.length);
+              if (clampedProgress > 0 && activeCells === 0) {
+                activeCells = 1;
+              }
+              if (clampedProgress >= 1) {
+                activeCells = indicatorCells.length;
+              }
+              var currentIndex = clampedProgress >= 1 ? indicatorCells.length - 1 : Math.min(indicatorCells.length - 1, activeCells);
+
+              indicatorCells.forEach(function (cell, index) {
+                cell.classList.toggle("active", index < activeCells);
+                cell.classList.toggle("current-spot", index === currentIndex);
+              });
+            }
+          });
+
+          if (remainingMs <= 0) {
+            if (animationFrameId !== null) {
+              window.cancelAnimationFrame(animationFrameId);
+              animationFrameId = null;
+            }
+            return;
+          }
+
+          animationFrameId = window.requestAnimationFrame(render);
+        }
+
+        function initGameTimer() {
+          if (animationFrameId !== null) {
+            window.cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+          }
+          render();
+        }
+
+        if (window.jQuery) {
+          window.jQuery(function () {
+            window.jQuery("body").on("content-loaded gameboard-loaded", initGameTimer);
+            initGameTimer();
+          });
+        }
+
+        document.addEventListener("DOMContentLoaded", initGameTimer);
+        initGameTimer();
+      })();
     </script>
     <script type="text/javascript">
       (function () {

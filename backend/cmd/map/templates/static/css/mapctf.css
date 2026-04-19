@@ -4450,6 +4450,7 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
   font-size: 2.5em;
   text-align: center;
   padding-bottom: 20px;
+  white-space: nowrap;
 }
 .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span {
   padding-bottom: 10px;
@@ -4472,6 +4473,12 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
 }
 .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span.three-digit:before {
   content: "000";
+}
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span.is-empty:before {
+  content: "--";
+}
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span.three-digit.is-empty:before {
+  content: "---";
 }
 .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span:after {
   font-family: "puristabold", Courier, monospace;

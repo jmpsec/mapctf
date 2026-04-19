@@ -69,6 +69,11 @@ type GameboardTemplateData struct {
 	Authenticated            bool
 	Admin                    bool
 	CurrentUsername          string
+	GameStarted              bool
+	GameStartSet             bool
+	GameStartTime            time.Time
+	GameEndSet               bool
+	GameEndTime              time.Time
 	GameboardChatMaxLen      int
 	GameboardShowTeamMembers bool
 	Countries                []countries.MapCountry

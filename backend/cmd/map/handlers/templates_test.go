@@ -53,6 +53,11 @@ func TestGameboardTemplateHandlerIncludesChatTemplateData(t *testing.T) {
 
 	require.NoError(t, settingsManager.SetGameboardChatMaxLen(64, jsonSettingsAuthor))
 	require.NoError(t, settingsManager.SetGameboardShowTeamMembers(true, jsonSettingsAuthor))
+	gameStartTime := time.Date(2030, time.January, 2, 9, 0, 0, 0, time.FixedZone("UTC+2", 2*60*60))
+	gameEndTime := time.Date(2030, time.January, 2, 18, 30, 0, 0, time.FixedZone("UTC+2", 2*60*60))
+	require.NoError(t, settingsManager.SetGameStarted(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameStartTime(gameStartTime, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameEndTime(gameEndTime, jsonSettingsAuthor))
 
 	req := newTemplateRequestWithUUID(http.MethodGet, "/gameboard", jsonTestUUID)
 	ctx, err := sessions.Load(req.Context(), "")
@@ -67,6 +72,9 @@ func TestGameboardTemplateHandlerIncludesChatTemplateData(t *testing.T) {
 	body := rr.Body.String()
 	require.Contains(t, body, `data-chat-max-len="64"`)
 	require.Contains(t, body, `data-current-username="alice"`)
+	require.Contains(t, body, `data-game-started="true"`)
+	require.Contains(t, body, `data-game-start-time="2030-01-02T09:00:00+02:00"`)
+	require.Contains(t, body, `data-game-end-time="2030-01-02T18:30:00+02:00"`)
 	require.Contains(t, body, `data-module="world-chat"`)
 }
 
@@ -104,8 +112,8 @@ func TestCountdownTemplateHandlerUsesStartTimeBeforeGameStarts(t *testing.T) {
 	body := rr.Body.String()
 	require.Contains(t, body, `data-countdown-mode="start"`)
 	require.Contains(t, body, `data-target-time="2030-01-02T15:04:05+02:00"`)
-	require.Contains(t, body, "Event start time:")
-	require.Contains(t, body, "Countdown to game start")
+	require.Contains(t, body, "Starts January 2, 2030 at 15:04 +0200.")
+	require.Contains(t, body, "Game on Standby")
 }
 
 func TestCountdownTemplateHandlerUsesEndTimeAfterGameStarts(t *testing.T) {
@@ -129,6 +137,6 @@ func TestCountdownTemplateHandlerUsesEndTimeAfterGameStarts(t *testing.T) {
 	body := rr.Body.String()
 	require.Contains(t, body, `data-countdown-mode="end"`)
 	require.Contains(t, body, `data-target-time="2030-01-02T18:30:00+02:00"`)
-	require.Contains(t, body, "The game is live. It will end at")
+	require.Contains(t, body, "Ends January 2, 2030 at 18:30 +0200.")
 	require.Contains(t, body, "Countdown to game end")
 }

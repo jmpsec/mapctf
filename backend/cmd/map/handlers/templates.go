@@ -327,6 +327,26 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading gameboard_show_team_members")
 	}
+	gameStarted, err := h.Settings.GetGameStarted()
+	if err == nil {
+		templateData.GameStarted = gameStarted
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading game_started")
+	}
+	gameStartTime, err := h.Settings.GetGameStartTime()
+	if err == nil {
+		templateData.GameStartTime = gameStartTime
+		templateData.GameStartSet = !gameStartTime.IsZero()
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading game_start_time")
+	}
+	gameEndTime, err := h.Settings.GetGameEndTime()
+	if err == nil {
+		templateData.GameEndTime = gameEndTime
+		templateData.GameEndSet = !gameEndTime.IsZero()
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading game_end_time")
+	}
 	if h.Countries != nil {
 		countriesList, err := h.Countries.GetAll()
 		if err != nil {
