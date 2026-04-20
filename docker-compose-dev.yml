@@ -26,12 +26,22 @@ services:
       # MapCTF settings
       - MAPCTF_USERNAME=${MAPCTF_USERNAME}
       - MAPCTF_PASSWORD=${MAPCTF_PASSWORD}
+      - MAP_COUNTRIES=/usr/src/app/backend/pkg/countries/map-countries-seed.json
+      - MAP_LOGOS=/usr/src/app/backend/pkg/teams/team-logos-seed.json
     networks:
       - mapctf-dev-backend
     ports:
       - 127.0.0.1:8081:8081
     volumes:
       - .:/usr/src/app:rw,delegated
+    develop:
+      watch:
+        - path: ./deploy/docker/dockerfiles/Dockerfile-dev-api
+          action: rebuild
+        - path: ./backend/go.mod
+          action: rebuild
+        - path: ./backend/go.sum
+          action: rebuild
     depends_on:
       - mapctf-postgres
       - mapctf-redis
@@ -64,12 +74,24 @@ services:
       - MAPCTF_USERNAME=${MAPCTF_USERNAME}
       - MAPCTF_PASSWORD=${MAPCTF_PASSWORD}
       - MAP_UUID=${MAP_UUID}
+      - STATIC_FILES=/usr/src/app/backend/cmd/map/templates/static
+      - TEMPLATES_DIR=/usr/src/app/backend/cmd/map/templates
+      - MAP_COUNTRIES=/usr/src/app/backend/pkg/countries/map-countries-seed.json
+      - MAP_LOGOS=/usr/src/app/backend/pkg/teams/team-logos-seed.json
     networks:
       - mapctf-dev-backend
     ports:
       - 127.0.0.1:8082:8082
     volumes:
       - .:/usr/src/app:rw,delegated
+    develop:
+      watch:
+        - path: ./deploy/docker/dockerfiles/Dockerfile-dev-map
+          action: rebuild
+        - path: ./backend/go.mod
+          action: rebuild
+        - path: ./backend/go.sum
+          action: rebuild
     depends_on:
       - mapctf-postgres
       - mapctf-redis
