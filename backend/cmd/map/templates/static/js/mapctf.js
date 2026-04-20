@@ -258,8 +258,12 @@
         activityDataLoaded = loadActivityData(),
         teamDataLoaded = loadTeamData();
 
-      $.when(mapLoaded, countryDataLoaded).done(function () {
+      $.when(mapLoaded, listViewLoaded, countryDataLoaded).done(function () {
         renderCountryData();
+      });
+
+      $.when(modulesLoaded, countryDataLoaded).done(function () {
+        renderFilterOptions();
       });
 
       // do stuff when the map and modules are loaded
@@ -836,26 +840,11 @@
        * -------------------------------------------- */
 
       //
-      // filter the map based on category
+      // filter the map and list view based on category / point value
       //
-      $('input[name="mctf--module--filter--category"]').on("change", function (event) {
+      $body.on('change', 'input[name="mctf--module--filter--category"], input[name="mctf--module--filter--point-value"]', function (event) {
         event.preventDefault();
-        var category = $(this).val();
-
-        $svgCountries.each(function () {
-          var countryGroup = d3.select(this);
-
-          countryGroup.classed("inactive", false);
-          countryGroup.classed("highlighted", false);
-
-          if (category !== "All") {
-            if (countryGroup.attr("data-category") === category) {
-              countryGroup.classed("highlighted", true);
-            } else {
-              countryGroup.classed("inactive", true);
-            }
-          }
-        });
+        applyCountryFilter(this.name, $(this).val());
       });
 
       //
@@ -1499,6 +1488,150 @@
         if (data) {
           // add the category
           $group.attr("data-category", data.category);
+          $group.attr("data-points", data.points);
+        }
+      });
+
+      if ($listview && $listview.length > 0) {
+        $('tr[data-country]', $listview).each(function () {
+          var $row = $(this),
+            country = $row.data("country"),
+            data = COUNTRY_DATA[country];
+
+          if (data) {
+            $row.attr("data-category", data.category);
+            $row.attr("data-points", data.points);
+            $("td:nth-child(2)", $row).text(data.points + " Pts");
+            $("td:nth-child(3)", $row).text(data.category);
+          }
+        });
+      }
+    }
+
+    function slugifyFilterValue(value) {
+      return String(value)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    function getUniqueFilterValues(key) {
+      if (!COUNTRY_DATA) {
+        return [];
+      }
+
+      var values = $.map(COUNTRY_DATA, function (data) {
+        if (!data || data[key] === undefined || data[key] === null || data[key] === "") {
+          return null;
+        }
+
+        return data[key];
+      });
+
+      values = $.grep(values, function (value, index) {
+        return values.indexOf(value) === index;
+      });
+
+      values.sort(function (a, b) {
+        if (key === "points") {
+          return Number(a) - Number(b);
+        }
+
+        return String(a).localeCompare(String(b));
+      });
+
+      return values;
+    }
+
+    function renderFilterOptions() {
+      if (!COUNTRY_DATA) {
+        return;
+      }
+
+      var filterConfigs = [
+        {
+          type: "category",
+          name: "mctf--module--filter--category",
+          values: getUniqueFilterValues("category"),
+          label: function (value) {
+            return value;
+          },
+        },
+        {
+          type: "point-value",
+          name: "mctf--module--filter--point-value",
+          values: getUniqueFilterValues("points"),
+          label: function (value) {
+            return value + " Pts";
+          },
+        },
+      ];
+
+      $.each(filterConfigs, function (_, config) {
+        $('[data-filter-options="' + config.type + '"]').each(function (index) {
+          var $list = $(this);
+
+          $list.empty();
+
+          $.each(config.values, function (_, value) {
+            var slug = slugifyFilterValue(value),
+              optionId = config.name + "--" + slug + "--" + index,
+              label = config.label(value);
+
+            $list.append(
+              '<li><input type="radio" name="' +
+                config.name +
+                '" value="' +
+                value +
+                '" id="' +
+                optionId +
+                '" /><label for="' +
+                optionId +
+                '" class="click-effect"><span>' +
+                label +
+                "</span></label></li>",
+            );
+          });
+
+          $list.append(
+            '<li><input type="radio" name="' +
+              config.name +
+              '" value="All" id="' +
+              config.name +
+              '--all--' +
+              index +
+              '" checked="" /><label for="' +
+              config.name +
+              '--all--' +
+              index +
+              '" class="click-effect"><span>All</span></label></li>',
+          );
+        });
+      });
+    }
+
+    function applyCountryFilter(filterName, value) {
+      var $svgCountries = $(".countries > g", $mapSvg),
+        attribute = filterName === "mctf--module--filter--point-value" ? "data-points" : "data-category";
+
+      $svgCountries.each(function () {
+        var countryGroup = d3.select(this),
+          attributeValue = countryGroup.attr(attribute),
+          matches = value === "All" || attributeValue === String(value);
+
+        countryGroup.classed("inactive", !matches);
+        countryGroup.classed("highlighted", value !== "All" && matches);
+      });
+
+      $("tr[data-country]", $listview).each(function () {
+        var $row = $(this),
+          attributeValue = String($row.attr(attribute) || ""),
+          matches = value === "All" || attributeValue === String(value);
+
+        $row.removeClass("inactive highlighted");
+
+        if (value !== "All") {
+          $row.addClass(matches ? "highlighted" : "inactive");
         }
       });
     }
@@ -2886,17 +3019,13 @@
     //
     // radio tabs
     //
-    $(".radio-tabs").each(function () {
-      var $tabs = $(this),
-        $tabContent = $tabs.next(".tab-content-container");
+    $body.on("change", ".radio-tabs input[type='radio']", function (event) {
+      var $tabs = $(this).closest(".radio-tabs"),
+        $tabContent = $tabs.parent().next(".module-scrollable, .tab-content-container").find(".tab-content-container").addBack(".tab-content-container").eq(0);
 
-      if ($tabContent.length > 0) {
-        $('input[type="radio"]', $tabs).on("change", function (event) {
-          event.preventDefault();
-          var tab = this.value;
-
-          $('.radio-tab-content[data-tab="' + tab + '"]').onlySiblingWithClass("active");
-        });
+      if ($tabContent.length > 0 && this.value) {
+        event.preventDefault();
+        $('.radio-tab-content[data-tab="' + this.value + '"]', $tabContent).onlySiblingWithClass("active");
       }
     });
 
