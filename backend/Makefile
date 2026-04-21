@@ -51,6 +51,10 @@ clean:
 	rm -rf $(OUTPUT)/$(API_NAME)
 	rm -rf $(OUTPUT)/$(MAP_NAME)
 
+# Delete all dependencies go.sum files
+clean_go:
+	find . -name "go.sum" -type f -exec rm -rf {} \;
+
 # Run API server locally
 run_api:
 	go run $(API_CODE)

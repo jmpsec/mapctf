@@ -43,6 +43,10 @@ clean:
 	make clean-api
 	make clean-map
 
+# Delete all dependencies go.sum files
+clean_go:
+	$(MAKE) -C $(BACKEND_DIR) clean_go
+
 # Display systemd logs for API server
 logs_api:
 	sudo journalctl -f -t $(API_NAME)
@@ -143,6 +147,16 @@ docker_dev_rebuild_map:
 # Run linter
 lint:
 	golangci-lint run
+
+# Remove all unused dependencies
+tidy:
+	make clean
+	make clean_go
+	$(MAKE) -C $(BACKEND_DIR) tidy
+
+# Keep dependencies up to date
+deps-update:
+	$(MAKE) -C $(BACKEND_DIR) deps-update
 
 # Test with coverage
 test:
