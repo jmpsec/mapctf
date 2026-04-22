@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"text/template"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmpsec/mapctf/pkg/chat"
+	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -351,6 +353,33 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 		countriesList, err := h.Countries.GetAll()
 		if err != nil {
 			log.Warn().Err(err).Msg("error loading countries for gameboard")
+		} else if h.Challenges != nil {
+			activeChallenges, challengeErr := h.Challenges.GetActive(uuid)
+			if challengeErr != nil {
+				log.Warn().Err(challengeErr).Msg("error loading active challenges for gameboard countries")
+				templateData.Countries = countriesList
+			} else {
+				activeCountryCodes := make(map[string]struct{}, len(activeChallenges))
+				for _, challenge := range activeChallenges {
+					countryCode := strings.ToUpper(strings.TrimSpace(challenge.Country))
+					if countryCode == "" {
+						continue
+					}
+					activeCountryCodes[countryCode] = struct{}{}
+				}
+
+				renderCountries := make([]countries.MapCountry, 0, len(countriesList))
+				for _, country := range countriesList {
+					renderCountry := country
+					if _, ok := activeCountryCodes[strings.ToUpper(strings.TrimSpace(country.CountryCode))]; ok {
+						if !strings.Contains(renderCountry.LandClass, "active") {
+							renderCountry.LandClass = strings.TrimSpace(renderCountry.LandClass + " active")
+						}
+					}
+					renderCountries = append(renderCountries, renderCountry)
+				}
+				templateData.Countries = renderCountries
+			}
 		} else {
 			templateData.Countries = countriesList
 		}

@@ -323,6 +323,7 @@ func mapCTFService() {
 				r.Get(activityPath, handlersMap.JSONActivityHandler)
 				r.Get(announcementsPath, handlersMap.JSONAnnouncementsHandler)
 				r.Get(challengesPath, handlersMap.JSONChallengesHandler)
+				r.Get(countriesPath, handlersMap.JSONCountriesHandler)
 				r.Get(teamsPath, handlersMap.JSONTeamsHandler)
 				r.Get(chatPath, handlersMap.JSONChatHandler)
 			})

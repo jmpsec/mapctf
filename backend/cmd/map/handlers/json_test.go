@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
@@ -63,6 +65,26 @@ func newJSONTeamsHandler(t *testing.T) (*HandlersMap, *teams.TeamManager, *users
 	)
 
 	return handler, teamManager, userManager, settingsManager
+}
+
+func newJSONCountryDataHandler(t *testing.T) (*HandlersMap, *countries.CountriesManager, *challenges.ChallengeManager) {
+	t.Helper()
+
+	db := newJSONTestDB(t)
+
+	countryManager, err := countries.CreateCountries(db, jsonTestUUID)
+	require.NoError(t, err)
+
+	challengeManager, err := challenges.CreateChallengeManager(db)
+	require.NoError(t, err)
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{}),
+		WithCountries(countryManager),
+		WithChallenges(challengeManager),
+	)
+
+	return handler, countryManager, challengeManager
 }
 
 func newRequestWithUUID(method, target, uuid string) *http.Request {
@@ -244,4 +266,128 @@ func TestJSONTeamsHandlerSkipsUsersThatShouldNotAppearAsMembers(t *testing.T) {
 	require.Equal(t, "blue-team", resp[0].Name)
 	require.Equal(t, 42, resp[0].Points)
 	require.Equal(t, []string{"valid-member"}, resp[0].TeamMembers)
+}
+
+func TestJSONCountriesHandlerRequiresUUID(t *testing.T) {
+	handler, _, _ := newJSONCountryDataHandler(t)
+
+	req := newRequestWithUUID(http.MethodGet, "/json/countries", "")
+	rr := httptest.NewRecorder()
+
+	handler.JSONCountriesHandler(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var resp MapErrorResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.Equal(t, "UUID is required", resp.Error)
+}
+
+func TestJSONCountriesHandlerReturnsAllCountriesAndMarksChallengeBackedOnesActive(t *testing.T) {
+	handler, countryManager, challengeManager := newJSONCountryDataHandler(t)
+
+	require.NoError(t, countryManager.Create(countries.MapCountry{
+		Name:        "Spain",
+		CountryCode: "ES",
+		Active:      true,
+	}))
+	require.NoError(t, countryManager.Create(countries.MapCountry{
+		Name:        "France",
+		CountryCode: "FR",
+		Active:      false,
+	}))
+	require.NoError(t, countryManager.Create(countries.MapCountry{
+		Name:        "Italy",
+		CountryCode: "IT",
+		Active:      true,
+	}))
+	require.NoError(t, countryManager.DB.Create(&countries.MapCountry{
+		Name:        "Germany",
+		CountryCode: "DE",
+		Active:      true,
+		UUID:        jsonOtherTestUUID,
+	}).Error)
+
+	category := challenges.Category{
+		Model:       gorm.Model{ID: 7},
+		Name:        "Web",
+		Description: "Web category",
+		UUID:        jsonTestUUID,
+	}
+	require.NoError(t, challengeManager.CreateCategory(category))
+	require.NoError(t, challengeManager.DB.Create(&challenges.Category{
+		Model: gorm.Model{ID: 8},
+		Name:  "Other",
+		UUID:  jsonOtherTestUUID,
+	}).Error)
+
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Title:       "Spanish challenge",
+		Description: "Live intro",
+		CategoryID:  7,
+		Country:     "ES",
+		Active:      true,
+		Points:      250,
+		Hint:        "Live hint",
+		UUID:        jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Title:      "Inactive country challenge",
+		CategoryID: 7,
+		Country:    "FR",
+		Active:     true,
+		Points:     100,
+		UUID:       jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Title:      "Inactive challenge",
+		CategoryID: 7,
+		Country:    "ES",
+		Active:     false,
+		Points:     500,
+		UUID:       jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Title:      "Other UUID challenge",
+		CategoryID: 8,
+		Country:    "DE",
+		Active:     true,
+		Points:     999,
+		UUID:       jsonOtherTestUUID,
+	}))
+
+	req := newRequestWithUUID(http.MethodGet, "/json/countries", jsonTestUUID)
+	rr := httptest.NewRecorder()
+
+	handler.JSONCountriesHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var resp map[string]JSONCountryDataResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.Len(t, resp, 3)
+
+	spain, ok := resp["Spain"]
+	require.True(t, ok)
+	require.True(t, spain.Active)
+	require.Equal(t, 250, spain.Points)
+	require.Equal(t, "Web", spain.Category)
+	require.Equal(t, "Live intro", spain.Intro)
+	require.Equal(t, "Live hint", spain.Hint)
+	require.Equal(t, "", spain.Owner)
+	require.Empty(t, spain.Completed)
+
+	france, ok := resp["France"]
+	require.True(t, ok)
+	require.True(t, france.Active)
+	require.Equal(t, 100, france.Points)
+	require.Equal(t, "Web", france.Category)
+
+	italy, ok := resp["Italy"]
+	require.True(t, ok)
+	require.False(t, italy.Active)
+	require.Equal(t, 0, italy.Points)
+	require.Empty(t, italy.Category)
+	require.Empty(t, italy.Intro)
+	require.Empty(t, italy.Hint)
 }

@@ -110,7 +110,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==============================================================
-   --FB CTF variables
+   --MAPCTF variables
    ============================================================== */
 /* --------------------------------------------
  * --type
@@ -4593,6 +4593,9 @@ body[data-section=gameboard] .mctf-page {
 .mctf-map svg .countries g.inactive {
   opacity: 0.2;
 }
+.mctf-map svg .countries g.country-disabled {
+  opacity: 0.2;
+}
 .mctf-map svg .countries g.highlighted .land {
   stroke-width: 2;
 }
@@ -4931,6 +4934,9 @@ body[data-section=gameboard] .mctf-page {
 .mctf-listview table tr.captured--you td:nth-child(-n+3),
 .mctf-listview table tr.help-enabled td:nth-child(-n+3),
 .mctf-listview table tr.inactive td {
+  opacity: 0.4;
+}
+.mctf-listview table tr.country-disabled td {
   opacity: 0.4;
 }
 .mctf-listview table tr.captured--you:nth-child(even) td:nth-child(4),

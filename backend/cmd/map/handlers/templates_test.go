@@ -11,18 +11,24 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/stretchr/testify/require"
 )
 
-func newGameboardTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *settings.SettingsManager) {
+func newGameboardTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *settings.SettingsManager, *countries.CountriesManager, *challenges.ChallengeManager) {
 	t.Helper()
 
 	db := newJSONTestDB(t)
 
 	settingsManager, err := settings.CreateSettingsManager(db, "test-service", jsonTestUUID)
+	require.NoError(t, err)
+	countriesManager, err := countries.CreateCountries(db, jsonTestUUID)
+	require.NoError(t, err)
+	challengesManager, err := challenges.CreateChallengeManager(db)
 	require.NoError(t, err)
 
 	sessionManager := scs.New()
@@ -35,10 +41,12 @@ func newGameboardTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManage
 			},
 		}),
 		WithSettings(settingsManager),
+		WithCountries(countriesManager),
+		WithChallenges(challengesManager),
 		WithSessions(sessionManager),
 	)
 
-	return handler, sessionManager, settingsManager
+	return handler, sessionManager, settingsManager, countriesManager, challengesManager
 }
 
 func newTemplateRequestWithUUID(method, target, uuid string) *http.Request {
@@ -49,7 +57,7 @@ func newTemplateRequestWithUUID(method, target, uuid string) *http.Request {
 }
 
 func TestGameboardTemplateHandlerIncludesChatTemplateData(t *testing.T) {
-	handler, sessions, settingsManager := newGameboardTemplateHandler(t)
+	handler, sessions, settingsManager, _, _ := newGameboardTemplateHandler(t)
 
 	require.NoError(t, settingsManager.SetGameboardChatMaxLen(64, jsonSettingsAuthor))
 	require.NoError(t, settingsManager.SetGameboardShowTeamMembers(true, jsonSettingsAuthor))
@@ -79,7 +87,7 @@ func TestGameboardTemplateHandlerIncludesChatTemplateData(t *testing.T) {
 }
 
 func TestGameboardTemplateHandlerFallsBackToDefaultChatMaxLen(t *testing.T) {
-	handler, sessions, _ := newGameboardTemplateHandler(t)
+	handler, sessions, _, _, _ := newGameboardTemplateHandler(t)
 
 	req := newTemplateRequestWithUUID(http.MethodGet, "/gameboard", jsonTestUUID)
 	ctx, err := sessions.Load(req.Context(), "")
@@ -94,7 +102,7 @@ func TestGameboardTemplateHandlerFallsBackToDefaultChatMaxLen(t *testing.T) {
 }
 
 func TestCountdownTemplateHandlerUsesStartTimeBeforeGameStarts(t *testing.T) {
-	handler, sessions, settingsManager := newGameboardTemplateHandler(t)
+	handler, sessions, settingsManager, _, _ := newGameboardTemplateHandler(t)
 
 	startTime := time.Date(2030, time.January, 2, 15, 4, 5, 0, time.FixedZone("UTC+2", 2*60*60))
 	require.NoError(t, settingsManager.SetGameStartTime(startTime, jsonSettingsAuthor))
@@ -117,7 +125,7 @@ func TestCountdownTemplateHandlerUsesStartTimeBeforeGameStarts(t *testing.T) {
 }
 
 func TestCountdownTemplateHandlerUsesEndTimeAfterGameStarts(t *testing.T) {
-	handler, sessions, settingsManager := newGameboardTemplateHandler(t)
+	handler, sessions, settingsManager, _, _ := newGameboardTemplateHandler(t)
 
 	startTime := time.Now().Add(-2 * time.Hour)
 	endTime := time.Date(2030, time.January, 2, 18, 30, 0, 0, time.FixedZone("UTC+2", 2*60*60))
@@ -139,4 +147,72 @@ func TestCountdownTemplateHandlerUsesEndTimeAfterGameStarts(t *testing.T) {
 	require.Contains(t, body, `data-target-time="2030-01-02T18:30:00+02:00"`)
 	require.Contains(t, body, "Ends January 2, 2030 at 18:30 +0200.")
 	require.Contains(t, body, "Countdown to game end")
+}
+
+func TestGameboardTemplateHandlerRendersAllCountriesAndMarksChallengeBackedOnesActive(t *testing.T) {
+	handler, sessions, _, countriesManager, challengesManager := newGameboardTemplateHandler(t)
+
+	require.NoError(t, countriesManager.Create(countries.MapCountry{
+		Name:        "Spain",
+		CountryCode: "ES",
+		Active:      true,
+		LandPath:    "L1",
+		LandClass:   "land",
+		LandStyle:   "stroke-width:1px",
+		MarkerPath:  "M1",
+		MarkerClass: "map-indicator",
+	}))
+	require.NoError(t, countriesManager.Create(countries.MapCountry{
+		Name:        "France",
+		CountryCode: "FR",
+		Active:      true,
+		LandPath:    "L2",
+		LandClass:   "land",
+		LandStyle:   "stroke-width:1px",
+		MarkerPath:  "M2",
+		MarkerClass: "map-indicator",
+	}))
+	require.NoError(t, countriesManager.Create(countries.MapCountry{
+		Name:        "Germany",
+		CountryCode: "DE",
+		Active:      false,
+		LandPath:    "L3",
+		LandClass:   "land",
+		LandStyle:   "stroke-width:1px",
+		MarkerPath:  "M3",
+		MarkerClass: "map-indicator",
+	}))
+
+	require.NoError(t, challengesManager.Create(challenges.Challenge{
+		Title:   "Active Spain",
+		Country: "ES",
+		Active:  true,
+		UUID:    jsonTestUUID,
+	}))
+	require.NoError(t, challengesManager.Create(challenges.Challenge{
+		Title:   "Inactive France",
+		Country: "FR",
+		Active:  false,
+		UUID:    jsonTestUUID,
+	}))
+	require.NoError(t, challengesManager.Create(challenges.Challenge{
+		Title:   "Active Germany inactive country",
+		Country: "DE",
+		Active:  true,
+		UUID:    jsonTestUUID,
+	}))
+
+	req := newTemplateRequestWithUUID(http.MethodGet, "/gameboard", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.GameboardTemplateHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	body := rr.Body.String()
+	require.Contains(t, body, `id="ES" title="Spain" class="land active"`)
+	require.Contains(t, body, `id="FR" title="France" class="land"`)
+	require.Contains(t, body, `id="DE" title="Germany" class="land active"`)
 }

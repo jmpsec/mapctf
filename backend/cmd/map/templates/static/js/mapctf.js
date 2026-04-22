@@ -1,5 +1,5 @@
 //
-// FB CTF javascript
+// MAPCTF javascript
 //
 (function (MAP_CTF, $, undefined) {
   var $body;
@@ -8,6 +8,8 @@
   var COLOR_LIGHT_BLUE = "#cff8fa",
     COLOR_TEAL_BLUE = "#5cf0f6",
     COLOR_MAIN_BLUE = "#13242b";
+
+  var COUNTRY_POLL_INTERVAL_MS = 15000;
 
   // checks
   var ua = navigator.userAgent.toLowerCase(),
@@ -55,6 +57,8 @@
       CURRENT_ZOOM = 1,
       PRE_CAPTURE_TRANSFORM = null,
       COUNTRY_DATA,
+      COUNTRY_POLL_IN_FLIGHT = false,
+      COUNTRY_POLL_TIMER = null,
       ACTIVITY_DATA,
       TEAM_DATA,
       $gameboard,
@@ -299,6 +303,7 @@
         // popuplate the team module
         setupTeams();
         setupActivity();
+        startCountryPolling();
       });
     }
 
@@ -956,6 +961,7 @@
      */
     function captureCountry(country, capturingTeam) {
       var $selectCountry = $('.countries .land[title="' + country + '"]', $mapSvg),
+        data = COUNTRY_DATA ? COUNTRY_DATA[country] : null,
         capturedBy = getCapturedByMarkup($selectCountry.closest("g").data("captured")),
         showAnimation = !(is_ie || LIST_VIEW),
         animationDuration = !showAnimation ? 0 : 600;
@@ -963,6 +969,10 @@
       // make sure there's a country node
       if ($selectCountry.length === 0) {
         console.error(country + " is not a valid country");
+        return;
+      }
+
+      if (!data || !data.active) {
         return;
       }
 
@@ -1077,6 +1087,12 @@
      */
     function launchCaptureModal(country, capturedBy) {
       var data = COUNTRY_DATA[country];
+
+      if (!data || !data.active) {
+        MAP_CTF.modal.closeHoverPopup();
+        $countryHover.empty();
+        return;
+      }
 
       MAP_CTF.modal.loadPopup("country-capture", function () {
         var $container = $(".mctf-modal-content"),
@@ -1307,6 +1323,17 @@
      *  elsewhere in this module.
      */
     function loadMap() {
+      var df = $.Deferred();
+      $map = $(".mctf-map");
+      $mapSvg = $("#mctf-gameboard-map", $map);
+
+      if ($mapSvg.length) {
+        console.log("map loaded");
+        $countryHover = $('[class~="country-hover"]', $mapSvg);
+        enableClickAndDrag.init();
+        return df.resolve().promise();
+      }
+
       var mapPath = "/static/svg/map/worldLow.svg";
 
       return $.get(
@@ -1333,24 +1360,19 @@
      * load the list view for the game
      */
     function loadListView() {
-      var listViewPath = "/static/inc/gameboard/listview.html";
+      var df = $.Deferred();
 
-      return $.get(
-        listViewPath,
-        function (data, status, jqxhr) {
-          console.log("List view loaded");
+      console.log("List view loaded");
+      $listview = $(".mctf-listview");
 
-          $listview = $(".mctf-listview");
-
-          $listview.html(data);
-
-          listviewEventListeners($listview);
-        },
-        "html",
-      ).fail(function () {
+      if (!$listview.length) {
         console.error("There was a problem loading the List View");
         console.error("/error");
-      });
+        return df.reject().promise();
+      }
+
+      $listview.html('<div class="listview-container"><table><tbody></tbody></table></div>');
+      return df.resolve().promise();
     }
 
     /**
@@ -1446,14 +1468,18 @@
      * @return Deferred
      *   - indicate that this jqxhr request is all done
      */
-    function getCountryData() {
-      var df = $.Deferred();
-
-      if (COUNTRY_DATA) {
-        return df.resolve(COUNTRY_DATA);
+    function getCountryData(forceRefresh) {
+      if (!forceRefresh && COUNTRY_DATA) {
+        return $.Deferred().resolve(COUNTRY_DATA).promise();
       }
 
-      var loadPath = "/static/data/country-data.json";
+      var uuid = getCurrentUUID();
+      if (!uuid) {
+        COUNTRY_DATA = {};
+        return $.Deferred().resolve(COUNTRY_DATA).promise();
+      }
+
+      var loadPath = "/" + encodeURIComponent(uuid) + "/json/countries";
 
       return $.get(
         loadPath,
@@ -1466,14 +1492,87 @@
         console.log(loadPath);
         console.log(status);
         console.log(error);
-        console.error("/error");
+        if (!COUNTRY_DATA) {
+          COUNTRY_DATA = {};
+        }
       });
+    }
+
+    function refreshCountryData() {
+      if (COUNTRY_POLL_IN_FLIGHT) {
+        return;
+      }
+
+      COUNTRY_POLL_IN_FLIGHT = true;
+
+      getCountryData(true)
+        .done(function () {
+          renderCountryData();
+        })
+        .always(function () {
+          COUNTRY_POLL_IN_FLIGHT = false;
+        });
+    }
+
+    function startCountryPolling() {
+      if (COUNTRY_POLL_TIMER) {
+        clearInterval(COUNTRY_POLL_TIMER);
+      }
+
+      COUNTRY_POLL_TIMER = setInterval(function () {
+        refreshCountryData();
+      }, COUNTRY_POLL_INTERVAL_MS);
     }
 
     /**
      * since a lot of the data is in an external file, go through
      *  that data and markup the svg so we can use in
      */
+    function renderLiveListView() {
+      if (!$listview || !$listview.length) {
+        return;
+      }
+
+      var tbody = $("tbody", $listview).first();
+      if (!tbody.length) {
+        return;
+      }
+
+      tbody.empty();
+
+      Object.keys(COUNTRY_DATA)
+        .sort(function (a, b) {
+          return String(a).localeCompare(String(b));
+        })
+        .forEach(function (countryName) {
+          var data = COUNTRY_DATA[countryName];
+          if (!data) {
+            return;
+          }
+
+          var isActive = !!data.active;
+          var $row = $("<tr></tr>").attr("data-country", countryName);
+          var $name = $("<td></td>").text(countryName);
+          var $points = $("<td></td>").text(isActive ? (data.points || 0) + " Pts" : "");
+          var $category = $("<td></td>").text(isActive ? data.category || "" : "");
+          var $status = $("<td></td>");
+
+          $row.attr("data-active", isActive ? "true" : "false");
+          $row.toggleClass("country-disabled", !isActive);
+
+          if (isActive) {
+            $status.append('<span class="mctf-status status--open">Open</span>');
+          } else {
+            $status.text("Unavailable");
+          }
+
+          $row.append($name, $points, $category, $status);
+          tbody.append($row);
+        });
+
+      listviewEventListeners($listview);
+    }
+
     function renderCountryData() {
       if (!COUNTRY_DATA) {
         return;
@@ -1485,24 +1584,39 @@
           country = $countryPath.attr("title"),
           data = COUNTRY_DATA[country];
 
-        if (data) {
-          // add the category
+        if (data && data.active) {
+          $countryPath.addClass("active");
+          $group.removeClass("country-disabled");
           $group.attr("data-category", data.category);
           $group.attr("data-points", data.points);
+        } else {
+          $countryPath.removeClass("active");
+          $group.removeAttr("data-category");
+          $group.removeAttr("data-points");
+          $group.addClass("country-disabled");
         }
       });
 
       if ($listview && $listview.length > 0) {
+        renderLiveListView();
+
         $('tr[data-country]', $listview).each(function () {
           var $row = $(this),
             country = $row.data("country"),
             data = COUNTRY_DATA[country];
 
           if (data) {
-            $row.attr("data-category", data.category);
-            $row.attr("data-points", data.points);
-            $("td:nth-child(2)", $row).text(data.points + " Pts");
-            $("td:nth-child(3)", $row).text(data.category);
+            if (data.active) {
+              $row.attr("data-category", data.category);
+              $row.attr("data-points", data.points);
+              $("td:nth-child(2)", $row).text(data.points + " Pts");
+              $("td:nth-child(3)", $row).text(data.category);
+            } else {
+              $row.removeAttr("data-category");
+              $row.removeAttr("data-points");
+              $("td:nth-child(2)", $row).text("");
+              $("td:nth-child(3)", $row).text("");
+            }
           }
         });
       }
@@ -1692,7 +1806,7 @@
         //   - the country is not using help
         //   - the country is NOT captured
         //
-        if (!$tr.hasClass("help-enabled") && $tr.data("captured") === undefined) {
+        if (!$tr.hasClass("help-enabled") && !$tr.hasClass("country-disabled") && $tr.data("captured") === undefined) {
           captureCountry(country);
         }
       });
