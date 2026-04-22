@@ -265,6 +265,12 @@
                       <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/countries">Open Countries Page</a>
                     </div>
                   </div>
+                  <div class="admin-setting-row">
+                    <label>Bulk delete</label>
+                    <div class="admin-buttons" style="margin-top: 0">
+                      <button class="mctf-cta cta--red" data-action="delete-all-countries" data-delete-all-countries-url="/{{ .UUID }}/admin/countries/delete-all" type="button">Delete All Countries</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>

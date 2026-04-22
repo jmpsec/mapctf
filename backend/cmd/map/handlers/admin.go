@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/logs"
@@ -4855,6 +4856,80 @@ func (h *HandlersMap) AdminCountriesTemplateHandler(w http.ResponseWriter, r *ht
 		log.Err(err).Msg("template error")
 		return
 	}
+}
+
+// AdminCountriesDeleteAllPOSTHandler deletes all countries and clears challenge country references
+func (h *HandlersMap) AdminCountriesDeleteAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if h.Countries == nil || h.Challenges == nil {
+		writeError(http.StatusInternalServerError, "Countries or challenges manager is not initialized")
+		return
+	}
+	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
+		writeError(http.StatusBadRequest, "AJAX requests only")
+		return
+	}
+
+	tx := h.Countries.DB.Begin()
+	if tx.Error != nil {
+		log.Err(tx.Error).Msg("error starting delete-all-countries transaction")
+		writeError(http.StatusInternalServerError, "Failed to delete all countries")
+		return
+	}
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			tx.Rollback()
+			panic(recovered)
+		}
+	}()
+
+	if err := tx.Model(&challenges.Challenge{}).Where("uuid = ?", uuid).Update("country", "").Error; err != nil {
+		tx.Rollback()
+		log.Err(err).Msg("error clearing challenge country references before bulk country delete")
+		writeError(http.StatusInternalServerError, "Failed to clear challenge country references")
+		return
+	}
+
+	deleteResult := tx.Where("uuid = ?", uuid).Delete(&countries.MapCountry{})
+	if deleteResult.Error != nil {
+		tx.Rollback()
+		log.Err(deleteResult.Error).Msg("error deleting all countries")
+		writeError(http.StatusInternalServerError, "Failed to delete all countries")
+		return
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		log.Err(err).Msg("error committing delete-all-countries transaction")
+		writeError(http.StatusInternalServerError, "Failed to delete all countries")
+		return
+	}
+
+	writeSuccess("Deleted " + strconv.FormatInt(deleteResult.RowsAffected, 10) + " country(ies)")
 }
 
 // AdminCountryUpdatePOSTHandler for updating country active status via POST requests

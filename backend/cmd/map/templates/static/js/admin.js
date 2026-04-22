@@ -1577,6 +1577,70 @@ function initAdminUserActionsButtons() {
   });
 }
 
+function initAdminCountryActionsButtons() {
+  var deleteAllCountriesBtn = document.querySelector('[data-action="delete-all-countries"]');
+  if (!deleteAllCountriesBtn) {
+    return;
+  }
+
+  deleteAllCountriesBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+
+    var deleteAllCountriesURL = deleteAllCountriesBtn.getAttribute("data-delete-all-countries-url");
+    if (!deleteAllCountriesURL) {
+      showTransientAdminStatus("error", "Missing delete all countries URL");
+      return;
+    }
+    if (deleteAllCountriesBtn.dataset.submitting === "true") {
+      return;
+    }
+
+    function runDeleteAllCountries() {
+      deleteAllCountriesBtn.dataset.submitting = "true";
+      deleteAllCountriesBtn.disabled = true;
+
+      postAdminActionJSON(deleteAllCountriesURL)
+        .then(function (data) {
+          showTransientAdminStatus(data.status || "ok", data.message || "All countries deleted");
+          window.location.reload();
+        })
+        .catch(function (error) {
+          showTransientAdminStatus("error", error.message || "Failed to delete all countries");
+        })
+        .finally(function () {
+          delete deleteAllCountriesBtn.dataset.submitting;
+          deleteAllCountriesBtn.disabled = false;
+          if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+            MAP_CTF.modal.close();
+          }
+        });
+    }
+
+    if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+      if (window.confirm("Delete all countries? This cannot be undone and will clear country assignments from challenges.")) {
+        runDeleteAllCountries();
+      }
+      return;
+    }
+
+    MAP_CTF.modal.loadPopup("action-delete-all-countries", function () {
+      var modal = document.getElementById("mctf-modal");
+      if (!modal) {
+        return;
+      }
+
+      var confirmBtn = modal.querySelector(".js-confirm-delete-all-countries");
+      if (!confirmBtn) {
+        return;
+      }
+      confirmBtn.addEventListener("click", function (confirmEvent) {
+        confirmEvent.preventDefault();
+        runDeleteAllCountries();
+      });
+    });
+  });
+}
+
 function initAdminAddChallengeModal() {
   var addChallengeBtn = document.querySelector('[data-action="add-new-challenge"]');
   if (!addChallengeBtn) {
@@ -2774,6 +2838,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminSettingsActionsButtons();
   initAdminUsersSearch();
   initAdminUserActionsButtons();
+  initAdminCountryActionsButtons();
   initAdminTeamsSearch();
   initAdminLogosSearch();
   initAdminTeamActionsButtons();

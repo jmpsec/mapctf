@@ -381,6 +381,7 @@ func mapCTFService() {
 				r.Post(chatPath+"/{id}/delete", handlersMap.AdminChatDeletePOSTHandler)
 				r.Get(announcementsPath, handlersMap.AdminAnnouncementsTemplateHandler)
 				r.Get(countriesPath, handlersMap.AdminCountriesTemplateHandler)
+				r.Post(countriesPath+"/delete-all", handlersMap.AdminCountriesDeleteAllPOSTHandler)
 				r.Post(countriesPath+"/{id}", handlersMap.AdminCountryUpdatePOSTHandler)
 			})
 		})

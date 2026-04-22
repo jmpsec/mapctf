@@ -12,8 +12,10 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/stretchr/testify/require"
 )
@@ -44,6 +46,34 @@ func newAdminTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *
 	)
 
 	return handler, sessionManager, chatManager, teamManager
+}
+
+func newAdminCountryActionHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *countries.CountriesManager, *challenges.ChallengeManager) {
+	t.Helper()
+
+	db := newJSONTestDB(t)
+
+	countriesManager, err := countries.CreateCountries(db, jsonTestUUID)
+	require.NoError(t, err)
+
+	challengesManager, err := challenges.CreateChallengeManager(db)
+	require.NoError(t, err)
+
+	sessionManager := scs.New()
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{
+			Map: config.ConfigurationMap{
+				UUID:         jsonTestUUID,
+				TemplatesDir: filepath.Join("..", "templates"),
+			},
+		}),
+		WithCountries(countriesManager),
+		WithChallenges(challengesManager),
+		WithSessions(sessionManager),
+	)
+
+	return handler, sessionManager, countriesManager, challengesManager
 }
 
 func newAdminRequestWithUUID(method, target, uuid string) *http.Request {
@@ -349,4 +379,113 @@ func TestJSONChatHandlerExcludesHiddenEntries(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
 	require.Len(t, resp, 1)
 	require.Equal(t, "visible", resp[0].Username)
+}
+
+func TestAdminCountriesDeleteAllPOSTHandlerDeletesScopedCountriesAndClearsChallengeCountries(t *testing.T) {
+	handler, sessions, countriesManager, challengesManager := newAdminCountryActionHandler(t)
+
+	require.NoError(t, countriesManager.Create(countries.MapCountry{
+		Name:        "Spain",
+		CountryCode: "ES",
+		Active:      true,
+	}))
+	require.NoError(t, countriesManager.Create(countries.MapCountry{
+		Name:        "France",
+		CountryCode: "FR",
+		Active:      true,
+	}))
+	require.NoError(t, countriesManager.DB.Create(&countries.MapCountry{
+		Name:        "Other UUID Country",
+		CountryCode: "DE",
+		Active:      true,
+		UUID:        jsonOtherTestUUID,
+	}).Error)
+
+	require.NoError(t, challengesManager.Create(challenges.Challenge{
+		Title:   "Scoped challenge",
+		Country: "ES",
+		Active:  true,
+		UUID:    jsonTestUUID,
+	}))
+	require.NoError(t, challengesManager.Create(challenges.Challenge{
+		Title:   "Other UUID challenge",
+		Country: "DE",
+		Active:  true,
+		UUID:    jsonOtherTestUUID,
+	}))
+
+	req := newAdminRequestWithUUID(http.MethodPost, "/admin/countries/delete-all", jsonTestUUID)
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	req.Header.Set(ContentType, JSONApplication)
+	req.Body = io.NopCloser(bytes.NewBufferString(`{}`))
+
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminCountriesDeleteAllPOSTHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	require.Equal(t, JSONApplicationUTF8, rr.Header().Get(ContentType))
+
+	var resp adminActionResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.True(t, resp.Success)
+	require.Equal(t, "ok", resp.Status)
+	require.Equal(t, "Deleted 2 country(ies)", resp.Message)
+
+	remainingCountries, err := countriesManager.GetAll()
+	require.NoError(t, err)
+	require.Empty(t, remainingCountries)
+
+	var otherCountries []countries.MapCountry
+	require.NoError(t, countriesManager.DB.Where("uuid = ?", jsonOtherTestUUID).Find(&otherCountries).Error)
+	require.Len(t, otherCountries, 1)
+	require.Equal(t, "DE", otherCountries[0].CountryCode)
+
+	scopedChallenge, err := challengesManager.GetByID(1, jsonTestUUID)
+	require.NoError(t, err)
+	require.Empty(t, scopedChallenge.Country)
+
+	otherChallenge, err := challengesManager.GetByID(2, jsonOtherTestUUID)
+	require.NoError(t, err)
+	require.Equal(t, "DE", otherChallenge.Country)
+}
+
+func TestAdminCountriesDeleteAllPOSTHandlerReturnsErrorWithoutManagers(t *testing.T) {
+	sessionManager := scs.New()
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{
+			Map: config.ConfigurationMap{
+				UUID:         jsonTestUUID,
+				TemplatesDir: filepath.Join("..", "templates"),
+			},
+		}),
+		WithSessions(sessionManager),
+	)
+
+	req := newAdminRequestWithUUID(http.MethodPost, "/admin/countries/delete-all", jsonTestUUID)
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	req.Header.Set(ContentType, JSONApplication)
+	req.Body = io.NopCloser(bytes.NewBufferString(`{}`))
+
+	ctx, err := sessionManager.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessionManager.Put(ctx, string(ContextKeyUser), "admin")
+	sessionManager.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminCountriesDeleteAllPOSTHandler(rr, req)
+
+	require.Equal(t, http.StatusInternalServerError, rr.Code)
+
+	var resp adminActionResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.False(t, resp.Success)
+	require.Equal(t, "error", resp.Status)
+	require.Equal(t, "Countries or challenges manager is not initialized", resp.Message)
 }
