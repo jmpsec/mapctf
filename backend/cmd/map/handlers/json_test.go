@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
@@ -85,6 +86,36 @@ func newJSONCountryDataHandler(t *testing.T) (*HandlersMap, *countries.Countries
 	)
 
 	return handler, countryManager, challengeManager
+}
+
+func newJSONWorldDominationHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *teams.TeamManager, *users.UserManager, *challenges.ChallengeManager) {
+	t.Helper()
+
+	db := newJSONTestDB(t)
+
+	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	require.NoError(t, err)
+
+	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{
+		Secret:        "test-secret",
+		HoursToExpire: 24,
+	})
+	require.NoError(t, err)
+
+	challengeManager, err := challenges.CreateChallengeManager(db)
+	require.NoError(t, err)
+
+	sessionManager := scs.New()
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{}),
+		WithTeams(teamManager),
+		WithUsers(userManager),
+		WithChallenges(challengeManager),
+		WithSessions(sessionManager),
+	)
+
+	return handler, sessionManager, teamManager, userManager, challengeManager
 }
 
 func newRequestWithUUID(method, target, uuid string) *http.Request {
@@ -390,4 +421,104 @@ func TestJSONCountriesHandlerReturnsAllCountriesAndMarksChallengeBackedOnesActiv
 	require.Empty(t, italy.Category)
 	require.Empty(t, italy.Intro)
 	require.Empty(t, italy.Hint)
+}
+
+func TestJSONWorldDominationHandlerReturnsCurrentTeamMetrics(t *testing.T) {
+	handler, sessions, teamManager, userManager, challengeManager := newJSONWorldDominationHandler(t)
+
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{
+		Model:   gorm.Model{ID: 10},
+		Name:    "Blue Team",
+		UUID:    jsonTestUUID,
+		Active:  true,
+		Visible: true,
+	}))
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{
+		Model:   gorm.Model{ID: 11},
+		Name:    "Red Team",
+		UUID:    jsonTestUUID,
+		Active:  true,
+		Visible: true,
+	}))
+
+	require.NoError(t, userManager.Create(users.PlatformUser{
+		Username: "alice",
+		TeamID:   10,
+		Active:   true,
+		UUID:     jsonTestUUID,
+	}))
+
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Model:  gorm.Model{ID: 101},
+		Title:  "One",
+		Active: true,
+		UUID:   jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Model:  gorm.Model{ID: 102},
+		Title:  "Two",
+		Active: true,
+		UUID:   jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Model:  gorm.Model{ID: 103},
+		Title:  "Three",
+		Active: true,
+		UUID:   jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Model:  gorm.Model{ID: 104},
+		Title:  "Inactive",
+		Active: false,
+		UUID:   jsonTestUUID,
+	}))
+
+	require.NoError(t, teamManager.CreateScore(teams.TeamScore{
+		TeamID:      10,
+		ChallengeID: 101,
+		Points:      100,
+		UUID:        jsonTestUUID,
+		ScoredBy:    "alice",
+	}))
+	require.NoError(t, teamManager.CreateScore(teams.TeamScore{
+		TeamID:      10,
+		ChallengeID: 102,
+		Points:      100,
+		UUID:        jsonTestUUID,
+		ScoredBy:    "alice",
+	}))
+	require.NoError(t, teamManager.CreateScore(teams.TeamScore{
+		TeamID:      11,
+		ChallengeID: 103,
+		Points:      100,
+		UUID:        jsonTestUUID,
+		ScoredBy:    "bob",
+	}))
+	require.NoError(t, teamManager.CreateScore(teams.TeamScore{
+		TeamID:      11,
+		ChallengeID: 104,
+		Points:      100,
+		UUID:        jsonTestUUID,
+		ScoredBy:    "bob",
+	}))
+
+	req := newRequestWithUUID(http.MethodGet, "/json/domination", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "alice")
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.JSONWorldDominationHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var resp JSONWorldDominationResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.Equal(t, "Blue Team", resp.CurrentTeam)
+	require.Equal(t, 2, resp.CompletedChallenges)
+	require.Equal(t, 3, resp.TotalChallenges)
+	require.Equal(t, 67, resp.CompletionPct)
+	require.Equal(t, 67, resp.WinRatePct)
+	require.Equal(t, 33, resp.LoseRatePct)
 }

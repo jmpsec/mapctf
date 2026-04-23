@@ -99,6 +99,8 @@ const (
 	announcementsPath = "/announcements"
 	// Chat path
 	chatPath = "/chat"
+	// World domination path
+	dominationPath = "/domination"
 	// JSON data path
 	jsonPath = "/json"
 )
@@ -326,6 +328,7 @@ func mapCTFService() {
 				r.Get(countriesPath, handlersMap.JSONCountriesHandler)
 				r.Get(teamsPath, handlersMap.JSONTeamsHandler)
 				r.Get(chatPath, handlersMap.JSONChatHandler)
+				r.Get(dominationPath, handlersMap.JSONWorldDominationHandler)
 			})
 			// Protected admin routes
 			r.Route(adminPath, func(r chi.Router) {

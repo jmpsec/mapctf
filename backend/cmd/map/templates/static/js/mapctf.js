@@ -11,7 +11,8 @@
 
   var COUNTRY_POLL_INTERVAL_MS = 15000,
     TEAM_POLL_INTERVAL_MS = 15000,
-    ACTIVITY_POLL_INTERVAL_MS = 15000;
+    ACTIVITY_POLL_INTERVAL_MS = 15000,
+    DOMINATION_POLL_INTERVAL_MS = 15000;
 
   // checks
   var ua = navigator.userAgent.toLowerCase(),
@@ -65,10 +66,13 @@
       COUNTRY_POLL_TIMER = null,
       ACTIVITY_DATA,
       TEAM_DATA,
+      DOMINATION_DATA,
       TEAM_POLL_IN_FLIGHT = false,
       TEAM_POLL_TIMER = null,
       ACTIVITY_POLL_IN_FLIGHT = false,
       ACTIVITY_POLL_TIMER = null,
+      DOMINATION_POLL_IN_FLIGHT = false,
+      DOMINATION_POLL_TIMER = null,
       $gameboard,
       $listview,
       $mapSvg,
@@ -268,7 +272,8 @@
         mapLoaded = loadMap(),
         listViewLoaded = loadListView(),
         activityDataLoaded = loadActivityData(),
-        teamDataLoaded = loadTeamData();
+        teamDataLoaded = loadTeamData(),
+        dominationDataLoaded = loadDominationData();
 
       $.when(mapLoaded, listViewLoaded, countryDataLoaded).done(function () {
         renderCountryData();
@@ -278,9 +283,13 @@
         renderFilterOptions();
       });
 
+      $.when(modulesLoaded, dominationDataLoaded).done(function () {
+        renderWorldDomination();
+      });
+
       // do stuff when the map and modules are loaded
-      $.when(modulesLoaded, mapLoaded, listViewLoaded, teamDataLoaded, activityDataLoaded).done(function () {
-        console.log("modules, map, list view, team data, and activity data are loaded");
+      $.when(modulesLoaded, mapLoaded, listViewLoaded, teamDataLoaded, activityDataLoaded, dominationDataLoaded).done(function () {
+        console.log("modules, map, list view, team data, activity data, and domination data are loaded");
 
         // trigger an event for the gameboard loaded, so
         //  external things know that everything has been
@@ -311,9 +320,11 @@
         // popuplate the team module
         setupTeams();
         setupActivity();
+        renderWorldDomination();
         startCountryPolling();
         startTeamPolling();
         startActivityPolling();
+        startDominationPolling();
       });
     }
 
@@ -1504,6 +1515,36 @@
       return df.promise();
     }
 
+    function loadDominationData(forceRefresh) {
+      if (!forceRefresh && DOMINATION_DATA) {
+        return $.Deferred().resolve(DOMINATION_DATA).promise();
+      }
+
+      var df = $.Deferred();
+      var uuid = getCurrentUUID();
+
+      if (!uuid) {
+        DOMINATION_DATA = {};
+        return df.resolve(DOMINATION_DATA).promise();
+      }
+
+      $.get(
+        "/" + encodeURIComponent(uuid) + "/json/domination",
+        function (data) {
+          DOMINATION_DATA = data || {};
+          df.resolve(DOMINATION_DATA);
+        },
+        "json",
+      ).fail(function () {
+        if (!DOMINATION_DATA) {
+          DOMINATION_DATA = {};
+        }
+        df.resolve(DOMINATION_DATA);
+      });
+
+      return df.promise();
+    }
+
     function refreshActivityData() {
       if (ACTIVITY_POLL_IN_FLIGHT) {
         return;
@@ -1528,6 +1569,32 @@
       ACTIVITY_POLL_TIMER = setInterval(function () {
         refreshActivityData();
       }, ACTIVITY_POLL_INTERVAL_MS);
+    }
+
+    function refreshDominationData() {
+      if (DOMINATION_POLL_IN_FLIGHT) {
+        return;
+      }
+
+      DOMINATION_POLL_IN_FLIGHT = true;
+
+      loadDominationData(true)
+        .done(function () {
+          renderWorldDomination();
+        })
+        .always(function () {
+          DOMINATION_POLL_IN_FLIGHT = false;
+        });
+    }
+
+    function startDominationPolling() {
+      if (DOMINATION_POLL_TIMER) {
+        clearInterval(DOMINATION_POLL_TIMER);
+      }
+
+      DOMINATION_POLL_TIMER = setInterval(function () {
+        refreshDominationData();
+      }, DOMINATION_POLL_INTERVAL_MS);
     }
 
     /**
@@ -1761,6 +1828,53 @@
       setTimeout(function () {
         $wave.remove();
       }, 1500);
+    }
+
+    function renderWorldDomination() {
+      var $module = $('aside[data-module="world-domination"]');
+      if (!$module.length) {
+        return;
+      }
+
+      var data = DOMINATION_DATA || {};
+      var currentTeam = data.current_team || "No Team";
+      var completedChallenges = parseInt(data.completed_challenges, 10);
+      var totalChallenges = parseInt(data.total_challenges, 10);
+      var completionPct = parseInt(data.completion_pct, 10);
+      var winRatePct = parseInt(data.win_rate_pct, 10);
+      var loseRatePct = parseInt(data.lose_rate_pct, 10);
+
+      if (isNaN(completedChallenges)) {
+        completedChallenges = 0;
+      }
+      if (isNaN(totalChallenges)) {
+        totalChallenges = 0;
+      }
+      if (isNaN(completionPct)) {
+        completionPct = 0;
+      }
+      if (isNaN(winRatePct)) {
+        winRatePct = 0;
+      }
+      if (isNaN(loseRatePct)) {
+        loseRatePct = 0;
+      }
+
+      $("[data-domination-current-team]", $module).text("Team: " + currentTeam);
+      $("[data-domination-completed-text]", $module).text(completedChallenges + " / " + totalChallenges + " Challenges Completed");
+      $("[data-domination-completion-pct]", $module).text(completionPct + "%");
+      $("[data-domination-win-rate]", $module).text(winRatePct + "%");
+      $("[data-domination-lose-rate]", $module).text(loseRatePct + "%");
+      $("[data-domination-win-gauge]", $module).css("left", Math.max(0, Math.min(100, winRatePct)) + "%");
+      $("[data-domination-lose-gauge]", $module).css("left", Math.max(0, Math.min(100, loseRatePct)) + "%");
+
+      var $lines = $("[data-domination-progress-graph] line", $module);
+      var filledCount = Math.round(($lines.length * Math.max(0, Math.min(100, completionPct))) / 100);
+
+      $lines.removeClass("filled");
+      if (filledCount > 0) {
+        $lines.slice(Math.max(0, $lines.length - filledCount)).addClass("filled");
+      }
     }
 
     function slugifyFilterValue(value) {

@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"errors"
+	"math"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmpsec/mapctf/pkg/challenges"
+	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -37,6 +39,15 @@ type JSONCountryDataResponse struct {
 	MarkerClass     string   `json:"marker_class"`
 	MarkerStyle     string   `json:"marker_style"`
 	MarkerTransform string   `json:"marker_transform"`
+}
+
+type JSONWorldDominationResponse struct {
+	CurrentTeam         string `json:"current_team"`
+	CompletedChallenges int    `json:"completed_challenges"`
+	TotalChallenges     int    `json:"total_challenges"`
+	CompletionPct       int    `json:"completion_pct"`
+	WinRatePct          int    `json:"win_rate_pct"`
+	LoseRatePct         int    `json:"lose_rate_pct"`
 }
 
 // JSONActivityHandler to return all activity logs for a given UUID in JSON format
@@ -262,6 +273,117 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, response)
+}
+
+// JSONWorldDominationHandler returns aggregate completion metrics for the authenticated user's team
+func (h *HandlersMap) JSONWorldDominationHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		log.Err(errors.New("UUID is required")).Msg("UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+		return
+	}
+
+	if h.Challenges == nil || h.Teams == nil || h.Users == nil || h.Sessions == nil {
+		log.Err(errors.New("world domination dependencies not initialized")).Msg("error retrieving world domination data")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving world domination data"})
+		return
+	}
+
+	username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
+	if username == "" {
+		log.Err(errors.New("user not authenticated")).Msg("user not authenticated")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "user not authenticated"})
+		return
+	}
+
+	user, err := h.Users.Get(username, uuid)
+	if err != nil {
+		log.Err(err).Msg("error retrieving user for world domination data")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving world domination data"})
+		return
+	}
+
+	activeChallenges, err := h.Challenges.GetActive(uuid)
+	if err != nil {
+		log.Err(err).Msg("error retrieving active challenges for world domination data")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving world domination data"})
+		return
+	}
+
+	response := JSONWorldDominationResponse{
+		CompletedChallenges: 0,
+		TotalChallenges:     len(activeChallenges),
+		CompletionPct:       0,
+		WinRatePct:          0,
+		LoseRatePct:         0,
+	}
+
+	if user.TeamID == 0 {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, response)
+		return
+	}
+
+	var currentTeam teams.PlatformTeam
+	if err := h.Teams.DB.Where("id = ? AND uuid = ?", user.TeamID, uuid).First(&currentTeam).Error; err == nil {
+		response.CurrentTeam = currentTeam.Name
+	}
+
+	activeChallengeIDs := make(map[uint]struct{}, len(activeChallenges))
+	for _, challenge := range activeChallenges {
+		activeChallengeIDs[challenge.ID] = struct{}{}
+	}
+
+	if len(activeChallengeIDs) == 0 {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, response)
+		return
+	}
+
+	var scores []teams.TeamScore
+	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&scores).Error; err != nil {
+		log.Err(err).Msg("error retrieving team scores for world domination data")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving world domination data"})
+		return
+	}
+
+	currentTeamCompleted := make(map[uint]struct{})
+	currentTeamSolveCount := 0
+	otherTeamsSolveCount := 0
+
+	for _, score := range scores {
+		if _, ok := activeChallengeIDs[score.ChallengeID]; !ok {
+			continue
+		}
+
+		if score.TeamID == user.TeamID {
+			currentTeamSolveCount++
+			currentTeamCompleted[score.ChallengeID] = struct{}{}
+			continue
+		}
+
+		otherTeamsSolveCount++
+	}
+
+	response.CompletedChallenges = len(currentTeamCompleted)
+	response.CompletionPct = calculatePercentage(response.CompletedChallenges, response.TotalChallenges)
+
+	totalSolveCount := currentTeamSolveCount + otherTeamsSolveCount
+	response.WinRatePct = calculatePercentage(currentTeamSolveCount, totalSolveCount)
+	response.LoseRatePct = calculatePercentage(otherTeamsSolveCount, totalSolveCount)
+
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, response)
+}
+
+func calculatePercentage(numerator, denominator int) int {
+	if denominator <= 0 || numerator <= 0 {
+		return 0
+	}
+
+	return int(math.Round(float64(numerator) * 100 / float64(denominator)))
 }
 
 // JSONChatHandler to return all chat entries for a given UUID in JSON format
