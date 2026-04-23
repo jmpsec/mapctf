@@ -16,6 +16,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/config"
 	"github.com/jmpsec/mapctf/pkg/countries"
+	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/stretchr/testify/require"
 )
@@ -76,6 +77,30 @@ func newAdminCountryActionHandler(t *testing.T) (*HandlersMap, *scs.SessionManag
 	return handler, sessionManager, countriesManager, challengesManager
 }
 
+func newAdminActivityTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *logs.LogManager) {
+	t.Helper()
+
+	db := newJSONTestDB(t)
+
+	logManager, err := logs.CreateLogManager(db)
+	require.NoError(t, err)
+
+	sessionManager := scs.New()
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{
+			Map: config.ConfigurationMap{
+				UUID:         jsonTestUUID,
+				TemplatesDir: filepath.Join("..", "templates"),
+			},
+		}),
+		WithLogs(logManager),
+		WithSessions(sessionManager),
+	)
+
+	return handler, sessionManager, logManager
+}
+
 func newAdminRequestWithUUID(method, target, uuid string) *http.Request {
 	req := httptest.NewRequest(method, target, nil)
 	routeCtx := chi.NewRouteContext()
@@ -131,6 +156,32 @@ func TestAdminChatTemplateHandlerShowsEmptyChatState(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rr.Code)
 	require.Contains(t, rr.Body.String(), "No chat messages yet.")
+}
+
+func TestAdminActivityTemplateHandlerIncludesActivityEntries(t *testing.T) {
+	handler, sessions, logManager := newAdminActivityTemplateHandler(t)
+
+	activity, err := logManager.NewActivity("Blue Team", "completed", "Captured Spain", "country=ES", jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, logManager.CreateActivity(activity))
+
+	req := newAdminRequestWithUUID(http.MethodGet, "/admin/activity", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminActivityTemplateHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	body := rr.Body.String()
+	require.Contains(t, body, "Activity Log")
+	require.Contains(t, body, "Blue Team")
+	require.Contains(t, body, "completed")
+	require.Contains(t, body, "Captured Spain")
+	require.Contains(t, body, "country=ES")
 }
 
 func TestAdminChatTemplateHandlerIncludesModerationControls(t *testing.T) {
