@@ -4551,6 +4551,21 @@ body[data-section=gameboard] .mctf-page {
   bottom: 0;
   overflow: hidden;
 }
+.mctf-map .country-activation-wave {
+  position: absolute;
+  width: 2rem;
+  height: 2rem;
+  margin-left: -1rem;
+  margin-top: -1rem;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 3;
+  background: radial-gradient(circle, rgba(92, 240, 246, 0.45) 0%, rgba(92, 240, 246, 0.24) 32%, rgba(92, 240, 246, 0.12) 55%, rgba(92, 240, 246, 0) 72%);
+  box-shadow: 0 0 0 1px rgba(207, 248, 250, 0.75), 0 0 48px rgba(92, 240, 246, 0.45);
+  transform: scale(0.2);
+  opacity: 0;
+  animation: country-activation-wave 1.4s cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
+}
 .gameboard--viewmode .mctf-map {
   bottom: 33%;
 }
@@ -4583,6 +4598,13 @@ body[data-section=gameboard] .mctf-page {
   fill: #1f3b47;
   stroke: #36687c;
   stroke-width: 1;
+}
+.mctf-map svg .countries g.country-just-activated .land {
+  animation: country-activation-pulse 1.2s ease-out 1;
+}
+.mctf-map svg .countries g.country-just-activated .map-indicator {
+  animation: country-indicator-activation 1.2s ease-out 1;
+  opacity: 1;
 }
 .mctf-map svg .country-hover .land {
   fill: transparent;
@@ -4624,6 +4646,59 @@ body[data-section=gameboard] .mctf-page {
   -ms-animation: crosshairs-rotate 0.3s linear 0.3s 1;
   -o-animation: crosshairs-rotate 0.3s linear 0.3s 1;
   animation: crosshairs-rotate 0.3s linear 0.3s 1;
+}
+
+@keyframes country-activation-pulse {
+  0% {
+    fill: #cff8fa;
+    stroke: #5cf0f6;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 0 rgba(92, 240, 246, 0));
+  }
+  35% {
+    fill: #5cf0f6;
+    stroke: #cff8fa;
+    stroke-width: 3.8;
+    filter: drop-shadow(0 0 24px rgba(92, 240, 246, 0.9));
+  }
+  100% {
+    fill: #1f3b47;
+    stroke: #36687c;
+    stroke-width: 1;
+    filter: drop-shadow(0 0 0 rgba(92, 240, 246, 0));
+  }
+}
+
+@keyframes country-indicator-activation {
+  0% {
+    opacity: 0;
+    transform: scale(0.25);
+    filter: drop-shadow(0 0 0 rgba(207, 248, 250, 0));
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.4);
+    filter: drop-shadow(0 0 20px rgba(207, 248, 250, 0.95));
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(207, 248, 250, 0));
+  }
+}
+
+@keyframes country-activation-wave {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(42);
+  }
 }
 .mctf-map svg .country-clicked .land,
 .mctf-map svg .country-hover .land {

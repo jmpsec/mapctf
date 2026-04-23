@@ -57,6 +57,7 @@
       CURRENT_ZOOM = 1,
       PRE_CAPTURE_TRANSFORM = null,
       COUNTRY_DATA,
+      LAST_COUNTRY_ACTIVE_STATE = null,
       COUNTRY_POLL_IN_FLIGHT = false,
       COUNTRY_POLL_TIMER = null,
       ACTIVITY_DATA,
@@ -1578,11 +1579,17 @@
         return;
       }
 
+      var previousActiveState = LAST_COUNTRY_ACTIVE_STATE || {};
+      var nextActiveState = {};
+      var newlyActiveCountries = [];
+
       $(".countries .land", $mapSvg).each(function () {
         var $countryPath = $(this),
           $group = $countryPath.closest("g"),
           country = $countryPath.attr("title"),
           data = COUNTRY_DATA[country];
+
+        nextActiveState[country] = !!(data && data.active);
 
         if (data && data.active) {
           $countryPath.addClass("active");
@@ -1596,6 +1603,14 @@
           $group.addClass("country-disabled");
         }
       });
+
+      $.each(nextActiveState, function (country, isActive) {
+        if (isActive && !previousActiveState[country]) {
+          newlyActiveCountries.push(country);
+        }
+      });
+
+      LAST_COUNTRY_ACTIVE_STATE = nextActiveState;
 
       if ($listview && $listview.length > 0) {
         renderLiveListView();
@@ -1620,6 +1635,55 @@
           }
         });
       }
+
+      $.each(newlyActiveCountries, function (_, country) {
+        animateCountryActivation(country);
+      });
+    }
+
+    function animateCountryActivation(country) {
+      if (!$mapSvg || !$mapSvg.length || !$map || !$map.length) {
+        return;
+      }
+
+      var $countryGroup = $('.countries .land[title="' + country + '"]', $mapSvg).closest("g");
+      if (!$countryGroup.length) {
+        return;
+      }
+
+      var groupNode = $countryGroup.get(0);
+      if (!groupNode || typeof groupNode.getBoundingClientRect !== "function") {
+        return;
+      }
+
+      var groupRect = groupNode.getBoundingClientRect();
+      if (!groupRect.width && !groupRect.height) {
+        return;
+      }
+
+      var mapRect = $map.get(0).getBoundingClientRect();
+      var centerX = groupRect.left + groupRect.width / 2 - mapRect.left;
+      var centerY = groupRect.top + groupRect.height / 2 - mapRect.top;
+
+      $countryGroup.removeClass("country-just-activated");
+      void groupNode.offsetWidth;
+      $countryGroup.addClass("country-just-activated");
+
+      setTimeout(function () {
+        $countryGroup.removeClass("country-just-activated");
+      }, 1400);
+
+      var $wave = $('<div class="country-activation-wave"></div>');
+      $wave.css({
+        left: centerX + "px",
+        top: centerY + "px",
+      });
+
+      $map.append($wave);
+
+      setTimeout(function () {
+        $wave.remove();
+      }, 1500);
     }
 
     function slugifyFilterValue(value) {
