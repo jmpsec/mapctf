@@ -58,6 +58,7 @@
       PRE_CAPTURE_TRANSFORM = null,
       COUNTRY_DATA,
       LAST_COUNTRY_ACTIVE_STATE = null,
+      ACTIVE_COUNTRY_FILTER = null,
       COUNTRY_POLL_IN_FLIGHT = false,
       COUNTRY_POLL_TIMER = null,
       ACTIVITY_DATA,
@@ -850,6 +851,10 @@
       //
       $body.on('change', 'input[name="mctf--module--filter--category"], input[name="mctf--module--filter--point-value"]', function (event) {
         event.preventDefault();
+        ACTIVE_COUNTRY_FILTER = {
+          name: this.name,
+          value: $(this).val(),
+        };
         applyCountryFilter(this.name, $(this).val());
       });
 
@@ -1585,6 +1590,8 @@
         return;
       }
 
+      renderFilterOptions();
+
       var previousActiveState = LAST_COUNTRY_ACTIVE_STATE || {};
       var nextActiveState = {};
       var newlyActiveCountries = [];
@@ -1641,6 +1648,8 @@
           }
         });
       }
+
+      reapplyActiveCountryFilter();
 
       $.each(newlyActiveCountries, function (_, country) {
         animateCountryActivation(country);
@@ -1732,6 +1741,11 @@
         return;
       }
 
+      var selectedValues = {
+        "mctf--module--filter--category": ACTIVE_COUNTRY_FILTER && ACTIVE_COUNTRY_FILTER.name === "mctf--module--filter--category" ? ACTIVE_COUNTRY_FILTER.value : ($('input[name="mctf--module--filter--category"]:checked').val() || "All"),
+        "mctf--module--filter--point-value": ACTIVE_COUNTRY_FILTER && ACTIVE_COUNTRY_FILTER.name === "mctf--module--filter--point-value" ? ACTIVE_COUNTRY_FILTER.value : ($('input[name="mctf--module--filter--point-value"]:checked').val() || "All"),
+      };
+
       var filterConfigs = [
         {
           type: "category",
@@ -1760,7 +1774,8 @@
           $.each(config.values, function (_, value) {
             var slug = slugifyFilterValue(value),
               optionId = config.name + "--" + slug + "--" + index,
-              label = config.label(value);
+              label = config.label(value),
+              checked = selectedValues[config.name] === String(value) ? ' checked=""' : "";
 
             $list.append(
               '<li><input type="radio" name="' +
@@ -1769,13 +1784,19 @@
                 value +
                 '" id="' +
                 optionId +
-                '" /><label for="' +
+                '"' +
+                checked +
+                ' /><label for="' +
                 optionId +
                 '" class="click-effect"><span>' +
                 label +
                 "</span></label></li>",
             );
           });
+
+          var allChecked = selectedValues[config.name] === "All" || $.inArray(selectedValues[config.name], $.map(config.values, function (value) {
+            return String(value);
+          })) === -1 ? ' checked=""' : "";
 
           $list.append(
             '<li><input type="radio" name="' +
@@ -1784,7 +1805,9 @@
               config.name +
               '--all--' +
               index +
-              '" checked="" /><label for="' +
+              '"' +
+              allChecked +
+              ' /><label for="' +
               config.name +
               '--all--' +
               index +
@@ -1818,6 +1841,24 @@
           $row.addClass(matches ? "highlighted" : "inactive");
         }
       });
+    }
+
+    function reapplyActiveCountryFilter() {
+      if (!ACTIVE_COUNTRY_FILTER || !ACTIVE_COUNTRY_FILTER.name) {
+        return;
+      }
+
+      var $selected = $('input[name="' + ACTIVE_COUNTRY_FILTER.name + '"][value="' + ACTIVE_COUNTRY_FILTER.value + '"]');
+      if (!$selected.length) {
+        ACTIVE_COUNTRY_FILTER.value = "All";
+        $selected = $('input[name="' + ACTIVE_COUNTRY_FILTER.name + '"][value="All"]');
+      }
+
+      if ($selected.length) {
+        $selected.prop("checked", true);
+      }
+
+      applyCountryFilter(ACTIVE_COUNTRY_FILTER.name, ACTIVE_COUNTRY_FILTER.value);
     }
 
     /* --------------------------------------------
