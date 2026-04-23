@@ -2373,7 +2373,9 @@
         var chatMaxLen = parseInt(body.getAttribute("data-chat-max-len") || "0", 10);
         var chatURL = "/{{ .UUID }}/gameboard/chat";
         var chatJSONURL = "/{{ .UUID }}/json/chat";
+        var chatPollIntervalMs = 15000;
         var chatInitialized = false;
+        var chatPollTimer = null;
         var chatInitAttempts = 0;
         var maxChatInitAttempts = 20;
 
@@ -2459,6 +2461,16 @@
             });
         }
 
+        function startChatPolling(chatList) {
+          if (chatPollTimer) {
+            window.clearInterval(chatPollTimer);
+          }
+
+          chatPollTimer = window.setInterval(function () {
+            loadChat(chatList);
+          }, chatPollIntervalMs);
+        }
+
         function initChat() {
           var chatList = document.querySelector("[data-chat-list]");
           var chatForm = document.querySelector("[data-chat-form]");
@@ -2522,6 +2534,7 @@
 
           updateCounter(chatInput, chatCounter);
           loadChat(chatList);
+          startChatPolling(chatList);
         }
 
         if (window.jQuery) {
