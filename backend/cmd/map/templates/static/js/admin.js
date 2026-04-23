@@ -2642,80 +2642,104 @@ function initAdminChallengeSaveButtons() {
 
     saveBtn.addEventListener("click", function (event) {
       event.preventDefault();
+      submitAdminChallengeRow(saveBtn);
+    });
+  });
+}
 
-      var updateURL = saveBtn.getAttribute("data-update-url");
-      if (!updateURL) {
-        showTransientAdminStatus("error", "Missing challenge update URL");
+function submitAdminChallengeRow(triggerEl) {
+  var challengeRow = triggerEl && triggerEl.closest ? triggerEl.closest(".admin-challenge-row") : null;
+  if (!challengeRow) {
+    showTransientAdminStatus("error", "Unable to locate challenge row");
+    return;
+  }
+
+  var saveBtn = challengeRow.querySelector('[data-action="save-challenge"]');
+  var updateURL = saveBtn ? saveBtn.getAttribute("data-update-url") : "";
+  if (!updateURL) {
+    showTransientAdminStatus("error", "Missing challenge update URL");
+    return;
+  }
+
+  var form = challengeRow.querySelector(".admin-challenge-form");
+  if (!form) {
+    showTransientAdminStatus("error", "Unable to locate challenge form");
+    return;
+  }
+
+  if (form.dataset.submitting === "true") {
+    return;
+  }
+
+  var title = (form.querySelector('input[name="title"]').value || "").trim();
+  var description = (form.querySelector('textarea[name="description"]').value || "").trim();
+  var categoryID = (form.querySelector('select[name="category_id"]').value || "").trim();
+  var country = (form.querySelector('select[name="country"]').value || "").trim();
+  var flag = (form.querySelector('input[name="flag"]').value || "").trim();
+  var hint = (form.querySelector('textarea[name="hint"]').value || "").trim();
+  var points = String(form.querySelector('input[name="points"]').value || "0").trim();
+  var bonus = String(form.querySelector('input[name="bonus"]').value || "0").trim();
+  var bonusDecay = String(form.querySelector('input[name="bonus_decay"]').value || "0").trim();
+  var penalty = String(form.querySelector('input[name="penalty"]').value || "0").trim();
+  var activeRadio = challengeRow.querySelector('.admin-activity-status-toggle input[type="radio"]:checked');
+  var active = activeRadio ? String(activeRadio.value || "true").trim() : "true";
+
+  if (!title || !flag) {
+    showTransientAdminStatus("error", "Title and flag are required");
+    return;
+  }
+  if (!categoryID) {
+    showTransientAdminStatus("error", "Category is required");
+    return;
+  }
+
+  form.dataset.submitting = "true";
+  if (saveBtn) {
+    saveBtn.disabled = true;
+  }
+
+  createAdminChallengeUpdate(updateURL, {
+    title: title,
+    description: description,
+    category_id: categoryID,
+    country: country,
+    active: active,
+    points: points,
+    bonus: bonus,
+    bonus_decay: bonusDecay,
+    penalty: penalty,
+    flag: flag,
+    hint: hint,
+  })
+    .then(function (data) {
+      if (challengeRow && typeof challengeRow._syncInitialState === "function") {
+        challengeRow._syncInitialState();
+      }
+      showTransientAdminStatus(data.status || "ok", data.message || "Challenge updated");
+    })
+    .catch(function (error) {
+      showTransientAdminStatus("error", error.message || "Failed to update challenge");
+    })
+    .finally(function () {
+      delete form.dataset.submitting;
+      if (saveBtn) {
+        saveBtn.disabled = false;
+      }
+    });
+}
+
+function initAdminChallengeStatusAutoSave() {
+  var radios = document.querySelectorAll(".admin-activity-status-toggle input[type='radio']");
+  if (!radios.length) {
+    return;
+  }
+
+  radios.forEach(function (radio) {
+    radio.addEventListener("change", function () {
+      if (!radio.checked) {
         return;
       }
-
-      var challengeRow = saveBtn.closest(".admin-challenge-row");
-      if (!challengeRow) {
-        showTransientAdminStatus("error", "Unable to locate challenge row");
-        return;
-      }
-
-      var form = challengeRow.querySelector(".admin-challenge-form");
-      if (!form) {
-        showTransientAdminStatus("error", "Unable to locate challenge form");
-        return;
-      }
-
-      if (form.dataset.submitting === "true") {
-        return;
-      }
-
-      var title = (form.querySelector('input[name="title"]').value || "").trim();
-      var description = (form.querySelector('textarea[name="description"]').value || "").trim();
-      var categoryID = (form.querySelector('select[name="category_id"]').value || "").trim();
-      var country = (form.querySelector('select[name="country"]').value || "").trim();
-      var flag = (form.querySelector('input[name="flag"]').value || "").trim();
-      var hint = (form.querySelector('textarea[name="hint"]').value || "").trim();
-      var points = String(form.querySelector('input[name="points"]').value || "0").trim();
-      var bonus = String(form.querySelector('input[name="bonus"]').value || "0").trim();
-      var bonusDecay = String(form.querySelector('input[name="bonus_decay"]').value || "0").trim();
-      var penalty = String(form.querySelector('input[name="penalty"]').value || "0").trim();
-      var activeRadio = challengeRow.querySelector('.admin-activity-status-toggle input[type="radio"]:checked');
-      var active = activeRadio ? String(activeRadio.value || "true").trim() : "true";
-
-      if (!title || !flag) {
-        showTransientAdminStatus("error", "Title and flag are required");
-        return;
-      }
-      if (!categoryID) {
-        showTransientAdminStatus("error", "Category is required");
-        return;
-      }
-
-      form.dataset.submitting = "true";
-      saveBtn.disabled = true;
-
-      createAdminChallengeUpdate(updateURL, {
-        title: title,
-        description: description,
-        category_id: categoryID,
-        country: country,
-        active: active,
-        points: points,
-        bonus: bonus,
-        bonus_decay: bonusDecay,
-        penalty: penalty,
-        flag: flag,
-        hint: hint,
-      })
-        .then(function (data) {
-          if (challengeRow && typeof challengeRow._syncInitialState === "function") {
-            challengeRow._syncInitialState();
-          }
-          showTransientAdminStatus(data.status || "ok", data.message || "Challenge updated");
-        })
-        .catch(function (error) {
-          showTransientAdminStatus("error", error.message || "Failed to update challenge");
-        })
-        .finally(function () {
-          delete form.dataset.submitting;
-          saveBtn.disabled = false;
-        });
+      submitAdminChallengeRow(radio);
     });
   });
 }
@@ -2845,6 +2869,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminImportChallengesButton();
   initAdminChallengeActionsButtons();
   initAdminChallengeSaveButtons();
+  initAdminChallengeStatusAutoSave();
   initAdminChallengeDeleteButtons();
   initAdminAddChallengeModal();
   initAdminAddUserModal();
