@@ -9,7 +9,8 @@
     COLOR_TEAL_BLUE = "#5cf0f6",
     COLOR_MAIN_BLUE = "#13242b";
 
-  var COUNTRY_POLL_INTERVAL_MS = 15000;
+  var COUNTRY_POLL_INTERVAL_MS = 15000,
+    TEAM_POLL_INTERVAL_MS = 15000;
 
   // checks
   var ua = navigator.userAgent.toLowerCase(),
@@ -63,6 +64,8 @@
       COUNTRY_POLL_TIMER = null,
       ACTIVITY_DATA,
       TEAM_DATA,
+      TEAM_POLL_IN_FLIGHT = false,
+      TEAM_POLL_TIMER = null,
       $gameboard,
       $listview,
       $mapSvg,
@@ -306,6 +309,7 @@
         setupTeams();
         setupActivity();
         startCountryPolling();
+        startTeamPolling();
       });
     }
 
@@ -375,6 +379,7 @@
       //
       // launch the team modals
       //
+      $teamgrid.off("click", "a[data-team]");
       $teamgrid.on("click", "a[data-team]", function (event) {
         event.preventDefault();
         var team = $(this).data("team");
@@ -1384,8 +1389,8 @@
     /**
      * load the team data
      */
-    function loadTeamData() {
-      if (TEAM_DATA) {
+    function loadTeamData(forceRefresh) {
+      if (!forceRefresh && TEAM_DATA) {
         return $.Deferred().resolve(TEAM_DATA).promise();
       }
 
@@ -1429,6 +1434,33 @@
       });
 
       return df.promise();
+    }
+
+    function refreshTeamData() {
+      if (TEAM_POLL_IN_FLIGHT) {
+        return;
+      }
+
+      TEAM_POLL_IN_FLIGHT = true;
+
+      loadTeamData(true)
+        .done(function () {
+          setupTeams();
+          setupLeaderboard();
+        })
+        .always(function () {
+          TEAM_POLL_IN_FLIGHT = false;
+        });
+    }
+
+    function startTeamPolling() {
+      if (TEAM_POLL_TIMER) {
+        clearInterval(TEAM_POLL_TIMER);
+      }
+
+      TEAM_POLL_TIMER = setInterval(function () {
+        refreshTeamData();
+      }, TEAM_POLL_INTERVAL_MS);
     }
 
     function loadActivityData() {
