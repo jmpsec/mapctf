@@ -22,6 +22,7 @@ type JSONTeamResponse struct {
 
 type JSONCountryDataResponse struct {
 	CountryCode     string   `json:"country_code"`
+	FlagEmoji       string   `json:"flag_emoji"`
 	Active          bool     `json:"active"`
 	Points          int      `json:"points"`
 	Category        string   `json:"category"`
@@ -242,6 +243,7 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 
 		response[country.Name] = JSONCountryDataResponse{
 			CountryCode:     country.CountryCode,
+			FlagEmoji:       countryCodeToFlagEmoji(country.CountryCode),
 			Active:          hasChallenge,
 			Points:          challenge.Points,
 			Category:        categoryName,

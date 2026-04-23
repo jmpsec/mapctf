@@ -1038,7 +1038,7 @@
         $(".capturing-team-name", $container).text(capturingTeam);
         $(".points-value", $container).text("+ " + points + " Pts");
         $(".country-owner", $container).html(capturedBy);
-        $(".country-name", $container).text(country);
+        $(".country-name", $container).text(formatCountryLabel(country));
 
         $container.css({
           left: positionX + "px",
@@ -1103,7 +1103,7 @@
           category = data ? data.category : "",
           completed = data ? data.completed : "";
 
-        $(".country-name", $container).text(country);
+        $(".country-name", $container).text(formatCountryLabel(country));
         $(".capture-text", $container).text(intro);
         $(".capture-hint div", $container).text(hint);
         $(".points-number", $container).text(points);
@@ -1158,7 +1158,7 @@
           points = data ? data.points : "",
           category = data ? data.category : "";
 
-        $(".country-name", $container).text(country);
+        $(".country-name", $container).text(formatCountryLabel(country));
         $(".points-number", $container).text(points);
         $(".country-category", $container).text(category);
         $(".country-owner", $container).html(capturedBy);
@@ -1525,6 +1525,12 @@
       }, COUNTRY_POLL_INTERVAL_MS);
     }
 
+    function formatCountryLabel(country) {
+      var data = COUNTRY_DATA && COUNTRY_DATA[country] ? COUNTRY_DATA[country] : null;
+      var flagEmoji = data && data.flag_emoji ? String(data.flag_emoji).trim() : "";
+      return flagEmoji ? country + " " + flagEmoji : country;
+    }
+
     /**
      * since a lot of the data is in an external file, go through
      *  that data and markup the svg so we can use in
@@ -1553,7 +1559,7 @@
 
           var isActive = !!data.active;
           var $row = $("<tr></tr>").attr("data-country", countryName);
-          var $name = $("<td></td>").text(countryName);
+          var $name = $("<td></td>").text(formatCountryLabel(countryName));
           var $points = $("<td></td>").text(isActive ? (data.points || 0) + " Pts" : "");
           var $category = $("<td></td>").text(isActive ? data.category || "" : "");
           var $status = $("<td></td>");
@@ -1885,7 +1891,7 @@
 
         MAP_CTF.modal.loadPopup("country-help", function () {
           $("#mctf-modal .add-new-help-chat").data("country", country);
-          $("#mctf-modal .country-name").text(country);
+          $("#mctf-modal .country-name").text(formatCountryLabel(country));
         });
       });
 
