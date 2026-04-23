@@ -39,6 +39,22 @@ type MapChatResponse struct {
 	Success bool `json:"success"`
 }
 
+// MapScoreRequest to receive challenge scoring requests
+type MapScoreRequest struct {
+	CountryCode string `json:"country_code"`
+	Flag        string `json:"flag"`
+}
+
+// MapScoreResponse to be returned to map requests after a scoring attempt
+type MapScoreResponse struct {
+	Success       bool   `json:"success"`
+	Message       string `json:"message"`
+	CountryCode   string `json:"country_code,omitempty"`
+	ChallengeID   uint   `json:"challenge_id,omitempty"`
+	PointsAwarded int    `json:"points_awarded,omitempty"`
+	TotalPoints   int    `json:"total_points,omitempty"`
+}
+
 // MapLogoutResponse to be returned to map requests after a successful logout
 type MapLogoutResponse MapLoginResponse
 

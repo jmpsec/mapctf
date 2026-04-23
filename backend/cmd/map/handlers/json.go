@@ -26,6 +26,7 @@ type JSONCountryDataResponse struct {
 	CountryCode     string   `json:"country_code"`
 	FlagEmoji       string   `json:"flag_emoji"`
 	Active          bool     `json:"active"`
+	SolvedByCurrent bool     `json:"solved_by_current"`
 	Points          int      `json:"points"`
 	Category        string   `json:"category"`
 	Owner           string   `json:"owner"`
@@ -229,6 +230,7 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	activeChallengesByCode := make(map[string]challenges.Challenge, len(activeChallenges))
+	activeChallengeIDs := make(map[uint]string, len(activeChallenges))
 	for _, challenge := range activeChallenges {
 		countryCode := strings.ToUpper(strings.TrimSpace(challenge.Country))
 		if countryCode == "" {
@@ -238,12 +240,82 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 			continue
 		}
 		activeChallengesByCode[countryCode] = challenge
+		activeChallengeIDs[challenge.ID] = countryCode
+	}
+
+	completedByCountry := make(map[string][]string, len(activeChallengesByCode))
+	ownerByCountry := make(map[string]string, len(activeChallengesByCode))
+	solvedByCurrentCountry := make(map[string]bool, len(activeChallengesByCode))
+	currentTeamID := uint(0)
+	if h.Teams != nil {
+		if h.Sessions != nil && h.Users != nil {
+			username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
+			if username != "" {
+				user, err := h.Users.Get(username, uuid)
+				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+					log.Err(err).Msg("error retrieving current user for country data")
+					HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving country data"})
+					return
+				}
+				currentTeamID = user.TeamID
+			}
+		}
+
+		var allTeams []teams.PlatformTeam
+		if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&allTeams).Error; err != nil {
+			log.Err(err).Msg("error retrieving teams for country data")
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving country data"})
+			return
+		}
+
+		teamNamesByID := make(map[uint]string, len(allTeams))
+		for _, team := range allTeams {
+			teamNamesByID[team.ID] = team.Name
+		}
+
+		var teamScores []teams.TeamScore
+		if err := h.Teams.DB.Where("uuid = ?", uuid).Order("created_at ASC").Find(&teamScores).Error; err != nil {
+			log.Err(err).Msg("error retrieving team scores for country data")
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving country data"})
+			return
+		}
+
+		seenCompletedByCountry := make(map[string]map[string]struct{}, len(activeChallengesByCode))
+		for _, score := range teamScores {
+			countryCode, ok := activeChallengeIDs[score.ChallengeID]
+			if !ok {
+				continue
+			}
+
+			teamName := strings.TrimSpace(teamNamesByID[score.TeamID])
+			if teamName == "" {
+				continue
+			}
+
+			if seenCompletedByCountry[countryCode] == nil {
+				seenCompletedByCountry[countryCode] = make(map[string]struct{})
+			}
+			if _, seen := seenCompletedByCountry[countryCode][teamName]; !seen {
+				completedByCountry[countryCode] = append(completedByCountry[countryCode], teamName)
+				seenCompletedByCountry[countryCode][teamName] = struct{}{}
+			}
+
+			if currentTeamID != 0 && score.TeamID == currentTeamID {
+				solvedByCurrentCountry[countryCode] = true
+			}
+
+			ownerByCountry[countryCode] = teamName
+		}
 	}
 
 	response := make(map[string]JSONCountryDataResponse, len(allCountries))
 	for _, country := range allCountries {
 		countryCode := strings.ToUpper(strings.TrimSpace(country.CountryCode))
 		challenge, hasChallenge := activeChallengesByCode[countryCode]
+		completed := completedByCountry[countryCode]
+		if completed == nil {
+			completed = []string{}
+		}
 
 		categoryName := ""
 		if hasChallenge {
@@ -256,10 +328,11 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 			CountryCode:     country.CountryCode,
 			FlagEmoji:       countryCodeToFlagEmoji(country.CountryCode),
 			Active:          hasChallenge,
+			SolvedByCurrent: solvedByCurrentCountry[countryCode],
 			Points:          challenge.Points,
 			Category:        categoryName,
-			Owner:           "",
-			Completed:       []string{},
+			Owner:           ownerByCountry[countryCode],
+			Completed:       completed,
 			Intro:           challenge.Description,
 			Hint:            challenge.Hint,
 			LandPath:        country.LandPath,

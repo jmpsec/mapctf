@@ -407,6 +407,7 @@ func TestJSONCountriesHandlerReturnsAllCountriesAndMarksChallengeBackedOnesActiv
 	require.Equal(t, "Live hint", spain.Hint)
 	require.Equal(t, "", spain.Owner)
 	require.Empty(t, spain.Completed)
+	require.False(t, spain.SolvedByCurrent)
 
 	france, ok := resp["France"]
 	require.True(t, ok)
@@ -421,6 +422,182 @@ func TestJSONCountriesHandlerReturnsAllCountriesAndMarksChallengeBackedOnesActiv
 	require.Empty(t, italy.Category)
 	require.Empty(t, italy.Intro)
 	require.Empty(t, italy.Hint)
+}
+
+func TestJSONCountriesHandlerIncludesOwnerAndCompletedTeams(t *testing.T) {
+	db := newJSONTestDB(t)
+
+	countryManager, err := countries.CreateCountries(db, jsonTestUUID)
+	require.NoError(t, err)
+
+	challengeManager, err := challenges.CreateChallengeManager(db)
+	require.NoError(t, err)
+
+	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	require.NoError(t, err)
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{}),
+		WithCountries(countryManager),
+		WithChallenges(challengeManager),
+		WithTeams(teamManager),
+	)
+
+	require.NoError(t, countryManager.Create(countries.MapCountry{
+		Name:        "Spain",
+		CountryCode: "ES",
+		Active:      true,
+	}))
+
+	require.NoError(t, challengeManager.CreateCategory(challenges.Category{
+		Model: gorm.Model{ID: 2},
+		Name:  "Crypto",
+		UUID:  jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Model:      gorm.Model{ID: 101},
+		Title:      "Spanish",
+		CategoryID: 2,
+		Country:    "ES",
+		Active:     true,
+		Points:     300,
+		UUID:       jsonTestUUID,
+	}))
+
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{
+		Model:   gorm.Model{ID: 10},
+		Name:    "Blue Team",
+		UUID:    jsonTestUUID,
+		Active:  true,
+		Visible: true,
+	}))
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{
+		Model:   gorm.Model{ID: 11},
+		Name:    "Red Team",
+		UUID:    jsonTestUUID,
+		Active:  true,
+		Visible: true,
+	}))
+
+	require.NoError(t, teamManager.CreateScore(teams.TeamScore{
+		TeamID:      10,
+		ChallengeID: 101,
+		Points:      300,
+		UUID:        jsonTestUUID,
+		ScoredBy:    "alice",
+	}))
+	require.NoError(t, teamManager.CreateScore(teams.TeamScore{
+		TeamID:      11,
+		ChallengeID: 101,
+		Points:      300,
+		UUID:        jsonTestUUID,
+		ScoredBy:    "bob",
+	}))
+	require.NoError(t, teamManager.CreateScore(teams.TeamScore{
+		TeamID:      10,
+		ChallengeID: 101,
+		Points:      300,
+		UUID:        jsonTestUUID,
+		ScoredBy:    "alice",
+	}))
+
+	req := newRequestWithUUID(http.MethodGet, "/json/countries", jsonTestUUID)
+	rr := httptest.NewRecorder()
+
+	handler.JSONCountriesHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var resp map[string]JSONCountryDataResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.Equal(t, "Blue Team", resp["Spain"].Owner)
+	require.Equal(t, []string{"Blue Team", "Red Team"}, resp["Spain"].Completed)
+	require.False(t, resp["Spain"].SolvedByCurrent)
+}
+
+func TestJSONCountriesHandlerMarksCountriesSolvedByCurrentTeam(t *testing.T) {
+	db := newJSONTestDB(t)
+
+	countryManager, err := countries.CreateCountries(db, jsonTestUUID)
+	require.NoError(t, err)
+
+	challengeManager, err := challenges.CreateChallengeManager(db)
+	require.NoError(t, err)
+
+	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	require.NoError(t, err)
+
+	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{
+		Secret:        "test-secret",
+		HoursToExpire: 24,
+	})
+	require.NoError(t, err)
+
+	sessionManager := scs.New()
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{}),
+		WithCountries(countryManager),
+		WithChallenges(challengeManager),
+		WithTeams(teamManager),
+		WithUsers(userManager),
+		WithSessions(sessionManager),
+	)
+
+	require.NoError(t, countryManager.Create(countries.MapCountry{
+		Name:        "France",
+		CountryCode: "FR",
+		Active:      true,
+	}))
+	require.NoError(t, challengeManager.CreateCategory(challenges.Category{
+		Model: gorm.Model{ID: 3},
+		Name:  "Web",
+		UUID:  jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Model:      gorm.Model{ID: 202},
+		Title:      "French",
+		CategoryID: 3,
+		Country:    "FR",
+		Active:     true,
+		Points:     150,
+		UUID:       jsonTestUUID,
+	}))
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{
+		Model:   gorm.Model{ID: 31},
+		Name:    "Blue Team",
+		UUID:    jsonTestUUID,
+		Active:  true,
+		Visible: true,
+	}))
+	require.NoError(t, userManager.Create(users.PlatformUser{
+		Username: "alice",
+		TeamID:   31,
+		Active:   true,
+		UUID:     jsonTestUUID,
+	}))
+	require.NoError(t, teamManager.CreateScore(teams.TeamScore{
+		TeamID:      31,
+		ChallengeID: 202,
+		Points:      150,
+		UUID:        jsonTestUUID,
+		ScoredBy:    "alice",
+	}))
+
+	req := newRequestWithUUID(http.MethodGet, "/json/countries", jsonTestUUID)
+	ctx, err := sessionManager.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessionManager.Put(ctx, string(ContextKeyUser), "alice")
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.JSONCountriesHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var resp map[string]JSONCountryDataResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.True(t, resp["France"].SolvedByCurrent)
 }
 
 func TestJSONWorldDominationHandlerReturnsCurrentTeamMetrics(t *testing.T) {

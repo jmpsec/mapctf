@@ -61,6 +61,7 @@
       PRE_CAPTURE_TRANSFORM = null,
       COUNTRY_DATA,
       LAST_COUNTRY_ACTIVE_STATE = null,
+      LAST_COUNTRY_CAPTURE_STATE = null,
       ACTIVE_COUNTRY_FILTER = null,
       COUNTRY_POLL_IN_FLIGHT = false,
       COUNTRY_POLL_TIMER = null,
@@ -715,13 +716,66 @@
      *   - the capturing team
      */
     function getCapturedByMarkup(capturedBy) {
-      if (capturedBy === undefined) {
+      if (capturedBy === undefined || capturedBy === null || $.trim(String(capturedBy)) === "") {
         return "Uncaptured";
       }
 
-      var capturedClass = capturedBy === MAP_CTF.currentUser ? "your-name" : "opponent-name";
+      var capturedClass = capturedBy === getCurrentTeamName() ? "your-name" : "opponent-name";
 
       return '<span class="' + capturedClass + '">' + capturedBy + "</span>";
+    }
+
+    function updateCaptureModalFeedback($container, message, isSuccess) {
+      var $feedback = $(".country-capture-feedback", $container);
+
+      if (!$feedback.length) {
+        return;
+      }
+
+      $feedback
+        .removeClass("is-success is-error")
+        .addClass(isSuccess ? "is-success" : "is-error")
+        .text(message || "");
+    }
+
+    function updateCaptureFormAvailability($container, country) {
+      var data = COUNTRY_DATA && COUNTRY_DATA[country] ? COUNTRY_DATA[country] : null;
+      var alreadySolved = !!(data && data.solved_by_current);
+      var $form = $(".country-capture-form", $container);
+      var $textarea = $("textarea", $form);
+      var $submitButton = $('button[type="submit"]', $form);
+
+      $form.toggleClass("capture-locked", alreadySolved);
+      $textarea.prop("disabled", alreadySolved);
+      $submitButton.prop("disabled", alreadySolved).toggleClass("disabled", alreadySolved);
+
+      if (alreadySolved) {
+        updateCaptureModalFeedback($container, "Your team already captured this country", true);
+      }
+    }
+
+    function submitCountryScore(country, flag) {
+      var uuid = getCurrentUUID();
+      if (!uuid) {
+        return $.Deferred()
+          .reject({
+            responseJSON: {
+              error: "missing game UUID",
+            },
+          })
+          .promise();
+      }
+
+      return $.ajax({
+        url: "/" + encodeURIComponent(uuid) + "/gameboard/score",
+        method: "POST",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        data: JSON.stringify({
+          country_code: COUNTRY_DATA && COUNTRY_DATA[country] ? COUNTRY_DATA[country].country_code : "",
+          flag: flag,
+        }),
+      });
     }
 
     /**
@@ -988,7 +1042,7 @@
     function captureCountry(country, capturingTeam) {
       var $selectCountry = $('.countries .land[title="' + country + '"]', $mapSvg),
         data = COUNTRY_DATA ? COUNTRY_DATA[country] : null,
-        capturedBy = getCapturedByMarkup($selectCountry.closest("g").data("captured")),
+        capturedBy = getCapturedByMarkup(data && data.owner ? data.owner : $selectCountry.closest("g").data("captured")),
         showAnimation = !(is_ie || LIST_VIEW),
         animationDuration = !showAnimation ? 0 : 600;
 
@@ -999,6 +1053,10 @@
       }
 
       if (!data || !data.active) {
+        return;
+      }
+
+      if (data.solved_by_current) {
         return;
       }
 
@@ -1134,6 +1192,9 @@
         $(".points-number", $container).text(points);
         $(".country-category", $container).text(category);
         $(".country-owner", $container).html(capturedBy);
+        $(".completed-list", $container).empty();
+        updateCaptureModalFeedback($container, "", false);
+        updateCaptureFormAvailability($container, country);
 
         if (completed instanceof Array) {
           $.each(completed, function () {
@@ -1153,6 +1214,65 @@
           $(this).onlySiblingWithClass("active").closest(".mctf-modal-content").removeClass("hint-enabled").addClass("help-enabled");
         });
 
+        $(".country-capture-form", $container).on("submit", function (event) {
+          event.preventDefault();
+
+          var $form = $(this);
+          var $textarea = $("textarea", $form);
+          var $submitButton = $('button[type="submit"]', $form);
+          var submittedFlag = $.trim($textarea.val());
+
+          if (data && data.solved_by_current) {
+            updateCaptureFormAvailability($container, country);
+            return;
+          }
+
+          if (!submittedFlag) {
+            updateCaptureModalFeedback($container, "Enter a flag before submitting", false);
+            $textarea.trigger("focus");
+            return;
+          }
+
+          updateCaptureModalFeedback($container, "", false);
+          $submitButton.prop("disabled", true).addClass("disabled");
+
+          submitCountryScore(country, submittedFlag)
+            .done(function (response) {
+              var successMessage = response && response.message ? response.message : "Challenge completed";
+              if (response && response.points_awarded) {
+                successMessage += " +" + response.points_awarded + " pts";
+              }
+
+              updateCaptureModalFeedback($container, successMessage, true);
+              $textarea.val("");
+
+              $.when(getCountryData(true), loadTeamData(true), loadActivityData(true), loadDominationData(true)).done(function () {
+                renderCountryData();
+                setupTeams();
+                setupLeaderboard();
+                setupActivity();
+                renderWorldDomination();
+
+                data = COUNTRY_DATA ? COUNTRY_DATA[country] : data;
+                $(".country-owner", $container).html(getCapturedByMarkup(data && data.owner ? data.owner : undefined));
+                $(".completed-list", $container).empty();
+                if (data && data.completed instanceof Array) {
+                  $.each(data.completed, function () {
+                    $(".completed-list", $container).append("<li>" + this + "</li>");
+                  });
+                }
+                updateCaptureFormAvailability($container, country);
+              });
+            })
+            .fail(function (jqxhr) {
+              var response = jqxhr && jqxhr.responseJSON ? jqxhr.responseJSON : {};
+              updateCaptureModalFeedback($container, response.message || response.error || "Unable to submit flag", false);
+            })
+            .always(function () {
+              $submitButton.prop("disabled", false).removeClass("disabled");
+            });
+        });
+
         $(".js-close-modal", $container).on("click", removeCaptured);
       });
     } // function launchCaptureModal();
@@ -1165,15 +1285,14 @@
 
       var $self = $(this),
         country = $('[class~="land"]', $self).attr("title"),
-        capturedBy = getCapturedByMarkup($self.data("captured")),
+        data = COUNTRY_DATA ? COUNTRY_DATA[country] : null,
+        capturedBy = getCapturedByMarkup(data && data.owner ? data.owner : $self.data("captured")),
         mouse_x = event.pageX,
         mouse_y = event.pageY;
 
       if (!COUNTRY_DATA) {
         return;
       }
-
-      var data = COUNTRY_DATA[country];
 
       MAP_CTF.modal.countryHoverPopup(function () {
         var $container = $("#mctf-country-popup").css({
@@ -1692,6 +1811,8 @@
           }
 
           var isActive = !!data.active;
+          var solvedByCurrent = !!data.solved_by_current;
+          var hasOwner = !!data.owner;
           var $row = $("<tr></tr>").attr("data-country", countryName);
           var $name = $("<td></td>").text(formatCountryLabel(countryName));
           var $points = $("<td></td>").text(isActive ? (data.points || 0) + " Pts" : "");
@@ -1699,9 +1820,16 @@
           var $status = $("<td></td>");
 
           $row.attr("data-active", isActive ? "true" : "false");
+          if (hasOwner) {
+            $row.attr("data-captured", data.owner);
+          }
           $row.toggleClass("country-disabled", !isActive);
+          $row.toggleClass("captured--you", solvedByCurrent);
+          $row.toggleClass("captured--opponent", hasOwner && !solvedByCurrent);
 
-          if (isActive) {
+          if (solvedByCurrent) {
+            $status.append('<span class="mctf-status status--open">Captured</span>');
+          } else if (isActive) {
             $status.append('<span class="mctf-status status--open">Open</span>');
           } else {
             $status.text("Unavailable");
@@ -1722,8 +1850,11 @@
       renderFilterOptions();
 
       var previousActiveState = LAST_COUNTRY_ACTIVE_STATE || {};
+      var previousCaptureState = LAST_COUNTRY_CAPTURE_STATE || {};
       var nextActiveState = {};
+      var nextCaptureState = {};
       var newlyActiveCountries = [];
+      var newlyCapturedCountries = [];
 
       $(".countries .land", $mapSvg).each(function () {
         var $countryPath = $(this),
@@ -1732,6 +1863,10 @@
           data = COUNTRY_DATA[country];
 
         nextActiveState[country] = !!(data && data.active);
+        nextCaptureState[country] = {
+          owner: data && data.owner ? data.owner : "",
+          solvedByCurrent: !!(data && data.solved_by_current),
+        };
 
         if (data && data.active) {
           $countryPath.addClass("active");
@@ -1744,6 +1879,16 @@
           $group.removeAttr("data-points");
           $group.addClass("country-disabled");
         }
+
+        if (data && data.owner) {
+          $group.attr("data-captured", data.owner);
+        } else {
+          $group.removeAttr("data-captured");
+        }
+
+        $(".map-indicator", $group)
+          .removeClass("captured--you captured--opponent")
+          .addClass(data && data.solved_by_current ? "captured--you" : data && data.owner ? "captured--opponent" : "");
       });
 
       $.each(nextActiveState, function (country, isActive) {
@@ -1752,7 +1897,22 @@
         }
       });
 
+      $.each(nextCaptureState, function (country, captureState) {
+        var previousState = previousCaptureState[country] || {
+          owner: "",
+          solvedByCurrent: false,
+        };
+
+        if (captureState.owner && (captureState.owner !== previousState.owner || captureState.solvedByCurrent !== previousState.solvedByCurrent)) {
+          newlyCapturedCountries.push({
+            country: country,
+            solvedByCurrent: captureState.solvedByCurrent,
+          });
+        }
+      });
+
       LAST_COUNTRY_ACTIVE_STATE = nextActiveState;
+      LAST_COUNTRY_CAPTURE_STATE = nextCaptureState;
 
       if ($listview && $listview.length > 0) {
         renderLiveListView();
@@ -1774,6 +1934,14 @@
               $("td:nth-child(2)", $row).text("");
               $("td:nth-child(3)", $row).text("");
             }
+
+            if (data.owner) {
+              $row.attr("data-captured", data.owner);
+            } else {
+              $row.removeAttr("data-captured");
+            }
+            $row.toggleClass("captured--you", !!data.solved_by_current);
+            $row.toggleClass("captured--opponent", !!data.owner && !data.solved_by_current);
           }
         });
       }
@@ -1782,6 +1950,10 @@
 
       $.each(newlyActiveCountries, function (_, country) {
         animateCountryActivation(country);
+      });
+
+      $.each(newlyCapturedCountries, function (_, captureEvent) {
+        animateCountryCapture(captureEvent.country, captureEvent.solvedByCurrent);
       });
     }
 
@@ -1818,6 +1990,54 @@
       }, 1400);
 
       var $wave = $('<div class="country-activation-wave"></div>');
+      $wave.css({
+        left: centerX + "px",
+        top: centerY + "px",
+      });
+
+      $map.append($wave);
+
+      setTimeout(function () {
+        $wave.remove();
+      }, 1500);
+    }
+
+    function animateCountryCapture(country, solvedByCurrent) {
+      if (!$mapSvg || !$mapSvg.length || !$map || !$map.length) {
+        return;
+      }
+
+      var $countryGroup = $('.countries .land[title="' + country + '"]', $mapSvg).closest("g");
+      if (!$countryGroup.length) {
+        return;
+      }
+
+      var groupNode = $countryGroup.get(0);
+      if (!groupNode || typeof groupNode.getBoundingClientRect !== "function") {
+        return;
+      }
+
+      var groupRect = groupNode.getBoundingClientRect();
+      if (!groupRect.width && !groupRect.height) {
+        return;
+      }
+
+      var mapRect = $map.get(0).getBoundingClientRect();
+      var centerX = groupRect.left + groupRect.width / 2 - mapRect.left;
+      var centerY = groupRect.top + groupRect.height / 2 - mapRect.top;
+      var captureClass = solvedByCurrent ? "country-just-captured-you" : "country-just-captured-opponent";
+      var waveClass = solvedByCurrent ? "capture-wave--you" : "capture-wave--opponent";
+
+      $countryGroup.removeClass("country-just-captured-you country-just-captured-opponent");
+      void groupNode.offsetWidth;
+      $countryGroup.addClass(captureClass);
+
+      setTimeout(function () {
+        $countryGroup.removeClass(captureClass);
+      }, 1500);
+
+      var $wave = $('<div class="country-activation-wave country-capture-wave"></div>');
+      $wave.addClass(waveClass);
       $wave.css({
         left: centerX + "px",
         top: centerY + "px",
@@ -2093,7 +2313,7 @@
         //   - the country is not using help
         //   - the country is NOT captured
         //
-        if (!$tr.hasClass("help-enabled") && !$tr.hasClass("country-disabled") && $tr.data("captured") === undefined) {
+        if (!$tr.hasClass("help-enabled") && !$tr.hasClass("country-disabled") && !$tr.hasClass("captured--you")) {
           captureCountry(country);
         }
       });

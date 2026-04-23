@@ -4566,6 +4566,14 @@ body[data-section=gameboard] .mctf-page {
   opacity: 0;
   animation: country-activation-wave 1.4s cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
 }
+.mctf-map .country-capture-wave.capture-wave--you {
+  background: radial-gradient(circle, rgba(234, 212, 77, 0.52) 0%, rgba(234, 212, 77, 0.28) 32%, rgba(234, 212, 77, 0.14) 55%, rgba(234, 212, 77, 0) 72%);
+  box-shadow: 0 0 0 1px rgba(234, 212, 77, 0.85), 0 0 48px rgba(234, 212, 77, 0.5);
+}
+.mctf-map .country-capture-wave.capture-wave--opponent {
+  background: radial-gradient(circle, rgba(255, 0, 0, 0.45) 0%, rgba(255, 0, 0, 0.24) 32%, rgba(255, 0, 0, 0.12) 55%, rgba(255, 0, 0, 0) 72%);
+  box-shadow: 0 0 0 1px rgba(255, 96, 96, 0.85), 0 0 48px rgba(255, 0, 0, 0.4);
+}
 .gameboard--viewmode .mctf-map {
   bottom: 33%;
 }
@@ -4604,6 +4612,20 @@ body[data-section=gameboard] .mctf-page {
 }
 .mctf-map svg .countries g.country-just-activated .map-indicator {
   animation: country-indicator-activation 1.2s ease-out 1;
+  opacity: 1;
+}
+.mctf-map svg .countries g.country-just-captured-you .land {
+  animation: country-capture-pulse-you 1.2s ease-out 1;
+}
+.mctf-map svg .countries g.country-just-captured-opponent .land {
+  animation: country-capture-pulse-opponent 1.2s ease-out 1;
+}
+.mctf-map svg .countries g.country-just-captured-you .map-indicator {
+  animation: country-indicator-capture-you 1.2s ease-out 1;
+  opacity: 1;
+}
+.mctf-map svg .countries g.country-just-captured-opponent .map-indicator {
+  animation: country-indicator-capture-opponent 1.2s ease-out 1;
   opacity: 1;
 }
 .mctf-map svg .country-hover .land {
@@ -4684,6 +4706,84 @@ body[data-section=gameboard] .mctf-page {
     opacity: 1;
     transform: scale(1);
     filter: drop-shadow(0 0 0 rgba(207, 248, 250, 0));
+  }
+}
+
+@keyframes country-capture-pulse-you {
+  0% {
+    fill: #fff4a8;
+    stroke: #ead44d;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 0 rgba(234, 212, 77, 0));
+  }
+  35% {
+    fill: #ead44d;
+    stroke: #fff4a8;
+    stroke-width: 3.8;
+    filter: drop-shadow(0 0 24px rgba(234, 212, 77, 0.9));
+  }
+  100% {
+    fill: #1f3b47;
+    stroke: #36687c;
+    stroke-width: 1;
+    filter: drop-shadow(0 0 0 rgba(234, 212, 77, 0));
+  }
+}
+
+@keyframes country-capture-pulse-opponent {
+  0% {
+    fill: #ffb4b4;
+    stroke: #ff4d4d;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 0 rgba(255, 0, 0, 0));
+  }
+  35% {
+    fill: #ff4d4d;
+    stroke: #ffd0d0;
+    stroke-width: 3.8;
+    filter: drop-shadow(0 0 24px rgba(255, 0, 0, 0.85));
+  }
+  100% {
+    fill: #1f3b47;
+    stroke: #36687c;
+    stroke-width: 1;
+    filter: drop-shadow(0 0 0 rgba(255, 0, 0, 0));
+  }
+}
+
+@keyframes country-indicator-capture-you {
+  0% {
+    opacity: 0;
+    transform: scale(0.25);
+    filter: drop-shadow(0 0 0 rgba(234, 212, 77, 0));
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.45);
+    filter: drop-shadow(0 0 20px rgba(234, 212, 77, 0.95));
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(234, 212, 77, 0));
+  }
+}
+
+@keyframes country-indicator-capture-opponent {
+  0% {
+    opacity: 0;
+    transform: scale(0.25);
+    filter: drop-shadow(0 0 0 rgba(255, 0, 0, 0));
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.45);
+    filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.95));
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(255, 0, 0, 0));
   }
 }
 
@@ -4873,6 +4973,22 @@ body[data-section=gameboard] .mctf-page {
 }
 .help-enabled .country-capture-form .actions--right .mctf-cta, .help-enabled .country-capture-form .actions--right .cta-toggle input[type=checkbox] + label, .cta-toggle .help-enabled .country-capture-form .actions--right input[type=checkbox] + label {
   display: none;
+}
+.country-capture-feedback {
+  min-height: 1.5em;
+  margin: 10px 0 0;
+  font-family: "puristaregular", Courier, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.country-capture-feedback.is-success {
+  color: #5cf0f6;
+}
+.country-capture-feedback.is-error {
+  color: #ead44d;
+}
+.country-capture-form.capture-locked textarea {
+  opacity: 0.5;
 }
 
 .country-capture-stats .country-stats {
