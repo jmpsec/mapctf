@@ -2511,6 +2511,7 @@
      */
     function openAndLoad($modal, loadPath, cb) {
       MAP_CTF.loadComponent($modal, loadPath, function () {
+        normalizeModalHeaders($modal);
         if (typeof cb === "function") {
           cb();
         }
@@ -2521,6 +2522,122 @@
     /* --------------------------------------------
      * --the modal rendering
      * -------------------------------------------- */
+
+    function normalizeModalHeaders($root) {
+      $(".modal-title h4", $root).each(function () {
+        var $heading = $(this);
+        if ($heading.find(".modal-kicker").length > 0) {
+          return;
+        }
+
+        var $highlight = $heading.find(".highlighted, .highlighted--red").first();
+        var kicker = "";
+        var titleHtml = "";
+
+        if ($highlight.length > 0) {
+          var $clone = $heading.clone();
+          $clone.find(".highlighted, .highlighted--red").remove();
+          kicker = normalizeModalHeaderText($clone.text());
+          titleHtml = $highlight.prop("outerHTML");
+        } else {
+          var parsed = splitModalHeaderText($heading.text());
+          kicker = parsed.kicker;
+          titleHtml = parsed.title ? parsed.title : $heading.html();
+        }
+
+        kicker = resolveModalKicker($root, kicker);
+
+        if (!titleHtml) {
+          return;
+        }
+
+        if (kicker) {
+          $heading.html('<span class="modal-kicker">' + escapeHtml(kicker) + "</span>" + titleHtml);
+        } else {
+          $heading.html(titleHtml);
+        }
+      });
+    }
+
+    function resolveModalKicker($root, fallbackKicker) {
+      var modalClass = (($root && $root.attr("class")) || "").toString();
+      var modalName = "";
+      var matches = modalClass.match(/modal--([a-z0-9-]+)/gi) || [];
+
+      for (var i = 0; i < matches.length; i += 1) {
+        var candidate = matches[i].replace(/^modal--/i, "").toLowerCase();
+        if (candidate !== "popup" && candidate !== "default") {
+          modalName = candidate;
+          break;
+        }
+      }
+
+      var mappedKicker = getAdminModalKicker(modalName);
+      if (mappedKicker) {
+        return mappedKicker;
+      }
+
+      return fallbackKicker;
+    }
+
+    function getAdminModalKicker(modalName) {
+      if (!modalName) {
+        return "";
+      }
+
+      var adminKickerMap = [
+        { pattern: /challenge|category/, kicker: "Admin Challenges" },
+        { pattern: /team|logo/, kicker: "Admin Teams" },
+        { pattern: /user/, kicker: "Admin Users" },
+        { pattern: /country/, kicker: "Admin Countries" },
+        { pattern: /activity/, kicker: "Admin Activity" },
+        { pattern: /settings?/, kicker: "Admin Settings" },
+        { pattern: /chat/, kicker: "Admin Chat" },
+      ];
+
+      for (var i = 0; i < adminKickerMap.length; i += 1) {
+        if (adminKickerMap[i].pattern.test(modalName)) {
+          return adminKickerMap[i].kicker;
+        }
+      }
+
+      if (/^action-/.test(modalName) || /^add-/.test(modalName) || /^edit-/.test(modalName)) {
+        return "Admin";
+      }
+
+      return "";
+    }
+
+    function normalizeModalHeaderText(text) {
+      return $.trim((text || "").replace(/[_:]+/g, " ").replace(/\s+/g, " "));
+    }
+
+    function splitModalHeaderText(text) {
+      var normalized = normalizeModalHeaderText(text);
+      if (!normalized) {
+        return { kicker: "", title: "" };
+      }
+
+      var parts = normalized.split(" ");
+      if (parts.length === 1) {
+        return { kicker: "", title: toTitleCase(parts[0]) };
+      }
+
+      return {
+        kicker: toTitleCase(parts[0]),
+        title: escapeHtml(toTitleCase(parts.slice(1).join(" "))),
+      };
+    }
+
+    function toTitleCase(text) {
+      return $.trim((text || "").replace(/\s+/g, " ")).replace(/\b([a-z])/g, function (_, char) {
+        return char.toUpperCase();
+      });
+    }
+
+    function escapeHtml(text) {
+      return $("<div>").text(text || "").html();
+    }
 
     /**
      * there are two types of modals - default and popup. The

@@ -3467,7 +3467,16 @@ body {
   padding-bottom: 20px;
 }
 .mctf-modal-content .modal-title h4 {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   padding-right: 40px;
+}
+.mctf-modal-content .modal-title .modal-kicker {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .mctf-modal-content .modal-title a {
   position: absolute;
