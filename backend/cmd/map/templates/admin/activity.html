@@ -11,60 +11,183 @@
     <style>
       .admin-activity-list {
         display: grid;
-        gap: 10px;
+        gap: 0;
+        font-family: "Source Code Pro", Courier, monospace;
+        font-size: 0.76rem;
+        line-height: 1.35;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
       }
 
       .admin-activity-item {
-        display: grid;
-        gap: 8px;
-        padding: 12px 14px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 10px;
-        background: rgba(0, 0, 0, 0.12);
+        display: block;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: transparent;
       }
 
-      .admin-activity-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .admin-activity-subject {
-        margin: 0;
-        font-size: 1rem;
-      }
-
-      .admin-activity-meta {
+      .admin-activity-line {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px 10px;
-        font-size: 0.86rem;
-        line-height: 1.3;
-        color: rgba(255, 255, 255, 0.72);
-      }
-
-      .admin-activity-message {
-        margin: 0;
+        gap: 4px 8px;
         white-space: pre-wrap;
         word-break: break-word;
+      }
+
+      .admin-activity-field {
+        color: rgba(255, 255, 255, 0.52);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .admin-activity-value {
+        color: #e7f9ff;
+      }
+
+      .admin-activity-sep {
+        color: rgba(255, 255, 255, 0.28);
+      }
+
+      .admin-activity-modal .modal-title {
+        align-items: flex-start;
+      }
+
+      .admin-activity-modal .modal-title h4 {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .admin-activity-modal .modal-kicker {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .admin-activity-modal .admin-activity-modal-intro {
+        margin-bottom: 18px;
+        padding: 12px 14px;
+        border: 1px solid rgba(33, 180, 186, 0.25);
+        background: rgba(14, 28, 34, 0.7);
+      }
+
+      .admin-activity-modal .admin-activity-modal-intro p {
+        margin: 0;
+        color: rgba(231, 249, 255, 0.86);
+        font-size: 0.9rem;
         line-height: 1.45;
       }
 
-      .admin-activity-arguments {
-        margin: 0;
+      .admin-activity-modal .admin-activity-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px 16px;
+        align-items: start;
+      }
+
+      .admin-activity-modal .admin-activity-form-grid .form-el--full {
+        grid-column: 1 / -1;
+      }
+
+      .admin-activity-modal .form-el {
+        display: grid;
+        grid-template-rows: minmax(22px, auto) minmax(42px, auto);
+        align-content: start;
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+
+      .admin-activity-modal .admin-activity-form-grid .form-el + .form-el {
+        margin-top: 0;
+      }
+
+      .admin-activity-modal .form-el label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 6px;
+        min-height: 22px;
+        align-self: end;
+      }
+
+      .admin-activity-modal .field-hint {
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 0.72rem;
+        font-weight: 400;
+        letter-spacing: 0.02em;
+        text-transform: none;
+      }
+
+      .admin-activity-modal input,
+      .admin-activity-modal select,
+      .admin-activity-modal textarea {
+        box-sizing: border-box;
+        background: rgba(7, 18, 24, 0.92);
+        border-color: rgba(126, 208, 224, 0.24);
+        line-height: 1.2;
+      }
+
+      .admin-activity-modal input,
+      .admin-activity-modal select {
+        width: 100%;
+        height: 42px;
+        padding: 0 14px;
+        align-self: start;
+      }
+
+      .admin-activity-modal select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+      }
+
+      .admin-activity-modal textarea {
+        min-height: 110px;
         font-family: "Source Code Pro", Courier, monospace;
-        font-size: 0.82rem;
-        line-height: 1.35;
-        color: #21b4ba;
+        line-height: 1.45;
+        resize: vertical;
+      }
+
+      .admin-activity-modal .admin-activity-modal-example {
+        margin-top: 16px;
+        padding: 10px 12px;
+        border-left: 2px solid rgba(234, 212, 77, 0.7);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .admin-activity-modal .admin-activity-modal-example span {
+        display: block;
+        margin-bottom: 4px;
+        color: rgba(255, 255, 255, 0.54);
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .admin-activity-modal .admin-activity-modal-example code {
+        color: #ead44d;
+        font-family: "Source Code Pro", Courier, monospace;
+        font-size: 0.8rem;
         white-space: pre-wrap;
         word-break: break-word;
       }
 
+      .admin-activity-modal .admin-activity-modal-actions {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
       @media (max-width: 860px) {
-        .admin-activity-header {
-          flex-direction: column;
+        .admin-activity-line {
+          gap: 2px 6px;
         }
+
+        .admin-activity-modal .admin-activity-form-grid {
+          grid-template-columns: 1fr;
+        }
+
       }
     </style>
   </head>
@@ -95,7 +218,6 @@
               <li><a href="/{{ .UUID }}/admin/countries">Countries</a></li>
               <li class="active"><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
               <li><a href="/{{ .UUID }}/admin/chat">Chat</a></li>
-              <li><a href="/{{ .UUID }}/admin/announcements">Announcements</a></li>
             </ul>
           </nav>
           <div class="admin-nav-controls row-fixed">
@@ -111,7 +233,7 @@
       <div id="mctf-main-content" class="mctf-page mctf-admin-main">
         <div class="admin-sections">
           <header class="admin-page-header">
-            <h3>Game Controls</h3>
+            <h3>Activity</h3>
             <span class="admin-section--status" data-ready-status="ready">
               status_
               <span class="highlighted">ready</span>
@@ -120,8 +242,11 @@
           </header>
 
           <section id="activity" class="admin-box">
-            <header class="admin-box-header mctf-cf">
+            <header class="admin-box-header mctf-cf" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap">
               <h3>Activity Log</h3>
+              <div class="admin-section-toggle" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto">
+                <button class="mctf-cta" data-action="add-custom-activity" data-create-url="/{{ .UUID }}/admin/activity" type="button">Add Entry</button>
+              </div>
             </header>
 
             <div class="admin-row">
@@ -129,15 +254,28 @@
                 <div class="admin-activity-list">
                   {{ range .Activity }}
                     <article class="admin-activity-item">
-                      <header class="admin-activity-header">
-                        <h4 class="admin-activity-subject">{{ if .Subject }}{{ .Subject }}{{ else }}System{{ end }}</h4>
-                        <div class="admin-activity-meta">
-                          {{ if .Action }}<span><strong>Action:</strong> {{ .Action }}</span>{{ end }}
-                          <span><strong>At:</strong> {{ .CreatedAt.Format "2006-01-02 15:04:05 MST" }}</span>
-                        </div>
-                      </header>
-                      {{ if .Message }}<p class="admin-activity-message">{{ .Message }}</p>{{ end }}
-                      {{ if .Arguments }}<p class="admin-activity-arguments">{{ .Arguments }}</p>{{ end }}
+                      <div class="admin-activity-line">
+                        <span class="admin-activity-field">at</span>
+                        <span class="admin-activity-sep">=</span>
+                        <span class="admin-activity-value">{{ .CreatedAt.Format "2006-01-02 15:04" }}</span>
+
+                        <span class="admin-activity-field">subject</span>
+                        <span class="admin-activity-sep">=</span>
+                        <span class="admin-activity-value">{{ if .Subject }}{{ .Subject }}{{ else }}System{{ end }}</span>
+
+                        {{ if .Action }}
+                          <span class="admin-activity-field">action</span>
+                          <span class="admin-activity-sep">=</span>
+                          <span class="admin-activity-value">{{ .Action }}</span>
+                        {{ end }}
+
+                        {{ if .Message }}
+                          <span class="admin-activity-field">message</span>
+                          <span class="admin-activity-sep">=</span>
+                          <span class="admin-activity-value">{{ .Message }}</span>
+                        {{ end }}
+
+                      </div>
                     </article>
                   {{ end }}
                 </div>

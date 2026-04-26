@@ -183,8 +183,16 @@ type AdminChallengesTemplateData struct {
 	ChallengeCountryOptions map[uint][]countries.MapCountry
 	CountryFlag             map[string]string
 	Categories              []challenges.Category
-	Solves                  []logs.ActivityLog
-	ChallengeSolves         map[uint][]logs.ActivityLog
+	ChallengeActivity       map[uint][]AdminChallengeActivityEntry
+}
+
+type AdminChallengeActivityEntry struct {
+	Label     string
+	Subject   string
+	Action    string
+	Message   string
+	Arguments string
+	At        time.Time
 }
 
 // AdminActivityTemplateData for passing data to the admin activity template
@@ -196,17 +204,6 @@ type AdminActivityTemplateData struct {
 	Status        string
 	Message       string
 	Activity      []logs.ActivityLog
-}
-
-// AdminAnnouncementsTemplateData for passing data to the admin announcements template
-type AdminAnnouncementsTemplateData struct {
-	Title         string
-	UUID          string
-	Authenticated bool
-	Admin         bool
-	Status        string
-	Message       string
-	Announcements []logs.Announcement
 }
 
 // AdminChatTemplateData for passing data to the admin chat template

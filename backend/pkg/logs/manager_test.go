@@ -34,9 +34,6 @@ func TestCreateLogManager(t *testing.T) {
 		if !db.Migrator().HasTable(&ActivityLog{}) {
 			t.Fatal("activity_logs table was not migrated")
 		}
-		if !db.Migrator().HasTable(&Announcement{}) {
-			t.Fatal("announcements table was not migrated")
-		}
 		if !db.Migrator().HasTable(&ScoreboardLog{}) {
 			t.Fatal("scoreboard_logs table was not migrated")
 		}

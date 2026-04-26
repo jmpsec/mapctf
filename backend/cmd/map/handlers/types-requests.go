@@ -140,3 +140,10 @@ type AdminLogoUpdateRequest struct {
 type ChatEntryRequest struct {
 	Message string `json:"message"`
 }
+
+// AdminActivityCreateRequest to receive admin custom activity entry requests
+type AdminActivityCreateRequest struct {
+	Subject string `json:"subject"`
+	Action  string `json:"action"`
+	Message string `json:"message"`
+}

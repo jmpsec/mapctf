@@ -262,7 +262,6 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 	awardedPoints := challenge.Points
 	updatedTotalPoints := team.Points + awardedPoints
 	now := time.Now().UTC()
-
 	if err := h.Teams.DB.Transaction(func(tx *gorm.DB) error {
 		score, err := h.Teams.NewScore(user.TeamID, challenge.ID, awardedPoints, uuid, username)
 		if err != nil {
@@ -293,7 +292,7 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 
-		activity, err := h.Logs.NewActivity(team.Name, "completed", challenge.Title, "country="+countryCode, uuid)
+		activity, err := h.Logs.NewActivity(team.Name, "completed", challenge.Title, challenge.ID, uuid)
 		if err != nil {
 			return err
 		}

@@ -98,14 +98,20 @@ func TestScorePOSTHandlerCreatesScoreAndLogs(t *testing.T) {
 		Active:   true,
 		UUID:     jsonTestUUID,
 	}))
+	require.NoError(t, challengeManager.CreateCategory(challenges.Category{
+		Model: gorm.Model{ID: 7},
+		Name:  "Web",
+		UUID:  jsonTestUUID,
+	}))
 	require.NoError(t, challengeManager.Create(challenges.Challenge{
-		Model:   gorm.Model{ID: 20},
-		Title:   "Spanish Challenge",
-		Country: "ES",
-		Active:  true,
-		Points:  75,
-		Flag:    "MAP{correct}",
-		UUID:    jsonTestUUID,
+		Model:      gorm.Model{ID: 20},
+		Title:      "Spanish Challenge",
+		CategoryID: 7,
+		Country:    "ES",
+		Active:     true,
+		Points:     75,
+		Flag:       "MAP{correct}",
+		UUID:       jsonTestUUID,
 	}))
 
 	req := newJSONBodyRequestWithUUID(http.MethodPost, "/gameboard/score", jsonTestUUID, MapScoreRequest{
@@ -155,7 +161,7 @@ func TestScorePOSTHandlerCreatesScoreAndLogs(t *testing.T) {
 	require.Equal(t, "Blue Team", activityLogs[0].Subject)
 	require.Equal(t, "completed", activityLogs[0].Action)
 	require.Equal(t, "Spanish Challenge", activityLogs[0].Message)
-	require.Equal(t, "country=ES", activityLogs[0].Arguments)
+	require.Equal(t, uint(20), activityLogs[0].ChallengeID)
 }
 
 func TestScorePOSTHandlerRejectsDuplicateSolve(t *testing.T) {

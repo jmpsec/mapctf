@@ -95,8 +95,6 @@ const (
 	teamsPath = "/teams"
 	// Activity path
 	activityPath = "/activity"
-	// Announcements path
-	announcementsPath = "/announcements"
 	// Chat path
 	chatPath = "/chat"
 	// Score path
@@ -327,7 +325,6 @@ func mapCTFService() {
 			// Protected JSON routes
 			r.Route(jsonPath, func(r chi.Router) {
 				r.Get(activityPath, handlersMap.JSONActivityHandler)
-				r.Get(announcementsPath, handlersMap.JSONAnnouncementsHandler)
 				r.Get(challengesPath, handlersMap.JSONChallengesHandler)
 				r.Get(countriesPath, handlersMap.JSONCountriesHandler)
 				r.Get(teamsPath, handlersMap.JSONTeamsHandler)
@@ -384,10 +381,10 @@ func mapCTFService() {
 				r.Post(teamsPath+"/logos/disable-all", handlersMap.AdminTeamLogosDisableAllPOSTHandler)
 				r.Post(teamsPath+"/logos/delete-all", handlersMap.AdminTeamLogosDeleteAllPOSTHandler)
 				r.Get(activityPath, handlersMap.AdminActivityTemplateHandler)
+				r.Post(activityPath, handlersMap.AdminActivityPOSTHandler)
 				r.Get(chatPath, handlersMap.AdminChatTemplateHandler)
 				r.Post(chatPath+"/{id}/visibility", handlersMap.AdminChatSetHiddenPOSTHandler)
 				r.Post(chatPath+"/{id}/delete", handlersMap.AdminChatDeletePOSTHandler)
-				r.Get(announcementsPath, handlersMap.AdminAnnouncementsTemplateHandler)
 				r.Get(countriesPath, handlersMap.AdminCountriesTemplateHandler)
 				r.Post(countriesPath+"/delete-all", handlersMap.AdminCountriesDeleteAllPOSTHandler)
 				r.Post(countriesPath+"/{id}", handlersMap.AdminCountryUpdatePOSTHandler)

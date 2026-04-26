@@ -1,0 +1,58 @@
+<div class="mctf-modal-content admin-activity-modal">
+  <div class="modal-title">
+    <h4>
+      <span class="modal-kicker">Admin Activity Log</span>
+      <span class="highlighted">Add Entry</span>
+    </h4>
+    <a href="#" class="js-close-modal">
+      <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
+    </a>
+  </div>
+
+  <form id="admin-add-activity-form" class="mctf-form">
+    <fieldset class="form-set">
+      <div class="admin-activity-form-grid">
+        <div class="form-el">
+          <label for="admin-add-activity-subject">
+            <span>Subject</span>
+          </label>
+          <input id="admin-add-activity-subject" name="subject" type="text" placeholder="Blue Team or Admin" />
+        </div>
+
+        <div class="form-el">
+          <label for="admin-add-activity-action">
+            <span>Action</span>
+          </label>
+          <select id="admin-add-activity-action" name="action">
+            <option value="announcement" selected>Announcement</option>
+            <option value="completed">Completed</option>
+            <option value="enabled">Enabled</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </div>
+
+        <div class="form-el form-el--full">
+          <label for="admin-add-activity-message">
+            <span>Message</span>
+          </label>
+          <input id="admin-add-activity-message" name="message" type="text" placeholder="Captured Spain" />
+        </div>
+
+      </div>
+
+      <div class="admin-activity-modal-example">
+        <span>Example</span>
+        <code>subject=Admin action=announcement message=Scoring will resume in 5 minutes</code>
+      </div>
+    </fieldset>
+
+    <div class="form-el--multiple-actions mctf-column-container admin-activity-modal-actions">
+      <div class="col col-1-2">
+        <a href="#" class="mctf-cta js-close-modal">Cancel</a>
+      </div>
+      <div class="col col-1-2 actions--right">
+        <button class="mctf-cta cta--yellow" type="submit">Create Entry</button>
+      </div>
+    </div>
+  </form>
+</div>

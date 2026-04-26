@@ -668,6 +668,31 @@ function createAdminCategory(createURL, payload) {
   });
 }
 
+function createAdminActivity(createURL, payload) {
+  return fetch(createURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify(payload),
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to create activity entry");
+        }
+        return data;
+      });
+  });
+}
+
 function updateAdminCategory(updateURL, payload) {
   return fetch(updateURL, {
     method: "POST",
@@ -1741,6 +1766,79 @@ function initAdminAddChallengeModal() {
           })
           .catch(function (error) {
             showTransientAdminStatus("error", error.message || "Failed to create challenge");
+          })
+          .finally(function () {
+            delete form.dataset.submitting;
+          });
+      });
+    });
+  });
+}
+
+function initAdminAddActivityModal() {
+  var addActivityBtn = document.querySelector('[data-action="add-custom-activity"]');
+  if (!addActivityBtn) {
+    return;
+  }
+
+  addActivityBtn.addEventListener("click", function (event) {
+    event.preventDefault();
+
+    var createURL = addActivityBtn.getAttribute("data-create-url");
+    if (!createURL) {
+      showTransientAdminStatus("error", "Missing activity creation URL");
+      return;
+    }
+
+    if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+      showTransientAdminStatus("error", "Modal system unavailable");
+      return;
+    }
+
+    MAP_CTF.modal.loadPopup("add-activity", function () {
+      var modal = document.getElementById("mctf-modal");
+      if (!modal) {
+        return;
+      }
+
+      var form = modal.querySelector("#admin-add-activity-form");
+      if (!form) {
+        return;
+      }
+
+      var subjectInput = form.querySelector('input[name="subject"]');
+      if (subjectInput) {
+        subjectInput.focus();
+      }
+
+      form.addEventListener("submit", function (submitEvent) {
+        submitEvent.preventDefault();
+
+        if (form.dataset.submitting === "true") {
+          return;
+        }
+
+        var subject = (form.querySelector('input[name="subject"]').value || "").trim();
+        var action = (form.querySelector('input[name="action"]').value || "").trim();
+        var message = (form.querySelector('input[name="message"]').value || "").trim();
+        if (!subject && !message) {
+          showTransientAdminStatus("error", "Subject or message is required");
+          return;
+        }
+
+        form.dataset.submitting = "true";
+
+        createAdminActivity(createURL, {
+          subject: subject,
+          action: action,
+          message: message,
+        })
+          .then(function (data) {
+            showTransientAdminStatus(data.status || "ok", data.message || "Activity entry created");
+            window.location.reload();
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to create activity entry");
           })
           .finally(function () {
             delete form.dataset.submitting;
@@ -2872,6 +2970,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminChallengeStatusAutoSave();
   initAdminChallengeDeleteButtons();
   initAdminAddChallengeModal();
+  initAdminAddActivityModal();
   initAdminAddUserModal();
   initAdminUserSettingsEditors();
   initAdminAddTeamModal();

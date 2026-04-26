@@ -21,10 +21,6 @@ func CreateLogManager(backend *gorm.DB) (*LogManager, error) {
 	if err := backend.AutoMigrate(&ActivityLog{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (activity_logs): %w", err)
 	}
-	// table announcements
-	if err := backend.AutoMigrate(&Announcement{}); err != nil {
-		return nil, fmt.Errorf("failed to AutoMigrate table (announcements): %w", err)
-	}
 	// table scoreboard_logs
 	if err := backend.AutoMigrate(&ScoreboardLog{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (scoreboard_logs): %w", err)

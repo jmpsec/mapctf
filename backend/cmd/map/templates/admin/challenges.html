@@ -39,6 +39,77 @@
       #challenge-actions .admin-buttons a + a {
         margin-left: 0;
       }
+
+      .admin-challenge-activity-log {
+        display: grid;
+        gap: 6px;
+        font-size: 0.8rem;
+        line-height: 1.35;
+        min-width: 0;
+        width: 100%;
+      }
+
+      .admin-challenge-activity-row {
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.08);
+        min-width: 0;
+        width: 100%;
+      }
+
+      .admin-challenge-activity-meta {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px;
+        align-items: baseline;
+        min-width: 0;
+        width: 100%;
+        margin-bottom: 4px;
+      }
+
+      .admin-challenge-activity-type {
+        color: #8ed9de;
+        font-family: "Source Code Pro", Courier, monospace;
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .admin-challenge-activity-subject {
+        color: #e7f9ff;
+        font-weight: 600;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .admin-challenge-activity-at {
+        color: rgba(255, 255, 255, 0.52);
+        font-family: "Source Code Pro", Courier, monospace;
+        font-size: 0.7rem;
+        white-space: nowrap;
+      }
+
+      .admin-challenge-activity-detail {
+        margin-top: 2px;
+        min-width: 0;
+        color: rgba(255, 255, 255, 0.88);
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .admin-challenge-activity-detail--args {
+        color: #21b4ba;
+        font-family: "Source Code Pro", Courier, monospace;
+        font-size: 0.72rem;
+      }
+
+      .admin-challenge-activity-field {
+        color: rgba(255, 255, 255, 0.52);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-right: 4px;
+      }
     </style>
   </head>
   <body data-section="admin">
@@ -68,7 +139,6 @@
               <li><a href="/{{ .UUID }}/admin/countries">Countries</a></li>
               <li><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
               <li><a href="/{{ .UUID }}/admin/chat">Chat</a></li>
-              <li><a href="/{{ .UUID }}/admin/announcements">Announcements</a></li>
             </ul>
           </nav>
           <div class="admin-nav-controls row-fixed">
@@ -129,7 +199,7 @@
                 {{ if .Challenges }}
                 {{ range .Challenges }}
                 {{ $challenge := . }}
-                {{ $challengeSolves := index $.ChallengeSolves .ID }}
+                {{ $challengeActivity := index $.ChallengeActivity .ID }}
                 {{ $challengeCountryOptions := index $.ChallengeCountryOptions .ID }}
                 <div class="admin-setting-row admin-challenge-row">
                   <div class="admin-challenge-row-layout">
@@ -231,22 +301,36 @@
                       </div>
                       <aside class="admin-challenge-activity">
                         <p class="admin-activity-label">Activity log</p>
-                        <div class="admin-settings-list admin-activity-list">
-                          {{ if $challengeSolves }}
-                          {{ range $challengeSolves }}
-                          <div class="admin-setting-row">
-                            <label>Solve Event</label>
-                            <span>Subject: {{ .Subject }}</span>
-                            <span>Action: {{ .Action }}</span>
-                            <span>Message: {{ if .Message }}{{ .Message }}{{ else }}--{{ end }}</span>
-                            <span>Arguments: {{ if .Arguments }}{{ .Arguments }}{{ else }}--{{ end }}</span>
-                            <span>At: {{ .CreatedAt.Format "2006-01-02 15:04" }}</span>
+                        {{ if $challengeActivity }}
+                        <div class="admin-challenge-activity-log">
+                          {{ range $challengeActivity }}
+                          <div class="admin-challenge-activity-row">
+                            <div class="admin-challenge-activity-meta">
+                              <span class="admin-challenge-activity-type">{{ .Label }}</span>
+                              <span class="admin-challenge-activity-subject">{{ if .Subject }}{{ .Subject }}{{ else }}System{{ end }}</span>
+                              <span class="admin-challenge-activity-at">{{ .At.Format "2006-01-02 15:04" }}</span>
+                            </div>
+                            {{ if .Action }}
+                            <div class="admin-challenge-activity-detail">
+                              <span class="admin-challenge-activity-field">action</span>{{ .Action }}
+                            </div>
+                            {{ end }}
+                            {{ if .Message }}
+                            <div class="admin-challenge-activity-detail">
+                              <span class="admin-challenge-activity-field">message</span>{{ .Message }}
+                            </div>
+                            {{ end }}
+                            {{ if .Arguments }}
+                            <div class="admin-challenge-activity-detail admin-challenge-activity-detail--args">
+                              <span class="admin-challenge-activity-field">args</span>{{ .Arguments }}
+                            </div>
+                            {{ end }}
                           </div>
                           {{ end }}
-                          {{ else }}
-                          <span class="admin-activity-empty">No activity for this challenge yet.</span>
-                          {{ end }}
                         </div>
+                        {{ else }}
+                          <span class="admin-activity-empty">No activity for this challenge yet.</span>
+                        {{ end }}
                       </aside>
                     </div>
                   </div>

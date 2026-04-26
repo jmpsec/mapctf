@@ -529,10 +529,6 @@
       if (entry && entry.Action) {
         parts.push(entry.Action);
       }
-      if (entry && entry.Arguments) {
-        parts.push(entry.Arguments);
-      }
-
       return $.trim(parts.join(" "));
     }
 
@@ -970,42 +966,29 @@
         });
       });
 
-      //
-      // activity module filter
-      //
-      $('input[name="mctf--module--activity"]').on("change", function (event) {
-        event.preventDefault();
-        var $self = $(this),
-          select = $self.val(),
-          $activityStream = $self.closest(".module-content").find(".activity-stream"),
-          $li = $activityStream.find(".activity-entry").show();
-
-        if (select !== "all") {
-          $li
-            .filter(function () {
-              return $(this).attr("class") !== select;
-            })
-            .hide();
-        }
-
-        updateActivityEmptyState($activityStream);
-      });
-
       /* --------------------------------------------
        * --country interaction
        * -------------------------------------------- */
 
-      //
-      // on country click, open the "capture country" modal
-      //
-      $map.on("click", ".country-hover g", function (event) {
+      function handleCountryClick(event) {
         event.preventDefault();
+        event.stopPropagation();
 
         var country = $('[class~="land"]', this).attr("title");
 
+        if (!country) {
+          return;
+        }
+
         CURRENT_ZOOM = enableClickAndDrag.getZoom();
         captureCountry(country);
-      });
+      }
+
+      //
+      // on country click, open the "capture country" modal
+      //
+      $map.on("click", ".country-hover g", handleCountryClick);
+      $map.on("click", ".countries > g", handleCountryClick);
 
       //
       // hover on a country
@@ -1671,7 +1654,7 @@
 
       ACTIVITY_POLL_IN_FLIGHT = true;
 
-      loadActivityData(true)
+      $.when(loadActivityData(true))
         .done(function () {
           setupActivity();
         })

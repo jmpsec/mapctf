@@ -19,6 +19,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 func newAdminTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *chat.ChatManager, *teams.TeamManager) {
@@ -77,6 +78,38 @@ func newAdminCountryActionHandler(t *testing.T) (*HandlersMap, *scs.SessionManag
 	return handler, sessionManager, countriesManager, challengesManager
 }
 
+func newAdminChallengeActivityHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *countries.CountriesManager, *challenges.ChallengeManager, *logs.LogManager) {
+	t.Helper()
+
+	db := newJSONTestDB(t)
+
+	countriesManager, err := countries.CreateCountries(db, jsonTestUUID)
+	require.NoError(t, err)
+
+	challengesManager, err := challenges.CreateChallengeManager(db)
+	require.NoError(t, err)
+
+	logManager, err := logs.CreateLogManager(db)
+	require.NoError(t, err)
+
+	sessionManager := scs.New()
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{
+			Map: config.ConfigurationMap{
+				UUID:         jsonTestUUID,
+				TemplatesDir: filepath.Join("..", "templates"),
+			},
+		}),
+		WithCountries(countriesManager),
+		WithChallenges(challengesManager),
+		WithLogs(logManager),
+		WithSessions(sessionManager),
+	)
+
+	return handler, sessionManager, countriesManager, challengesManager, logManager
+}
+
 func newAdminActivityTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *logs.LogManager) {
 	t.Helper()
 
@@ -99,6 +132,42 @@ func newAdminActivityTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionMa
 	)
 
 	return handler, sessionManager, logManager
+}
+
+func newAdminChallengesTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *countries.CountriesManager, *challenges.ChallengeManager, *logs.LogManager, *teams.TeamManager) {
+	t.Helper()
+
+	db := newJSONTestDB(t)
+
+	countriesManager, err := countries.CreateCountries(db, jsonTestUUID)
+	require.NoError(t, err)
+
+	challengesManager, err := challenges.CreateChallengeManager(db)
+	require.NoError(t, err)
+
+	logManager, err := logs.CreateLogManager(db)
+	require.NoError(t, err)
+
+	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	require.NoError(t, err)
+
+	sessionManager := scs.New()
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{
+			Map: config.ConfigurationMap{
+				UUID:         jsonTestUUID,
+				TemplatesDir: filepath.Join("..", "templates"),
+			},
+		}),
+		WithCountries(countriesManager),
+		WithChallenges(challengesManager),
+		WithLogs(logManager),
+		WithTeams(teamManager),
+		WithSessions(sessionManager),
+	)
+
+	return handler, sessionManager, countriesManager, challengesManager, logManager, teamManager
 }
 
 func newAdminRequestWithUUID(method, target, uuid string) *http.Request {
@@ -161,7 +230,7 @@ func TestAdminChatTemplateHandlerShowsEmptyChatState(t *testing.T) {
 func TestAdminActivityTemplateHandlerIncludesActivityEntries(t *testing.T) {
 	handler, sessions, logManager := newAdminActivityTemplateHandler(t)
 
-	activity, err := logManager.NewActivity("Blue Team", "completed", "Captured Spain", "country=ES", jsonTestUUID)
+	activity, err := logManager.NewActivity("Blue Team", "completed", "Captured Spain", 0, jsonTestUUID)
 	require.NoError(t, err)
 	require.NoError(t, logManager.CreateActivity(activity))
 
@@ -181,7 +250,212 @@ func TestAdminActivityTemplateHandlerIncludesActivityEntries(t *testing.T) {
 	require.Contains(t, body, "Blue Team")
 	require.Contains(t, body, "completed")
 	require.Contains(t, body, "Captured Spain")
-	require.Contains(t, body, "country=ES")
+}
+
+func TestAdminActivityPOSTHandlerCreatesCustomEntry(t *testing.T) {
+	handler, sessions, logManager := newAdminActivityTemplateHandler(t)
+
+	payload := AdminActivityCreateRequest{
+		Subject: "Blue Team",
+		Action:  "custom",
+		Message: "Custom activity",
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/activity", bytes.NewReader(body))
+	req.Header.Set(ContentType, JSONApplicationUTF8)
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("uuid", jsonTestUUID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminActivityPOSTHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	activityEntries, err := logManager.AllActivity(jsonTestUUID)
+	require.NoError(t, err)
+	require.Len(t, activityEntries, 1)
+	require.Equal(t, "Blue Team", activityEntries[0].Subject)
+	require.Equal(t, "custom", activityEntries[0].Action)
+	require.Equal(t, "Custom activity", activityEntries[0].Message)
+}
+
+func TestAdminChallengesTemplateHandlerShowsChallengeRelatedActivity(t *testing.T) {
+	handler, sessions, countriesManager, challengesManager, logManager, teamManager := newAdminChallengesTemplateHandler(t)
+
+	require.NoError(t, countriesManager.Create(countries.MapCountry{
+		Name:        "Spain",
+		CountryCode: "ES",
+		Active:      true,
+	}))
+	require.NoError(t, challengesManager.CreateCategory(challenges.Category{
+		Model: gorm.Model{ID: 3},
+		Name:  "Web",
+		UUID:  jsonTestUUID,
+	}))
+	require.NoError(t, challengesManager.Create(challenges.Challenge{
+		Model:      gorm.Model{ID: 77},
+		Title:      "Spanish Challenge",
+		CategoryID: 3,
+		Country:    "ES",
+		Active:     true,
+		Points:     100,
+		Flag:       "MAP{es}",
+		UUID:       jsonTestUUID,
+	}))
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{
+		Model:   gorm.Model{ID: 5},
+		Name:    "Blue Team",
+		UUID:    jsonTestUUID,
+		Active:  true,
+		Visible: true,
+	}))
+
+	activity, err := logManager.NewActivity("Blue Team", "completed", "Spanish Challenge", 77, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, logManager.CreateActivity(activity))
+	require.NoError(t, logManager.CreateFailuresLog(logs.FailuresLog{
+		ChallengeID: 77,
+		TeamID:      5,
+		Flag:        "wrong-flag",
+		UUID:        jsonTestUUID,
+	}))
+
+	req := newAdminRequestWithUUID(http.MethodGet, "/admin/challenges", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminChallengesTemplateHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	body := rr.Body.String()
+	require.Contains(t, body, "Spanish Challenge")
+	require.Contains(t, body, "Blue Team")
+	require.Contains(t, body, "completed")
+	require.Contains(t, body, "Failure")
+	require.Contains(t, body, "wrong-flag")
+}
+
+func TestAdminChallengeUpdatePOSTHandlerLogsEnableAndDisableStateChanges(t *testing.T) {
+	handler, sessions, _, challengesManager, logManager := newAdminChallengeActivityHandler(t)
+
+	require.NoError(t, challengesManager.CreateCategory(challenges.Category{
+		Model: gorm.Model{ID: 1},
+		Name:  "Web",
+		UUID:  jsonTestUUID,
+	}))
+	require.NoError(t, challengesManager.Create(challenges.Challenge{
+		Model:      gorm.Model{ID: 50},
+		Title:      "Spain",
+		CategoryID: 1,
+		Active:     false,
+		Points:     100,
+		Bonus:      0,
+		BonusDecay: 0,
+		Penalty:    0,
+		Flag:       "MAP{es}",
+		Hint:       "hint",
+		UUID:       jsonTestUUID,
+	}))
+
+	makeRequest := func(activeValue string) *http.Request {
+		payload := AdminChallengeCreateRequest{
+			Title:       "Spain",
+			Description: "",
+			CategoryID:  "1",
+			Country:     "",
+			Active:      activeValue,
+			Points:      "100",
+			Bonus:       "0",
+			BonusDecay:  "0",
+			Penalty:     "0",
+			Flag:        "MAP{es}",
+			Hint:        "hint",
+		}
+		body, err := json.Marshal(payload)
+		require.NoError(t, err)
+		req := httptest.NewRequest(http.MethodPost, "/admin/challenges/50", bytes.NewReader(body))
+		req.Header.Set(ContentType, JSONApplicationUTF8)
+		routeCtx := chi.NewRouteContext()
+		routeCtx.URLParams.Add("uuid", jsonTestUUID)
+		routeCtx.URLParams.Add("id", "50")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
+		ctx, err := sessions.Load(req.Context(), "")
+		require.NoError(t, err)
+		sessions.Put(ctx, string(ContextKeyUser), "admin")
+		sessions.Put(ctx, string(ContextKeyAdmin), true)
+		return req.WithContext(ctx)
+	}
+
+	rr := httptest.NewRecorder()
+	handler.AdminChallengeUpdatePOSTHandler(rr, makeRequest("true"))
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	rr = httptest.NewRecorder()
+	handler.AdminChallengeUpdatePOSTHandler(rr, makeRequest("false"))
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	activityEntries, err := logManager.AllActivity(jsonTestUUID)
+	require.NoError(t, err)
+	require.Len(t, activityEntries, 2)
+	require.Equal(t, "admin", activityEntries[0].Subject)
+	require.Equal(t, "enabled", activityEntries[0].Action)
+	require.Equal(t, "Spain", activityEntries[0].Message)
+	require.Equal(t, uint(50), activityEntries[0].ChallengeID)
+	require.Equal(t, "disabled", activityEntries[1].Action)
+}
+
+func TestAdminChallengesBulkStateChangeHandlersLogActivity(t *testing.T) {
+	handler, sessions, _, challengesManager, logManager := newAdminChallengeActivityHandler(t)
+
+	require.NoError(t, challengesManager.Create(challenges.Challenge{
+		Title:  "One",
+		Active: false,
+		Flag:   "MAP{one}",
+		UUID:   jsonTestUUID,
+	}))
+	require.NoError(t, challengesManager.Create(challenges.Challenge{
+		Title:  "Two",
+		Active: false,
+		Flag:   "MAP{two}",
+		UUID:   jsonTestUUID,
+	}))
+
+	makeRequest := func() *http.Request {
+		req := newAdminRequestWithUUID(http.MethodPost, "/admin/challenges", jsonTestUUID)
+		ctx, err := sessions.Load(req.Context(), "")
+		require.NoError(t, err)
+		sessions.Put(ctx, string(ContextKeyUser), "admin")
+		sessions.Put(ctx, string(ContextKeyAdmin), true)
+		return req.WithContext(ctx)
+	}
+
+	rr := httptest.NewRecorder()
+	handler.AdminChallengesEnableAllPOSTHandler(rr, makeRequest())
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	rr = httptest.NewRecorder()
+	handler.AdminChallengesDisableAllPOSTHandler(rr, makeRequest())
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	activityEntries, err := logManager.AllActivity(jsonTestUUID)
+	require.NoError(t, err)
+	require.Len(t, activityEntries, 2)
+	require.Equal(t, "enabled", activityEntries[0].Action)
+	require.Equal(t, "enabled all challenges (2)", activityEntries[0].Message)
+	require.Equal(t, "disabled", activityEntries[1].Action)
+	require.Equal(t, "disabled all challenges (2)", activityEntries[1].Message)
 }
 
 func TestAdminChatTemplateHandlerIncludesModerationControls(t *testing.T) {

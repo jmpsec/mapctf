@@ -20,7 +20,6 @@ import (
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/countries"
-	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/rs/zerolog/log"
@@ -35,6 +34,27 @@ type adminActionResponse struct {
 
 type adminChatVisibilityRequest struct {
 	Hidden json.RawMessage `json:"hidden"`
+}
+
+func (h *HandlersMap) createAdminActivityLog(r *http.Request, action, message string, challengeID uint) {
+	if h.Logs == nil || h.Sessions == nil {
+		return
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	username := strings.TrimSpace(h.Sessions.GetString(r.Context(), string(ContextKeyUser)))
+	if username == "" {
+		username = h.ServiceName
+	}
+
+	activity, err := h.Logs.NewActivity(username, action, message, challengeID, uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error building admin activity log")
+		return
+	}
+	if err := h.Logs.CreateActivity(activity); err != nil {
+		log.Warn().Err(err).Msg("error creating admin activity log")
+	}
 }
 
 func parseAdminChatHiddenValue(raw json.RawMessage) (bool, error) {
@@ -3716,6 +3736,10 @@ func (h *HandlersMap) AdminChallengesEnableAllPOSTHandler(w http.ResponseWriter,
 		return
 	}
 
+	if updatedCount > 0 {
+		h.createAdminActivityLog(r, "enabled", fmt.Sprintf("enabled all challenges (%d)", updatedCount), 0)
+	}
+
 	writeSuccess("Enabled " + strconv.FormatInt(updatedCount, 10) + " challenge(s)")
 }
 
@@ -3752,6 +3776,10 @@ func (h *HandlersMap) AdminChallengesDisableAllPOSTHandler(w http.ResponseWriter
 		log.Err(err).Msg("error disabling all challenges")
 		writeError(http.StatusInternalServerError, "Failed to disable all challenges")
 		return
+	}
+
+	if updatedCount > 0 {
+		h.createAdminActivityLog(r, "disabled", fmt.Sprintf("disabled all challenges (%d)", updatedCount), 0)
 	}
 
 	writeSuccess("Disabled " + strconv.FormatInt(updatedCount, 10) + " challenge(s)")
@@ -3848,16 +3876,6 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 	} else {
 		templateData.Categories = categories
 	}
-	activity, err := h.Logs.AllActivity(uuid)
-	if err != nil {
-		log.Warn().Err(err).Msg("error loading activity for solves view")
-	} else {
-		for _, entry := range activity {
-			if strings.Contains(strings.ToLower(entry.Action), "solve") {
-				templateData.Solves = append(templateData.Solves, entry)
-			}
-		}
-	}
 	templateData.ChallengeCountryOptions = make(map[uint][]countries.MapCountry)
 	allCountries, err := h.Countries.GetAll()
 	if err != nil {
@@ -3891,20 +3909,36 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 		availableByCode[strings.ToUpper(strings.TrimSpace(c.CountryCode))] = c
 	}
 
-	templateData.ChallengeSolves = make(map[uint][]logs.ActivityLog, len(templateData.Challenges))
-	for i := range templateData.Challenges {
-		challenge := templateData.Challenges[i]
-		challengeTitle := strings.ToLower(challenge.Title)
-		challengeID := strconv.Itoa(int(challenge.ID))
-		for _, solve := range templateData.Solves {
-			searchText := strings.ToLower(solve.Subject + " " + solve.Action + " " + solve.Message + " " + solve.Arguments)
-			if strings.Contains(searchText, challengeTitle) ||
-				strings.Contains(searchText, "challenge="+challengeID) ||
-				strings.Contains(searchText, "challenge_id="+challengeID) ||
-				strings.Contains(searchText, "challengeid="+challengeID) {
-				templateData.ChallengeSolves[challenge.ID] = append(templateData.ChallengeSolves[challenge.ID], solve)
+	templateData.ChallengeActivity = make(map[uint][]AdminChallengeActivityEntry, len(templateData.Challenges))
+	teamNamesByID := make(map[uint]string)
+	if h.Teams != nil {
+		allTeams, teamErr := h.Teams.GetAll()
+		if teamErr != nil {
+			log.Warn().Err(teamErr).Msg("error loading teams for challenge activity")
+		} else {
+			for _, team := range allTeams {
+				teamNamesByID[team.ID] = team.Name
 			}
 		}
+	}
+	activity, err := h.Logs.AllActivity(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading activity for challenge view")
+	}
+	hintsLogs, err := h.Logs.AllHintsLogs(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading hint logs for challenge view")
+		hintsLogs = nil
+	}
+	failuresLogs, err := h.Logs.AllFailuresLogs(uuid)
+	if err != nil {
+		log.Warn().Err(err).Msg("error loading failure logs for challenge view")
+		failuresLogs = nil
+	}
+	for i := range templateData.Challenges {
+		challenge := templateData.Challenges[i]
+		challengeTitle := strings.ToLower(strings.TrimSpace(challenge.Title))
+		challengeID := strconv.Itoa(int(challenge.ID))
 
 		normalizedChallengeCountryCode := strings.ToUpper(strings.TrimSpace(challenge.Country))
 		if normalizedChallengeCountryCode != "" {
@@ -3916,6 +3950,48 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 			} else {
 				templateData.Challenges[i].Country = normalizedChallengeCountryCode
 			}
+		}
+
+		for _, entry := range activity {
+			searchText := strings.ToLower(strings.TrimSpace(entry.Subject + " " + entry.Action + " " + entry.Message))
+			if strings.Contains(searchText, challengeTitle) ||
+				strconv.FormatUint(uint64(entry.ChallengeID), 10) == challengeID {
+				templateData.ChallengeActivity[challenge.ID] = append(templateData.ChallengeActivity[challenge.ID], AdminChallengeActivityEntry{
+					Label:   "Activity",
+					Subject: entry.Subject,
+					Action:  entry.Action,
+					Message: entry.Message,
+					At:      entry.CreatedAt,
+				})
+			}
+		}
+
+		for _, hintEntry := range hintsLogs {
+			if hintEntry.ChallengeID != challenge.ID {
+				continue
+			}
+			templateData.ChallengeActivity[challenge.ID] = append(templateData.ChallengeActivity[challenge.ID], AdminChallengeActivityEntry{
+				Label:     "Hint",
+				Subject:   teamNamesByID[hintEntry.TeamID],
+				Action:    "hint",
+				Message:   "Hint requested",
+				Arguments: "penalty=" + strconv.Itoa(hintEntry.Penalty),
+				At:        hintEntry.CreatedAt,
+			})
+		}
+
+		for _, failureEntry := range failuresLogs {
+			if failureEntry.ChallengeID != challenge.ID {
+				continue
+			}
+			templateData.ChallengeActivity[challenge.ID] = append(templateData.ChallengeActivity[challenge.ID], AdminChallengeActivityEntry{
+				Label:     "Failure",
+				Subject:   teamNamesByID[failureEntry.TeamID],
+				Action:    "failure",
+				Message:   "Incorrect submission",
+				Arguments: "flag=" + failureEntry.Flag,
+				At:        failureEntry.CreatedAt,
+			})
 		}
 
 		options := make([]countries.MapCountry, 0, len(templateData.AvailableCountries)+1)
@@ -4191,6 +4267,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 		writeError(http.StatusNotFound, "Challenge not found")
 		return
 	}
+	previousActive := challenge.Active
 	previousCountry := strings.ToUpper(strings.TrimSpace(challenge.Country))
 	if country != previousCountry && country != "" {
 		selectedCountry, err := h.Countries.GetByCode(country)
@@ -4244,6 +4321,14 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 				return
 			}
 		}
+	}
+
+	if previousActive != active {
+		action := "disabled"
+		if active {
+			action = "enabled"
+		}
+		h.createAdminActivityLog(r, action, challenge.Title, challenge.ID)
 	}
 
 	writeSuccess("Challenge updated")
@@ -4556,45 +4641,72 @@ func (h *HandlersMap) AdminActivityTemplateHandler(w http.ResponseWriter, r *htt
 	}
 }
 
-// AdminAnnouncementsTemplateHandler for admin announcements page for GET requests
-func (h *HandlersMap) AdminAnnouncementsTemplateHandler(w http.ResponseWriter, r *http.Request) {
+// AdminActivityPOSTHandler creates a custom admin activity log entry
+func (h *HandlersMap) AdminActivityPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	// Get UUID from URL path parameters and validate it
+
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
 		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/announcements.html")
-	if err != nil {
-		log.Err(err).Msg("error getting admin template")
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.Contains(r.Header.Get(ContentType), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
 		return
 	}
-	// Prepare template data
-	authenticated := h.IsAuthenticated(r.Context())
-	templateData := AdminAnnouncementsTemplateData{
-		Title:         "MapCTF Admin: Announcements",
-		UUID:          uuid,
-		Authenticated: authenticated,
-		Admin:         h.IsAdmin(r.Context()),
-		Status:        r.URL.Query().Get("status"),
-		Message:       r.URL.Query().Get("msg"),
-	}
-	announcements, err := h.Logs.AllAnnouncements(uuid)
-	if err != nil {
-		log.Warn().Err(err).Msg("error loading announcements")
-	} else {
-		templateData.Announcements = announcements
-	}
-	if err := t.Execute(w, templateData); err != nil {
-		log.Err(err).Msg("template error")
+
+	if h.Logs == nil || h.Sessions == nil {
+		writeError(http.StatusInternalServerError, "Activity logging is unavailable")
 		return
 	}
+
+	var req AdminActivityCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin activity JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	subject := strings.TrimSpace(req.Subject)
+	action := strings.TrimSpace(req.Action)
+	message := strings.TrimSpace(req.Message)
+	if subject == "" && message == "" {
+		writeError(http.StatusBadRequest, "Subject or message is required")
+		return
+	}
+
+	activity, err := h.Logs.NewActivity(subject, action, message, 0, uuid)
+	if err != nil {
+		log.Err(err).Msg("error building custom admin activity log")
+		writeError(http.StatusInternalServerError, "Failed to build activity entry")
+		return
+	}
+	if err := h.Logs.CreateActivity(activity); err != nil {
+		log.Err(err).Msg("error creating custom admin activity log")
+		writeError(http.StatusInternalServerError, "Failed to create activity entry")
+		return
+	}
+
+	writeSuccess("Activity entry created")
 }
 
 // AdminChatTemplateHandler for admin chat page for GET requests
