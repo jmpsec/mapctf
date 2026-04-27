@@ -101,6 +101,14 @@ func (l *LogManager) AllActivity(uuid string) ([]ActivityLog, error) {
 	return activities, nil
 }
 
+// DeleteActivity deletes a single activity log by ID scoped to the given UUID.
+func (l *LogManager) DeleteActivity(id uint, uuid string) error {
+	if err := l.DB.Where("id = ? AND uuid = ?", id, uuid).Delete(&ActivityLog{}).Error; err != nil {
+		return fmt.Errorf("Delete ActivityLog: %w", err)
+	}
+	return nil
+}
+
 // GetActivityByChallengeID to get all activity logs for a given challenge ID and UUID
 func (l *LogManager) GetActivityByChallengeID(challengeID uint, uuid string) ([]ActivityLog, error) {
 	var activities []ActivityLog

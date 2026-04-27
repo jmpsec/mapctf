@@ -1819,7 +1819,7 @@ function initAdminAddActivityModal() {
         }
 
         var subject = (form.querySelector('input[name="subject"]').value || "").trim();
-        var action = (form.querySelector('input[name="action"]').value || "").trim();
+        var action = (form.querySelector('select[name="action"]').value || "").trim();
         var visible = (form.querySelector('select[name="visible"]').value || "true").trim() !== "false";
         var message = (form.querySelector('input[name="message"]').value || "").trim();
         if (!subject && !message) {
@@ -1845,6 +1845,105 @@ function initAdminAddActivityModal() {
           .finally(function () {
             delete form.dataset.submitting;
           });
+      });
+    });
+  });
+}
+
+function initAdminActivityDeleteButtons() {
+  var deleteButtons = document.querySelectorAll('[data-action="delete-activity"]');
+  if (!deleteButtons.length) {
+    return;
+  }
+
+  deleteButtons.forEach(function (deleteBtn) {
+    deleteBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      var deleteURL = deleteBtn.getAttribute("data-delete-url");
+      if (!deleteURL) {
+        showTransientAdminStatus("error", "Missing activity delete URL");
+        return;
+      }
+
+      var item = deleteBtn.closest(".admin-activity-item");
+      if (!item) {
+        showTransientAdminStatus("error", "Unable to locate activity entry");
+        return;
+      }
+
+      if (deleteBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      var activityLine = item.querySelector(".admin-activity-line");
+      var activitySummary = activityLine ? String(activityLine.textContent || "").replace(/\s+/g, " ").trim() : "";
+
+      function runDelete() {
+        deleteBtn.dataset.submitting = "true";
+        deleteBtn.disabled = true;
+
+        fetch(deleteURL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+          },
+        })
+          .then(function (response) {
+            return response
+              .json()
+              .catch(function () {
+                return {};
+              })
+              .then(function (data) {
+                if (!response.ok || data.success === false) {
+                  throw new Error(data.message || "Failed to delete activity entry");
+                }
+                return data;
+              });
+          })
+          .then(function (data) {
+            item.remove();
+            showTransientAdminStatus(data.status || "ok", data.message || "Activity entry deleted");
+          })
+          .catch(function (error) {
+            showTransientAdminStatus("error", error.message || "Failed to delete activity entry");
+          })
+          .finally(function () {
+            delete deleteBtn.dataset.submitting;
+            deleteBtn.disabled = false;
+            if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+              MAP_CTF.modal.close();
+            }
+          });
+      }
+
+      if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+        if (window.confirm("Delete this activity entry?")) {
+          runDelete();
+        }
+        return;
+      }
+
+      MAP_CTF.modal.loadPopup("action-delete-activity", function () {
+        var modal = document.getElementById("mctf-modal");
+        if (!modal) {
+          return;
+        }
+
+        var summaryPlaceholder = modal.querySelector(".js-delete-activity-summary");
+        if (summaryPlaceholder) {
+          summaryPlaceholder.textContent = activitySummary;
+        }
+
+        var confirmBtn = modal.querySelector(".js-confirm-delete-activity");
+        if (!confirmBtn) {
+          return;
+        }
+        confirmBtn.addEventListener("click", function (confirmEvent) {
+          confirmEvent.preventDefault();
+          runDelete();
+        });
       });
     });
   });
@@ -2973,6 +3072,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAdminChallengeDeleteButtons();
   initAdminAddChallengeModal();
   initAdminAddActivityModal();
+  initAdminActivityDeleteButtons();
   initAdminAddUserModal();
   initAdminUserSettingsEditors();
   initAdminAddTeamModal();

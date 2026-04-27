@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/alexedwards/scs/v2"
@@ -287,6 +288,36 @@ func TestAdminActivityPOSTHandlerCreatesCustomEntry(t *testing.T) {
 	require.Equal(t, "Blue Team", activityEntries[0].Subject)
 	require.Equal(t, "custom", activityEntries[0].Action)
 	require.Equal(t, "Custom activity", activityEntries[0].Message)
+}
+
+func TestAdminActivityDeletePOSTHandlerDeletesEntry(t *testing.T) {
+	handler, sessions, logManager := newAdminActivityTemplateHandler(t)
+
+	activity, err := logManager.NewActivity(true, "Blue Team", "announcement", "Delete me", 0, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, logManager.CreateActivity(activity))
+
+	activityEntries, err := logManager.AllActivity(jsonTestUUID)
+	require.NoError(t, err)
+	require.Len(t, activityEntries, 1)
+
+	req := newAdminRequestWithUUID(http.MethodPost, "/admin/activity/1/delete", jsonTestUUID)
+	routeCtx := chi.RouteContext(req.Context())
+	routeCtx.URLParams.Add("id", strconv.FormatUint(uint64(activityEntries[0].ID), 10))
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminActivityDeletePOSTHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	activityEntries, err = logManager.AllActivity(jsonTestUUID)
+	require.NoError(t, err)
+	require.Len(t, activityEntries, 0)
 }
 
 func TestAdminChallengesTemplateHandlerShowsChallengeRelatedActivity(t *testing.T) {

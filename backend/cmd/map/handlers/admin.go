@@ -4728,6 +4728,52 @@ func (h *HandlersMap) AdminActivityPOSTHandler(w http.ResponseWriter, r *http.Re
 	writeSuccess("Activity entry created")
 }
 
+// AdminActivityDeletePOSTHandler deletes a custom activity entry.
+func (h *HandlersMap) AdminActivityDeletePOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+
+	if h.Logs == nil {
+		writeError(http.StatusInternalServerError, "Activity logging is unavailable")
+		return
+	}
+
+	idValue := strings.TrimSpace(chi.URLParam(r, "id"))
+	id, err := strconv.ParseUint(idValue, 10, 64)
+	if err != nil || id == 0 {
+		writeError(http.StatusBadRequest, "Invalid activity entry ID")
+		return
+	}
+
+	if err := h.Logs.DeleteActivity(uint(id), uuid); err != nil {
+		log.Err(err).Msg("error deleting activity entry")
+		writeError(http.StatusInternalServerError, "Failed to delete activity entry")
+		return
+	}
+
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+		Success: true,
+		Status:  "ok",
+		Message: "Activity entry deleted",
+	})
+}
+
 // AdminChatTemplateHandler for admin chat page for GET requests
 func (h *HandlersMap) AdminChatTemplateHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {

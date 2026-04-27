@@ -8,6 +8,7 @@
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
     <link rel="stylesheet" href="/static/css/mapctf.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
       .admin-activity-list {
         display: grid;
@@ -19,18 +20,50 @@
       }
 
       .admin-activity-item {
-        display: block;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
         padding: 6px 0;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         background: transparent;
       }
 
       .admin-activity-line {
+        flex: 1 1 auto;
         display: flex;
         flex-wrap: wrap;
         gap: 4px 8px;
         white-space: pre-wrap;
         word-break: break-word;
+      }
+
+      .admin-activity-delete {
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.02);
+        color: rgba(255, 255, 255, 0.6);
+        cursor: pointer;
+        transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      }
+
+      .admin-activity-delete:hover,
+      .admin-activity-delete:focus {
+        color: #ff7676;
+        border-color: rgba(255, 118, 118, 0.45);
+        background: rgba(255, 118, 118, 0.08);
+      }
+
+      .admin-activity-delete i {
+        font-size: 0.78rem;
+        line-height: 1;
       }
 
       .admin-activity-field {
@@ -274,8 +307,16 @@
                           <span class="admin-activity-sep">=</span>
                           <span class="admin-activity-value">{{ .Message }}</span>
                         {{ end }}
-
                       </div>
+                      <button
+                        class="admin-activity-delete"
+                        data-action="delete-activity"
+                        data-delete-url="/{{ $.UUID }}/admin/activity/{{ .ID }}/delete"
+                        type="button"
+                        aria-label="Delete activity entry"
+                        title="Delete activity entry">
+                        <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                      </button>
                     </article>
                   {{ end }}
                 </div>
