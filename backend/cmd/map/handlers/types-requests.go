@@ -146,4 +146,5 @@ type AdminActivityCreateRequest struct {
 	Subject string `json:"subject"`
 	Action  string `json:"action"`
 	Message string `json:"message"`
+	Visible bool   `json:"visible"`
 }

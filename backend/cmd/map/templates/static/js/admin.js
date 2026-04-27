@@ -1820,6 +1820,7 @@ function initAdminAddActivityModal() {
 
         var subject = (form.querySelector('input[name="subject"]').value || "").trim();
         var action = (form.querySelector('input[name="action"]').value || "").trim();
+        var visible = (form.querySelector('select[name="visible"]').value || "true").trim() !== "false";
         var message = (form.querySelector('input[name="message"]').value || "").trim();
         if (!subject && !message) {
           showTransientAdminStatus("error", "Subject or message is required");
@@ -1831,6 +1832,7 @@ function initAdminAddActivityModal() {
         createAdminActivity(createURL, {
           subject: subject,
           action: action,
+          visible: visible,
           message: message,
         })
           .then(function (data) {

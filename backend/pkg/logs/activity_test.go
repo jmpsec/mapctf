@@ -6,11 +6,11 @@ func TestActivityLogMethods(t *testing.T) {
 	m, sqlDB := newTestManager(t)
 	defer func() { _ = sqlDB.Close() }()
 
-	entry, err := m.NewActivity("team", "solve", "solved challenge", 7, testUUIDA)
+	entry, err := m.NewActivity(true, "team", "solve", "solved challenge", 7, testUUIDA)
 	if err != nil {
 		t.Fatalf("unexpected error from NewActivity: %v", err)
 	}
-	if entry.Subject != "team" || entry.Action != "solve" || entry.Message != "solved challenge" || entry.ChallengeID != 7 || entry.UUID != testUUIDA {
+	if !entry.Visible || entry.Subject != "team" || entry.Action != "solve" || entry.Message != "solved challenge" || entry.ChallengeID != 7 || entry.UUID != testUUIDA {
 		t.Fatalf("unexpected activity entry: %+v", entry)
 	}
 

@@ -520,18 +520,6 @@
       return "";
     }
 
-    function buildActivityText(entry) {
-      var parts = [];
-
-      if (entry && entry.Message) {
-        parts.push(entry.Message);
-      }
-      if (entry && entry.Action) {
-        parts.push(entry.Action);
-      }
-      return $.trim(parts.join(" "));
-    }
-
     function setupActivity() {
       var $activityStream = $('aside[data-module="activity"] .activity-stream');
       var currentTeam = getCurrentTeamName();
@@ -542,7 +530,7 @@
       if ($.isArray(ACTIVITY_DATA) && ACTIVITY_DATA.length) {
         $.each(ACTIVITY_DATA, function (_, entry) {
           var subject = entry && entry.Subject ? entry.Subject.toString() : "";
-          var messageText = buildActivityText(entry);
+          var messageText = entry && entry.Message ? entry.Message.toString() : "";
           var isYourTeam = currentTeam && subject === currentTeam;
           var itemClass = isYourTeam ? "your-team" : "opponent-team";
           var subjectClass = isYourTeam ? "your-name" : "opponent-name";
@@ -1763,8 +1751,10 @@
 
     function formatCountryLabel(country) {
       var data = COUNTRY_DATA && COUNTRY_DATA[country] ? COUNTRY_DATA[country] : null;
+      var countryCode = data && data.country_code ? String(data.country_code).trim() : "";
       var flagEmoji = data && data.flag_emoji ? String(data.flag_emoji).trim() : "";
-      return flagEmoji ? country + " " + flagEmoji : country;
+      var label = countryCode ? country + " (" + countryCode + ")" : country;
+      return flagEmoji ? label + " " + flagEmoji : label;
     }
 
     /**
@@ -2586,6 +2576,7 @@
       }
 
       var adminKickerMap = [
+        { pattern: /^country-(capture|help|help-opponent)$/, kicker: "Gameboard" },
         { pattern: /challenge|category/, kicker: "Admin Challenges" },
         { pattern: /team|logo/, kicker: "Admin Teams" },
         { pattern: /user/, kicker: "Admin Users" },

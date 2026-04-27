@@ -5,6 +5,10 @@ import (
 )
 
 const (
+	// ActivityCreateChallenge is the log message template for creating a challenge
+	ActivityCreateChallenge = "Challenge %s (%s) was created: %d points"
+	// ActivityUpdateChallenge is the log message template for updating a challenge
+	ActivityUpdateChallenge = "Challenge %s (%s) was updated: %d points"
 	// ActivityEnableChallenge is the log message template for enabling a challenge
 	ActivityEnableChallenge = "Challenge %s (%s) was enabled: %d points"
 	// ActivityDisableChallenge is the log message template for disabling a challenge
@@ -13,6 +17,14 @@ const (
 	ActivityTeamScore = "Team %s scored %d points for challenge %s (%s)"
 )
 
-func GenerateMessage(template string, args ...interface{}) string {
-	return fmt.Sprintf(template, args...)
+func ScoreMessage(teamName string, points int, countryCode, categoryName string) string {
+	return fmt.Sprintf(ActivityTeamScore, teamName, points, countryCode, categoryName)
+}
+
+func EnableMessage(countryCode, categoryName string, points int) string {
+	return fmt.Sprintf(ActivityEnableChallenge, countryCode, categoryName, points)
+}
+
+func DisableMessage(countryCode, categoryName string, points int) string {
+	return fmt.Sprintf(ActivityDisableChallenge, countryCode, categoryName, points)
 }

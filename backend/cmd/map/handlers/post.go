@@ -262,6 +262,17 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 	awardedPoints := challenge.Points
 	updatedTotalPoints := team.Points + awardedPoints
 	now := time.Now().UTC()
+	categoryName := ""
+	if challenge.CategoryID != 0 {
+		category, err := h.Challenges.GetCategoryByID(challenge.CategoryID, uuid)
+		if err != nil {
+			log.Err(err).Msg("error retrieving challenge category for score activity")
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve challenge category"})
+			return
+		}
+		categoryName = category.Name
+	}
+
 	if err := h.Teams.DB.Transaction(func(tx *gorm.DB) error {
 		score, err := h.Teams.NewScore(user.TeamID, challenge.ID, awardedPoints, uuid, username)
 		if err != nil {
@@ -291,8 +302,7 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 		if err := tx.Create(&scoreboardLog).Error; err != nil {
 			return err
 		}
-
-		activity, err := h.Logs.NewActivity(team.Name, "completed", challenge.Title, challenge.ID, uuid)
+		activity, err := h.Logs.NewScoreActivity(team.Name, awardedPoints, countryCode, categoryName, challenge.ID, uuid)
 		if err != nil {
 			return err
 		}

@@ -160,7 +160,7 @@ func TestScorePOSTHandlerCreatesScoreAndLogs(t *testing.T) {
 	require.Len(t, activityLogs, 1)
 	require.Equal(t, "Blue Team", activityLogs[0].Subject)
 	require.Equal(t, "completed", activityLogs[0].Action)
-	require.Equal(t, "Spanish Challenge", activityLogs[0].Message)
+	require.Equal(t, "Team Blue Team scored 75 points for challenge ES (Web)", activityLogs[0].Message)
 	require.Equal(t, uint(20), activityLogs[0].ChallengeID)
 }
 

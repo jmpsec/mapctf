@@ -230,7 +230,7 @@ func TestAdminChatTemplateHandlerShowsEmptyChatState(t *testing.T) {
 func TestAdminActivityTemplateHandlerIncludesActivityEntries(t *testing.T) {
 	handler, sessions, logManager := newAdminActivityTemplateHandler(t)
 
-	activity, err := logManager.NewActivity("Blue Team", "completed", "Captured Spain", 0, jsonTestUUID)
+	activity, err := logManager.NewActivity(true, "Blue Team", "completed", "Captured Spain", 0, jsonTestUUID)
 	require.NoError(t, err)
 	require.NoError(t, logManager.CreateActivity(activity))
 
@@ -259,6 +259,7 @@ func TestAdminActivityPOSTHandlerCreatesCustomEntry(t *testing.T) {
 		Subject: "Blue Team",
 		Action:  "custom",
 		Message: "Custom activity",
+		Visible: true,
 	}
 	body, err := json.Marshal(payload)
 	require.NoError(t, err)
@@ -282,6 +283,7 @@ func TestAdminActivityPOSTHandlerCreatesCustomEntry(t *testing.T) {
 	activityEntries, err := logManager.AllActivity(jsonTestUUID)
 	require.NoError(t, err)
 	require.Len(t, activityEntries, 1)
+	require.True(t, activityEntries[0].Visible)
 	require.Equal(t, "Blue Team", activityEntries[0].Subject)
 	require.Equal(t, "custom", activityEntries[0].Action)
 	require.Equal(t, "Custom activity", activityEntries[0].Message)
@@ -318,7 +320,7 @@ func TestAdminChallengesTemplateHandlerShowsChallengeRelatedActivity(t *testing.
 		Visible: true,
 	}))
 
-	activity, err := logManager.NewActivity("Blue Team", "completed", "Spanish Challenge", 77, jsonTestUUID)
+	activity, err := logManager.NewActivity(true, "Blue Team", "completed", "Spanish Challenge", 77, jsonTestUUID)
 	require.NoError(t, err)
 	require.NoError(t, logManager.CreateActivity(activity))
 	require.NoError(t, logManager.CreateFailuresLog(logs.FailuresLog{
@@ -411,7 +413,7 @@ func TestAdminChallengeUpdatePOSTHandlerLogsEnableAndDisableStateChanges(t *test
 	require.Len(t, activityEntries, 2)
 	require.Equal(t, "admin", activityEntries[0].Subject)
 	require.Equal(t, "enabled", activityEntries[0].Action)
-	require.Equal(t, "Spain", activityEntries[0].Message)
+	require.Equal(t, "Challenge Spain (Web) was enabled: 100 points", activityEntries[0].Message)
 	require.Equal(t, uint(50), activityEntries[0].ChallengeID)
 	require.Equal(t, "disabled", activityEntries[1].Action)
 }

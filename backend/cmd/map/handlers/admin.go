@@ -20,6 +20,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/countries"
+	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/rs/zerolog/log"
@@ -47,7 +48,7 @@ func (h *HandlersMap) createAdminActivityLog(r *http.Request, action, message st
 		username = h.ServiceName
 	}
 
-	activity, err := h.Logs.NewActivity(username, action, message, challengeID, uuid)
+	activity, err := h.Logs.NewActivity(true, username, action, message, challengeID, uuid)
 	if err != nil {
 		log.Warn().Err(err).Msg("error building admin activity log")
 		return
@@ -4324,11 +4325,29 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	}
 
 	if previousActive != active {
+		countryLabel := strings.TrimSpace(challenge.Country)
+		if countryLabel == "" {
+			countryLabel = strings.TrimSpace(challenge.Title)
+		}
+
+		categoryName := ""
+		if challenge.CategoryID != 0 {
+			category, err := h.Challenges.GetCategoryByID(challenge.CategoryID, uuid)
+			if err != nil {
+				log.Err(err).Msg("error retrieving challenge category for admin activity")
+				writeError(http.StatusInternalServerError, "Failed to retrieve challenge category")
+				return
+			}
+			categoryName = category.Name
+		}
+
 		action := "disabled"
+		actionMsg := logs.DisableMessage(countryLabel, categoryName, challenge.Points)
 		if active {
 			action = "enabled"
+			actionMsg = logs.EnableMessage(countryLabel, categoryName, challenge.Points)
 		}
-		h.createAdminActivityLog(r, action, challenge.Title, challenge.ID)
+		h.createAdminActivityLog(r, action, actionMsg, challenge.ID)
 	}
 
 	writeSuccess("Challenge updated")
@@ -4694,7 +4713,7 @@ func (h *HandlersMap) AdminActivityPOSTHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	activity, err := h.Logs.NewActivity(subject, action, message, 0, uuid)
+	activity, err := h.Logs.NewActivity(req.Visible, subject, action, message, 0, uuid)
 	if err != nil {
 		log.Err(err).Msg("error building custom admin activity log")
 		writeError(http.StatusInternalServerError, "Failed to build activity entry")
