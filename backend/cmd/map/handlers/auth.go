@@ -45,6 +45,23 @@ func (h *HandlersMap) LoginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "invalid credentials"})
 		return
 	}
+	if !user.Admin {
+		if h.Settings == nil {
+			log.Err(errors.New("settings manager not initialized")).Msg("error checking login_enabled")
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "login is unavailable"})
+			return
+		}
+		loginEnabled, err := h.Settings.GetLoginEnabled()
+		if err != nil {
+			log.Err(err).Msg("error getting login enabled setting")
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "login is unavailable"})
+			return
+		}
+		if !loginEnabled {
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusForbidden, MapErrorResponse{Error: "login is disabled"})
+			return
+		}
+	}
 	err := h.Sessions.RenewToken(r.Context())
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error renewing session"})
