@@ -225,6 +225,30 @@
                     </div>
                   </form>
                 </div>
+                <div class="admin-setting-row">
+                  <label for="scoring_hints_on">scoring_hints</label>
+                  <form id="form_scoring_hints" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="scoring_hints" />
+                    <div class="admin-section-toggle radio-inline">
+                      <input type="radio" name="setting_value" id="scoring_hints_on" value="true" {{ if .ScoringHints }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="scoring_hints_on">On</label>
+                      <input type="radio" name="setting_value" id="scoring_hints_off" value="false" {{ if not .ScoringHints }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="scoring_hints_off">Off</label>
+                    </div>
+                  </form>
+                </div>
+                <div class="admin-setting-row">
+                  <label for="scoring_help_on">scoring_help</label>
+                  <form id="form_scoring_help" action="/{{ .UUID }}/admin/settings" method="post">
+                    <input type="hidden" name="setting_name" value="scoring_help" />
+                    <div class="admin-section-toggle radio-inline">
+                      <input type="radio" name="setting_value" id="scoring_help_on" value="true" {{ if .ScoringHelp }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="scoring_help_on">On</label>
+                      <input type="radio" name="setting_value" id="scoring_help_off" value="false" {{ if not .ScoringHelp }}checked{{ end }} onchange="saveSettingValue(this)" />
+                      <label for="scoring_help_off">Off</label>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           </section>

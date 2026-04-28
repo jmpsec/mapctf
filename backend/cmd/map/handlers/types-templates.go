@@ -110,6 +110,8 @@ type AdminSettingsTemplateData struct {
 	RegistrationType         int
 	RegistrationToken        string
 	ScoringEnabled           bool
+	ScoringHints             bool
+	ScoringHelp              bool
 	GamePaused               bool
 	GameStarted              bool
 	CustomOrg                string

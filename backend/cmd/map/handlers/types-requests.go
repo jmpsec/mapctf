@@ -76,7 +76,8 @@ type AdminChallengeCreateRequest struct {
 	Points      string `json:"points"`
 	Bonus       string `json:"bonus"`
 	BonusDecay  string `json:"bonus_decay"`
-	Penalty     string `json:"penalty"`
+	HintPenalty string `json:"hint_penalty"`
+	HelpPenalty string `json:"help_penalty"`
 	Flag        string `json:"flag"`
 	Hint        string `json:"hint"`
 }

@@ -118,6 +118,7 @@ func (h *HandlersAPI) CreateChallengeHandler(w http.ResponseWriter, r *http.Requ
 		req.Bonus,
 		req.BonusDecay,
 		req.Penalty,
+		0,
 		req.Flag,
 		req.Hint,
 		uuid,

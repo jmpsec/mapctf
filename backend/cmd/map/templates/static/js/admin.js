@@ -1730,7 +1730,8 @@ function initAdminAddChallengeModal() {
         var points = String(form.querySelector('input[name="points"]').value || "0").trim();
         var bonus = String(form.querySelector('input[name="bonus"]').value || "0").trim();
         var bonusDecay = String(form.querySelector('input[name="bonus_decay"]').value || "0").trim();
-        var penalty = String(form.querySelector('input[name="penalty"]').value || "0").trim();
+        var hintPenalty = String(form.querySelector('input[name="hint_penalty"]').value || "0").trim();
+        var helpPenalty = String(form.querySelector('input[name="help_penalty"]').value || "0").trim();
         var active = String(form.querySelector('select[name="active"]').value || "true").trim();
 
         if (!title || !flag) {
@@ -1753,7 +1754,8 @@ function initAdminAddChallengeModal() {
           points: points,
           bonus: bonus,
           bonus_decay: bonusDecay,
-          penalty: penalty,
+          hint_penalty: hintPenalty,
+          help_penalty: helpPenalty,
           flag: flag,
           hint: hint,
         })
@@ -2879,7 +2881,8 @@ function submitAdminChallengeRow(triggerEl) {
   var points = String(form.querySelector('input[name="points"]').value || "0").trim();
   var bonus = String(form.querySelector('input[name="bonus"]').value || "0").trim();
   var bonusDecay = String(form.querySelector('input[name="bonus_decay"]').value || "0").trim();
-  var penalty = String(form.querySelector('input[name="penalty"]').value || "0").trim();
+  var hintPenalty = String(form.querySelector('input[name="hint_penalty"]').value || "0").trim();
+  var helpPenalty = String(form.querySelector('input[name="help_penalty"]').value || "0").trim();
   var activeRadio = challengeRow.querySelector('.admin-activity-status-toggle input[type="radio"]:checked');
   var active = activeRadio ? String(activeRadio.value || "true").trim() : "true";
 
@@ -2906,7 +2909,8 @@ function submitAdminChallengeRow(triggerEl) {
     points: points,
     bonus: bonus,
     bonus_decay: bonusDecay,
-    penalty: penalty,
+    hint_penalty: hintPenalty,
+    help_penalty: helpPenalty,
     flag: flag,
     hint: hint,
   })

@@ -25,6 +25,10 @@ const (
 	RegistrationToken string = "registration_token"
 	// ScoringEnabled is the setting name for scoring enabled/disabled
 	ScoringEnabled string = "scoring_enabled"
+	// ScoringHints is the setting name for scoring hints enabled/disabled
+	ScoringHints string = "scoring_hints"
+	// ScoringHelp is the setting name for scoring help enabled/disabled
+	ScoringHelp string = "scoring_help"
 	// GamePaused is the setting name for game paused/unpaused
 	GamePaused string = "game_paused"
 	// GameStarted is the setting name for game started/not started
@@ -62,6 +66,8 @@ var BooleanSettings = map[string]bool{
 	RegistrationNames:        false,
 	RegistrationEmails:       false,
 	ScoringEnabled:           false,
+	ScoringHints:             false,
+	ScoringHelp:              false,
 	GamePaused:               false,
 	GameStarted:              false,
 	GameboardShowTeamMembers: false,
@@ -508,6 +514,26 @@ func (m *SettingsManager) SetScoringEnabled(enabled bool, username string) error
 
 func (m *SettingsManager) GetScoringEnabled() (bool, error) {
 	return m.getBoolSetting(ScoringEnabled)
+}
+
+func (m *SettingsManager) SetScoringHints(enabled bool, username string) error {
+	return m.upsertSetting(ScoringHints, TypeBool, ScoringHints+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = enabled
+	})
+}
+
+func (m *SettingsManager) GetScoringHints() (bool, error) {
+	return m.getBoolSetting(ScoringHints)
+}
+
+func (m *SettingsManager) SetScoringHelp(enabled bool, username string) error {
+	return m.upsertSetting(ScoringHelp, TypeBool, ScoringHelp+" boolean setting", username, func(s *PlatformSetting) {
+		s.ValueBool = enabled
+	})
+}
+
+func (m *SettingsManager) GetScoringHelp() (bool, error) {
+	return m.getBoolSetting(ScoringHelp)
 }
 
 func (m *SettingsManager) SetGamePaused(paused bool, username string) error {

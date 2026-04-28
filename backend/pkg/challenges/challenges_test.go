@@ -94,9 +94,10 @@ func TestCreate(t *testing.T) {
 		Points:      100,
 		Bonus:       10,
 		BonusDecay:  5,
+		HintPenalty: 5,
+		HelpPenalty: 3,
 		Flag:        "flag{test}",
 		Hint:        "Test hint",
-		Penalty:     5,
 		UUID:        testUUID1,
 	}
 
@@ -335,6 +336,7 @@ func TestNew(t *testing.T) {
 		20,
 		10,
 		5,
+		3,
 		"flag{sql_injection}",
 		"Check the login form",
 		testUUID1,
@@ -361,8 +363,11 @@ func TestNew(t *testing.T) {
 	if challenge.BonusDecay != 10 {
 		t.Errorf("Expected bonus decay 10, got %d", challenge.BonusDecay)
 	}
-	if challenge.Penalty != 5 {
-		t.Errorf("Expected penalty 5, got %d", challenge.Penalty)
+	if challenge.HintPenalty != 5 {
+		t.Errorf("Expected hint penalty 5, got %d", challenge.HintPenalty)
+	}
+	if challenge.HelpPenalty != 3 {
+		t.Errorf("Expected help penalty 3, got %d", challenge.HelpPenalty)
 	}
 	if challenge.Flag != "flag{sql_injection}" {
 		t.Errorf("Expected flag 'flag{sql_injection}', got '%s'", challenge.Flag)

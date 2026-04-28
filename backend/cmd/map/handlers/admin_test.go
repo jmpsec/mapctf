@@ -389,17 +389,18 @@ func TestAdminChallengeUpdatePOSTHandlerLogsEnableAndDisableStateChanges(t *test
 		UUID:  jsonTestUUID,
 	}))
 	require.NoError(t, challengesManager.Create(challenges.Challenge{
-		Model:      gorm.Model{ID: 50},
-		Title:      "Spain",
-		CategoryID: 1,
-		Active:     false,
-		Points:     100,
-		Bonus:      0,
-		BonusDecay: 0,
-		Penalty:    0,
-		Flag:       "MAP{es}",
-		Hint:       "hint",
-		UUID:       jsonTestUUID,
+		Model:       gorm.Model{ID: 50},
+		Title:       "Spain",
+		CategoryID:  1,
+		Active:      false,
+		Points:      100,
+		Bonus:       0,
+		BonusDecay:  0,
+		HintPenalty: 0,
+		HelpPenalty: 0,
+		Flag:        "MAP{es}",
+		Hint:        "hint",
+		UUID:        jsonTestUUID,
 	}))
 
 	makeRequest := func(activeValue string) *http.Request {
@@ -412,7 +413,8 @@ func TestAdminChallengeUpdatePOSTHandlerLogsEnableAndDisableStateChanges(t *test
 			Points:      "100",
 			Bonus:       "0",
 			BonusDecay:  "0",
-			Penalty:     "0",
+			HintPenalty: "0",
+			HelpPenalty: "0",
 			Flag:        "MAP{es}",
 			Hint:        "hint",
 		}

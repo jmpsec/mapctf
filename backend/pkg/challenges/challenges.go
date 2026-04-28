@@ -19,7 +19,8 @@ type Challenge struct {
 	BonusDecay  int
 	Flag        string
 	Hint        string
-	Penalty     int
+	HintPenalty int
+	HelpPenalty int
 	UUID        string `gorm:"index"`
 }
 
@@ -45,9 +46,14 @@ func CreateChallengeManager(backend *gorm.DB) (*ChallengeManager, error) {
 	c := &ChallengeManager{
 		DB: backend,
 	}
-	// table challenges
 	if err := backend.AutoMigrate(&Challenge{}); err != nil {
 		return nil, fmt.Errorf("Failed to AutoMigrate table (challenges): %w", err)
+	}
+	// Best-effort legacy migration: copy old penalty values into hint_penalty.
+	if backend.Migrator().HasColumn(&Challenge{}, "penalty") {
+		if err := backend.Exec("UPDATE challenges SET hint_penalty = penalty WHERE hint_penalty = 0").Error; err != nil {
+			return nil, fmt.Errorf("failed to migrate legacy challenge penalty values: %w", err)
+		}
 	}
 	// table categories
 	if err := backend.AutoMigrate(&Category{}); err != nil {
@@ -77,17 +83,18 @@ func (m *ChallengeManager) Update(challenge Challenge) error {
 	if err := m.DB.Model(&Challenge{}).
 		Where("id = ? AND uuid = ?", challenge.ID, challenge.UUID).
 		Updates(map[string]interface{}{
-			"title":       challenge.Title,
-			"description": challenge.Description,
-			"category_id": challenge.CategoryID,
-			"country":     challenge.Country,
-			"active":      challenge.Active,
-			"points":      challenge.Points,
-			"bonus":       challenge.Bonus,
-			"bonus_decay": challenge.BonusDecay,
-			"flag":        challenge.Flag,
-			"hint":        challenge.Hint,
-			"penalty":     challenge.Penalty,
+			"title":        challenge.Title,
+			"description":  challenge.Description,
+			"category_id":  challenge.CategoryID,
+			"country":      challenge.Country,
+			"active":       challenge.Active,
+			"points":       challenge.Points,
+			"bonus":        challenge.Bonus,
+			"bonus_decay":  challenge.BonusDecay,
+			"flag":         challenge.Flag,
+			"hint":         challenge.Hint,
+			"hint_penalty": challenge.HintPenalty,
+			"help_penalty": challenge.HelpPenalty,
 		}).Error; err != nil {
 		return fmt.Errorf("Update Challenge %w", err)
 	}
@@ -225,7 +232,7 @@ func (m *ChallengeManager) ExistCategory(name string, uuid string) bool {
 }
 
 // New empty challenge
-func (m *ChallengeManager) New(title, description string, categoryID uint, country string, active bool, points, bonus, bonusDecay, penalty int, flag, hint string, uuid string) Challenge {
+func (m *ChallengeManager) New(title, description string, categoryID uint, country string, active bool, points, bonus, bonusDecay, hintPenalty, helpPenalty int, flag, hint string, uuid string) Challenge {
 	return Challenge{
 		Title:       title,
 		Description: description,
@@ -237,7 +244,8 @@ func (m *ChallengeManager) New(title, description string, categoryID uint, count
 		BonusDecay:  bonusDecay,
 		Flag:        flag,
 		Hint:        hint,
-		Penalty:     penalty,
+		HintPenalty: hintPenalty,
+		HelpPenalty: helpPenalty,
 		UUID:        uuid,
 	}
 }

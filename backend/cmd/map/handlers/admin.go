@@ -105,7 +105,9 @@ type adminChallengesTransferItem struct {
 	Points      int    `json:"points"`
 	Bonus       int    `json:"bonus"`
 	BonusDecay  int    `json:"bonus_decay"`
-	Penalty     int    `json:"penalty"`
+	HintPenalty int    `json:"hint_penalty"`
+	HelpPenalty int    `json:"help_penalty"`
+	Penalty     int    `json:"penalty,omitempty"`
 	Flag        string `json:"flag"`
 	Hint        string `json:"hint"`
 }
@@ -513,6 +515,20 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 		log.Warn().Err(err).Msg("error loading scoring_enabled")
 	}
 
+	scoringHints, err := h.Settings.GetScoringHints()
+	if err == nil {
+		templateData.ScoringHints = scoringHints
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading scoring_hints")
+	}
+
+	scoringHelp, err := h.Settings.GetScoringHelp()
+	if err == nil {
+		templateData.ScoringHelp = scoringHelp
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading scoring_help")
+	}
+
 	gamePaused, err := h.Settings.GetGamePaused()
 	if err == nil {
 		templateData.GamePaused = gamePaused
@@ -715,6 +731,14 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 		}
 	case "scoring_enabled":
 		if !setBoolSetting(h.Settings.SetScoringEnabled, settingName) {
+			return
+		}
+	case "scoring_hints":
+		if !setBoolSetting(h.Settings.SetScoringHints, settingName) {
+			return
+		}
+	case "scoring_help":
+		if !setBoolSetting(h.Settings.SetScoringHelp, settingName) {
 			return
 		}
 	case "game_paused":
@@ -932,7 +956,8 @@ func (h *HandlersMap) buildAdminChallengesTransferPayload(uuid string) (adminCha
 			Points:      challenge.Points,
 			Bonus:       challenge.Bonus,
 			BonusDecay:  challenge.BonusDecay,
-			Penalty:     challenge.Penalty,
+			HintPenalty: challenge.HintPenalty,
+			HelpPenalty: challenge.HelpPenalty,
 			Flag:        strings.TrimSpace(challenge.Flag),
 			Hint:        strings.TrimSpace(challenge.Hint),
 		}
@@ -979,6 +1004,10 @@ func (h *HandlersMap) importAdminSettingsFromPayload(payload adminSettingsTransf
 			err = h.Settings.SetRegistrationToken(in.ValueString, username)
 		case "scoring_enabled":
 			err = h.Settings.SetScoringEnabled(in.ValueBool, username)
+		case "scoring_hints":
+			err = h.Settings.SetScoringHints(in.ValueBool, username)
+		case "scoring_help":
+			err = h.Settings.SetScoringHelp(in.ValueBool, username)
 		case "game_paused":
 			err = h.Settings.SetGamePaused(in.ValueBool, username)
 		case "game_started":
@@ -1203,6 +1232,10 @@ func (h *HandlersMap) importAdminChallengesFromPayload(uuid string, payload admi
 				unassignedCountries++
 			}
 		}
+		hintPenalty := item.HintPenalty
+		if hintPenalty == 0 && item.Penalty != 0 {
+			hintPenalty = item.Penalty
+		}
 
 		challenge := h.Challenges.New(
 			title,
@@ -1213,7 +1246,8 @@ func (h *HandlersMap) importAdminChallengesFromPayload(uuid string, payload admi
 			item.Points,
 			item.Bonus,
 			item.BonusDecay,
-			item.Penalty,
+			hintPenalty,
+			item.HelpPenalty,
 			flag,
 			strings.TrimSpace(item.Hint),
 			uuid,
@@ -1550,6 +1584,8 @@ func (h *HandlersMap) AdminSettingsResetDefaultsPOSTHandler(w http.ResponseWrite
 		func() error { return h.Settings.SetRegistrationType(0, username) },
 		func() error { return h.Settings.SetRegistrationToken("", username) },
 		func() error { return h.Settings.SetScoringEnabled(false, username) },
+		func() error { return h.Settings.SetScoringHints(false, username) },
+		func() error { return h.Settings.SetScoringHelp(false, username) },
 		func() error { return h.Settings.SetGamePaused(false, username) },
 		func() error { return h.Settings.SetGameStarted(false, username) },
 		func() error { return h.Settings.SetGameStartTime(defaultStartTime, username) },
@@ -4074,13 +4110,20 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	pointsStr := strings.TrimSpace(req.Points)
 	bonusStr := strings.TrimSpace(req.Bonus)
 	bonusDecayStr := strings.TrimSpace(req.BonusDecay)
-	penaltyStr := strings.TrimSpace(req.Penalty)
+	hintPenaltyStr := strings.TrimSpace(req.HintPenalty)
+	helpPenaltyStr := strings.TrimSpace(req.HelpPenalty)
 	flag := strings.TrimSpace(req.Flag)
 	hint := strings.TrimSpace(req.Hint)
 
 	if title == "" || flag == "" {
 		writeError(http.StatusBadRequest, "Title and flag are required")
 		return
+	}
+	if hintPenaltyStr == "" {
+		hintPenaltyStr = "0"
+	}
+	if helpPenaltyStr == "" {
+		helpPenaltyStr = "0"
 	}
 	if country != "" {
 		selectedCountry, err := h.Countries.GetByCode(country)
@@ -4122,9 +4165,14 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 		writeError(http.StatusBadRequest, "Invalid bonus_decay value")
 		return
 	}
-	penalty, err := strconv.ParseInt(penaltyStr, 10, 64)
+	hintPenalty, err := strconv.ParseInt(hintPenaltyStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid penalty value")
+		writeError(http.StatusBadRequest, "Invalid hint_penalty value")
+		return
+	}
+	helpPenalty, err := strconv.ParseInt(helpPenaltyStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid help_penalty value")
 		return
 	}
 
@@ -4137,7 +4185,8 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 		int(points),
 		int(bonus),
 		int(bonusDecay),
-		int(penalty),
+		int(hintPenalty),
+		int(helpPenalty),
 		flag,
 		hint,
 		uuid,
@@ -4216,13 +4265,20 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	pointsStr := strings.TrimSpace(req.Points)
 	bonusStr := strings.TrimSpace(req.Bonus)
 	bonusDecayStr := strings.TrimSpace(req.BonusDecay)
-	penaltyStr := strings.TrimSpace(req.Penalty)
+	hintPenaltyStr := strings.TrimSpace(req.HintPenalty)
+	helpPenaltyStr := strings.TrimSpace(req.HelpPenalty)
 	flag := strings.TrimSpace(req.Flag)
 	hint := strings.TrimSpace(req.Hint)
 
 	if title == "" || flag == "" {
 		writeError(http.StatusBadRequest, "Title and flag are required")
 		return
+	}
+	if hintPenaltyStr == "" {
+		hintPenaltyStr = "0"
+	}
+	if helpPenaltyStr == "" {
+		helpPenaltyStr = "0"
 	}
 	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
 	if err != nil || categoryID == 0 {
@@ -4256,9 +4312,14 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 		writeError(http.StatusBadRequest, "Invalid bonus_decay value")
 		return
 	}
-	penalty, err := strconv.ParseInt(penaltyStr, 10, 64)
+	hintPenalty, err := strconv.ParseInt(hintPenaltyStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid penalty value")
+		writeError(http.StatusBadRequest, "Invalid hint_penalty value")
+		return
+	}
+	helpPenalty, err := strconv.ParseInt(helpPenaltyStr, 10, 64)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid help_penalty value")
 		return
 	}
 
@@ -4290,7 +4351,8 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	challenge.Points = int(points)
 	challenge.Bonus = int(bonus)
 	challenge.BonusDecay = int(bonusDecay)
-	challenge.Penalty = int(penalty)
+	challenge.HintPenalty = int(hintPenalty)
+	challenge.HelpPenalty = int(helpPenalty)
 	challenge.Flag = flag
 	challenge.Hint = hint
 

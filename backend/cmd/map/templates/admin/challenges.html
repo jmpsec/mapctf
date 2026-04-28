@@ -255,8 +255,12 @@
                                 <input id="challenge-bonus-decay-{{ .ID }}" name="bonus_decay" type="number" value="{{ .BonusDecay }}" />
                               </div>
                               <div class="admin-score-item">
-                                <label class="admin-field-label" for="challenge-penalty-{{ .ID }}">Penalty</label>
-                                <input id="challenge-penalty-{{ .ID }}" name="penalty" type="number" value="{{ .Penalty }}" />
+                                <label class="admin-field-label" for="challenge-hint-penalty-{{ .ID }}">Hint Penalty</label>
+                                <input id="challenge-hint-penalty-{{ .ID }}" name="hint_penalty" type="number" value="{{ .HintPenalty }}" />
+                              </div>
+                              <div class="admin-score-item">
+                                <label class="admin-field-label" for="challenge-help-penalty-{{ .ID }}">Help Penalty</label>
+                                <input id="challenge-help-penalty-{{ .ID }}" name="help_penalty" type="number" value="{{ .HelpPenalty }}" />
                               </div>
                             </div>
                           </div>

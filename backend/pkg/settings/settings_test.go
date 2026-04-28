@@ -430,6 +430,16 @@ func TestTypedGettersAndSetters(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, scoringEnabled)
 
+	require.NoError(t, m.SetScoringHints(true, "alice"))
+	scoringHints, err := m.GetScoringHints()
+	require.NoError(t, err)
+	require.True(t, scoringHints)
+
+	require.NoError(t, m.SetScoringHelp(true, "alice"))
+	scoringHelp, err := m.GetScoringHelp()
+	require.NoError(t, err)
+	require.True(t, scoringHelp)
+
 	require.NoError(t, m.SetGamePaused(true, "alice"))
 	gamePaused, err := m.GetGamePaused()
 	require.NoError(t, err)
