@@ -99,6 +99,8 @@ const (
 	chatPath = "/chat"
 	// Score path
 	scorePath = "/score"
+	// Hint path
+	hintPath = "/hint"
 	// World domination path
 	dominationPath = "/domination"
 	// JSON data path
@@ -319,8 +321,10 @@ func mapCTFService() {
 			r.Route(mapGameboardPath, func(r chi.Router) {
 				r.Get(rootPath, handlersMap.GameboardTemplateHandler)
 				r.Post(chatPath, handlersMap.ChatPOSTHandler)
+				r.Get(hintPath, handlersMap.HintGETHandler)
 				// Throttle score submissions to prevent abuse (8 concurrent, 16 backlog, 30s timeout)
 				r.With(handlersMap.PerTeamThrottleBacklog(8, 16, 30*time.Second)).Post(scorePath, handlersMap.ScorePOSTHandler)
+				r.With(handlersMap.PerTeamThrottleBacklog(8, 16, 30*time.Second)).Post(hintPath, handlersMap.HintPOSTHandler)
 			})
 			// Protected JSON routes
 			r.Route(jsonPath, func(r chi.Router) {

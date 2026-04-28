@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
-    <link rel="stylesheet" href="/static/css/mapctf.css" />
+    <link rel="stylesheet" href="/static/css/mapctf.css?v=20260428b" />
   </head>
 
-  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ .CurrentUsername }}" data-game-started="{{ if .GameStarted }}true{{ else }}false{{ end }}"{{ if .GameStartSet }} data-game-start-time="{{ .GameStartTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}{{ if .GameEndSet }} data-game-end-time="{{ .GameEndTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}>
+  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-scoring-hints="{{ if .ScoringHints }}true{{ else }}false{{ end }}" data-scoring-help="{{ if .ScoringHelp }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ .CurrentUsername }}" data-game-started="{{ if .GameStarted }}true{{ else }}false{{ end }}"{{ if .GameStartSet }} data-game-start-time="{{ .GameStartTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}{{ if .GameEndSet }} data-game-end-time="{{ .GameEndTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}>
     <!--
      *
      * SVG icon sprite object
@@ -2208,89 +2208,6 @@
 
       </div>
 
-      <div id="mctf-modal" class="mctf-modal-wrapper modal--popup modal--country-capture">
-        <div class="mctf-modal-content">
-          <div class="modal-title">
-            <h4>
-              capture_
-              <span class="country-name highlighted">Brazil</span>
-            </h4>
-            <a href="#" class="js-close-modal">
-              <svg class="icon icon--close">
-                <use xlink:href="#icon--close"></use>
-              </svg>
-            </a>
-          </div>
-
-          <form class="mctf-form country-capture-form">
-            <div class="capture-text">Lorem ipsum dolor sit amet</div>
-            <div class="country-capture-feedback" aria-live="polite"></div>
-
-            <fieldset class="form-set">
-              <div class="form-el el--text">
-                <textarea placeholder="Enter your response" rows="4"></textarea>
-              </div>
-            </fieldset>
-            <div class="form-el--multiple-actions mctf-column-container">
-              <div class="col col-1-2">
-                <!--
-                * ALTERNATE HOVERS
-                *
-                * To enable a link that has different content on hover, add a
-                *  "data-hover" addribute to the <a> tag and wrap the default
-                *  text in a span. On hover, the browser will hide the default
-                *  text and show the value of the data-hover attribute
-                -->
-                <a class="mctf-cta cta--blue js-trigger-hint" data-hover="-10 Pts"><span>Hint</span></a>
-                <a class="mctf-cta cta--red js-trigger-help" data-hover="-30 Pts"><span>Help</span></a>
-              </div>
-              <div class="col col-1-2 actions--right">
-                <button class="mctf-cta cta--yellow" type="submit">Submit</button>
-                <span class="mctf-numbers help--time-left">00:00:25:47</span>
-              </div>
-            </div>
-          </form>
-
-          <div class="capture-hints-and-help">
-            <div class="capture-help">
-              <h4>help_</h4>
-              <div>
-                You have requested help from another team. You will ba able to capture_
-                <span class="country-name">Brazil</span>
-                in 10 minutes. You may close this window and continue playing CTF.
-              </div>
-            </div>
-            <div class="capture-hint">
-              <h4>hint_</h4>
-              <div>Curabitur rutrum urna at lacus vestibulum venenatis. Sed eget vestibulum nisl.Cras aliquet non ante elementum scipit.</div>
-            </div>
-          </div>
-
-          <footer class="modal-footer mctf-column-container">
-            <div class="col col-1-2 country-capture-stats mctf-column-container">
-              <div class="points-display">
-                <span class="points-number mctf-numbers">45</span>
-                <span class="points-label">PTS</span>
-              </div>
-              <div class="country-stats">
-                <dl>
-                  <dt>category</dt>
-                  <dd class="country-category">System Architecture</dd>
-
-                  <dt>flag_owner</dt>
-                  <dd class="opponent-name country-owner">
-                    <span class="opponent-name">DEATH HAXX</span>
-                  </dd>
-                </dl>
-              </div>
-            </div>
-            <div class="col col-1-2 country-capture-completed mctf-column-container">
-              <span>completed_by &gt;</span>
-              <ul class="completed-list"></ul>
-            </div>
-          </footer>
-        </div>
-      </div>
       <div id="mctf-modal-persistent--command-line" class="mctf-modal-wrapper modal--popup">
         <div class="mctf-modal-content mctf-command-line mctf-column-container">
           <div class="command-list">
@@ -2325,39 +2242,13 @@
           </a>
         </div>
       </div>
-      <div id="mctf-country-popup" class="mctf-popup-content popup--hover mctf-section-border" style="left: 1119px; top: 300px">
-        <div class="modal-title">
-          <h4>
-            _
-            <span class="country-name">Russia</span>
-          </h4>
-        </div>
-
-        <div class="country-capture-stats mctf-column-container">
-          <div class="points-display">
-            <span class="points-number mctf-numbers"></span>
-            <span class="points-label">PTS</span>
-          </div>
-          <div class="country-stats">
-            <dl>
-              <dt>category</dt>
-              <dd class="country-category"></dd>
-
-              <dt>flag_owner</dt>
-              <dd class="country-owner">
-                <span class="opponent-name">Tank SF</span>
-              </dd>
-            </dl>
-          </div>
-        </div>
-      </div>
     </div>
     <!-- #mctf-initkit -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>
-    <script type="text/javascript" src="/static/js/mapctf.js"></script>
+    <script type="text/javascript" src="/static/js/mapctf.js?v=20260428b"></script>
     <script type="text/javascript">
       (function () {
         var body = document.body;

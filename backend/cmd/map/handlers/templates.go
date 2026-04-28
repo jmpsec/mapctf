@@ -329,6 +329,18 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading gameboard_show_team_members")
 	}
+	scoringHints, err := h.Settings.GetScoringHints()
+	if err == nil {
+		templateData.ScoringHints = scoringHints
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading scoring_hints")
+	}
+	scoringHelp, err := h.Settings.GetScoringHelp()
+	if err == nil {
+		templateData.ScoringHelp = scoringHelp
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading scoring_help")
+	}
 	gameStarted, err := h.Settings.GetGameStarted()
 	if err == nil {
 		templateData.GameStarted = gameStarted

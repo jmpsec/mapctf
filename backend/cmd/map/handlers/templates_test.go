@@ -61,6 +61,8 @@ func TestGameboardTemplateHandlerIncludesChatTemplateData(t *testing.T) {
 
 	require.NoError(t, settingsManager.SetGameboardChatMaxLen(64, jsonSettingsAuthor))
 	require.NoError(t, settingsManager.SetGameboardShowTeamMembers(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetScoringHints(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetScoringHelp(false, jsonSettingsAuthor))
 	gameStartTime := time.Date(2030, time.January, 2, 9, 0, 0, 0, time.FixedZone("UTC+2", 2*60*60))
 	gameEndTime := time.Date(2030, time.January, 2, 18, 30, 0, 0, time.FixedZone("UTC+2", 2*60*60))
 	require.NoError(t, settingsManager.SetGameStarted(true, jsonSettingsAuthor))
@@ -80,6 +82,8 @@ func TestGameboardTemplateHandlerIncludesChatTemplateData(t *testing.T) {
 	body := rr.Body.String()
 	require.Contains(t, body, `data-chat-max-len="64"`)
 	require.Contains(t, body, `data-current-username="alice"`)
+	require.Contains(t, body, `data-scoring-hints="true"`)
+	require.Contains(t, body, `data-scoring-help="false"`)
 	require.Contains(t, body, `data-game-started="true"`)
 	require.Contains(t, body, `data-game-start-time="2030-01-02T09:00:00+02:00"`)
 	require.Contains(t, body, `data-game-end-time="2030-01-02T18:30:00+02:00"`)

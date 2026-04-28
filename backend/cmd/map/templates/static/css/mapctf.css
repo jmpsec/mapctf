@@ -4966,13 +4966,84 @@ body[data-section=gameboard] .mctf-page {
   display: none;
   padding: 0 40px 40px 40px;
 }
+.mctf-modal-content.has-hint-panel .capture-hints-and-help .capture-hint {
+  display: block;
+}
 .hint-enabled .capture-hints-and-help .capture-hint, .help-enabled .capture-hints-and-help .capture-help {
   display: block;
 }
 .capture-hints-and-help h4 {
   margin-bottom: 10px;
 }
-
+.capture-hints-and-help {
+  display: grid;
+  gap: 0;
+}
+.capture-hint-card {
+  border: 1px solid rgba(92, 240, 246, 0.18);
+  background: linear-gradient(180deg, rgba(8, 24, 30, 0.96) 0%, rgba(12, 32, 39, 0.9) 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  padding: 18px 20px;
+}
+.capture-hint-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.capture-hint-head h4 {
+  margin: 0;
+}
+.capture-hint-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid rgba(234, 212, 77, 0.32);
+  color: #ead44d;
+  font-family: "puristaregular", Courier, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.capture-hint-copy {
+  margin: 0 0 14px;
+  color: rgba(231, 249, 255, 0.74);
+  line-height: 1.5;
+}
+.capture-hint-body {
+  border-left: 2px solid rgba(92, 240, 246, 0.55);
+  padding-left: 14px;
+}
+.capture-hint-empty {
+  color: rgba(255, 255, 255, 0.48);
+  font-family: "Source Code Pro", Courier, monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.capture-hint-value {
+  display: none;
+  color: #e7f9ff;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.capture-hint-card--unlocked {
+  border-color: rgba(92, 240, 246, 0.35);
+  background: linear-gradient(180deg, rgba(9, 31, 38, 0.98) 0%, rgba(14, 41, 49, 0.92) 100%);
+}
+.capture-hint-card--unlocked .capture-hint-status {
+  border-color: rgba(92, 240, 246, 0.4);
+  color: #5cf0f6;
+}
+.capture-hint-card--unlocked .capture-hint-empty {
+  display: none;
+}
+.capture-hint-card--unlocked .capture-hint-value {
+  display: block;
+}
 .country-capture-form .help--time-left {
   font-size: 2em;
   display: none;

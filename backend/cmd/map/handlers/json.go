@@ -28,11 +28,12 @@ type JSONCountryDataResponse struct {
 	Active          bool     `json:"active"`
 	SolvedByCurrent bool     `json:"solved_by_current"`
 	Points          int      `json:"points"`
+	HintPenalty     int      `json:"hint_penalty"`
+	HelpPenalty     int      `json:"help_penalty"`
 	Category        string   `json:"category"`
 	Owner           string   `json:"owner"`
 	Completed       []string `json:"completed"`
 	Intro           string   `json:"intro"`
-	Hint            string   `json:"hint"`
 	LandPath        string   `json:"land_path"`
 	LandClass       string   `json:"land_class"`
 	LandStyle       string   `json:"land_style"`
@@ -306,11 +307,12 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 			Active:          hasChallenge,
 			SolvedByCurrent: solvedByCurrentCountry[countryCode],
 			Points:          challenge.Points,
+			HintPenalty:     challenge.HintPenalty,
+			HelpPenalty:     challenge.HelpPenalty,
 			Category:        categoryName,
 			Owner:           ownerByCountry[countryCode],
 			Completed:       completed,
 			Intro:           challenge.Description,
-			Hint:            challenge.Hint,
 			LandPath:        country.LandPath,
 			LandClass:       country.LandClass,
 			LandStyle:       country.LandStyle,

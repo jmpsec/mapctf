@@ -45,6 +45,11 @@ type MapScoreRequest struct {
 	Flag        string `json:"flag"`
 }
 
+// MapHintRequest to receive challenge hint requests
+type MapHintRequest struct {
+	CountryCode string `json:"country_code"`
+}
+
 // MapScoreResponse to be returned to map requests after a scoring attempt
 type MapScoreResponse struct {
 	Success       bool   `json:"success"`
@@ -53,6 +58,18 @@ type MapScoreResponse struct {
 	ChallengeID   uint   `json:"challenge_id,omitempty"`
 	PointsAwarded int    `json:"points_awarded,omitempty"`
 	TotalPoints   int    `json:"total_points,omitempty"`
+}
+
+// MapHintResponse to be returned after a hint request
+type MapHintResponse struct {
+	Success         bool   `json:"success"`
+	Message         string `json:"message"`
+	CountryCode     string `json:"country_code,omitempty"`
+	ChallengeID     uint   `json:"challenge_id,omitempty"`
+	Hint            string `json:"hint,omitempty"`
+	Penalty         int    `json:"penalty,omitempty"`
+	TotalPoints     int    `json:"total_points,omitempty"`
+	AlreadyUnlocked bool   `json:"already_unlocked,omitempty"`
 }
 
 // MapLogoutResponse to be returned to map requests after a successful logout

@@ -76,6 +76,8 @@ type GameboardTemplateData struct {
 	GameEndTime              time.Time
 	GameboardChatMaxLen      int
 	GameboardShowTeamMembers bool
+	ScoringHints             bool
+	ScoringHelp              bool
 	Countries                []countries.MapCountry
 }
 

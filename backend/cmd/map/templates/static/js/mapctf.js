@@ -613,6 +613,14 @@
       return $body && $body.attr("data-show-team-members") === "true";
     }
 
+    function isScoringHintsEnabled() {
+      return $body && $body.attr("data-scoring-hints") === "true";
+    }
+
+    function isScoringHelpEnabled() {
+      return $body && $body.attr("data-scoring-help") === "true";
+    }
+
     function formatLastScoreLabel(lastScoreValue) {
       if (!lastScoreValue) {
         return "No score yet";
@@ -760,6 +768,115 @@
           flag: flag,
         }),
       });
+    }
+
+    function requestCountryHint(country) {
+      var uuid = getCurrentUUID();
+      if (!uuid) {
+        return $.Deferred()
+          .reject({
+            responseJSON: {
+              error: "missing game UUID",
+            },
+          })
+          .promise();
+      }
+
+      return $.ajax({
+        url: "/" + encodeURIComponent(uuid) + "/gameboard/hint",
+        method: "POST",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        data: JSON.stringify({
+          country_code: COUNTRY_DATA && COUNTRY_DATA[country] ? COUNTRY_DATA[country].country_code : "",
+        }),
+      });
+    }
+
+    function getUnlockedCountryHint(country) {
+      var uuid = getCurrentUUID();
+      if (!uuid) {
+        return $.Deferred()
+          .reject({
+            responseJSON: {
+              error: "missing game UUID",
+            },
+          })
+          .promise();
+      }
+
+      return $.ajax({
+        url: "/" + encodeURIComponent(uuid) + "/gameboard/hint",
+        method: "GET",
+        dataType: "json",
+        data: {
+          country_code: COUNTRY_DATA && COUNTRY_DATA[country] ? COUNTRY_DATA[country].country_code : "",
+        },
+      });
+    }
+
+    function resetHintCard($container) {
+      var $hintCard = $(".capture-hint-card", $container);
+      var $hintStatus = $(".capture-hint-status", $container);
+      var $hintCopy = $(".capture-hint-copy", $container);
+      var $hintEmpty = $(".capture-hint-empty", $container);
+      var $hintValue = $(".capture-hint-value", $container);
+
+      $hintCard.removeClass("capture-hint-card--unlocked").addClass("capture-hint-card--locked");
+      $hintStatus.text("Locked");
+      $hintCopy.text("Spend points to unlock extra challenge intel for this country.");
+      $hintEmpty.show();
+      $hintValue.hide().text("");
+
+    }
+
+    function ensureHintCardStructure($container) {
+      var $hintPanel = $(".capture-hint", $container);
+
+      if ($hintPanel.length === 0 || $(".capture-hint-card", $hintPanel).length > 0) {
+        return;
+      }
+
+      $hintPanel.html(
+        '<div class="capture-hint-card capture-hint-card--locked">' +
+          '<div class="capture-hint-head">' +
+            "<h4>hint_</h4>" +
+            '<span class="capture-hint-status">Locked</span>' +
+          "</div>" +
+          '<p class="capture-hint-copy">Spend points to unlock extra challenge intel for this country.</p>' +
+          '<div class="capture-hint-body">' +
+            '<div class="capture-hint-empty">No hint revealed yet.</div>' +
+            '<div class="capture-hint-value"></div>' +
+          "</div>" +
+        "</div>"
+      );
+    }
+
+    function applyUnlockedHint($container, hintText) {
+      var $hintCard = $(".capture-hint-card", $container);
+      var $hintStatus = $(".capture-hint-status", $container);
+      var $hintCopy = $(".capture-hint-copy", $container);
+      var $hintEmpty = $(".capture-hint-empty", $container);
+      var $hintValue = $(".capture-hint-value", $container);
+
+      $hintCard.removeClass("capture-hint-card--locked").addClass("capture-hint-card--unlocked");
+      $hintStatus.text("Unlocked");
+      $hintCopy.text("Unlocked challenge intel:");
+      $hintEmpty.hide();
+      $hintValue.show().text(hintText || "");
+
+    }
+
+    function revealUnlockedHint($container, hintText) {
+      var $hintPanel = $(".capture-hint", $container);
+      var $hintHelpSection = $(".capture-hints-and-help", $container);
+      var $hintValue = $(".capture-hint-value", $container);
+
+      applyUnlockedHint($container, hintText);
+      $container.removeClass("help-enabled").addClass("has-hint-panel hint-enabled");
+      $hintHelpSection.show();
+      $hintPanel.show();
+      $hintValue.show();
     }
 
     /**
@@ -1150,22 +1267,56 @@
       }
 
       MAP_CTF.modal.loadPopup("country-capture", function () {
-        var $container = $(".mctf-modal-content"),
+        var $container = $("#mctf-modal .mctf-modal-content").first(),
           intro = data ? data.intro : "",
-          hint = data ? data.hint : "",
           points = data ? data.points : "",
           category = data ? data.category : "",
           completed = data ? data.completed : "";
 
+        ensureHintCardStructure($container);
+
         $(".country-name", $container).text(formatCountryLabel(country));
         $(".capture-text", $container).text(intro);
-        $(".capture-hint div", $container).text(hint);
         $(".points-number", $container).text(points);
         $(".country-category", $container).text(category);
         $(".country-owner", $container).html(capturedBy);
         $(".completed-list", $container).empty();
         updateCaptureModalFeedback($container, "", false);
         updateCaptureFormAvailability($container, country);
+
+        var hintsEnabled = isScoringHintsEnabled();
+        var helpEnabled = isScoringHelpEnabled();
+        var $hintTrigger = $(".js-trigger-hint", $container);
+        var $helpTrigger = $(".js-trigger-help", $container);
+        var $hintPanel = $(".capture-hint", $container);
+        var $hintCard = $(".capture-hint-card", $container);
+        var $hintStatus = $(".capture-hint-status", $container);
+        var $hintValue = $(".capture-hint-value", $container);
+        var $helpPanel = $(".capture-help", $container);
+        var $hintHelpSection = $(".capture-hints-and-help", $container);
+        var hintPenalty = data && typeof data.hint_penalty === "number" ? data.hint_penalty : 0;
+        var helpPenalty = data && typeof data.help_penalty === "number" ? data.help_penalty : 0;
+
+        resetHintCard($container);
+        $hintTrigger.attr("data-hover", "-" + hintPenalty + " Pts");
+        $helpTrigger.attr("data-hover", "-" + helpPenalty + " Pts");
+
+        $container.removeClass("hint-enabled help-enabled");
+        $container.toggleClass("has-hint-panel", hintsEnabled);
+        $hintTrigger.toggle(hintsEnabled);
+        $helpTrigger.toggle(helpEnabled);
+        $hintPanel.toggle(hintsEnabled);
+        $helpPanel.toggle(helpEnabled);
+        $hintHelpSection.toggle(hintsEnabled || helpEnabled);
+
+        getUnlockedCountryHint(country)
+          .done(function (response) {
+            if (!response || !response.hint) {
+              return;
+            }
+            revealUnlockedHint($container, response.hint);
+          })
+          .fail(function () {});
 
         if (completed instanceof Array) {
           $.each(completed, function () {
@@ -1178,10 +1329,58 @@
         //
         $(".js-trigger-hint", $container).on("click", function (event) {
           event.preventDefault();
-          $(this).onlySiblingWithClass("active").closest(".mctf-modal-content").removeClass("help-enabled").addClass("hint-enabled");
+          if (!hintsEnabled) {
+            return;
+          }
+          var $trigger = $(this);
+
+          if (data && data.solved_by_current) {
+            updateCaptureFormAvailability($container, country);
+            return;
+          }
+
+          if ($trigger.data("requesting") === true) {
+            return;
+          }
+
+          updateCaptureModalFeedback($container, "", false);
+          $trigger.data("requesting", true).addClass("disabled");
+
+          requestCountryHint(country)
+            .done(function (response) {
+              var unlockedHint = response && response.hint ? response.hint : "";
+              var message = response && response.message ? response.message : "Hint unlocked";
+              if (response && !response.already_unlocked && typeof response.penalty === "number") {
+                message += " -" + response.penalty + " pts";
+              }
+
+              revealUnlockedHint($container, unlockedHint);
+              $trigger.onlySiblingWithClass("active");
+              updateCaptureModalFeedback($container, message, true);
+
+              $.when(loadTeamData(true), loadActivityData(true), loadDominationData(true)).done(function () {
+                setupTeams();
+                setupLeaderboard();
+                setupActivity();
+                renderWorldDomination();
+              });
+            })
+            .fail(function (xhr) {
+              var errorMessage = "Failed to unlock hint";
+              if (xhr && xhr.responseJSON) {
+                errorMessage = xhr.responseJSON.message || xhr.responseJSON.error || errorMessage;
+              }
+              updateCaptureModalFeedback($container, errorMessage, false);
+            })
+            .always(function () {
+              $trigger.data("requesting", false).removeClass("disabled");
+            });
         });
         $(".js-trigger-help", $container).on("click", function (event) {
           event.preventDefault();
+          if (!helpEnabled) {
+            return;
+          }
           $(this).onlySiblingWithClass("active").closest(".mctf-modal-content").removeClass("hint-enabled").addClass("help-enabled");
         });
 

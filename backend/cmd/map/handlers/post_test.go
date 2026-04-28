@@ -278,6 +278,206 @@ func TestScorePOSTHandlerRecordsFailureForWrongFlag(t *testing.T) {
 	require.Equal(t, "wrong-flag", failureLogs[0].Flag)
 }
 
+func TestHintPOSTHandlerUnlocksHintAndDeductsPoints(t *testing.T) {
+	handler, sessions, teamManager, userManager, challengeManager, settingsManager, logManager := newScorePostHandler(t)
+
+	require.NoError(t, settingsManager.SetScoringHints(true, jsonSettingsAuthor))
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{
+		Model:   gorm.Model{ID: 12},
+		Name:    "Blue Team",
+		Points:  120,
+		UUID:    jsonTestUUID,
+		Active:  true,
+		Visible: true,
+	}))
+	require.NoError(t, userManager.Create(users.PlatformUser{
+		Username: "alice",
+		TeamID:   12,
+		Active:   true,
+		UUID:     jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.CreateCategory(challenges.Category{
+		Model: gorm.Model{ID: 4},
+		Name:  "Web",
+		UUID:  jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Model:       gorm.Model{ID: 77},
+		Title:       "Spanish Challenge",
+		CategoryID:  4,
+		Country:     "ES",
+		Active:      true,
+		Hint:        "Look at the headers",
+		HintPenalty: 15,
+		UUID:        jsonTestUUID,
+	}))
+
+	req := newJSONBodyRequestWithUUID(http.MethodPost, "/gameboard/hint", jsonTestUUID, MapHintRequest{
+		CountryCode: "ES",
+	})
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "alice")
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.HintPOSTHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var resp MapHintResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.True(t, resp.Success)
+	require.Equal(t, "Hint unlocked", resp.Message)
+	require.Equal(t, "Look at the headers", resp.Hint)
+	require.Equal(t, 15, resp.Penalty)
+	require.Equal(t, 105, resp.TotalPoints)
+	require.False(t, resp.AlreadyUnlocked)
+
+	var updatedTeam teams.PlatformTeam
+	require.NoError(t, teamManager.DB.Where("id = ? AND uuid = ?", 12, jsonTestUUID).First(&updatedTeam).Error)
+	require.Equal(t, 105, updatedTeam.Points)
+
+	hintLogs, err := logManager.AllHintsLogs(jsonTestUUID)
+	require.NoError(t, err)
+	require.Len(t, hintLogs, 1)
+	require.Equal(t, uint(77), hintLogs[0].ChallengeID)
+	require.Equal(t, uint(12), hintLogs[0].TeamID)
+	require.Equal(t, 15, hintLogs[0].Penalty)
+
+	scoreboardLogs, err := logManager.AllScoreboardLogs(jsonTestUUID)
+	require.NoError(t, err)
+	require.Len(t, scoreboardLogs, 1)
+	require.Equal(t, "Blue Team", scoreboardLogs[0].Team)
+	require.Equal(t, 105, scoreboardLogs[0].Points)
+
+	activityLogs, err := logManager.AllActivity(jsonTestUUID)
+	require.NoError(t, err)
+	require.Len(t, activityLogs, 1)
+	require.Equal(t, "Blue Team", activityLogs[0].Subject)
+	require.Equal(t, "hint", activityLogs[0].Action)
+	require.Contains(t, activityLogs[0].Message, "spent 15 points for a hint")
+	require.Equal(t, uint(77), activityLogs[0].ChallengeID)
+}
+
+func TestHintPOSTHandlerRejectsWhenTeamCannotAffordPenalty(t *testing.T) {
+	handler, sessions, teamManager, userManager, challengeManager, settingsManager, logManager := newScorePostHandler(t)
+
+	require.NoError(t, settingsManager.SetScoringHints(true, jsonSettingsAuthor))
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{
+		Model:  gorm.Model{ID: 13},
+		Name:   "Red Team",
+		Points: 10,
+		UUID:   jsonTestUUID,
+		Active: true,
+	}))
+	require.NoError(t, userManager.Create(users.PlatformUser{
+		Username: "bob",
+		TeamID:   13,
+		Active:   true,
+		UUID:     jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Model:       gorm.Model{ID: 88},
+		Title:       "Italian Challenge",
+		Country:     "IT",
+		Active:      true,
+		Hint:        "Check the cookies",
+		HintPenalty: 25,
+		UUID:        jsonTestUUID,
+	}))
+
+	req := newJSONBodyRequestWithUUID(http.MethodPost, "/gameboard/hint", jsonTestUUID, MapHintRequest{
+		CountryCode: "IT",
+	})
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "bob")
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.HintPOSTHandler(rr, req)
+
+	require.Equal(t, http.StatusConflict, rr.Code)
+
+	var resp MapHintResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.False(t, resp.Success)
+	require.Equal(t, "Your team does not have enough points for this hint", resp.Message)
+	require.Equal(t, 25, resp.Penalty)
+	require.Equal(t, 10, resp.TotalPoints)
+
+	var updatedTeam teams.PlatformTeam
+	require.NoError(t, teamManager.DB.Where("id = ? AND uuid = ?", 13, jsonTestUUID).First(&updatedTeam).Error)
+	require.Equal(t, 10, updatedTeam.Points)
+
+	hintLogs, err := logManager.AllHintsLogs(jsonTestUUID)
+	require.NoError(t, err)
+	require.Empty(t, hintLogs)
+
+	scoreboardLogs, err := logManager.AllScoreboardLogs(jsonTestUUID)
+	require.NoError(t, err)
+	require.Empty(t, scoreboardLogs)
+
+	activityLogs, err := logManager.AllActivity(jsonTestUUID)
+	require.NoError(t, err)
+	require.Empty(t, activityLogs)
+}
+
+func TestHintGETHandlerReturnsUnlockedHint(t *testing.T) {
+	handler, sessions, teamManager, userManager, challengeManager, _, logManager := newScorePostHandler(t)
+
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{
+		Model:  gorm.Model{ID: 14},
+		Name:   "Blue Team",
+		Points: 90,
+		UUID:   jsonTestUUID,
+		Active: true,
+	}))
+	require.NoError(t, userManager.Create(users.PlatformUser{
+		Username: "alice",
+		TeamID:   14,
+		Active:   true,
+		UUID:     jsonTestUUID,
+	}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Model:       gorm.Model{ID: 91},
+		Title:       "Spanish Challenge",
+		Country:     "ES",
+		Active:      true,
+		Hint:        "Look at the headers",
+		HintPenalty: 15,
+		UUID:        jsonTestUUID,
+	}))
+
+	hintLog, err := logManager.NewHintsLog(91, 14, 15, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, logManager.CreateHintsLog(hintLog))
+
+	req := newJSONBodyRequestWithUUID(http.MethodGet, "/gameboard/hint?country_code=ES", jsonTestUUID, nil)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "alice")
+	req = req.WithContext(ctx)
+	q := req.URL.Query()
+	q.Set("country_code", "ES")
+	req.URL.RawQuery = q.Encode()
+
+	rr := httptest.NewRecorder()
+	handler.HintGETHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var resp MapHintResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.True(t, resp.Success)
+	require.Equal(t, "Hint already unlocked", resp.Message)
+	require.Equal(t, "Look at the headers", resp.Hint)
+	require.Equal(t, 15, resp.Penalty)
+	require.Equal(t, 90, resp.TotalPoints)
+	require.True(t, resp.AlreadyUnlocked)
+}
+
 func TestPerTeamThrottleBacklogLimitsWithinTeamOnly(t *testing.T) {
 	handler, sessions, teamManager, userManager, _, _, _ := newScorePostHandler(t)
 

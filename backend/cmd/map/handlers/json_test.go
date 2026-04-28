@@ -359,6 +359,8 @@ func TestJSONCountriesHandlerReturnsAllCountriesAndMarksChallengeBackedOnesActiv
 		Country:     "ES",
 		Active:      true,
 		Points:      250,
+		HintPenalty: 15,
+		HelpPenalty: 40,
 		Hint:        "Live hint",
 		UUID:        jsonTestUUID,
 	}))
@@ -402,9 +404,10 @@ func TestJSONCountriesHandlerReturnsAllCountriesAndMarksChallengeBackedOnesActiv
 	require.True(t, ok)
 	require.True(t, spain.Active)
 	require.Equal(t, 250, spain.Points)
+	require.Equal(t, 15, spain.HintPenalty)
+	require.Equal(t, 40, spain.HelpPenalty)
 	require.Equal(t, "Web", spain.Category)
 	require.Equal(t, "Live intro", spain.Intro)
-	require.Equal(t, "Live hint", spain.Hint)
 	require.Equal(t, "", spain.Owner)
 	require.Empty(t, spain.Completed)
 	require.False(t, spain.SolvedByCurrent)
@@ -421,7 +424,6 @@ func TestJSONCountriesHandlerReturnsAllCountriesAndMarksChallengeBackedOnesActiv
 	require.Equal(t, 0, italy.Points)
 	require.Empty(t, italy.Category)
 	require.Empty(t, italy.Intro)
-	require.Empty(t, italy.Hint)
 }
 
 func TestJSONCountriesHandlerIncludesOwnerAndCompletedTeams(t *testing.T) {
