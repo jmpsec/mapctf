@@ -52,17 +52,29 @@ type JSONWorldDominationResponse struct {
 	LoseRatePct         int    `json:"lose_rate_pct"`
 }
 
+func (h *HandlersMap) validatedJSONUUID(w http.ResponseWriter, r *http.Request) (string, bool) {
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" {
+		log.Err(errors.New("UUID is required")).Msg("UUID is required")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+		return "", false
+	}
+	if uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid UUID"})
+		return "", false
+	}
+	return uuid, true
+}
+
 // JSONActivityHandler to return all activity logs for a given UUID in JSON format
 func (h *HandlersMap) JSONActivityHandler(w http.ResponseWriter, r *http.Request) {
 	// Debug HTTP if enabled
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	// Get UUID from URL path
-	uuid := chi.URLParam(r, "uuid")
-	if uuid == "" {
-		log.Err(errors.New("UUID is required")).Msg("UUID is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+	uuid, ok := h.validatedJSONUUID(w, r)
+	if !ok {
 		return
 	}
 	// Get all activity logs for the given UUID
@@ -82,22 +94,19 @@ func (h *HandlersMap) JSONTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	// Get UUID from URL path
-	uuid := chi.URLParam(r, "uuid")
-	if uuid == "" {
-		log.Err(errors.New("UUID is required")).Msg("UUID is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+	uuid, ok := h.validatedJSONUUID(w, r)
+	if !ok {
 		return
 	}
 	// Get all teams for the given UUID
-	allTeams, err := h.Teams.GetAll()
+	allTeams, err := h.Teams.GetAll(uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving teams")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving teams"})
 		return
 	}
 
-	showTeamMembers, err := h.Settings.GetGameboardShowTeamMembers()
+	showTeamMembers, err := h.Settings.GetGameboardShowTeamMembers(uuid)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Err(err).Msg("error retrieving gameboard_show_team_members setting")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving team settings"})
@@ -143,11 +152,8 @@ func (h *HandlersMap) JSONChallengesHandler(w http.ResponseWriter, r *http.Reque
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	// Get UUID from URL path
-	uuid := chi.URLParam(r, "uuid")
-	if uuid == "" {
-		log.Err(errors.New("UUID is required")).Msg("UUID is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+	uuid, ok := h.validatedJSONUUID(w, r)
+	if !ok {
 		return
 	}
 	// Get all active challenges for the given UUID
@@ -168,10 +174,8 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
 
-	uuid := chi.URLParam(r, "uuid")
-	if uuid == "" {
-		log.Err(errors.New("UUID is required")).Msg("UUID is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+	uuid, ok := h.validatedJSONUUID(w, r)
+	if !ok {
 		return
 	}
 
@@ -332,10 +336,8 @@ func (h *HandlersMap) JSONWorldDominationHandler(w http.ResponseWriter, r *http.
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
 
-	uuid := chi.URLParam(r, "uuid")
-	if uuid == "" {
-		log.Err(errors.New("UUID is required")).Msg("UUID is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+	uuid, ok := h.validatedJSONUUID(w, r)
+	if !ok {
 		return
 	}
 
@@ -443,11 +445,8 @@ func (h *HandlersMap) JSONChatHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	// Get UUID from URL path
-	uuid := chi.URLParam(r, "uuid")
-	if uuid == "" {
-		log.Err(errors.New("UUID is required")).Msg("UUID is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+	_, ok := h.validatedJSONUUID(w, r)
+	if !ok {
 		return
 	}
 	// Get all chat entries for the given UUID

@@ -36,7 +36,7 @@ func (h *HandlersMap) RegistrationPOSTHandler(w http.ResponseWriter, r *http.Req
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid request body"})
 		return
 	}
-	regType, err := h.Settings.GetRegistrationType()
+	regType, err := h.Settings.GetRegistrationType(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting registration type setting")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get registration type setting"})
@@ -48,7 +48,7 @@ func (h *HandlersMap) RegistrationPOSTHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 	if regType == settings.TokenRegistration {
-		regToken, err := h.Settings.GetRegistrationToken()
+		regToken, err := h.Settings.GetRegistrationToken(uuid)
 		if err != nil {
 			log.Err(err).Msg("error getting registration token setting")
 			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get registration token setting"})
@@ -73,7 +73,7 @@ func (h *HandlersMap) RegistrationPOSTHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 	// Register team
-	nTeam, err := h.Teams.Register(req.Team, req.Logo)
+	nTeam, err := h.Teams.Register(req.Team, req.Logo, uuid)
 	if err != nil {
 		log.Err(err).Msg("error registering team")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to register team"})
@@ -112,7 +112,7 @@ func (h *HandlersMap) ChatPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid request body"})
 		return
 	}
-	chatMaxLen, err := h.Settings.GetGameboardChatMaxLen()
+	chatMaxLen, err := h.Settings.GetGameboardChatMaxLen(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting gameboard chat max length setting")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get gameboard chat max length	 setting"})
@@ -174,7 +174,7 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	scoringEnabled, err := h.Settings.GetScoringEnabled()
+	scoringEnabled, err := h.Settings.GetScoringEnabled(uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving scoring setting")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve scoring setting"})
@@ -359,7 +359,7 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	scoringHintsEnabled, err := h.Settings.GetScoringHints()
+	scoringHintsEnabled, err := h.Settings.GetScoringHints(uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving scoring_hints setting")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve hint setting"})

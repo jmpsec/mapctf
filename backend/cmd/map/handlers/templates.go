@@ -72,12 +72,12 @@ func (h *HandlersMap) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
-	loginEnabled, err := h.Settings.GetLoginEnabled()
+	loginEnabled, err := h.Settings.GetLoginEnabled(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting login enabled setting")
 		loginEnabled = false
 	}
-	loginStrongPasswords, err := h.Settings.GetLoginStrongPasswords()
+	loginStrongPasswords, err := h.Settings.GetLoginStrongPasswords(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting login strong passwords setting")
 		loginStrongPasswords = false
@@ -128,7 +128,7 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
 	rMsg := "Register to play Capture The Flag here. Once you have registered, simply login for future site visits."
-	regEnabled, err := h.Settings.GetRegistrationEnabled()
+	regEnabled, err := h.Settings.GetRegistrationEnabled(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting registration enabled setting")
 		regEnabled = false
@@ -136,17 +136,17 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 	if !regEnabled {
 		rMsg = "Team Registration will be open soon, stay tuned!"
 	}
-	regNames, err := h.Settings.GetRegistrationNames()
+	regNames, err := h.Settings.GetRegistrationNames(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting registration names setting")
 		regNames = false
 	}
-	regEmails, err := h.Settings.GetRegistrationEmails()
+	regEmails, err := h.Settings.GetRegistrationEmails(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting registration emails setting")
 		regEmails = false
 	}
-	regType, err := h.Settings.GetRegistrationType()
+	regType, err := h.Settings.GetRegistrationType(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting registration type setting")
 		regType = settings.OpenRegistration
@@ -196,7 +196,7 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
-	startTime, err := h.Settings.GetGameStartTime()
+	startTime, err := h.Settings.GetGameStartTime(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting game start time")
 		startTime = time.Time{}
@@ -213,12 +213,12 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 		}
 	}
 	// Get if game has already started to show message on countdown page
-	alreadyStarted, err := h.Settings.GetGameStarted()
+	alreadyStarted, err := h.Settings.GetGameStarted(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting game started setting")
 		alreadyStarted = false
 	}
-	endTime, err := h.Settings.GetGameEndTime()
+	endTime, err := h.Settings.GetGameEndTime(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting game end time")
 		endTime = time.Time{}
@@ -317,44 +317,44 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 		CurrentUsername:     h.Sessions.GetString(r.Context(), string(ContextKeyUser)),
 		GameboardChatMaxLen: chat.DefaultMaxLen,
 	}
-	chatMaxLen, err := h.Settings.GetGameboardChatMaxLen()
+	chatMaxLen, err := h.Settings.GetGameboardChatMaxLen(uuid)
 	if err == nil {
 		templateData.GameboardChatMaxLen = chatMaxLen
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading gameboard_chat_max_len")
 	}
-	showTeamMembers, err := h.Settings.GetGameboardShowTeamMembers()
+	showTeamMembers, err := h.Settings.GetGameboardShowTeamMembers(uuid)
 	if err == nil {
 		templateData.GameboardShowTeamMembers = showTeamMembers
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading gameboard_show_team_members")
 	}
-	scoringHints, err := h.Settings.GetScoringHints()
+	scoringHints, err := h.Settings.GetScoringHints(uuid)
 	if err == nil {
 		templateData.ScoringHints = scoringHints
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading scoring_hints")
 	}
-	scoringHelp, err := h.Settings.GetScoringHelp()
+	scoringHelp, err := h.Settings.GetScoringHelp(uuid)
 	if err == nil {
 		templateData.ScoringHelp = scoringHelp
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading scoring_help")
 	}
-	gameStarted, err := h.Settings.GetGameStarted()
+	gameStarted, err := h.Settings.GetGameStarted(uuid)
 	if err == nil {
 		templateData.GameStarted = gameStarted
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading game_started")
 	}
-	gameStartTime, err := h.Settings.GetGameStartTime()
+	gameStartTime, err := h.Settings.GetGameStartTime(uuid)
 	if err == nil {
 		templateData.GameStartTime = gameStartTime
 		templateData.GameStartSet = !gameStartTime.IsZero()
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading game_start_time")
 	}
-	gameEndTime, err := h.Settings.GetGameEndTime()
+	gameEndTime, err := h.Settings.GetGameEndTime(uuid)
 	if err == nil {
 		templateData.GameEndTime = gameEndTime
 		templateData.GameEndSet = !gameEndTime.IsZero()

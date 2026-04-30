@@ -24,7 +24,7 @@ func newGameboardTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManage
 
 	db := newJSONTestDB(t)
 
-	settingsManager, err := settings.CreateSettingsManager(db, "test-service", jsonTestUUID)
+	settingsManager, err := settings.CreateSettingsManager(db, "test-service")
 	require.NoError(t, err)
 	countriesManager, err := countries.CreateCountries(db, jsonTestUUID)
 	require.NoError(t, err)
@@ -59,15 +59,15 @@ func newTemplateRequestWithUUID(method, target, uuid string) *http.Request {
 func TestGameboardTemplateHandlerIncludesChatTemplateData(t *testing.T) {
 	handler, sessions, settingsManager, _, _ := newGameboardTemplateHandler(t)
 
-	require.NoError(t, settingsManager.SetGameboardChatMaxLen(64, jsonSettingsAuthor))
-	require.NoError(t, settingsManager.SetGameboardShowTeamMembers(true, jsonSettingsAuthor))
-	require.NoError(t, settingsManager.SetScoringHints(true, jsonSettingsAuthor))
-	require.NoError(t, settingsManager.SetScoringHelp(false, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameboardChatMaxLen(64, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetGameboardShowTeamMembers(true, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetScoringHints(true, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetScoringHelp(false, jsonSettingsAuthor, jsonTestUUID))
 	gameStartTime := time.Date(2030, time.January, 2, 9, 0, 0, 0, time.FixedZone("UTC+2", 2*60*60))
 	gameEndTime := time.Date(2030, time.January, 2, 18, 30, 0, 0, time.FixedZone("UTC+2", 2*60*60))
-	require.NoError(t, settingsManager.SetGameStarted(true, jsonSettingsAuthor))
-	require.NoError(t, settingsManager.SetGameStartTime(gameStartTime, jsonSettingsAuthor))
-	require.NoError(t, settingsManager.SetGameEndTime(gameEndTime, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameStarted(true, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetGameStartTime(gameStartTime, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetGameEndTime(gameEndTime, jsonSettingsAuthor, jsonTestUUID))
 
 	req := newTemplateRequestWithUUID(http.MethodGet, "/gameboard", jsonTestUUID)
 	ctx, err := sessions.Load(req.Context(), "")
@@ -109,8 +109,8 @@ func TestCountdownTemplateHandlerUsesStartTimeBeforeGameStarts(t *testing.T) {
 	handler, sessions, settingsManager, _, _ := newGameboardTemplateHandler(t)
 
 	startTime := time.Date(2030, time.January, 2, 15, 4, 5, 0, time.FixedZone("UTC+2", 2*60*60))
-	require.NoError(t, settingsManager.SetGameStartTime(startTime, jsonSettingsAuthor))
-	require.NoError(t, settingsManager.SetGameStarted(false, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameStartTime(startTime, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetGameStarted(false, jsonSettingsAuthor, jsonTestUUID))
 
 	req := newTemplateRequestWithUUID(http.MethodGet, "/countdown", jsonTestUUID)
 	ctx, err := sessions.Load(req.Context(), "")
@@ -133,9 +133,9 @@ func TestCountdownTemplateHandlerUsesEndTimeAfterGameStarts(t *testing.T) {
 
 	startTime := time.Now().Add(-2 * time.Hour)
 	endTime := time.Date(2030, time.January, 2, 18, 30, 0, 0, time.FixedZone("UTC+2", 2*60*60))
-	require.NoError(t, settingsManager.SetGameStartTime(startTime, jsonSettingsAuthor))
-	require.NoError(t, settingsManager.SetGameEndTime(endTime, jsonSettingsAuthor))
-	require.NoError(t, settingsManager.SetGameStarted(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameStartTime(startTime, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetGameEndTime(endTime, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetGameStarted(true, jsonSettingsAuthor, jsonTestUUID))
 
 	req := newTemplateRequestWithUUID(http.MethodGet, "/countdown", jsonTestUUID)
 	ctx, err := sessions.Load(req.Context(), "")

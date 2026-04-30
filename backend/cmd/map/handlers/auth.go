@@ -51,7 +51,7 @@ func (h *HandlersMap) LoginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "login is unavailable"})
 			return
 		}
-		loginEnabled, err := h.Settings.GetLoginEnabled()
+		loginEnabled, err := h.Settings.GetLoginEnabled(uuid)
 		if err != nil {
 			log.Err(err).Msg("error getting login enabled setting")
 			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "login is unavailable"})

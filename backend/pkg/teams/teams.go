@@ -15,8 +15,7 @@ const (
 
 // TeamManager to handle all teams of the platform
 type TeamManager struct {
-	DB   *gorm.DB
-	UUID string
+	DB *gorm.DB
 }
 
 // PlatformTeam to hold all teams of the platform
@@ -42,13 +41,12 @@ type TeamMembership struct {
 }
 
 // CreateTeams to initialize the teams struct and its tables
-func CreateTeams(backend *gorm.DB, uuid string) (*TeamManager, error) {
+func CreateTeams(backend *gorm.DB) (*TeamManager, error) {
 	if backend == nil {
 		return nil, fmt.Errorf("database connection cannot be nil")
 	}
 	t := &TeamManager{
-		DB:   backend,
-		UUID: uuid,
+		DB: backend,
 	}
 	// table platform_teams
 	if err := backend.AutoMigrate(&PlatformTeam{}); err != nil {
@@ -78,70 +76,61 @@ func (m *TeamManager) Create(team PlatformTeam) error {
 }
 
 // Register team
-func (m *TeamManager) Register(name, logo string) (PlatformTeam, error) {
+func (m *TeamManager) Register(name, logo, uuid string) (PlatformTeam, error) {
 	if name == "" {
 		return PlatformTeam{}, fmt.Errorf("team name cannot be empty")
 	}
-	if m.Exists(name) {
+	if m.Exists(name, uuid) {
 		return PlatformTeam{}, fmt.Errorf("team %s already exists", name)
 	}
 	if logo == "" || strings.EqualFold(strings.TrimSpace(logo), "random") {
-		randomLogo, err := m.RandomLogo()
+		randomLogo, err := m.RandomLogo(uuid)
 		if err != nil {
 			return PlatformTeam{}, fmt.Errorf("failed to get random logo: %w", err)
 		}
 		logo = randomLogo.Logo
 	}
-	newTeam, err := m.New(name, logo, false, false)
+	newTeam, err := m.New(name, logo, false, false, uuid)
 	if err != nil {
 		return PlatformTeam{}, err
 	}
 	if err := m.Create(newTeam); err != nil {
 		return PlatformTeam{}, err
 	}
-	if err := m.SyncLogoUsage(); err != nil {
+	if err := m.SyncLogoUsage(uuid); err != nil {
 		return PlatformTeam{}, err
 	}
 	return newTeam, nil
 }
 
 // Exists checks if team exists
-func (m *TeamManager) Exists(name string) bool {
+func (m *TeamManager) Exists(name, uuid string) bool {
 	var results int64
-	m.DB.Model(&PlatformTeam{}).Where("name = ? AND uuid = ?", name, m.UUID).Count(&results)
+	m.DB.Model(&PlatformTeam{}).Where("name = ? AND uuid = ?", name, uuid).Count(&results)
 	return (results > 0)
 }
 
 // Get team by name
-func (m *TeamManager) Get(name string) (PlatformTeam, error) {
+func (m *TeamManager) Get(name, uuid string) (PlatformTeam, error) {
 	var team PlatformTeam
-	if err := m.DB.Where("name = ? AND uuid = ?", name, m.UUID).First(&team).Error; err != nil {
+	if err := m.DB.Where("name = ? AND uuid = ?", name, uuid).First(&team).Error; err != nil {
 		return team, err
 	}
 	return team, nil
 }
 
 // Get all teams
-func (m *TeamManager) GetAll() ([]PlatformTeam, error) {
+func (m *TeamManager) GetAll(uuid string) ([]PlatformTeam, error) {
 	var teams []PlatformTeam
-	if err := m.DB.Where("uuid = ?", m.UUID).Find(&teams).Error; err != nil {
+	if err := m.DB.Where("uuid = ?", uuid).Find(&teams).Error; err != nil {
 		return teams, err
 	}
 	return teams, nil
 }
 
 // ExistsGet checks if team exists and returns the team
-func (m *TeamManager) ExistsGet(name string) (bool, PlatformTeam) {
-	team, err := m.Get(name)
-	if err != nil {
-		return false, PlatformTeam{}
-	}
-	return true, team
-}
-
-// ExistsGetByUUID checks if team exists and returns the team by name and UUID
-func (m *TeamManager) ExistsGetByUUID(name string) (bool, PlatformTeam) {
-	team, err := m.Get(name)
+func (m *TeamManager) ExistsGet(name, uuid string) (bool, PlatformTeam) {
+	team, err := m.Get(name, uuid)
 	if err != nil {
 		return false, PlatformTeam{}
 	}
@@ -149,15 +138,15 @@ func (m *TeamManager) ExistsGetByUUID(name string) (bool, PlatformTeam) {
 }
 
 // New empty team
-func (m *TeamManager) New(name, logo string, protected, visible bool) (PlatformTeam, error) {
-	if !m.Exists(name) {
+func (m *TeamManager) New(name, logo string, protected, visible bool, uuid string) (PlatformTeam, error) {
+	if !m.Exists(name, uuid) {
 		return PlatformTeam{
 			Name:      name,
 			Logo:      logo,
 			Protected: protected,
 			Visible:   visible,
 			Active:    true,
-			UUID:      m.UUID,
+			UUID:      uuid,
 		}, nil
 	}
 	return PlatformTeam{}, fmt.Errorf("%s already exists", name)

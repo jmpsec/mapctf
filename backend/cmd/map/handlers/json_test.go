@@ -46,7 +46,7 @@ func newJSONTeamsHandler(t *testing.T) (*HandlersMap, *teams.TeamManager, *users
 
 	db := newJSONTestDB(t)
 
-	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	teamManager, err := teams.CreateTeams(db)
 	require.NoError(t, err)
 
 	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{
@@ -55,11 +55,11 @@ func newJSONTeamsHandler(t *testing.T) (*HandlersMap, *teams.TeamManager, *users
 	})
 	require.NoError(t, err)
 
-	settingsManager, err := settings.CreateSettingsManager(db, "test-service", jsonTestUUID)
+	settingsManager, err := settings.CreateSettingsManager(db, "test-service")
 	require.NoError(t, err)
 
 	handler := CreateHandlersMap(
-		WithConfig(config.MapCTFConfiguration{}),
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID}}),
 		WithTeams(teamManager),
 		WithUsers(userManager),
 		WithSettings(settingsManager),
@@ -80,7 +80,7 @@ func newJSONCountryDataHandler(t *testing.T) (*HandlersMap, *countries.Countries
 	require.NoError(t, err)
 
 	handler := CreateHandlersMap(
-		WithConfig(config.MapCTFConfiguration{}),
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID}}),
 		WithCountries(countryManager),
 		WithChallenges(challengeManager),
 	)
@@ -93,7 +93,7 @@ func newJSONWorldDominationHandler(t *testing.T) (*HandlersMap, *scs.SessionMana
 
 	db := newJSONTestDB(t)
 
-	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	teamManager, err := teams.CreateTeams(db)
 	require.NoError(t, err)
 
 	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{
@@ -108,7 +108,7 @@ func newJSONWorldDominationHandler(t *testing.T) (*HandlersMap, *scs.SessionMana
 	sessionManager := scs.New()
 
 	handler := CreateHandlersMap(
-		WithConfig(config.MapCTFConfiguration{}),
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID}}),
 		WithTeams(teamManager),
 		WithUsers(userManager),
 		WithChallenges(challengeManager),
@@ -156,6 +156,21 @@ func TestJSONTeamsHandlerRequiresUUID(t *testing.T) {
 	var resp MapErrorResponse
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
 	require.Equal(t, "UUID is required", resp.Error)
+}
+
+func TestJSONTeamsHandlerRejectsInvalidUUID(t *testing.T) {
+	handler, _, _, _ := newJSONTeamsHandler(t)
+
+	req := newRequestWithUUID(http.MethodGet, "/json/teams", "wrong-uuid")
+	rr := httptest.NewRecorder()
+
+	handler.JSONTeamsHandler(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var resp MapErrorResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.Equal(t, "invalid UUID", resp.Error)
 }
 
 func TestJSONTeamsHandlerFiltersInactiveAndInvisibleTeams(t *testing.T) {
@@ -250,7 +265,7 @@ func TestJSONTeamsHandlerIncludesMembersOnlyWhenSettingEnabled(t *testing.T) {
 	_, hasMembers := respWithoutMembers[0]["team_members"]
 	require.False(t, hasMembers)
 
-	require.NoError(t, settingsManager.SetGameboardShowTeamMembers(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameboardShowTeamMembers(true, jsonSettingsAuthor, jsonTestUUID))
 
 	rr = httptest.NewRecorder()
 	handler.JSONTeamsHandler(rr, req)
@@ -273,7 +288,7 @@ func TestJSONTeamsHandlerSkipsUsersThatShouldNotAppearAsMembers(t *testing.T) {
 		Active:  true,
 		UUID:    jsonTestUUID,
 	}))
-	require.NoError(t, settingsManager.SetGameboardShowTeamMembers(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetGameboardShowTeamMembers(true, jsonSettingsAuthor, jsonTestUUID))
 
 	seedUsers := []users.PlatformUser{
 		{Username: "valid-member", TeamID: 25, Active: true, UUID: jsonTestUUID},
@@ -435,11 +450,11 @@ func TestJSONCountriesHandlerIncludesOwnerAndCompletedTeams(t *testing.T) {
 	challengeManager, err := challenges.CreateChallengeManager(db)
 	require.NoError(t, err)
 
-	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	teamManager, err := teams.CreateTeams(db)
 	require.NoError(t, err)
 
 	handler := CreateHandlersMap(
-		WithConfig(config.MapCTFConfiguration{}),
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID}}),
 		WithCountries(countryManager),
 		WithChallenges(challengeManager),
 		WithTeams(teamManager),
@@ -526,7 +541,7 @@ func TestJSONCountriesHandlerMarksCountriesSolvedByCurrentTeam(t *testing.T) {
 	challengeManager, err := challenges.CreateChallengeManager(db)
 	require.NoError(t, err)
 
-	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	teamManager, err := teams.CreateTeams(db)
 	require.NoError(t, err)
 
 	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{
@@ -538,7 +553,7 @@ func TestJSONCountriesHandlerMarksCountriesSolvedByCurrentTeam(t *testing.T) {
 	sessionManager := scs.New()
 
 	handler := CreateHandlersMap(
-		WithConfig(config.MapCTFConfiguration{}),
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID}}),
 		WithCountries(countryManager),
 		WithChallenges(challengeManager),
 		WithTeams(teamManager),

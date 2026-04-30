@@ -459,133 +459,133 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 		Message:       r.URL.Query().Get("msg"),
 	}
 
-	loginEnabled, err := h.Settings.GetLoginEnabled()
+	loginEnabled, err := h.Settings.GetLoginEnabled(uuid)
 	if err == nil {
 		templateData.LoginEnabled = loginEnabled
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading login_enabled")
 	}
 
-	loginStrongPasswords, err := h.Settings.GetLoginStrongPasswords()
+	loginStrongPasswords, err := h.Settings.GetLoginStrongPasswords(uuid)
 	if err == nil {
 		templateData.LoginStrongPasswords = loginStrongPasswords
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading login_strong_passwords")
 	}
 
-	registrationEnabled, err := h.Settings.GetRegistrationEnabled()
+	registrationEnabled, err := h.Settings.GetRegistrationEnabled(uuid)
 	if err == nil {
 		templateData.RegistrationEnabled = registrationEnabled
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading registration_enabled")
 	}
 
-	registrationNames, err := h.Settings.GetRegistrationNames()
+	registrationNames, err := h.Settings.GetRegistrationNames(uuid)
 	if err == nil {
 		templateData.RegistrationNames = registrationNames
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading registration_names")
 	}
 
-	registrationEmails, err := h.Settings.GetRegistrationEmails()
+	registrationEmails, err := h.Settings.GetRegistrationEmails(uuid)
 	if err == nil {
 		templateData.RegistrationEmails = registrationEmails
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading registration_emails")
 	}
 
-	registrationType, err := h.Settings.GetRegistrationType()
+	registrationType, err := h.Settings.GetRegistrationType(uuid)
 	if err == nil {
 		templateData.RegistrationType = registrationType
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading registration_type")
 	}
 
-	registrationToken, err := h.Settings.GetRegistrationToken()
+	registrationToken, err := h.Settings.GetRegistrationToken(uuid)
 	if err == nil {
 		templateData.RegistrationToken = registrationToken
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading registration_token")
 	}
 
-	scoringEnabled, err := h.Settings.GetScoringEnabled()
+	scoringEnabled, err := h.Settings.GetScoringEnabled(uuid)
 	if err == nil {
 		templateData.ScoringEnabled = scoringEnabled
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading scoring_enabled")
 	}
 
-	scoringHints, err := h.Settings.GetScoringHints()
+	scoringHints, err := h.Settings.GetScoringHints(uuid)
 	if err == nil {
 		templateData.ScoringHints = scoringHints
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading scoring_hints")
 	}
 
-	scoringHelp, err := h.Settings.GetScoringHelp()
+	scoringHelp, err := h.Settings.GetScoringHelp(uuid)
 	if err == nil {
 		templateData.ScoringHelp = scoringHelp
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading scoring_help")
 	}
 
-	gamePaused, err := h.Settings.GetGamePaused()
+	gamePaused, err := h.Settings.GetGamePaused(uuid)
 	if err == nil {
 		templateData.GamePaused = gamePaused
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading game_paused")
 	}
 
-	gameStarted, err := h.Settings.GetGameStarted()
+	gameStarted, err := h.Settings.GetGameStarted(uuid)
 	if err == nil {
 		templateData.GameStarted = gameStarted
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading game_started")
 	}
 
-	customOrg, err := h.Settings.GetCustomOrg()
+	customOrg, err := h.Settings.GetCustomOrg(uuid)
 	if err == nil {
 		templateData.CustomOrg = customOrg
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading custom_org")
 	}
 
-	customLogo, err := h.Settings.GetCustomLogo()
+	customLogo, err := h.Settings.GetCustomLogo(uuid)
 	if err == nil {
 		templateData.CustomLogo = customLogo
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading custom_logo")
 	}
 
-	language, err := h.Settings.GetLanguage()
+	language, err := h.Settings.GetLanguage(uuid)
 	if err == nil {
 		templateData.Language = language
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading language")
 	}
 
-	leaderboardLimit, err := h.Settings.GetLeaderboardLimit()
+	leaderboardLimit, err := h.Settings.GetLeaderboardLimit(uuid)
 	if err == nil {
 		templateData.LeaderboardLimit = leaderboardLimit
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading leaderboard_limit")
 	}
 
-	gameboardShowTeamMembers, err := h.Settings.GetGameboardShowTeamMembers()
+	gameboardShowTeamMembers, err := h.Settings.GetGameboardShowTeamMembers(uuid)
 	if err == nil {
 		templateData.GameboardShowTeamMembers = gameboardShowTeamMembers
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading gameboard_show_team_members")
 	}
 
-	gameStartTime, err := h.Settings.GetGameStartTime()
+	gameStartTime, err := h.Settings.GetGameStartTime(uuid)
 	if err == nil && !gameStartTime.IsZero() {
 		templateData.GameStartTime = gameStartTime.Format("2006-01-02T15:04")
 	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading game_start_time")
 	}
 
-	gameEndTime, err := h.Settings.GetGameEndTime()
+	gameEndTime, err := h.Settings.GetGameEndTime(uuid)
 	if err == nil && !gameEndTime.IsZero() {
 		templateData.GameEndTime = gameEndTime.Format("2006-01-02T15:04")
 	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -671,26 +671,26 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	setBoolSetting := func(setter func(bool, string) error, setting string) bool {
+	setBoolSetting := func(setter func(bool, string, string) error, setting string) bool {
 		parsed, err := strconv.ParseBool(strings.ToLower(settingValue))
 		if err != nil {
 			writeError(http.StatusBadRequest, "Invalid boolean for "+setting)
 			return false
 		}
-		if err := setter(parsed, username); err != nil {
+		if err := setter(parsed, username, uuid); err != nil {
 			log.Err(err).Msgf("error updating %s", setting)
 			writeError(http.StatusInternalServerError, "Failed to update "+setting)
 			return false
 		}
 		return true
 	}
-	setIntSetting := func(setter func(int, string) error, setting string) bool {
+	setIntSetting := func(setter func(int, string, string) error, setting string) bool {
 		parsed, err := strconv.Atoi(settingValue)
 		if err != nil {
 			writeError(http.StatusBadRequest, "Invalid integer for "+setting)
 			return false
 		}
-		if err := setter(parsed, username); err != nil {
+		if err := setter(parsed, username, uuid); err != nil {
 			log.Err(err).Msgf("error updating %s", setting)
 			writeError(http.StatusInternalServerError, "Failed to update "+setting)
 			return false
@@ -724,7 +724,7 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 			return
 		}
 	case "registration_token":
-		if err := h.Settings.SetRegistrationToken(settingValue, username); err != nil {
+		if err := h.Settings.SetRegistrationToken(settingValue, username, uuid); err != nil {
 			log.Err(err).Msg("error updating registration_token")
 			writeError(http.StatusInternalServerError, "Failed to update registration_token")
 			return
@@ -750,19 +750,19 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 			return
 		}
 	case "custom_org":
-		if err := h.Settings.SetCustomOrg(settingValue, username); err != nil {
+		if err := h.Settings.SetCustomOrg(settingValue, username, uuid); err != nil {
 			log.Err(err).Msg("error updating custom_org")
 			writeError(http.StatusInternalServerError, "Failed to update custom_org")
 			return
 		}
 	case "custom_logo":
-		if err := h.Settings.SetCustomLogo(settingValue, username); err != nil {
+		if err := h.Settings.SetCustomLogo(settingValue, username, uuid); err != nil {
 			log.Err(err).Msg("error updating custom_logo")
 			writeError(http.StatusInternalServerError, "Failed to update custom_logo")
 			return
 		}
 	case "language":
-		if err := h.Settings.SetLanguage(settingValue, username); err != nil {
+		if err := h.Settings.SetLanguage(settingValue, username, uuid); err != nil {
 			log.Err(err).Msg("error updating language")
 			writeError(http.StatusInternalServerError, "Failed to update language")
 			return
@@ -781,7 +781,7 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 			writeError(http.StatusBadRequest, "Invalid game_start_time format")
 			return
 		}
-		if err := h.Settings.SetGameStartTime(gameStartTime, username); err != nil {
+		if err := h.Settings.SetGameStartTime(gameStartTime, username, uuid); err != nil {
 			log.Err(err).Msg("error updating game_start_time")
 			writeError(http.StatusInternalServerError, "Failed to update game_start_time")
 			return
@@ -792,7 +792,7 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 			writeError(http.StatusBadRequest, "Invalid game_end_time format")
 			return
 		}
-		if err := h.Settings.SetGameEndTime(gameEndTime, username); err != nil {
+		if err := h.Settings.SetGameEndTime(gameEndTime, username, uuid); err != nil {
 			log.Err(err).Msg("error updating game_end_time")
 			writeError(http.StatusInternalServerError, "Failed to update game_end_time")
 			return
@@ -870,7 +870,7 @@ func (h *HandlersMap) buildAdminUsersTransferPayload(uuid string) (adminUsersTra
 }
 
 func (h *HandlersMap) buildAdminTeamsTransferPayload(uuid string) (adminTeamsTransferPayload, error) {
-	teamsList, err := h.Teams.GetAll()
+	teamsList, err := h.Teams.GetAll(uuid)
 	if err != nil {
 		return adminTeamsTransferPayload{}, err
 	}
@@ -975,7 +975,7 @@ func (h *HandlersMap) buildAdminChallengesTransferPayload(uuid string) (adminCha
 	}, nil
 }
 
-func (h *HandlersMap) importAdminSettingsFromPayload(payload adminSettingsTransferPayload, username string) (int, int, error) {
+func (h *HandlersMap) importAdminSettingsFromPayload(uuid string, payload adminSettingsTransferPayload, username string) (int, int, error) {
 	updatedSettings := 0
 	skippedSettings := 0
 
@@ -989,29 +989,29 @@ func (h *HandlersMap) importAdminSettingsFromPayload(payload adminSettingsTransf
 		var err error
 		switch name {
 		case "login_enabled":
-			err = h.Settings.SetLoginEnabled(in.ValueBool, username)
+			err = h.Settings.SetLoginEnabled(in.ValueBool, username, uuid)
 		case "login_strong_passwords":
-			err = h.Settings.SetLoginStrongPasswords(in.ValueBool, username)
+			err = h.Settings.SetLoginStrongPasswords(in.ValueBool, username, uuid)
 		case "registration_enabled":
-			err = h.Settings.SetRegistrationEnabled(in.ValueBool, username)
+			err = h.Settings.SetRegistrationEnabled(in.ValueBool, username, uuid)
 		case "registration_names":
-			err = h.Settings.SetRegistrationNames(in.ValueBool, username)
+			err = h.Settings.SetRegistrationNames(in.ValueBool, username, uuid)
 		case "registration_emails":
-			err = h.Settings.SetRegistrationEmails(in.ValueBool, username)
+			err = h.Settings.SetRegistrationEmails(in.ValueBool, username, uuid)
 		case "registration_type":
-			err = h.Settings.SetRegistrationType(in.ValueInt, username)
+			err = h.Settings.SetRegistrationType(in.ValueInt, username, uuid)
 		case "registration_token":
-			err = h.Settings.SetRegistrationToken(in.ValueString, username)
+			err = h.Settings.SetRegistrationToken(in.ValueString, username, uuid)
 		case "scoring_enabled":
-			err = h.Settings.SetScoringEnabled(in.ValueBool, username)
+			err = h.Settings.SetScoringEnabled(in.ValueBool, username, uuid)
 		case "scoring_hints":
-			err = h.Settings.SetScoringHints(in.ValueBool, username)
+			err = h.Settings.SetScoringHints(in.ValueBool, username, uuid)
 		case "scoring_help":
-			err = h.Settings.SetScoringHelp(in.ValueBool, username)
+			err = h.Settings.SetScoringHelp(in.ValueBool, username, uuid)
 		case "game_paused":
-			err = h.Settings.SetGamePaused(in.ValueBool, username)
+			err = h.Settings.SetGamePaused(in.ValueBool, username, uuid)
 		case "game_started":
-			err = h.Settings.SetGameStarted(in.ValueBool, username)
+			err = h.Settings.SetGameStarted(in.ValueBool, username, uuid)
 		case "game_start_time":
 			var t time.Time
 			if strings.TrimSpace(in.ValueDate) != "" {
@@ -1023,7 +1023,7 @@ func (h *HandlersMap) importAdminSettingsFromPayload(payload adminSettingsTransf
 					return updatedSettings, skippedSettings, fmt.Errorf("invalid game_start_time format in import")
 				}
 			}
-			err = h.Settings.SetGameStartTime(t, username)
+			err = h.Settings.SetGameStartTime(t, username, uuid)
 		case "game_end_time":
 			var t time.Time
 			if strings.TrimSpace(in.ValueDate) != "" {
@@ -1035,17 +1035,17 @@ func (h *HandlersMap) importAdminSettingsFromPayload(payload adminSettingsTransf
 					return updatedSettings, skippedSettings, fmt.Errorf("invalid game_end_time format in import")
 				}
 			}
-			err = h.Settings.SetGameEndTime(t, username)
+			err = h.Settings.SetGameEndTime(t, username, uuid)
 		case "custom_org":
-			err = h.Settings.SetCustomOrg(in.ValueString, username)
+			err = h.Settings.SetCustomOrg(in.ValueString, username, uuid)
 		case "custom_logo":
-			err = h.Settings.SetCustomLogo(in.ValueString, username)
+			err = h.Settings.SetCustomLogo(in.ValueString, username, uuid)
 		case "language":
-			err = h.Settings.SetLanguage(in.ValueString, username)
+			err = h.Settings.SetLanguage(in.ValueString, username, uuid)
 		case "leaderboard_limit":
-			err = h.Settings.SetLeaderboardLimit(in.ValueInt, username)
+			err = h.Settings.SetLeaderboardLimit(in.ValueInt, username, uuid)
 		case "gameboard_show_team_members":
-			err = h.Settings.SetGameboardShowTeamMembers(in.ValueBool, username)
+			err = h.Settings.SetGameboardShowTeamMembers(in.ValueBool, username, uuid)
 		default:
 			skippedSettings++
 			continue
@@ -1377,7 +1377,7 @@ func (h *HandlersMap) AdminGameImportHandler(w http.ResponseWriter, r *http.Requ
 		username = h.ServiceName
 	}
 
-	settingsUpdated, settingsSkipped, err := h.importAdminSettingsFromPayload(payload.Settings, username)
+	settingsUpdated, settingsSkipped, err := h.importAdminSettingsFromPayload(uuid, payload.Settings, username)
 	if err != nil {
 		log.Err(err).Msg("error importing full-game settings")
 		writeError(http.StatusBadRequest, err.Error())
@@ -1396,7 +1396,7 @@ func (h *HandlersMap) AdminGameImportHandler(w http.ResponseWriter, r *http.Requ
 		writeError(http.StatusInternalServerError, "Failed importing teams")
 		return
 	}
-	if err := h.Teams.SyncLogoUsage(); err != nil {
+	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after full-game teams import")
 		writeError(http.StatusInternalServerError, "Import completed but failed to sync logo usage")
 		return
@@ -1526,7 +1526,7 @@ func (h *HandlersMap) AdminSettingsImportHandler(w http.ResponseWriter, r *http.
 		username = h.ServiceName
 	}
 
-	updatedSettings, skippedSettings, err := h.importAdminSettingsFromPayload(payload, username)
+	updatedSettings, skippedSettings, err := h.importAdminSettingsFromPayload(uuid, payload, username)
 	if err != nil {
 		log.Err(err).Msg("error importing settings")
 		writeError(http.StatusBadRequest, err.Error())
@@ -1576,25 +1576,25 @@ func (h *HandlersMap) AdminSettingsResetDefaultsPOSTHandler(w http.ResponseWrite
 	defaultStartTime := time.Time{}
 	defaultEndTime := time.Time{}
 	updates := []func() error{
-		func() error { return h.Settings.SetLoginEnabled(false, username) },
-		func() error { return h.Settings.SetLoginStrongPasswords(false, username) },
-		func() error { return h.Settings.SetRegistrationEnabled(false, username) },
-		func() error { return h.Settings.SetRegistrationNames(false, username) },
-		func() error { return h.Settings.SetRegistrationEmails(false, username) },
-		func() error { return h.Settings.SetRegistrationType(0, username) },
-		func() error { return h.Settings.SetRegistrationToken("", username) },
-		func() error { return h.Settings.SetScoringEnabled(false, username) },
-		func() error { return h.Settings.SetScoringHints(false, username) },
-		func() error { return h.Settings.SetScoringHelp(false, username) },
-		func() error { return h.Settings.SetGamePaused(false, username) },
-		func() error { return h.Settings.SetGameStarted(false, username) },
-		func() error { return h.Settings.SetGameStartTime(defaultStartTime, username) },
-		func() error { return h.Settings.SetGameEndTime(defaultEndTime, username) },
-		func() error { return h.Settings.SetCustomOrg("", username) },
-		func() error { return h.Settings.SetCustomLogo("", username) },
-		func() error { return h.Settings.SetLanguage("en", username) },
-		func() error { return h.Settings.SetLeaderboardLimit(10, username) },
-		func() error { return h.Settings.SetGameboardShowTeamMembers(false, username) },
+		func() error { return h.Settings.SetLoginEnabled(false, username, uuid) },
+		func() error { return h.Settings.SetLoginStrongPasswords(false, username, uuid) },
+		func() error { return h.Settings.SetRegistrationEnabled(false, username, uuid) },
+		func() error { return h.Settings.SetRegistrationNames(false, username, uuid) },
+		func() error { return h.Settings.SetRegistrationEmails(false, username, uuid) },
+		func() error { return h.Settings.SetRegistrationType(0, username, uuid) },
+		func() error { return h.Settings.SetRegistrationToken("", username, uuid) },
+		func() error { return h.Settings.SetScoringEnabled(false, username, uuid) },
+		func() error { return h.Settings.SetScoringHints(false, username, uuid) },
+		func() error { return h.Settings.SetScoringHelp(false, username, uuid) },
+		func() error { return h.Settings.SetGamePaused(false, username, uuid) },
+		func() error { return h.Settings.SetGameStarted(false, username, uuid) },
+		func() error { return h.Settings.SetGameStartTime(defaultStartTime, username, uuid) },
+		func() error { return h.Settings.SetGameEndTime(defaultEndTime, username, uuid) },
+		func() error { return h.Settings.SetCustomOrg("", username, uuid) },
+		func() error { return h.Settings.SetCustomLogo("", username, uuid) },
+		func() error { return h.Settings.SetLanguage("en", username, uuid) },
+		func() error { return h.Settings.SetLeaderboardLimit(10, username, uuid) },
+		func() error { return h.Settings.SetGameboardShowTeamMembers(false, username, uuid) },
 	}
 
 	for _, update := range updates {
@@ -1672,7 +1672,7 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		Status:        r.URL.Query().Get("status"),
 		Message:       r.URL.Query().Get("msg"),
 	}
-	teamList, err := h.Teams.GetAll()
+	teamList, err := h.Teams.GetAll(uuid)
 	if err != nil {
 		log.Warn().Err(err).Msg("error loading teams")
 	} else {
@@ -1762,7 +1762,7 @@ func (h *HandlersMap) AdminTeamsPOSTHandler(w http.ResponseWriter, r *http.Reque
 		writeError(http.StatusBadRequest, "Team name is required")
 		return
 	}
-	if _, err := h.Teams.Register(name, logo); err != nil {
+	if _, err := h.Teams.Register(name, logo, uuid); err != nil {
 		log.Err(err).Msg("error creating team")
 		writeError(http.StatusBadRequest, err.Error())
 		return
@@ -1812,7 +1812,7 @@ func (h *HandlersMap) importAdminTeamLogosFromPayload(uuid string, logos []admin
 			continue
 		}
 
-		newLogo, err := h.Teams.NewLogo(name, logo, inLogo.Enabled, inLogo.Custom, 0)
+		newLogo, err := h.Teams.NewLogo(name, logo, inLogo.Enabled, inLogo.Custom, 0, uuid)
 		if err != nil {
 			return createdLogos, updatedLogos, skippedLogos, err
 		}
@@ -1851,7 +1851,7 @@ func (h *HandlersMap) importAdminTeamsFromPayload(uuid string, inTeams []adminTe
 		}
 		logo := normalizeLogoSymbolName(strings.TrimSpace(inTeam.Logo))
 		if logo == "" || strings.EqualFold(logo, "random") {
-			randomLogo, err := h.Teams.RandomLogo()
+			randomLogo, err := h.Teams.RandomLogo(uuid)
 			if err != nil {
 				logo = "invader"
 			} else {
@@ -1876,7 +1876,7 @@ func (h *HandlersMap) importAdminTeamsFromPayload(uuid string, inTeams []adminTe
 			continue
 		}
 
-		newTeam, err := h.Teams.New(name, logo, inTeam.Protected, inTeam.Visible)
+		newTeam, err := h.Teams.New(name, logo, inTeam.Protected, inTeam.Visible, uuid)
 		if err != nil {
 			return createdTeams, updatedTeams, skippedTeams, err
 		}
@@ -1944,7 +1944,7 @@ func (h *HandlersMap) AdminTeamsExportTeamsHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	teamsList, err := h.Teams.GetAll()
+	teamsList, err := h.Teams.GetAll(uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading teams for export")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
@@ -2136,7 +2136,7 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 			continue
 		}
 
-		newLogo, err := h.Teams.NewLogo(name, logo, inLogo.Enabled, inLogo.Custom, 0)
+		newLogo, err := h.Teams.NewLogo(name, logo, inLogo.Enabled, inLogo.Custom, 0, uuid)
 		if err != nil {
 			log.Err(err).Msg("error creating logo from import")
 			writeError(http.StatusBadRequest, "Failed to import logos")
@@ -2178,7 +2178,7 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 		}
 		logo := normalizeLogoSymbolName(strings.TrimSpace(inTeam.Logo))
 		if logo == "" || strings.EqualFold(logo, "random") {
-			randomLogo, err := h.Teams.RandomLogo()
+			randomLogo, err := h.Teams.RandomLogo(uuid)
 			if err != nil {
 				log.Err(err).Msg("error resolving random logo during team import")
 				logo = "invader"
@@ -2206,7 +2206,7 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 			continue
 		}
 
-		newTeam, err := h.Teams.New(name, logo, inTeam.Protected, inTeam.Visible)
+		newTeam, err := h.Teams.New(name, logo, inTeam.Protected, inTeam.Visible, uuid)
 		if err != nil {
 			log.Err(err).Msg("error creating team object from import")
 			writeError(http.StatusBadRequest, "Failed to import teams")
@@ -2233,7 +2233,7 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 	if skippedTeams > 0 {
 		messageParts = append(messageParts, "teams skipped "+strconv.Itoa(skippedTeams))
 	}
-	if err := h.Teams.SyncLogoUsage(); err != nil {
+	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after teams import")
 		writeError(http.StatusInternalServerError, "Import completed but failed to sync logo usage")
 		return
@@ -2549,7 +2549,7 @@ func (h *HandlersMap) AdminTeamsDeleteAllPOSTHandler(w http.ResponseWriter, r *h
 		writeError(http.StatusInternalServerError, "Failed to delete all teams")
 		return
 	}
-	if err := h.Teams.SyncLogoUsage(); err != nil {
+	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after delete-all-teams")
 		writeError(http.StatusInternalServerError, "Deleted teams but failed to sync logo usage")
 		return
@@ -2638,7 +2638,7 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		return
 	}
 	if strings.EqualFold(logoInput, "random") {
-		randomLogo, err := h.Teams.RandomLogo()
+		randomLogo, err := h.Teams.RandomLogo(uuid)
 		if err != nil {
 			log.Err(err).Msg("error getting random logo for team update")
 			writeError(http.StatusInternalServerError, "Failed to resolve random logo")
@@ -2683,7 +2683,7 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		writeError(http.StatusNotFound, "Team not found")
 		return
 	}
-	if err := h.Teams.SyncLogoUsage(); err != nil {
+	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after team update")
 		writeError(http.StatusInternalServerError, "Team updated but failed to sync logo usage")
 		return
@@ -2802,7 +2802,7 @@ func (h *HandlersMap) AdminTeamDeletePOSTHandler(w http.ResponseWriter, r *http.
 		writeError(http.StatusInternalServerError, "Failed to delete team")
 		return
 	}
-	if err := h.Teams.SyncLogoUsage(); err != nil {
+	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after team delete")
 		writeError(http.StatusInternalServerError, "Team deleted but failed to sync logo usage")
 		return
@@ -2929,7 +2929,7 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 		writeError(http.StatusBadRequest, "Logo symbol is required")
 		return
 	}
-	if h.Teams.ExistsLogo(name) {
+	if h.Teams.ExistsLogo(name, uuid) {
 		writeError(http.StatusBadRequest, "Logo already exists")
 		return
 	}
@@ -2951,7 +2951,7 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	newLogo, err := h.Teams.NewLogo(name, logo, true, true, 0)
+	newLogo, err := h.Teams.NewLogo(name, logo, true, true, 0, uuid)
 	if err != nil {
 		log.Err(err).Msg("error creating logo object")
 		writeError(http.StatusBadRequest, "Failed to create logo")
@@ -3097,7 +3097,7 @@ func (h *HandlersMap) AdminUsersTemplateHandler(w http.ResponseWriter, r *http.R
 	templateData.TeamNames = map[uint]string{
 		0: "None",
 	}
-	teams, err := h.Teams.GetAll()
+	teams, err := h.Teams.GetAll(uuid)
 	if err != nil {
 		log.Warn().Err(err).Msg("error loading teams for users view")
 	} else {
@@ -3949,7 +3949,7 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 	templateData.ChallengeActivity = make(map[uint][]AdminChallengeActivityEntry, len(templateData.Challenges))
 	teamNamesByID := make(map[uint]string)
 	if h.Teams != nil {
-		allTeams, teamErr := h.Teams.GetAll()
+		allTeams, teamErr := h.Teams.GetAll(uuid)
 		if teamErr != nil {
 			log.Warn().Err(teamErr).Msg("error loading teams for challenge activity")
 		} else {
@@ -4879,7 +4879,7 @@ func (h *HandlersMap) AdminChatTemplateHandler(w http.ResponseWriter, r *http.Re
 		}
 	}
 	if h.Teams != nil {
-		allTeams, err := h.Teams.GetAll()
+		allTeams, err := h.Teams.GetAll(uuid)
 		if err != nil {
 			log.Warn().Err(err).Msg("error loading teams for admin chat")
 		} else {

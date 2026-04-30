@@ -176,7 +176,7 @@ func mapCTFService() {
 	}
 	// Team Manager
 	log.Info().Msg("Initialize teams")
-	teamsMgr, err := teams.CreateTeams(db.Conn, flagParams.ConfigValues.Map.UUID)
+	teamsMgr, err := teams.CreateTeams(db.Conn)
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize teams: %v", err)
 	}
@@ -194,11 +194,11 @@ func mapCTFService() {
 	}
 	// Settings Manager
 	log.Info().Msg("Initialize settings")
-	settingsMgr, err := settings.CreateSettingsManager(db.Conn, serviceName, flagParams.ConfigValues.Map.UUID)
+	settingsMgr, err := settings.CreateSettingsManager(db.Conn, serviceName)
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize settings: %v", err)
 	}
-	if err := settingsMgr.Initialization(); err != nil {
+	if err := settingsMgr.Initialization(flagParams.ConfigValues.Map.UUID); err != nil {
 		log.Fatal().Msgf("Failed to initialize default settings: %v", err)
 	}
 	// Handlers

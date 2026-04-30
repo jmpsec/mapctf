@@ -53,8 +53,8 @@ func loadLogosSeedData(seedFile string) ([]JSONLogo, error) {
 	return logos, nil
 }
 
-// InitializeLogos to initialize the logos data in the database
-func (s *TeamManager) InitializeLogos(seedFile string) (*InitializationStats, error) {
+// InitializeLogos initializes logo seed data for the given UUID.
+func (s *TeamManager) InitializeLogos(seedFile string, uuid string) (*InitializationStats, error) {
 	stats := &InitializationStats{}
 	logosData, err := loadLogosSeedData(seedFile)
 	if err != nil {
@@ -62,11 +62,11 @@ func (s *TeamManager) InitializeLogos(seedFile string) (*InitializationStats, er
 	}
 	for _, logoData := range logosData {
 		stats.TotalLogos++
-		if s.ExistsLogo(logoData.Name) {
+		if s.ExistsLogo(logoData.Name, uuid) {
 			stats.ExistingLogos++
 			continue
 		}
-		logo, err := s.NewLogo(logoData.Name, logoData.Logo, true, logoData.Custom, 0)
+		logo, err := s.NewLogo(logoData.Name, logoData.Logo, true, logoData.Custom, 0, uuid)
 		if err != nil {
 			return stats, fmt.Errorf("failed to create logo object %s: %w", logoData.Name, err)
 		}
@@ -89,13 +89,13 @@ func (m *TeamManager) GetLogo(name string, uuid string) (TeamLogo, error) {
 }
 
 // NewLogo to create a new team logo
-func (m *TeamManager) NewLogo(name, logo string, enabled, custom bool, createdBy uint) (TeamLogo, error) {
+func (m *TeamManager) NewLogo(name, logo string, enabled, custom bool, createdBy uint, uuid string) (TeamLogo, error) {
 	return TeamLogo{
 		Name:      name,
 		Logo:      logo,
 		Enabled:   enabled,
 		Custom:    custom,
-		UUID:      m.UUID,
+		UUID:      uuid,
 		CreatedBy: createdBy,
 	}, nil
 }
@@ -109,15 +109,15 @@ func (m *TeamManager) CreateLogo(logo TeamLogo) error {
 }
 
 // ExistsLogo checks if team logo exists
-func (m *TeamManager) ExistsLogo(name string) bool {
+func (m *TeamManager) ExistsLogo(name, uuid string) bool {
 	var results int64
-	m.DB.Model(&TeamLogo{}).Where("name = ? AND uuid = ?", name, m.UUID).Count(&results)
+	m.DB.Model(&TeamLogo{}).Where("name = ? AND uuid = ?", name, uuid).Count(&results)
 	return results > 0
 }
 
 // ExistsLogoGet checks if team logo exists and returns the logo
-func (m *TeamManager) ExistsLogoGet(name string) (bool, TeamLogo) {
-	logo, err := m.GetLogo(name, m.UUID)
+func (m *TeamManager) ExistsLogoGet(name, uuid string) (bool, TeamLogo) {
+	logo, err := m.GetLogo(name, uuid)
 	if err != nil {
 		return false, TeamLogo{}
 	}
@@ -125,9 +125,9 @@ func (m *TeamManager) ExistsLogoGet(name string) (bool, TeamLogo) {
 }
 
 // RandomLogo for team
-func (m *TeamManager) RandomLogo() (TeamLogo, error) {
+func (m *TeamManager) RandomLogo(uuid string) (TeamLogo, error) {
 	var logo TeamLogo
-	if err := m.DB.Where("enabled = ? AND uuid = ?", true, m.UUID).Order("RANDOM()").First(&logo).Error; err != nil {
+	if err := m.DB.Where("enabled = ? AND uuid = ?", true, uuid).Order("RANDOM()").First(&logo).Error; err != nil {
 		return logo, err
 	}
 	return logo, nil
@@ -149,14 +149,14 @@ func normalizeLogoSymbol(logo string) string {
 }
 
 // SyncLogoUsage recalculates the Used flag of all logos for the manager UUID.
-func (m *TeamManager) SyncLogoUsage() error {
+func (m *TeamManager) SyncLogoUsage(uuid string) error {
 	var teams []PlatformTeam
-	if err := m.DB.Where("uuid = ?", m.UUID).Find(&teams).Error; err != nil {
+	if err := m.DB.Where("uuid = ?", uuid).Find(&teams).Error; err != nil {
 		return fmt.Errorf("failed to load teams: %w", err)
 	}
 
 	var logos []TeamLogo
-	if err := m.DB.Where("uuid = ?", m.UUID).Find(&logos).Error; err != nil {
+	if err := m.DB.Where("uuid = ?", uuid).Find(&logos).Error; err != nil {
 		return fmt.Errorf("failed to load logos: %w", err)
 	}
 
@@ -176,7 +176,7 @@ func (m *TeamManager) SyncLogoUsage() error {
 			continue
 		}
 		if err := m.DB.Model(&TeamLogo{}).
-			Where("id = ? AND uuid = ?", logo.ID, m.UUID).
+			Where("id = ? AND uuid = ?", logo.ID, uuid).
 			Update("used", shouldBeUsed).Error; err != nil {
 			return fmt.Errorf("failed to update logo usage: %w", err)
 		}

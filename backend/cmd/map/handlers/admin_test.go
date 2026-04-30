@@ -31,7 +31,7 @@ func newAdminTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *
 	chatManager, err := chat.CreateChatManager(db, jsonTestUUID)
 	require.NoError(t, err)
 
-	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	teamManager, err := teams.CreateTeams(db)
 	require.NoError(t, err)
 
 	sessionManager := scs.New()
@@ -149,7 +149,7 @@ func newAdminChallengesTemplateHandler(t *testing.T) (*HandlersMap, *scs.Session
 	logManager, err := logs.CreateLogManager(db)
 	require.NoError(t, err)
 
-	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	teamManager, err := teams.CreateTeams(db)
 	require.NoError(t, err)
 
 	sessionManager := scs.New()
@@ -187,7 +187,7 @@ func TestAdminChatTemplateHandlerIncludesRecentChatSection(t *testing.T) {
 		Active: true,
 	}))
 
-	allTeams, err := teamManager.GetAll()
+	allTeams, err := teamManager.GetAll(jsonTestUUID)
 	require.NoError(t, err)
 	require.Len(t, allTeams, 1)
 
@@ -501,7 +501,7 @@ func TestAdminChatTemplateHandlerIncludesModerationControls(t *testing.T) {
 		UUID:   jsonTestUUID,
 		Active: true,
 	}))
-	allTeams, err := teamManager.GetAll()
+	allTeams, err := teamManager.GetAll(jsonTestUUID)
 	require.NoError(t, err)
 
 	require.NoError(t, chatManager.CreateNew("alice", "needs moderation", allTeams[0].ID, chat.DefaultMaxLen))
@@ -710,7 +710,7 @@ func TestJSONChatHandlerExcludesHiddenEntries(t *testing.T) {
 	require.NoError(t, err)
 
 	handler := CreateHandlersMap(
-		WithConfig(config.MapCTFConfiguration{}),
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID}}),
 		WithChat(chatManager),
 	)
 

@@ -46,7 +46,6 @@ type ConfigurationService struct {
 	LogFormat string `yaml:"logFormat"`
 	Host      string `yaml:"host"`
 	Auth      string `yaml:"auth"`
-	UUID      string `yaml:"uuid"`
 }
 
 // ConfigurationDB to hold all backend configuration values
@@ -97,11 +96,11 @@ type ConfigurationJWT struct {
 
 // ConfigurationMap to hold the map configuration values
 type ConfigurationMap struct {
-	UUID          string `yaml:"uuid"`
 	StaticDir     string `yaml:"staticDir"`
 	TemplatesDir  string `yaml:"templatesDir"`
 	CountriesFile string `yaml:"countriesFile"`
 	LogosFile     string `yaml:"logosFile"`
+	UUID          string `yaml:"uuid"`
 }
 
 // ConfigurationDebugHTTP to hold all HTTP debug configuration values

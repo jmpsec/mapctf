@@ -131,13 +131,6 @@ func initServiceFlags(params *ServiceFlagParams) []cli.Flag {
 			Sources:     cli.EnvVars("SERVICE_LOG_FORMAT"),
 			Destination: &params.ConfigValues.Service.LogFormat,
 		},
-		&cli.StringFlag{
-			Name:        "uuid",
-			Value:       "",
-			Usage:       "UUID to be used for the service",
-			Sources:     cli.EnvVars("SERVICE_UUID"),
-			Destination: &params.ConfigValues.Service.UUID,
-		},
 	}
 }
 
@@ -375,13 +368,6 @@ func initMapFlags(params *ServiceFlagParams) []cli.Flag {
 			Destination: &params.ConfigValues.Map.TemplatesDir,
 		},
 		&cli.StringFlag{
-			Name:        "uuid",
-			Value:       "",
-			Usage:       "UUID for the mapctf instance. If empty, a random UUID will be generated at startup",
-			Sources:     cli.EnvVars("MAP_UUID"),
-			Destination: &params.ConfigValues.Map.UUID,
-		},
-		&cli.StringFlag{
 			Name:        "countries",
 			Value:       defCountriesSeedFile,
 			Usage:       "File path to the countries seed JSON data",
@@ -394,6 +380,13 @@ func initMapFlags(params *ServiceFlagParams) []cli.Flag {
 			Usage:       "File path to the team logos seed JSON data",
 			Sources:     cli.EnvVars("MAP_LOGOS"),
 			Destination: &params.ConfigValues.Map.LogosFile,
+		},
+		&cli.StringFlag{
+			Name:        "uuid",
+			Value:       "",
+			Usage:       "UUID for the mapctf instance. If empty, a random UUID will be generated at startup",
+			Sources:     cli.EnvVars("MAP_UUID"),
+			Destination: &params.ConfigValues.Map.UUID,
 		},
 	}
 }

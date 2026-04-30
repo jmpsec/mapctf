@@ -23,8 +23,7 @@ func setupTestDBForLogos(t *testing.T) (*gorm.DB, *TeamManager) {
 	}
 
 	manager := &TeamManager{
-		DB:   db,
-		UUID: testUUID1,
+		DB: db,
 	}
 
 	return db, manager
@@ -145,7 +144,7 @@ func TestGetLogoWrongUUID(t *testing.T) {
 func TestNewLogo(t *testing.T) {
 	_, manager := setupTestDBForLogos(t)
 
-	logo, err := manager.NewLogo("new-logo", "new.png", true, false, 5)
+	logo, err := manager.NewLogo("new-logo", "new.png", true, false, 5, testUUID1)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -190,8 +189,7 @@ func TestNewLogoWithDifferentParameters(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			manager.UUID = tc.uuid
-			logo, err := manager.NewLogo(tc.name, tc.logoPath, tc.enabled, tc.custom, tc.createdBy)
+			logo, err := manager.NewLogo(tc.name, tc.logoPath, tc.enabled, tc.custom, tc.createdBy, tc.uuid)
 			if err != nil {
 				t.Fatalf("Expected no error, got %v", err)
 			}
@@ -317,19 +315,17 @@ func TestExistsLogo(t *testing.T) {
 	}
 
 	// Test that it exists
-	manager.UUID = testUUID1
-	if !manager.ExistsLogo("exists-test") {
+	if !manager.ExistsLogo("exists-test", testUUID1) {
 		t.Error("Expected logo to exist")
 	}
 
 	// Test that non-existent logo doesn't exist
-	if manager.ExistsLogo("non-existent") {
+	if manager.ExistsLogo("non-existent", testUUID1) {
 		t.Error("Expected non-existent logo to not exist")
 	}
 
 	// Test with wrong UUID
-	manager.UUID = testUUID2
-	if manager.ExistsLogo("exists-test") {
+	if manager.ExistsLogo("exists-test", testUUID2) {
 		t.Error("Expected logo to not exist with wrong UUID")
 	}
 }
@@ -338,7 +334,7 @@ func TestExistsLogo(t *testing.T) {
 func TestExistsLogoEmpty(t *testing.T) {
 	_, manager := setupTestDBForLogos(t)
 
-	if manager.ExistsLogo("any-logo") {
+	if manager.ExistsLogo("any-logo", testUUID1) {
 		t.Error("Expected logo to not exist in empty database")
 	}
 }
@@ -361,18 +357,16 @@ func TestExistsLogoMultiple(t *testing.T) {
 	}
 
 	// Test existence for each specific combination
-	manager.UUID = testUUID1
-	if !manager.ExistsLogo("logo1") {
+	if !manager.ExistsLogo("logo1", testUUID1) {
 		t.Error("Expected logo1 with UUID 1 to exist")
 	}
-	if !manager.ExistsLogo("logo2") {
+	if !manager.ExistsLogo("logo2", testUUID1) {
 		t.Error("Expected logo2 with UUID 1 to exist")
 	}
-	manager.UUID = testUUID2
-	if !manager.ExistsLogo("logo1") {
+	if !manager.ExistsLogo("logo1", testUUID2) {
 		t.Error("Expected logo1 with UUID 2 to exist")
 	}
-	if manager.ExistsLogo("logo2") {
+	if manager.ExistsLogo("logo2", testUUID2) {
 		t.Error("Expected logo2 with UUID 2 to not exist")
 	}
 }
@@ -398,8 +392,7 @@ func TestExistsLogoGet(t *testing.T) {
 	}
 
 	// Test that it exists and retrieve it
-	manager.UUID = testUUID1
-	exists, logo := manager.ExistsLogoGet("exists-get-test")
+	exists, logo := manager.ExistsLogoGet("exists-get-test", testUUID1)
 	if !exists {
 		t.Error("Expected logo to exist")
 	}
@@ -428,7 +421,7 @@ func TestExistsLogoGet(t *testing.T) {
 func TestExistsLogoGetNotFound(t *testing.T) {
 	_, manager := setupTestDBForLogos(t)
 
-	exists, logo := manager.ExistsLogoGet("non-existent")
+	exists, logo := manager.ExistsLogoGet("non-existent", testUUID1)
 	if exists {
 		t.Error("Expected logo to not exist")
 	}
@@ -463,8 +456,7 @@ func TestExistsLogoGetWrongUUID(t *testing.T) {
 	}
 
 	// Try to get with different UUID
-	manager.UUID = testUUID2
-	exists, logo := manager.ExistsLogoGet("test-logo")
+	exists, logo := manager.ExistsLogoGet("test-logo", testUUID2)
 	if exists {
 		t.Error("Expected logo to not exist with wrong UUID")
 	}
@@ -492,8 +484,7 @@ func TestExistsLogoGetMultiple(t *testing.T) {
 	}
 
 	// Test retrieving specific logos
-	manager.UUID = testUUID1
-	exists, logo := manager.ExistsLogoGet("logo-a")
+	exists, logo := manager.ExistsLogoGet("logo-a", testUUID1)
 	if !exists {
 		t.Error("Expected logo-a with UUID 1 to exist")
 	}
@@ -501,7 +492,7 @@ func TestExistsLogoGetMultiple(t *testing.T) {
 		t.Errorf("Expected logo 'a.png', got '%s'", logo.Logo)
 	}
 
-	exists, logo = manager.ExistsLogoGet("logo-b")
+	exists, logo = manager.ExistsLogoGet("logo-b", testUUID1)
 	if !exists {
 		t.Error("Expected logo-b with UUID 1 to exist")
 	}
@@ -512,8 +503,7 @@ func TestExistsLogoGetMultiple(t *testing.T) {
 		t.Error("Expected Enabled to be false")
 	}
 
-	manager.UUID = testUUID2
-	exists, logo = manager.ExistsLogoGet("logo-a")
+	exists, logo = manager.ExistsLogoGet("logo-a", testUUID2)
 	if !exists {
 		t.Error("Expected logo-a with UUID 2 to exist")
 	}
@@ -521,7 +511,7 @@ func TestExistsLogoGetMultiple(t *testing.T) {
 		t.Errorf("Expected logo 'a2.png', got '%s'", logo.Logo)
 	}
 
-	exists, _ = manager.ExistsLogoGet("logo-b")
+	exists, _ = manager.ExistsLogoGet("logo-b", testUUID2)
 	if exists {
 		t.Error("Expected logo-b with UUID 2 to not exist")
 	}
@@ -530,9 +520,7 @@ func TestExistsLogoGetMultiple(t *testing.T) {
 // TestNewLogoEmptyStrings tests NewLogo with empty strings
 func TestNewLogoEmptyStrings(t *testing.T) {
 	_, manager := setupTestDBForLogos(t)
-	manager.UUID = ""
-
-	logo, err := manager.NewLogo("", "", false, false, 0)
+	logo, err := manager.NewLogo("", "", false, false, 0, "")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -651,14 +639,12 @@ func TestExistsLogoWithEmptyUUID(t *testing.T) {
 	}
 
 	// Test that it exists with EntID 0
-	manager.UUID = ""
-	if !manager.ExistsLogo("zero-ent") {
+	if !manager.ExistsLogo("zero-ent", "") {
 		t.Error("Expected logo to exist with EntID 0")
 	}
 
 	// Verify it doesn't match with different UUID
-	manager.UUID = testUUID1
-	if manager.ExistsLogo("zero-ent") {
+	if manager.ExistsLogo("zero-ent", testUUID1) {
 		t.Error("Expected logo to not exist with UUID 1")
 	}
 }

@@ -29,14 +29,14 @@ func newTestManager(t *testing.T) (*SettingsManager, *sql.DB) {
 	t.Helper()
 
 	db, sqlDB := newTestDB(t)
-	m, err := CreateSettingsManager(db, "test-service", "tenant-a")
+	m, err := CreateSettingsManager(db, "test-service")
 	require.NoError(t, err)
 	return m, sqlDB
 }
 
 func TestCreateSettingsManager(t *testing.T) {
 	t.Run("nil db returns error", func(t *testing.T) {
-		m, err := CreateSettingsManager(nil, "test-service", "tenant-a")
+		m, err := CreateSettingsManager(nil, "test-service")
 		require.Nil(t, m)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "database connection cannot be nil")
@@ -46,19 +46,18 @@ func TestCreateSettingsManager(t *testing.T) {
 		db, sqlDB := newTestDB(t)
 		defer func() { _ = sqlDB.Close() }()
 
-		m, err := CreateSettingsManager(db, "test-service", "tenant-a")
+		m, err := CreateSettingsManager(db, "test-service")
 		require.NoError(t, err)
 		require.NotNil(t, m)
 		require.NotNil(t, m.DB)
 		require.Equal(t, "test-service", m.Service)
-		require.Equal(t, "tenant-a", m.UUID)
 	})
 
 	t.Run("automigrate failure returns error", func(t *testing.T) {
 		db, sqlDB := newTestDB(t)
 		require.NoError(t, sqlDB.Close())
 
-		m, err := CreateSettingsManager(db, "test-service", "tenant-a")
+		m, err := CreateSettingsManager(db, "test-service")
 		require.Nil(t, m)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to AutoMigrate table")
@@ -128,7 +127,7 @@ func TestInitializationCreatesDefaultsAndIsIdempotent(t *testing.T) {
 	m, sqlDB := newTestManager(t)
 	defer func() { _ = sqlDB.Close() }()
 
-	require.NoError(t, m.Initialization())
+	require.NoError(t, m.Initialization("tenant-a"))
 
 	for name := range BooleanSettings {
 		require.True(t, m.Exists(name, "tenant-a"), "missing boolean setting %s", name)
@@ -145,7 +144,7 @@ func TestInitializationCreatesDefaultsAndIsIdempotent(t *testing.T) {
 
 	var firstCount int64
 	require.NoError(t, m.DB.Model(&PlatformSetting{}).Where("uuid = ?", "tenant-a").Count(&firstCount).Error)
-	require.NoError(t, m.Initialization())
+	require.NoError(t, m.Initialization("tenant-a"))
 	var secondCount int64
 	require.NoError(t, m.DB.Model(&PlatformSetting{}).Where("uuid = ?", "tenant-a").Count(&secondCount).Error)
 	require.Equal(t, firstCount, secondCount)
@@ -390,109 +389,109 @@ func TestTypedGettersAndSetters(t *testing.T) {
 	start := time.Date(2026, 3, 10, 10, 0, 0, 0, time.UTC)
 	end := start.Add(2 * time.Hour)
 
-	require.NoError(t, m.SetLoginEnabled(true, "alice"))
-	loginEnabled, err := m.GetLoginEnabled()
+	require.NoError(t, m.SetLoginEnabled(true, "alice", "tenant-a"))
+	loginEnabled, err := m.GetLoginEnabled("tenant-a")
 	require.NoError(t, err)
 	require.True(t, loginEnabled)
 
-	require.NoError(t, m.SetLoginStrongPasswords(true, "alice"))
-	loginStrongPasswords, err := m.GetLoginStrongPasswords()
+	require.NoError(t, m.SetLoginStrongPasswords(true, "alice", "tenant-a"))
+	loginStrongPasswords, err := m.GetLoginStrongPasswords("tenant-a")
 	require.NoError(t, err)
 	require.True(t, loginStrongPasswords)
 
-	require.NoError(t, m.SetRegistrationEnabled(true, "alice"))
-	registrationEnabled, err := m.GetRegistrationEnabled()
+	require.NoError(t, m.SetRegistrationEnabled(true, "alice", "tenant-a"))
+	registrationEnabled, err := m.GetRegistrationEnabled("tenant-a")
 	require.NoError(t, err)
 	require.True(t, registrationEnabled)
 
-	require.NoError(t, m.SetRegistrationNames(true, "alice"))
-	registrationNames, err := m.GetRegistrationNames()
+	require.NoError(t, m.SetRegistrationNames(true, "alice", "tenant-a"))
+	registrationNames, err := m.GetRegistrationNames("tenant-a")
 	require.NoError(t, err)
 	require.True(t, registrationNames)
 
-	require.NoError(t, m.SetRegistrationEmails(true, "alice"))
-	registrationEmails, err := m.GetRegistrationEmails()
+	require.NoError(t, m.SetRegistrationEmails(true, "alice", "tenant-a"))
+	registrationEmails, err := m.GetRegistrationEmails("tenant-a")
 	require.NoError(t, err)
 	require.True(t, registrationEmails)
 
-	require.NoError(t, m.SetRegistrationType(1, "alice"))
-	registrationType, err := m.GetRegistrationType()
+	require.NoError(t, m.SetRegistrationType(1, "alice", "tenant-a"))
+	registrationType, err := m.GetRegistrationType("tenant-a")
 	require.NoError(t, err)
 	require.Equal(t, 1, registrationType)
 
-	require.NoError(t, m.SetRegistrationToken("invite-123", "alice"))
-	registrationToken, err := m.GetRegistrationToken()
+	require.NoError(t, m.SetRegistrationToken("invite-123", "alice", "tenant-a"))
+	registrationToken, err := m.GetRegistrationToken("tenant-a")
 	require.NoError(t, err)
 	require.Equal(t, "invite-123", registrationToken)
 
-	require.NoError(t, m.SetScoringEnabled(true, "alice"))
-	scoringEnabled, err := m.GetScoringEnabled()
+	require.NoError(t, m.SetScoringEnabled(true, "alice", "tenant-a"))
+	scoringEnabled, err := m.GetScoringEnabled("tenant-a")
 	require.NoError(t, err)
 	require.True(t, scoringEnabled)
 
-	require.NoError(t, m.SetScoringHints(true, "alice"))
-	scoringHints, err := m.GetScoringHints()
+	require.NoError(t, m.SetScoringHints(true, "alice", "tenant-a"))
+	scoringHints, err := m.GetScoringHints("tenant-a")
 	require.NoError(t, err)
 	require.True(t, scoringHints)
 
-	require.NoError(t, m.SetScoringHelp(true, "alice"))
-	scoringHelp, err := m.GetScoringHelp()
+	require.NoError(t, m.SetScoringHelp(true, "alice", "tenant-a"))
+	scoringHelp, err := m.GetScoringHelp("tenant-a")
 	require.NoError(t, err)
 	require.True(t, scoringHelp)
 
-	require.NoError(t, m.SetGamePaused(true, "alice"))
-	gamePaused, err := m.GetGamePaused()
+	require.NoError(t, m.SetGamePaused(true, "alice", "tenant-a"))
+	gamePaused, err := m.GetGamePaused("tenant-a")
 	require.NoError(t, err)
 	require.True(t, gamePaused)
 
-	require.NoError(t, m.SetGameStarted(true, "alice"))
-	gameStarted, err := m.GetGameStarted()
+	require.NoError(t, m.SetGameStarted(true, "alice", "tenant-a"))
+	gameStarted, err := m.GetGameStarted("tenant-a")
 	require.NoError(t, err)
 	require.True(t, gameStarted)
 
-	require.NoError(t, m.SetGameStartTime(start, "alice"))
-	gameStartTime, err := m.GetGameStartTime()
+	require.NoError(t, m.SetGameStartTime(start, "alice", "tenant-a"))
+	gameStartTime, err := m.GetGameStartTime("tenant-a")
 	require.NoError(t, err)
 	require.Equal(t, start, gameStartTime)
 
-	require.NoError(t, m.SetGameEndTime(end, "alice"))
-	gameEndTime, err := m.GetGameEndTime()
+	require.NoError(t, m.SetGameEndTime(end, "alice", "tenant-a"))
+	gameEndTime, err := m.GetGameEndTime("tenant-a")
 	require.NoError(t, err)
 	require.Equal(t, end, gameEndTime)
 
-	require.NoError(t, m.SetCustomOrg("Acme", "alice"))
-	customOrg, err := m.GetCustomOrg()
+	require.NoError(t, m.SetCustomOrg("Acme", "alice", "tenant-a"))
+	customOrg, err := m.GetCustomOrg("tenant-a")
 	require.NoError(t, err)
 	require.Equal(t, "Acme", customOrg)
 
-	require.NoError(t, m.SetCustomLogo("logo-michigan", "alice"))
-	customLogo, err := m.GetCustomLogo()
+	require.NoError(t, m.SetCustomLogo("logo-michigan", "alice", "tenant-a"))
+	customLogo, err := m.GetCustomLogo("tenant-a")
 	require.NoError(t, err)
 	require.Equal(t, "logo-michigan", customLogo)
 
-	require.NoError(t, m.SetLanguage("es", "alice"))
-	language, err := m.GetLanguage()
+	require.NoError(t, m.SetLanguage("es", "alice", "tenant-a"))
+	language, err := m.GetLanguage("tenant-a")
 	require.NoError(t, err)
 	require.Equal(t, "es", language)
 
-	require.NoError(t, m.SetLeaderboardLimit(25, "alice"))
-	leaderboardLimit, err := m.GetLeaderboardLimit()
+	require.NoError(t, m.SetLeaderboardLimit(25, "alice", "tenant-a"))
+	leaderboardLimit, err := m.GetLeaderboardLimit("tenant-a")
 	require.NoError(t, err)
 	require.Equal(t, 25, leaderboardLimit)
 
-	require.NoError(t, m.SetGameboardShowTeamMembers(true, "alice"))
-	gameboardShowTeamMembers, err := m.GetGameboardShowTeamMembers()
+	require.NoError(t, m.SetGameboardShowTeamMembers(true, "alice", "tenant-a"))
+	gameboardShowTeamMembers, err := m.GetGameboardShowTeamMembers("tenant-a")
 	require.NoError(t, err)
 	require.True(t, gameboardShowTeamMembers)
 
-	require.NoError(t, m.SetGameboardChatMaxLen(500, "alice"))
-	gameboardChatMaxLen, err := m.GetGameboardChatMaxLen()
+	require.NoError(t, m.SetGameboardChatMaxLen(500, "alice", "tenant-a"))
+	gameboardChatMaxLen, err := m.GetGameboardChatMaxLen("tenant-a")
 	require.NoError(t, err)
 	require.Equal(t, 500, gameboardChatMaxLen)
 
 	// update path
-	require.NoError(t, m.SetLoginEnabled(false, "alice"))
-	loginEnabled, err = m.GetLoginEnabled()
+	require.NoError(t, m.SetLoginEnabled(false, "alice", "tenant-a"))
+	loginEnabled, err = m.GetLoginEnabled("tenant-a")
 	require.NoError(t, err)
 	require.False(t, loginEnabled)
 }
@@ -550,7 +549,7 @@ func TestTypedGettersTypeMismatch(t *testing.T) {
 		UUID:        "tenant-a",
 	}))
 
-	_, err := m.GetLoginEnabled()
+	_, err := m.GetLoginEnabled("tenant-a")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unexpected type")
 }

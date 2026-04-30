@@ -139,16 +139,15 @@ type SettingLog struct {
 // SettingsManager have all settings of the system
 type SettingsManager struct {
 	DB      *gorm.DB
-	UUID    string
 	Service string
 }
 
 // CreateSettingsManager to initialize the settings struct and tables
-func CreateSettingsManager(backend *gorm.DB, service, uuid string) (*SettingsManager, error) {
+func CreateSettingsManager(backend *gorm.DB, service string) (*SettingsManager, error) {
 	if backend == nil {
 		return nil, fmt.Errorf("database connection cannot be nil")
 	}
-	s := &SettingsManager{DB: backend, UUID: uuid, Service: service}
+	s := &SettingsManager{DB: backend, Service: service}
 	// table platform_settings
 	if err := backend.AutoMigrate(&PlatformSetting{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (platform_settings): %w", err)
@@ -161,8 +160,8 @@ func CreateSettingsManager(backend *gorm.DB, service, uuid string) (*SettingsMan
 }
 
 // Initialization with default settings if they don't exist
-func (m *SettingsManager) Initialization() error {
-	allSettings, err := m.GetAll(m.UUID)
+func (m *SettingsManager) Initialization(uuid string) error {
+	allSettings, err := m.GetAll(uuid)
 	if err != nil {
 		return fmt.Errorf("failed to get all settings: %w", err)
 	}
@@ -178,7 +177,7 @@ func (m *SettingsManager) Initialization() error {
 				Name:        name,
 				ValueType:   TypeBool,
 				ValueBool:   defaultValue,
-				UUID:        m.UUID,
+				UUID:        uuid,
 				Description: name + " boolean setting",
 			}
 			if err := m.Create(newSetting); err != nil {
@@ -193,7 +192,7 @@ func (m *SettingsManager) Initialization() error {
 				Name:        name,
 				ValueType:   TypeString,
 				ValueString: defaultValue,
-				UUID:        m.UUID,
+				UUID:        uuid,
 				Description: name + " string setting",
 			}
 			if err := m.Create(newSetting); err != nil {
@@ -208,7 +207,7 @@ func (m *SettingsManager) Initialization() error {
 				Name:        name,
 				ValueType:   TypeDate,
 				ValueDate:   defaultValue,
-				UUID:        m.UUID,
+				UUID:        uuid,
 				Description: name + " date setting",
 			}
 			if err := m.Create(newSetting); err != nil {
@@ -223,7 +222,7 @@ func (m *SettingsManager) Initialization() error {
 				Name:        name,
 				ValueType:   TypeInt,
 				ValueInt:    defaultValue,
-				UUID:        m.UUID,
+				UUID:        uuid,
 				Description: name + " int setting",
 			}
 			if err := m.Create(newSetting); err != nil {
@@ -372,8 +371,8 @@ func valueColumnByType(valueType string) (string, error) {
 	}
 }
 
-func (m *SettingsManager) upsertSetting(name, valueType, description, username string, setValue func(*PlatformSetting)) error {
-	setting, err := m.Get(name, m.UUID)
+func (m *SettingsManager) upsertSetting(name, valueType, description, username, uuid string, setValue func(*PlatformSetting)) error {
+	setting, err := m.Get(name, uuid)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("failed to get setting %s: %w", name, err)
@@ -382,7 +381,7 @@ func (m *SettingsManager) upsertSetting(name, valueType, description, username s
 			Name:        name,
 			ValueType:   valueType,
 			Description: description,
-			UUID:        m.UUID,
+			UUID:        uuid,
 		}
 		setValue(&newSetting)
 		if err := m.Create(newSetting); err != nil {
@@ -402,8 +401,8 @@ func (m *SettingsManager) upsertSetting(name, valueType, description, username s
 	return nil
 }
 
-func (m *SettingsManager) getBoolSetting(name string) (bool, error) {
-	setting, err := m.Get(name, m.UUID)
+func (m *SettingsManager) getBoolSetting(name, uuid string) (bool, error) {
+	setting, err := m.Get(name, uuid)
 	if err != nil {
 		return false, fmt.Errorf("failed to get setting %s: %w", name, err)
 	}
@@ -413,8 +412,8 @@ func (m *SettingsManager) getBoolSetting(name string) (bool, error) {
 	return setting.ValueBool, nil
 }
 
-func (m *SettingsManager) getStringSetting(name string) (string, error) {
-	setting, err := m.Get(name, m.UUID)
+func (m *SettingsManager) getStringSetting(name, uuid string) (string, error) {
+	setting, err := m.Get(name, uuid)
 	if err != nil {
 		return "", fmt.Errorf("failed to get setting %s: %w", name, err)
 	}
@@ -424,8 +423,8 @@ func (m *SettingsManager) getStringSetting(name string) (string, error) {
 	return setting.ValueString, nil
 }
 
-func (m *SettingsManager) getIntSetting(name string) (int, error) {
-	setting, err := m.Get(name, m.UUID)
+func (m *SettingsManager) getIntSetting(name, uuid string) (int, error) {
+	setting, err := m.Get(name, uuid)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get setting %s: %w", name, err)
 	}
@@ -435,8 +434,8 @@ func (m *SettingsManager) getIntSetting(name string) (int, error) {
 	return setting.ValueInt, nil
 }
 
-func (m *SettingsManager) getDateSetting(name string) (time.Time, error) {
-	setting, err := m.Get(name, m.UUID)
+func (m *SettingsManager) getDateSetting(name, uuid string) (time.Time, error) {
+	setting, err := m.Get(name, uuid)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to get setting %s: %w", name, err)
 	}
@@ -446,202 +445,202 @@ func (m *SettingsManager) getDateSetting(name string) (time.Time, error) {
 	return setting.ValueDate, nil
 }
 
-func (m *SettingsManager) SetLoginEnabled(enabled bool, username string) error {
-	return m.upsertSetting(LoginEnabled, TypeBool, LoginEnabled+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetLoginEnabled(enabled bool, username, uuid string) error {
+	return m.upsertSetting(LoginEnabled, TypeBool, LoginEnabled+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = enabled
 	})
 }
 
-func (m *SettingsManager) GetLoginEnabled() (bool, error) {
-	return m.getBoolSetting(LoginEnabled)
+func (m *SettingsManager) GetLoginEnabled(uuid string) (bool, error) {
+	return m.getBoolSetting(LoginEnabled, uuid)
 }
 
-func (m *SettingsManager) SetLoginStrongPasswords(enabled bool, username string) error {
-	return m.upsertSetting(LoginStrongPasswords, TypeBool, LoginStrongPasswords+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetLoginStrongPasswords(enabled bool, username, uuid string) error {
+	return m.upsertSetting(LoginStrongPasswords, TypeBool, LoginStrongPasswords+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = enabled
 	})
 }
 
-func (m *SettingsManager) GetLoginStrongPasswords() (bool, error) {
-	return m.getBoolSetting(LoginStrongPasswords)
+func (m *SettingsManager) GetLoginStrongPasswords(uuid string) (bool, error) {
+	return m.getBoolSetting(LoginStrongPasswords, uuid)
 }
 
-func (m *SettingsManager) SetRegistrationEnabled(enabled bool, username string) error {
-	return m.upsertSetting(RegistrationEnabled, TypeBool, RegistrationEnabled+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetRegistrationEnabled(enabled bool, username, uuid string) error {
+	return m.upsertSetting(RegistrationEnabled, TypeBool, RegistrationEnabled+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = enabled
 	})
 }
 
-func (m *SettingsManager) GetRegistrationEnabled() (bool, error) {
-	return m.getBoolSetting(RegistrationEnabled)
+func (m *SettingsManager) GetRegistrationEnabled(uuid string) (bool, error) {
+	return m.getBoolSetting(RegistrationEnabled, uuid)
 }
 
-func (m *SettingsManager) SetRegistrationNames(enabled bool, username string) error {
-	return m.upsertSetting(RegistrationNames, TypeBool, RegistrationNames+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetRegistrationNames(enabled bool, username, uuid string) error {
+	return m.upsertSetting(RegistrationNames, TypeBool, RegistrationNames+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = enabled
 	})
 }
 
-func (m *SettingsManager) GetRegistrationNames() (bool, error) {
-	return m.getBoolSetting(RegistrationNames)
+func (m *SettingsManager) GetRegistrationNames(uuid string) (bool, error) {
+	return m.getBoolSetting(RegistrationNames, uuid)
 }
 
-func (m *SettingsManager) SetRegistrationEmails(enabled bool, username string) error {
-	return m.upsertSetting(RegistrationEmails, TypeBool, RegistrationEmails+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetRegistrationEmails(enabled bool, username, uuid string) error {
+	return m.upsertSetting(RegistrationEmails, TypeBool, RegistrationEmails+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = enabled
 	})
 }
 
-func (m *SettingsManager) GetRegistrationEmails() (bool, error) {
-	return m.getBoolSetting(RegistrationEmails)
+func (m *SettingsManager) GetRegistrationEmails(uuid string) (bool, error) {
+	return m.getBoolSetting(RegistrationEmails, uuid)
 }
 
-func (m *SettingsManager) SetRegistrationType(regType int, username string) error {
-	return m.upsertSetting(RegistrationType, TypeInt, RegistrationType+" int setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetRegistrationType(regType int, username, uuid string) error {
+	return m.upsertSetting(RegistrationType, TypeInt, RegistrationType+" int setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueInt = regType
 	})
 }
 
-func (m *SettingsManager) GetRegistrationType() (int, error) {
-	return m.getIntSetting(RegistrationType)
+func (m *SettingsManager) GetRegistrationType(uuid string) (int, error) {
+	return m.getIntSetting(RegistrationType, uuid)
 }
 
-func (m *SettingsManager) SetScoringEnabled(enabled bool, username string) error {
-	return m.upsertSetting(ScoringEnabled, TypeBool, ScoringEnabled+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetScoringEnabled(enabled bool, username, uuid string) error {
+	return m.upsertSetting(ScoringEnabled, TypeBool, ScoringEnabled+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = enabled
 	})
 }
 
-func (m *SettingsManager) GetScoringEnabled() (bool, error) {
-	return m.getBoolSetting(ScoringEnabled)
+func (m *SettingsManager) GetScoringEnabled(uuid string) (bool, error) {
+	return m.getBoolSetting(ScoringEnabled, uuid)
 }
 
-func (m *SettingsManager) SetScoringHints(enabled bool, username string) error {
-	return m.upsertSetting(ScoringHints, TypeBool, ScoringHints+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetScoringHints(enabled bool, username, uuid string) error {
+	return m.upsertSetting(ScoringHints, TypeBool, ScoringHints+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = enabled
 	})
 }
 
-func (m *SettingsManager) GetScoringHints() (bool, error) {
-	return m.getBoolSetting(ScoringHints)
+func (m *SettingsManager) GetScoringHints(uuid string) (bool, error) {
+	return m.getBoolSetting(ScoringHints, uuid)
 }
 
-func (m *SettingsManager) SetScoringHelp(enabled bool, username string) error {
-	return m.upsertSetting(ScoringHelp, TypeBool, ScoringHelp+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetScoringHelp(enabled bool, username, uuid string) error {
+	return m.upsertSetting(ScoringHelp, TypeBool, ScoringHelp+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = enabled
 	})
 }
 
-func (m *SettingsManager) GetScoringHelp() (bool, error) {
-	return m.getBoolSetting(ScoringHelp)
+func (m *SettingsManager) GetScoringHelp(uuid string) (bool, error) {
+	return m.getBoolSetting(ScoringHelp, uuid)
 }
 
-func (m *SettingsManager) SetGamePaused(paused bool, username string) error {
-	return m.upsertSetting(GamePaused, TypeBool, GamePaused+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetGamePaused(paused bool, username, uuid string) error {
+	return m.upsertSetting(GamePaused, TypeBool, GamePaused+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = paused
 	})
 }
 
-func (m *SettingsManager) GetGamePaused() (bool, error) {
-	return m.getBoolSetting(GamePaused)
+func (m *SettingsManager) GetGamePaused(uuid string) (bool, error) {
+	return m.getBoolSetting(GamePaused, uuid)
 }
 
-func (m *SettingsManager) SetGameStarted(started bool, username string) error {
-	return m.upsertSetting(GameStarted, TypeBool, GameStarted+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetGameStarted(started bool, username, uuid string) error {
+	return m.upsertSetting(GameStarted, TypeBool, GameStarted+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = started
 	})
 }
 
-func (m *SettingsManager) GetGameStarted() (bool, error) {
-	return m.getBoolSetting(GameStarted)
+func (m *SettingsManager) GetGameStarted(uuid string) (bool, error) {
+	return m.getBoolSetting(GameStarted, uuid)
 }
 
-func (m *SettingsManager) SetGameStartTime(startTime time.Time, username string) error {
-	return m.upsertSetting(GameStartTime, TypeDate, GameStartTime+" date setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetGameStartTime(startTime time.Time, username, uuid string) error {
+	return m.upsertSetting(GameStartTime, TypeDate, GameStartTime+" date setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueDate = startTime
 	})
 }
 
-func (m *SettingsManager) GetGameStartTime() (time.Time, error) {
-	return m.getDateSetting(GameStartTime)
+func (m *SettingsManager) GetGameStartTime(uuid string) (time.Time, error) {
+	return m.getDateSetting(GameStartTime, uuid)
 }
 
-func (m *SettingsManager) SetGameEndTime(endTime time.Time, username string) error {
-	return m.upsertSetting(GameEndTime, TypeDate, GameEndTime+" date setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetGameEndTime(endTime time.Time, username, uuid string) error {
+	return m.upsertSetting(GameEndTime, TypeDate, GameEndTime+" date setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueDate = endTime
 	})
 }
 
-func (m *SettingsManager) GetGameEndTime() (time.Time, error) {
-	return m.getDateSetting(GameEndTime)
+func (m *SettingsManager) GetGameEndTime(uuid string) (time.Time, error) {
+	return m.getDateSetting(GameEndTime, uuid)
 }
 
-func (m *SettingsManager) SetCustomOrg(org string, username string) error {
-	return m.upsertSetting(CustomOrg, TypeString, CustomOrg+" string setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetCustomOrg(org string, username, uuid string) error {
+	return m.upsertSetting(CustomOrg, TypeString, CustomOrg+" string setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueString = org
 	})
 }
 
-func (m *SettingsManager) GetCustomOrg() (string, error) {
-	return m.getStringSetting(CustomOrg)
+func (m *SettingsManager) GetCustomOrg(uuid string) (string, error) {
+	return m.getStringSetting(CustomOrg, uuid)
 }
 
-func (m *SettingsManager) SetCustomLogo(logo, username string) error {
-	return m.upsertSetting(CustomLogo, TypeString, CustomLogo+" string setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetCustomLogo(logo, username, uuid string) error {
+	return m.upsertSetting(CustomLogo, TypeString, CustomLogo+" string setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueString = logo
 	})
 }
 
-func (m *SettingsManager) GetCustomLogo() (string, error) {
-	return m.getStringSetting(CustomLogo)
+func (m *SettingsManager) GetCustomLogo(uuid string) (string, error) {
+	return m.getStringSetting(CustomLogo, uuid)
 }
 
-func (m *SettingsManager) SetLanguage(language, username string) error {
-	return m.upsertSetting(Language, TypeString, Language+" string setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetLanguage(language, username, uuid string) error {
+	return m.upsertSetting(Language, TypeString, Language+" string setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueString = language
 	})
 }
 
-func (m *SettingsManager) GetLanguage() (string, error) {
-	return m.getStringSetting(Language)
+func (m *SettingsManager) GetLanguage(uuid string) (string, error) {
+	return m.getStringSetting(Language, uuid)
 }
 
-func (m *SettingsManager) SetLeaderboardLimit(limit int, username string) error {
-	return m.upsertSetting(LeaderboardLimit, TypeInt, LeaderboardLimit+" int setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetLeaderboardLimit(limit int, username, uuid string) error {
+	return m.upsertSetting(LeaderboardLimit, TypeInt, LeaderboardLimit+" int setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueInt = limit
 	})
 }
 
-func (m *SettingsManager) GetLeaderboardLimit() (int, error) {
-	return m.getIntSetting(LeaderboardLimit)
+func (m *SettingsManager) GetLeaderboardLimit(uuid string) (int, error) {
+	return m.getIntSetting(LeaderboardLimit, uuid)
 }
 
-func (m *SettingsManager) SetGameboardShowTeamMembers(show bool, username string) error {
-	return m.upsertSetting(GameboardShowTeamMembers, TypeBool, GameboardShowTeamMembers+" boolean setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetGameboardShowTeamMembers(show bool, username, uuid string) error {
+	return m.upsertSetting(GameboardShowTeamMembers, TypeBool, GameboardShowTeamMembers+" boolean setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueBool = show
 	})
 }
 
-func (m *SettingsManager) GetGameboardShowTeamMembers() (bool, error) {
-	return m.getBoolSetting(GameboardShowTeamMembers)
+func (m *SettingsManager) GetGameboardShowTeamMembers(uuid string) (bool, error) {
+	return m.getBoolSetting(GameboardShowTeamMembers, uuid)
 }
 
-func (m *SettingsManager) SetRegistrationToken(token, username string) error {
-	return m.upsertSetting(RegistrationToken, TypeString, RegistrationToken+" string setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetRegistrationToken(token, username, uuid string) error {
+	return m.upsertSetting(RegistrationToken, TypeString, RegistrationToken+" string setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueString = token
 	})
 }
 
-func (m *SettingsManager) GetRegistrationToken() (string, error) {
-	return m.getStringSetting(RegistrationToken)
+func (m *SettingsManager) GetRegistrationToken(uuid string) (string, error) {
+	return m.getStringSetting(RegistrationToken, uuid)
 }
 
-func (m *SettingsManager) SetGameboardChatMaxLen(maxLen int, username string) error {
-	return m.upsertSetting(GameboardChatMaxLen, TypeInt, GameboardChatMaxLen+" int setting", username, func(s *PlatformSetting) {
+func (m *SettingsManager) SetGameboardChatMaxLen(maxLen int, username, uuid string) error {
+	return m.upsertSetting(GameboardChatMaxLen, TypeInt, GameboardChatMaxLen+" int setting", username, uuid, func(s *PlatformSetting) {
 		s.ValueInt = maxLen
 	})
 }
 
-func (m *SettingsManager) GetGameboardChatMaxLen() (int, error) {
-	return m.getIntSetting(GameboardChatMaxLen)
+func (m *SettingsManager) GetGameboardChatMaxLen(uuid string) (int, error) {
+	return m.getIntSetting(GameboardChatMaxLen, uuid)
 }

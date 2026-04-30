@@ -24,7 +24,7 @@ func newAuthHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *users.Use
 	})
 	require.NoError(t, err)
 
-	settingsManager, err := settings.CreateSettingsManager(db, "test-service", jsonTestUUID)
+	settingsManager, err := settings.CreateSettingsManager(db, "test-service")
 	require.NoError(t, err)
 
 	sessionManager := scs.New()
@@ -46,7 +46,7 @@ func newAuthHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *users.Use
 func TestLoginPOSTHandlerBlocksNonAdminWhenLoginDisabled(t *testing.T) {
 	handler, sessions, userManager, settingsManager := newAuthHandler(t)
 
-	require.NoError(t, settingsManager.SetLoginEnabled(false, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetLoginEnabled(false, jsonSettingsAuthor, jsonTestUUID))
 
 	user, err := userManager.New("alice", "password123", "alice@example.com", "Alice", false, false, jsonTestUUID, 5)
 	require.NoError(t, err)
@@ -75,7 +75,7 @@ func TestLoginPOSTHandlerBlocksNonAdminWhenLoginDisabled(t *testing.T) {
 func TestLoginPOSTHandlerAllowsAdminWhenLoginDisabled(t *testing.T) {
 	handler, sessions, userManager, settingsManager := newAuthHandler(t)
 
-	require.NoError(t, settingsManager.SetLoginEnabled(false, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetLoginEnabled(false, jsonSettingsAuthor, jsonTestUUID))
 
 	adminUser, err := userManager.New("admin", "password123", "admin@example.com", "Admin", true, false, jsonTestUUID, 0)
 	require.NoError(t, err)
@@ -106,7 +106,7 @@ func TestLoginPOSTHandlerAllowsAdminWhenLoginDisabled(t *testing.T) {
 func TestLoginPOSTHandlerAllowsNonAdminWhenLoginEnabled(t *testing.T) {
 	handler, sessions, userManager, settingsManager := newAuthHandler(t)
 
-	require.NoError(t, settingsManager.SetLoginEnabled(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetLoginEnabled(true, jsonSettingsAuthor, jsonTestUUID))
 
 	user, err := userManager.New("alice", "password123", "alice@example.com", "Alice", false, false, jsonTestUUID, 5)
 	require.NoError(t, err)

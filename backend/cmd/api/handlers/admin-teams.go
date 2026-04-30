@@ -31,12 +31,12 @@ func (h *HandlersAPI) AdminTeamsHandler(w http.ResponseWriter, r *http.Request) 
 		uuid = users.NoUUID
 	}
 	// Validate UUID
-	if uuid != h.Teams.UUID {
+	if uuid != h.Config.Map.UUID {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid UUID"})
 		return
 	}
 	// Get teams from database filtered by UUID
-	teamsList, err := h.Teams.GetAll()
+	teamsList, err := h.Teams.GetAll(uuid)
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, ApiErrorResponse{Error: "error getting teams"})
 		return
@@ -84,7 +84,7 @@ func (h *HandlersAPI) CreateTeamHandler(w http.ResponseWriter, r *http.Request) 
 		uuid = users.NoUUID
 	}
 	// Validate UUID
-	if uuid != h.Teams.UUID {
+	if uuid != h.Config.Map.UUID {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid UUID"})
 		return
 	}
@@ -100,12 +100,12 @@ func (h *HandlersAPI) CreateTeamHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	// Check if team already exists
-	if h.Teams.Exists(req.Name) {
+	if h.Teams.Exists(req.Name, uuid) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "team already exists"})
 		return
 	}
 	// Create team using the New method
-	team, err := h.Teams.New(req.Name, req.Logo, req.Protected, req.Visible)
+	team, err := h.Teams.New(req.Name, req.Logo, req.Protected, req.Visible, uuid)
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: err.Error()})
 		return

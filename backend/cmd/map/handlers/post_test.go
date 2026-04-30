@@ -26,7 +26,7 @@ func newScorePostHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *team
 
 	db := newJSONTestDB(t)
 
-	teamManager, err := teams.CreateTeams(db, jsonTestUUID)
+	teamManager, err := teams.CreateTeams(db)
 	require.NoError(t, err)
 
 	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{
@@ -38,7 +38,7 @@ func newScorePostHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *team
 	challengeManager, err := challenges.CreateChallengeManager(db)
 	require.NoError(t, err)
 
-	settingsManager, err := settings.CreateSettingsManager(db, "test-service", jsonTestUUID)
+	settingsManager, err := settings.CreateSettingsManager(db, "test-service")
 	require.NoError(t, err)
 
 	logManager, err := logs.CreateLogManager(db)
@@ -83,7 +83,7 @@ func newJSONBodyRequestWithUUID(method, target, uuid string, body any) *http.Req
 func TestScorePOSTHandlerCreatesScoreAndLogs(t *testing.T) {
 	handler, sessions, teamManager, userManager, challengeManager, settingsManager, logManager := newScorePostHandler(t)
 
-	require.NoError(t, settingsManager.SetScoringEnabled(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetScoringEnabled(true, jsonSettingsAuthor, jsonTestUUID))
 	require.NoError(t, teamManager.Create(teams.PlatformTeam{
 		Model:   gorm.Model{ID: 5},
 		Name:    "Blue Team",
@@ -167,7 +167,7 @@ func TestScorePOSTHandlerCreatesScoreAndLogs(t *testing.T) {
 func TestScorePOSTHandlerRejectsDuplicateSolve(t *testing.T) {
 	handler, sessions, teamManager, userManager, challengeManager, settingsManager, _ := newScorePostHandler(t)
 
-	require.NoError(t, settingsManager.SetScoringEnabled(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetScoringEnabled(true, jsonSettingsAuthor, jsonTestUUID))
 	require.NoError(t, teamManager.Create(teams.PlatformTeam{
 		Model:  gorm.Model{ID: 7},
 		Name:   "Blue Team",
@@ -222,7 +222,7 @@ func TestScorePOSTHandlerRejectsDuplicateSolve(t *testing.T) {
 func TestScorePOSTHandlerRecordsFailureForWrongFlag(t *testing.T) {
 	handler, sessions, teamManager, userManager, challengeManager, settingsManager, logManager := newScorePostHandler(t)
 
-	require.NoError(t, settingsManager.SetScoringEnabled(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetScoringEnabled(true, jsonSettingsAuthor, jsonTestUUID))
 	require.NoError(t, teamManager.Create(teams.PlatformTeam{
 		Model:  gorm.Model{ID: 9},
 		Name:   "Red Team",
@@ -281,7 +281,7 @@ func TestScorePOSTHandlerRecordsFailureForWrongFlag(t *testing.T) {
 func TestHintPOSTHandlerUnlocksHintAndDeductsPoints(t *testing.T) {
 	handler, sessions, teamManager, userManager, challengeManager, settingsManager, logManager := newScorePostHandler(t)
 
-	require.NoError(t, settingsManager.SetScoringHints(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetScoringHints(true, jsonSettingsAuthor, jsonTestUUID))
 	require.NoError(t, teamManager.Create(teams.PlatformTeam{
 		Model:   gorm.Model{ID: 12},
 		Name:    "Blue Team",
@@ -363,7 +363,7 @@ func TestHintPOSTHandlerUnlocksHintAndDeductsPoints(t *testing.T) {
 func TestHintPOSTHandlerRejectsWhenTeamCannotAffordPenalty(t *testing.T) {
 	handler, sessions, teamManager, userManager, challengeManager, settingsManager, logManager := newScorePostHandler(t)
 
-	require.NoError(t, settingsManager.SetScoringHints(true, jsonSettingsAuthor))
+	require.NoError(t, settingsManager.SetScoringHints(true, jsonSettingsAuthor, jsonTestUUID))
 	require.NoError(t, teamManager.Create(teams.PlatformTeam{
 		Model:  gorm.Model{ID: 13},
 		Name:   "Red Team",
