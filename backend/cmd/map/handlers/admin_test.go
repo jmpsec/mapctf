@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
@@ -848,4 +849,147 @@ func TestAdminCountriesDeleteAllPOSTHandlerReturnsErrorWithoutManagers(t *testin
 	require.False(t, resp.Success)
 	require.Equal(t, "error", resp.Status)
 	require.Equal(t, "Countries or challenges manager is not initialized", resp.Message)
+}
+
+func TestAdminTeamLogoUpdatePOSTHandler_rejectsPlatformNameChange(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+	platformLogo, err := teamManager.NewLogo("SeedLogo", "invader", true, false, 0, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(platformLogo))
+
+	var stored teams.TeamLogo
+	require.NoError(t, teamManager.DB.Where("uuid = ? AND name = ?", jsonTestUUID, "SeedLogo").First(&stored).Error)
+
+	body, err := json.Marshal(AdminLogoUpdateRequest{
+		Name:      "Changed",
+		Enabled:   "true",
+		Protected: "false",
+	})
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/teams/logos/"+strconv.FormatUint(uint64(stored.ID), 10), bytes.NewReader(body))
+	req.Header.Set(ContentType, JSONApplicationUTF8)
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	rc := chi.NewRouteContext()
+	rc.URLParams.Add("uuid", jsonTestUUID)
+	rc.URLParams.Add("id", strconv.FormatUint(uint64(stored.ID), 10))
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rc))
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamLogoUpdatePOSTHandler(rr, req)
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var row teams.TeamLogo
+	require.NoError(t, teamManager.DB.First(&row, stored.ID).Error)
+	require.Equal(t, "SeedLogo", row.Name)
+}
+
+func TestAdminTeamLogoUpdatePOSTHandler_allowsPlatformToggleWithoutRename(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+	platformLogo, err := teamManager.NewLogo("PlatToggle", "invader", true, false, 0, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(platformLogo))
+
+	var stored teams.TeamLogo
+	require.NoError(t, teamManager.DB.Where("name = ?", "PlatToggle").First(&stored).Error)
+
+	body, err := json.Marshal(AdminLogoUpdateRequest{
+		Name:      "PlatToggle",
+		Enabled:   "false",
+		Protected: "true",
+	})
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/teams/logos/"+strconv.FormatUint(uint64(stored.ID), 10), bytes.NewReader(body))
+	req.Header.Set(ContentType, JSONApplicationUTF8)
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	rc := chi.NewRouteContext()
+	rc.URLParams.Add("uuid", jsonTestUUID)
+	rc.URLParams.Add("id", strconv.FormatUint(uint64(stored.ID), 10))
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rc))
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamLogoUpdatePOSTHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var row teams.TeamLogo
+	require.NoError(t, teamManager.DB.First(&row, stored.ID).Error)
+	require.False(t, row.Enabled)
+	require.True(t, row.Protected)
+	require.Equal(t, "invader", row.Logo)
+}
+
+func TestAdminTeamLogosDeleteAllPOSTHandler_deletesOnlyCustom(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+	plat, err := teamManager.NewLogo("PlatOnly", "bee", true, false, 0, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(plat))
+	cust, err := teamManager.NewLogo("CustOnly", "myslug", true, true, 0, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(cust))
+
+	req := newAdminRequestWithUUID(http.MethodPost, "/admin/teams/logos/delete-all", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamLogosDeleteAllPOSTHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var logos []teams.TeamLogo
+	require.NoError(t, teamManager.DB.Where("uuid = ?", jsonTestUUID).Order("id").Find(&logos).Error)
+	require.Len(t, logos, 1)
+	require.False(t, logos[0].Custom)
+	require.Equal(t, "PlatOnly", logos[0].Name)
+}
+
+func TestAdminTeamsImportLogosHandler_doesNotOverwritePlatformSlug(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+	plat, err := teamManager.NewLogo("ImportPlat", "bee", true, false, 0, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(plat))
+
+	payload := adminTeamsTransferPayload{
+		Version:    1,
+		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Logos: []adminTeamsTransferLogo{
+			{Name: "ImportPlat", Logo: "tampered-slug", Enabled: false, Custom: false, Protected: true, Used: true},
+		},
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/team-logos/import", bytes.NewReader(body))
+	req.Header.Set(ContentType, JSONApplicationUTF8)
+	rc := chi.NewRouteContext()
+	rc.URLParams.Add("uuid", jsonTestUUID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rc))
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamsImportLogosHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var row teams.TeamLogo
+	require.NoError(t, teamManager.DB.Where("name = ?", "ImportPlat").First(&row).Error)
+	require.Equal(t, "bee", row.Logo)
+	require.False(t, row.Enabled)
+	require.True(t, row.Protected)
 }

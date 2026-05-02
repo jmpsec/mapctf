@@ -168,9 +168,19 @@ type AdminTeamsTemplateData struct {
 	Message       string
 	Teams         []teams.PlatformTeam
 	Logos         []teams.TeamLogo
-	AllLogos      []teams.TeamLogo
 	Users         []users.PlatformUser
 	TeamMembers   map[uint][]users.PlatformUser
+}
+
+// AdminTeamLogosTemplateData for passing data to the admin team-logos template
+type AdminTeamLogosTemplateData struct {
+	Title         string
+	UUID          string
+	Authenticated bool
+	Admin         bool
+	Status        string
+	Message       string
+	AllLogos      []teams.TeamLogo
 }
 
 // AdminChallengesTemplateData for passing data to the admin challenges template

@@ -1233,7 +1233,14 @@ function initAdminTeamActionsButtons() {
     });
   }
 
-  bindImportAction('[data-action="import-all-teams"]', "admin-teams-import-file", "Missing teams import URL", "Teams and logos imported", "Failed to import teams and logos");
+  bindImportAction('[data-action="import-all-teams"]', "admin-teams-import-file", "Missing teams import URL", "Teams imported", "Failed to import teams");
+  bindImportAction(
+    '[data-action="import-all-team-logos"]',
+    "admin-team-logos-import-file",
+    "Missing logos import URL",
+    "Logos imported",
+    "Failed to import logos"
+  );
 
   function bindSimpleAction(actionSelector, urlAttribute, successMessage, errorMessage) {
     var btn = document.querySelector(actionSelector);
@@ -1313,7 +1320,11 @@ function initAdminTeamActionsButtons() {
       }
 
       if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-        if (window.confirm("Delete all logos? This cannot be undone.")) {
+        if (
+          window.confirm(
+            "Delete all custom logos? Platform badges stay in the catalog. This cannot be undone."
+          )
+        ) {
           runDeleteAllLogos();
         }
         return;
@@ -1338,10 +1349,7 @@ function initAdminTeamActionsButtons() {
   }
 
   var deleteAllTeamsBtn = document.querySelector('[data-action="delete-all-teams"]');
-  if (!deleteAllTeamsBtn) {
-    return;
-  }
-
+  if (deleteAllTeamsBtn) {
   deleteAllTeamsBtn.addEventListener("click", function (event) {
     event.preventDefault();
 
@@ -1398,6 +1406,7 @@ function initAdminTeamActionsButtons() {
       });
     });
   });
+  }
 }
 
 function initAdminUserActionsButtons() {
@@ -2342,9 +2351,16 @@ function initAdminEditLogoGrid() {
         var logoFile = (logoBtn.getAttribute("data-logo-file") || "").trim();
         var logoEnabled = (logoBtn.getAttribute("data-logo-enabled") || "false").toLowerCase() === "true";
         var logoProtected = (logoBtn.getAttribute("data-logo-protected") || "false").toLowerCase() === "true";
+        var isPlatform = (logoBtn.getAttribute("data-logo-custom") || "true").toLowerCase() === "false";
 
         if (nameInput) {
           nameInput.value = logoName;
+          nameInput.readOnly = isPlatform;
+          if (isPlatform) {
+            nameInput.setAttribute("title", "Platform logo name cannot be changed");
+          } else {
+            nameInput.removeAttribute("title");
+          }
           nameInput.focus();
         }
         if (fileInput) {
@@ -2370,7 +2386,9 @@ function initAdminEditLogoGrid() {
             return;
           }
 
-          var nameValue = (form.querySelector('input[name="name"]').value || "").trim();
+          var nameValue = isPlatform
+            ? (logoBtn.getAttribute("data-logo-name") || "").trim()
+            : (form.querySelector('input[name="name"]').value || "").trim();
           var enabledInput = form.querySelector('input[name="enabled"]:checked');
           var protectedInput = form.querySelector('input[name="protected"]:checked');
           var enabledValue = enabledInput ? String(enabledInput.value).trim() : "";

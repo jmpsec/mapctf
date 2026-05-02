@@ -93,6 +93,8 @@ const (
 	categoriesPath = "/categories"
 	// Teams path
 	teamsPath = "/teams"
+	// Team logos admin path (canonical; legacy POSTs also under teamsPath+"/logos")
+	teamLogosPath = "/team-logos"
 	// Activity path
 	activityPath = "/activity"
 	// Chat path
@@ -204,7 +206,7 @@ func mapCTFService() {
 		log.Fatal().Msgf("Failed to initialize teams: %v", err)
 	}
 	// Team icons
-	logoStats, err := teamsMgr.InitializeLogos(flagParams.ConfigValues.Map.LogosFile, flagParams.ConfigValues.Map.UUID)
+	logoStats, err := teamsMgr.InitializeLogos(flagParams.ConfigValues.Map.LogosFile)
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize team icons: %v", err)
 	}
@@ -370,8 +372,9 @@ func mapCTFService() {
 				r.Post(usersPath+"/{id}", handlersMap.AdminUserUpdatePOSTHandler)
 				r.Get(teamsPath, handlersMap.AdminTeamsTemplateHandler)
 				r.Post(teamsPath, handlersMap.AdminTeamsPOSTHandler)
-				r.Get(teamsPath+"/export", handlersMap.AdminTeamsExportHandler)
-				r.Post(teamsPath+"/import", handlersMap.AdminTeamsImportHandler)
+				r.Get(teamsPath+"/export/full", handlersMap.AdminTeamsExportHandler)
+				r.Get(teamsPath+"/export", handlersMap.AdminTeamsExportTeamsHandler)
+				r.Post(teamsPath+"/import", handlersMap.AdminTeamsImportTeamsHandler)
 				r.Post(teamsPath+"/enable-all", handlersMap.AdminTeamsEnableAllPOSTHandler)
 				r.Post(teamsPath+"/disable-all", handlersMap.AdminTeamsDisableAllPOSTHandler)
 				r.Post(teamsPath+"/visible-all", handlersMap.AdminTeamsVisibleAllPOSTHandler)
@@ -384,6 +387,14 @@ func mapCTFService() {
 				r.Post(teamsPath+"/logos/enable-all", handlersMap.AdminTeamLogosEnableAllPOSTHandler)
 				r.Post(teamsPath+"/logos/disable-all", handlersMap.AdminTeamLogosDisableAllPOSTHandler)
 				r.Post(teamsPath+"/logos/delete-all", handlersMap.AdminTeamLogosDeleteAllPOSTHandler)
+				r.Get(teamLogosPath, handlersMap.AdminTeamLogosTemplateHandler)
+				r.Get(teamLogosPath+"/export", handlersMap.AdminTeamsExportLogosHandler)
+				r.Post(teamLogosPath+"/import", handlersMap.AdminTeamsImportLogosHandler)
+				r.Post(teamLogosPath+"/logos/enable-all", handlersMap.AdminTeamLogosEnableAllPOSTHandler)
+				r.Post(teamLogosPath+"/logos/disable-all", handlersMap.AdminTeamLogosDisableAllPOSTHandler)
+				r.Post(teamLogosPath+"/logos/delete-all", handlersMap.AdminTeamLogosDeleteAllPOSTHandler)
+				r.Post(teamLogosPath+"/logos", handlersMap.AdminTeamLogosPOSTHandler)
+				r.Post(teamLogosPath+"/logos/{id}", handlersMap.AdminTeamLogoUpdatePOSTHandler)
 				r.Get(activityPath, handlersMap.AdminActivityTemplateHandler)
 				r.Post(activityPath, handlersMap.AdminActivityPOSTHandler)
 				r.Post(activityPath+"/{id}/delete", handlersMap.AdminActivityDeletePOSTHandler)

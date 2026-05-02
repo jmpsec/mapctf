@@ -1690,15 +1690,6 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		}
 		templateData.Logos = logos
 	}
-	var allLogos []teams.TeamLogo
-	if err := h.Teams.DB.Where("uuid = ?", uuid).Order("name ASC").Find(&allLogos).Error; err != nil {
-		log.Warn().Err(err).Msg("error loading all team logos")
-	} else {
-		for i := range allLogos {
-			allLogos[i].Logo = normalizeLogoSymbolName(allLogos[i].Logo)
-		}
-		templateData.AllLogos = allLogos
-	}
 	teamUsers, err := h.Users.GetAll(uuid)
 	if err != nil {
 		log.Warn().Err(err).Msg("error loading users for teams view")
@@ -1708,6 +1699,47 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		for _, user := range teamUsers {
 			templateData.TeamMembers[user.TeamID] = append(templateData.TeamMembers[user.TeamID], user)
 		}
+	}
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("template error")
+		return
+	}
+}
+
+// AdminTeamLogosTemplateHandler serves the admin team logos management page.
+func (h *HandlersMap) AdminTeamLogosTemplateHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+	t, err := template.ParseFiles(
+		h.Config.Map.TemplatesDir + "/admin/team-logos.html")
+	if err != nil {
+		log.Err(err).Msg("error getting admin team-logos template")
+		return
+	}
+	authenticated := h.IsAuthenticated(r.Context())
+	templateData := AdminTeamLogosTemplateData{
+		Title:         "MapCTF Admin: Team Logos",
+		UUID:          uuid,
+		Authenticated: authenticated,
+		Admin:         h.IsAdmin(r.Context()),
+		Status:        r.URL.Query().Get("status"),
+		Message:       r.URL.Query().Get("msg"),
+	}
+	var allLogos []teams.TeamLogo
+	if err := h.Teams.DB.Where("uuid = ?", uuid).Order("name ASC").Find(&allLogos).Error; err != nil {
+		log.Warn().Err(err).Msg("error loading all team logos")
+	} else {
+		for i := range allLogos {
+			allLogos[i].Logo = normalizeLogoSymbolName(allLogos[i].Logo)
+		}
+		templateData.AllLogos = allLogos
 	}
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
@@ -1796,6 +1828,19 @@ func (h *HandlersMap) importAdminTeamLogosFromPayload(uuid string, logos []admin
 		}
 		key := strings.ToLower(name)
 		if existing, ok := logosByName[key]; ok {
+			if !existing.Custom {
+				result := h.Teams.DB.Model(&teams.TeamLogo{}).
+					Where("id = ? AND uuid = ?", existing.ID, uuid).
+					Updates(map[string]interface{}{
+						"enabled":   inLogo.Enabled,
+						"protected": inLogo.Protected,
+					})
+				if result.Error != nil {
+					return createdLogos, updatedLogos, skippedLogos, result.Error
+				}
+				updatedLogos++
+				continue
+			}
 			result := h.Teams.DB.Model(&teams.TeamLogo{}).
 				Where("id = ? AND uuid = ?", existing.ID, uuid).
 				Updates(map[string]interface{}{
@@ -1809,6 +1854,11 @@ func (h *HandlersMap) importAdminTeamLogosFromPayload(uuid string, logos []admin
 				return createdLogos, updatedLogos, skippedLogos, result.Error
 			}
 			updatedLogos++
+			continue
+		}
+
+		if !inLogo.Custom {
+			skippedLogos++
 			continue
 		}
 
@@ -2091,65 +2141,11 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var existingLogos []teams.TeamLogo
-	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&existingLogos).Error; err != nil {
-		log.Err(err).Msg("error loading existing logos for import")
-		writeError(http.StatusInternalServerError, "Failed to load logos")
+	createdLogos, updatedLogos, skippedLogos, err := h.importAdminTeamLogosFromPayload(uuid, payload.Logos)
+	if err != nil {
+		log.Err(err).Msg("error importing logos from combined import")
+		writeError(http.StatusInternalServerError, "Failed to import logos")
 		return
-	}
-	logosByName := make(map[string]teams.TeamLogo, len(existingLogos))
-	for _, l := range existingLogos {
-		key := strings.ToLower(strings.TrimSpace(l.Name))
-		if key == "" {
-			continue
-		}
-		logosByName[key] = l
-	}
-
-	createdLogos := 0
-	updatedLogos := 0
-	skippedLogos := 0
-	for _, inLogo := range payload.Logos {
-		name := strings.TrimSpace(inLogo.Name)
-		logo := normalizeLogoSymbolName(strings.TrimSpace(inLogo.Logo))
-		if name == "" || logo == "" {
-			skippedLogos++
-			continue
-		}
-		key := strings.ToLower(name)
-		if existing, ok := logosByName[key]; ok {
-			result := h.Teams.DB.Model(&teams.TeamLogo{}).
-				Where("id = ? AND uuid = ?", existing.ID, uuid).
-				Updates(map[string]interface{}{
-					"logo":      logo,
-					"enabled":   inLogo.Enabled,
-					"custom":    inLogo.Custom,
-					"protected": inLogo.Protected,
-					"used":      inLogo.Used,
-				})
-			if result.Error != nil {
-				log.Err(result.Error).Msg("error updating logo from import")
-				writeError(http.StatusInternalServerError, "Failed to import logos")
-				return
-			}
-			updatedLogos++
-			continue
-		}
-
-		newLogo, err := h.Teams.NewLogo(name, logo, inLogo.Enabled, inLogo.Custom, 0, uuid)
-		if err != nil {
-			log.Err(err).Msg("error creating logo from import")
-			writeError(http.StatusBadRequest, "Failed to import logos")
-			return
-		}
-		newLogo.Protected = inLogo.Protected
-		newLogo.Used = inLogo.Used
-		if err := h.Teams.CreateLogo(newLogo); err != nil {
-			log.Err(err).Msg("error saving logo from import")
-			writeError(http.StatusInternalServerError, "Failed to import logos")
-			return
-		}
-		createdLogos++
 	}
 
 	var existingTeams []teams.PlatformTeam
@@ -2335,6 +2331,11 @@ func (h *HandlersMap) AdminTeamsImportLogosHandler(w http.ResponseWriter, r *htt
 	if skippedLogos > 0 {
 		messageParts = append(messageParts, "logos skipped "+strconv.Itoa(skippedLogos))
 	}
+	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
+		log.Err(err).Msg("error syncing logo usage after logos import")
+		writeError(http.StatusInternalServerError, "Import completed but failed to sync logo usage")
+		return
+	}
 	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
 }
 
@@ -2458,7 +2459,7 @@ func (h *HandlersMap) AdminTeamLogosDisableAllPOSTHandler(w http.ResponseWriter,
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Disabled " + strconv.FormatInt(result.RowsAffected, 10) + " logo(s)"})
 }
 
-// AdminTeamLogosDeleteAllPOSTHandler deletes all team logos
+// AdminTeamLogosDeleteAllPOSTHandler deletes all custom team logos for the map UUID.
 func (h *HandlersMap) AdminTeamLogosDeleteAllPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
@@ -2469,13 +2470,42 @@ func (h *HandlersMap) AdminTeamLogosDeleteAllPOSTHandler(w http.ResponseWriter, 
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-	result := h.Teams.DB.Where("uuid = ?", uuid).Delete(&teams.TeamLogo{})
-	if result.Error != nil {
-		log.Err(result.Error).Msg("error deleting all logos")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to delete all logos"})
+	var customs []teams.TeamLogo
+	if err := h.Teams.DB.Where("uuid = ? AND custom = ?", uuid, true).Find(&customs).Error; err != nil {
+		log.Err(err).Msg("error loading custom logos for delete-all")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to load custom logos"})
 		return
 	}
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Deleted " + strconv.FormatInt(result.RowsAffected, 10) + " logo(s)"})
+	for _, row := range customs {
+		h.removeCustomUploadedLogoFile(row.Logo)
+	}
+	result := h.Teams.DB.Where("uuid = ? AND custom = ?", uuid, true).Delete(&teams.TeamLogo{})
+	if result.Error != nil {
+		log.Err(result.Error).Msg("error deleting custom logos")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to delete custom logos"})
+		return
+	}
+	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
+		log.Err(err).Msg("error syncing logo usage after delete-all custom logos")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Custom logos deleted but failed to sync logo usage"})
+		return
+	}
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Deleted " + strconv.FormatInt(result.RowsAffected, 10) + " custom logo(s); platform logos unchanged"})
+}
+
+func (h *HandlersMap) removeCustomUploadedLogoFile(logoSymbol string) {
+	staticDir := strings.TrimSpace(h.Config.Map.StaticDir)
+	if staticDir == "" {
+		return
+	}
+	slug := normalizeLogoSymbolName(logoSymbol)
+	if slug == "" {
+		return
+	}
+	path := filepath.Join(staticDir, "svg", "icons", "custom", "badge-"+slug+".svg")
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		log.Warn().Err(err).Str("path", path).Msg("failed to remove custom logo file")
+	}
 }
 
 // AdminTeamsDeleteAllPOSTHandler deletes all teams and unassigns related users
@@ -3039,13 +3069,32 @@ func (h *HandlersMap) AdminTeamLogoUpdatePOSTHandler(w http.ResponseWriter, r *h
 		return
 	}
 
+	var existing teams.TeamLogo
+	if err := h.Teams.DB.Where("id = ? AND uuid = ?", uint(logoID), uuid).First(&existing).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			writeError(http.StatusNotFound, "Logo not found")
+			return
+		}
+		log.Err(err).Msg("error loading logo for update")
+		writeError(http.StatusInternalServerError, "Failed to load logo")
+		return
+	}
+
+	if !existing.Custom && name != strings.TrimSpace(existing.Name) {
+		writeError(http.StatusBadRequest, "Platform logo name cannot be changed")
+		return
+	}
+
+	updates := map[string]interface{}{
+		"enabled":   enabled,
+		"protected": protected,
+	}
+	if existing.Custom {
+		updates["name"] = name
+	}
 	updateResult := h.Teams.DB.Model(&teams.TeamLogo{}).
 		Where("id = ? AND uuid = ?", uint(logoID), uuid).
-		Updates(map[string]interface{}{
-			"name":      name,
-			"enabled":   enabled,
-			"protected": protected,
-		})
+		Updates(updates)
 	if updateResult.Error != nil {
 		log.Err(updateResult.Error).Msg("error updating logo")
 		writeError(http.StatusInternalServerError, "Failed to update logo")
