@@ -91,6 +91,15 @@ func (m *TeamManager) GetLogo(name string, uuid string) (TeamLogo, error) {
 	return logo, nil
 }
 
+// GetAll to get all logos by UUID and platform (NoUUID)
+func (m *TeamManager) GetAllLogos(uuid string) ([]TeamLogo, error) {
+	var logos []TeamLogo
+	if err := m.DB.Where("uuid = ? OR uuid = ?", uuid, NoUUID).Order("name ASC").Find(&logos).Error; err != nil {
+		return nil, err
+	}
+	return logos, nil
+}
+
 // NewLogo to create a new team logo
 func (m *TeamManager) NewLogo(name, logo string, enabled, custom bool, createdBy uint, uuid string) (TeamLogo, error) {
 	return TeamLogo{
@@ -130,7 +139,7 @@ func (m *TeamManager) ExistsLogoGet(name, uuid string) (bool, TeamLogo) {
 // RandomLogo for team
 func (m *TeamManager) RandomLogo(uuid string) (TeamLogo, error) {
 	var logo TeamLogo
-	if err := m.DB.Where("enabled = ? AND uuid = ?", true, uuid).Order("RANDOM()").First(&logo).Error; err != nil {
+	if err := m.DB.Where("enabled = ? AND (uuid = ? OR uuid = ?)", true, uuid, NoUUID).Order("RANDOM()").First(&logo).Error; err != nil {
 		return logo, err
 	}
 	return logo, nil

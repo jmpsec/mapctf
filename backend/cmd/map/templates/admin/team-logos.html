@@ -85,10 +85,6 @@
           <header class="admin-page-header admin-page-header--with-action">
             <div class="admin-page-header-top">
               <h3>Team logos</h3>
-              <div class="admin-page-header-actions">
-                <input id="admin-logos-search" class="admin-management-search" type="search" placeholder="Search logos..." autocomplete="off" />
-                <button class="mctf-cta" data-action="add-new-logo" data-create-url="/{{ .UUID }}/admin/team-logos/logos" type="button">Add Logo</button>
-              </div>
             </div>
             <span class="admin-section--status" data-ready-status="ready">
               status_
@@ -129,56 +125,121 @@
           </section>
 
           <section id="team-logos" class="admin-box">
-            <header class="admin-box-header">
-              <h3>Catalog</h3>
+            {{ $uuid := .UUID }}
+            <header class="admin-logo-list-header">
+              <h3>Logos <span class="admin-logo-section-count">{{ len .AllLogos }}</span></h3>
+              <div class="admin-logo-section-actions">
+                <input id="admin-logos-search" class="admin-management-search" type="search" placeholder="Search all logos..." autocomplete="off" />
+                <button class="mctf-cta" data-action="add-new-logo" data-create-url="/{{ .UUID }}/admin/team-logos/logos" type="button">Add Logo</button>
+              </div>
             </header>
-            <div class="admin-row">
-              <div class="admin-settings-list">
-                {{ if .AllLogos }}
-                {{ range .AllLogos }}
-                <button
-                  class="admin-setting-row admin-logo-grid-item js-edit-logo"
-                  type="button"
-                  data-logo-search="{{ if .Name }}{{ .Name }}{{ end }} {{ if .Logo }}{{ .Logo }}{{ end }}"
-                  data-logo-id="{{ .ID }}"
-                  data-logo-name="{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}"
-                  data-logo-symbol="{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"
-                  data-logo-file="{{ if .Custom }}/static/svg/icons/custom/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ else }}/static/svg/icons/badges/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ end }}"
-                  data-logo-enabled="{{ if .Enabled }}true{{ else }}false{{ end }}"
-                  data-logo-protected="{{ if .Protected }}true{{ else }}false{{ end }}"
-                  data-logo-custom="{{ if .Custom }}true{{ else }}false{{ end }}"
-                  data-logo-update-url="/{{ $.UUID }}/admin/team-logos/logos/{{ .ID }}"
-                  aria-label="Edit logo {{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}">
-                  <span class="admin-team-icon">
-                    <svg class="icon icon--badge">
-                      <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
-                    </svg>
-                  </span>
-                  <span class="admin-logo-name">{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}</span>
-                  <span class="admin-logo-flags">
-                    <span class="admin-logo-flag-chip" title="Enabled">
-                      {{ if .Enabled }}✅{{ else }}❌{{ end }}
-                      <span>{{ if .Enabled }}Enabled{{ else }}Not Enabled{{ end }}</span>
+            <div class="admin-logo-group admin-logo-group--custom" data-logo-group="custom">
+              <header class="admin-logo-section-header">
+                <h3>Custom logos <span class="admin-logo-section-count">{{ len .CustomLogos }}</span></h3>
+              </header>
+              <div class="admin-row">
+                <div class="admin-settings-list">
+                  {{ if .CustomLogos }}
+                  {{ range .CustomLogos }}
+                  <button
+                    class="admin-setting-row admin-logo-grid-item js-edit-logo"
+                    type="button"
+                    data-logo-search="{{ if .Name }}{{ .Name }}{{ end }} {{ if .Logo }}{{ .Logo }}{{ end }}"
+                    data-logo-id="{{ .ID }}"
+                    data-logo-name="{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}"
+                    data-logo-symbol="{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"
+                    data-logo-file="{{ if .Custom }}/static/svg/icons/custom/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ else }}/static/svg/icons/badges/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ end }}"
+                    data-logo-enabled="{{ if .Enabled }}true{{ else }}false{{ end }}"
+                    data-logo-protected="{{ if .Protected }}true{{ else }}false{{ end }}"
+                    data-logo-custom="{{ if .Custom }}true{{ else }}false{{ end }}"
+                    data-logo-update-url="/{{ $uuid }}/admin/team-logos/logos/{{ .ID }}"
+                    aria-label="Edit logo {{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}">
+                    <span class="admin-team-icon">
+                      <svg class="icon icon--badge">
+                        <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
+                      </svg>
                     </span>
-                    <span class="admin-logo-flag-chip" title="Source">
-                      {{ if .Custom }}🎨<span>Custom</span>{{ else }}📦<span>Platform</span>{{ end }}
+                    <span class="admin-logo-name">{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}</span>
+                    <span class="admin-logo-flags">
+                      <span class="admin-logo-flag-chip" title="Enabled">
+                        {{ if .Enabled }}✅{{ else }}❌{{ end }}
+                        <span>{{ if .Enabled }}Enabled{{ else }}Not Enabled{{ end }}</span>
+                      </span>
+                      <span class="admin-logo-flag-chip" title="Type">
+                        {{ if .Protected }}📦<span>Platform</span>{{ else }}🎨<span>Custom</span>{{ end }}
+                      </span>
+                      <span class="admin-logo-flag-chip" title="Protected">
+                        {{ if .Protected }}🔒{{ else }}🔓{{ end }}
+                        <span>{{ if .Protected }}Protected{{ else }}Not Protected{{ end }}</span>
+                      </span>
+                      <span class="admin-logo-flag-chip" title="Used">
+                        {{ if .Used }}🔥{{ else }}🆓{{ end }}
+                        <span>{{ if .Used }}Used{{ else }}Not Used{{ end }}</span>
+                      </span>
                     </span>
-                    <span class="admin-logo-flag-chip" title="Protected">
-                      {{ if .Protected }}🔒{{ else }}🔓{{ end }}
-                      <span>{{ if .Protected }}Protected{{ else }}Not Protected{{ end }}</span>
-                    </span>
-                    <span class="admin-logo-flag-chip" title="Used">
-                      {{ if .Used }}🔥{{ else }}🆓{{ end }}
-                      <span>{{ if .Used }}Used{{ else }}Not Used{{ end }}</span>
-                    </span>
-                  </span>
-                </button>
-                {{ end }}
-                {{ else }}
-                <div class="admin-setting-row">
-                  <label>No logos found</label>
+                  </button>
+                  {{ end }}
+                  {{ else }}
+                  <div class="admin-setting-row">
+                    <label>No custom logos found</label>
+                  </div>
+                  {{ end }}
                 </div>
-                {{ end }}
+              </div>
+            </div>
+
+            <div class="admin-logo-group admin-logo-group--platform" data-logo-group="platform">
+              <header class="admin-logo-section-header">
+                <h3>Catalog <span class="admin-logo-section-count">{{ len .PlatformLogos }}</span></h3>
+              </header>
+              <div class="admin-row">
+                <div class="admin-settings-list">
+                  {{ if .PlatformLogos }}
+                  {{ range .PlatformLogos }}
+                  <button
+                    class="admin-setting-row admin-logo-grid-item js-edit-logo"
+                    type="button"
+                    data-logo-search="{{ if .Name }}{{ .Name }}{{ end }} {{ if .Logo }}{{ .Logo }}{{ end }}"
+                    data-logo-id="{{ .ID }}"
+                    data-logo-name="{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}"
+                    data-logo-symbol="{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"
+                    data-logo-file="{{ if .Custom }}/static/svg/icons/custom/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ else }}/static/svg/icons/badges/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ end }}"
+                    data-logo-enabled="{{ if .Enabled }}true{{ else }}false{{ end }}"
+                    data-logo-protected="{{ if .Protected }}true{{ else }}false{{ end }}"
+                    data-logo-custom="{{ if .Custom }}true{{ else }}false{{ end }}"
+                    data-logo-update-url="/{{ $uuid }}/admin/team-logos/logos/{{ .ID }}"
+                    aria-label="Edit logo {{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}">
+                    <span class="admin-team-icon">
+                      <svg class="icon icon--badge">
+                        <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
+                      </svg>
+                    </span>
+                    <span class="admin-logo-name">{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}</span>
+                    <span class="admin-logo-flags">
+                      <span class="admin-logo-flag-chip" title="Enabled">
+                        {{ if .Enabled }}✅{{ else }}❌{{ end }}
+                        <span>{{ if .Enabled }}Enabled{{ else }}Not Enabled{{ end }}</span>
+                      </span>
+                      <span class="admin-logo-flag-chip" title="Type">
+                        {{ if .Protected }}📦<span>Platform</span>{{ else }}🎨<span>Custom</span>{{ end }}
+                      </span>
+                      <span class="admin-logo-flag-chip" title="Protected">
+                        {{ if .Protected }}🔒{{ else }}🔓{{ end }}
+                        <span>{{ if .Protected }}Protected{{ else }}Not Protected{{ end }}</span>
+                      </span>
+                      <span class="admin-logo-flag-chip" title="Used">
+                        {{ if .Used }}🔥{{ else }}🆓{{ end }}
+                        <span>{{ if .Used }}Used{{ else }}Not Used{{ end }}</span>
+                      </span>
+                    </span>
+                  </button>
+                  {{ end }}
+                  {{ else }}
+                  <div class="admin-setting-row">
+                    <label>No platform logos found</label>
+                  </div>
+                  {{ end }}
+                </div>
               </div>
             </div>
           </section>

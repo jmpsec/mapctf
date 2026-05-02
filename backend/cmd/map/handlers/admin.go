@@ -1681,8 +1681,9 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		}
 		templateData.Teams = teamList
 	}
-	var logos []teams.TeamLogo
-	if err := h.Teams.DB.Where("enabled = ? AND uuid = ?", true, uuid).Order("name ASC").Find(&logos).Error; err != nil {
+	// Full catalog for logo dropdowns (include disabled so existing assignments stay selectable).
+	logos, err := h.Teams.GetAllLogos(uuid)
+	if err != nil {
 		log.Warn().Err(err).Msg("error loading team logos")
 	} else {
 		for i := range logos {
@@ -1732,19 +1733,25 @@ func (h *HandlersMap) AdminTeamLogosTemplateHandler(w http.ResponseWriter, r *ht
 		Status:        r.URL.Query().Get("status"),
 		Message:       r.URL.Query().Get("msg"),
 	}
-	var allLogos []teams.TeamLogo
-	if err := h.Teams.DB.Where("uuid = ?", uuid).Order("name ASC").Find(&allLogos).Error; err != nil {
-		log.Warn().Err(err).Msg("error loading all team logos")
-	} else {
-		for i := range allLogos {
-			allLogos[i].Logo = normalizeLogoSymbolName(allLogos[i].Logo)
-		}
-		templateData.AllLogos = allLogos
-	}
-	if err := t.Execute(w, templateData); err != nil {
-		log.Err(err).Msg("template error")
+	allLogos, err := h.Teams.GetAllLogos(uuid)
+	if err != nil {
+		log.Err(err).Msg("error getting admin team-logos template")
 		return
 	}
+	platformLogos := make([]teams.TeamLogo, 0, len(allLogos))
+	customLogos := make([]teams.TeamLogo, 0, len(allLogos))
+	for i := range allLogos {
+		allLogos[i].Logo = normalizeLogoSymbolName(allLogos[i].Logo)
+		if allLogos[i].Protected {
+			platformLogos = append(platformLogos, allLogos[i])
+			continue
+		}
+		customLogos = append(customLogos, allLogos[i])
+	}
+	templateData.AllLogos = allLogos
+	templateData.CustomLogos = customLogos
+	templateData.PlatformLogos = platformLogos
+	t.Execute(w, templateData)
 }
 
 // AdminTeamsPOSTHandler for admin teams page for POST requests

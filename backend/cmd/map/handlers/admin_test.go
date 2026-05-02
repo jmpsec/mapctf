@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
+	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
@@ -35,6 +37,12 @@ func newAdminTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *
 	teamManager, err := teams.CreateTeams(db)
 	require.NoError(t, err)
 
+	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{
+		Secret:        "test-secret",
+		HoursToExpire: 24,
+	})
+	require.NoError(t, err)
+
 	sessionManager := scs.New()
 
 	handler := CreateHandlersMap(
@@ -46,6 +54,7 @@ func newAdminTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManager, *
 		}),
 		WithChat(chatManager),
 		WithTeams(teamManager),
+		WithUsers(userManager),
 		WithSessions(sessionManager),
 	)
 
@@ -177,6 +186,108 @@ func newAdminRequestWithUUID(method, target, uuid string) *http.Request {
 	routeCtx := chi.NewRouteContext()
 	routeCtx.URLParams.Add("uuid", uuid)
 	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
+}
+
+func TestAdminTeamsTemplateHandlerListsPlatformAndMapLogos(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+
+	platformLogo, err := teamManager.NewLogo("Platform Bee", "/static/svg/icons/badges/badge-bee.svg", true, false, 0, teams.NoUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(platformLogo))
+
+	mapLogo, err := teamManager.NewLogo("Map Custom", "custom-map", false, true, 0, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(mapLogo))
+
+	otherLogo, err := teamManager.NewLogo("Other Map", "other-map", true, true, 0, jsonOtherTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(otherLogo))
+
+	team, err := teamManager.New("Existing Team", "bee", false, true, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.Create(team))
+
+	req := newAdminRequestWithUUID(http.MethodGet, "/admin/teams", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamsTemplateHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	body := rr.Body.String()
+	require.Contains(t, body, `<option value="bee" selected>Platform Bee</option>`)
+	require.Contains(t, body, `<option value="custom-map">Map Custom (disabled)</option>`)
+	require.NotContains(t, body, `Other Map`)
+}
+
+func TestAdminTeamLogosTemplateHandlerSeparatesProtectedAndCustomLogos(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+
+	platformLogo, err := teamManager.NewLogo("Platform Bee", "/static/svg/icons/badges/badge-bee.svg", true, false, 0, teams.NoUUID)
+	require.NoError(t, err)
+	platformLogo.Protected = true
+	require.NoError(t, teamManager.CreateLogo(platformLogo))
+
+	customLogo, err := teamManager.NewLogo("Map Custom", "custom-map", true, true, 0, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(customLogo))
+
+	otherLogo, err := teamManager.NewLogo("Other Map", "other-map", true, true, 0, jsonOtherTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(otherLogo))
+
+	req := newAdminRequestWithUUID(http.MethodGet, "/admin/team-logos", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamLogosTemplateHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	body := rr.Body.String()
+	customHeader := strings.Index(body, `<h3>Custom logos <span class="admin-logo-section-count">1</span></h3>`)
+	customItem := strings.Index(body, `data-logo-name="Map Custom"`)
+	catalogHeader := strings.Index(body, `<h3>Catalog <span class="admin-logo-section-count">1</span></h3>`)
+	platformItem := strings.Index(body, `data-logo-name="Platform Bee"`)
+	teamActions := strings.Index(body, `<section id="team-actions"`)
+	logosHeader := strings.Index(body, `class="admin-logo-list-header"`)
+	searchInput := strings.Index(body, `id="admin-logos-search"`)
+	addLogoButton := strings.Index(body, `data-action="add-new-logo"`)
+	platformGroup := strings.Index(body, `admin-logo-group--platform`)
+
+	require.NotEqual(t, -1, customHeader)
+	require.NotEqual(t, -1, customItem)
+	require.NotEqual(t, -1, catalogHeader)
+	require.NotEqual(t, -1, platformItem)
+	require.NotEqual(t, -1, teamActions)
+	require.NotEqual(t, -1, logosHeader)
+	require.NotEqual(t, -1, searchInput)
+	require.NotEqual(t, -1, addLogoButton)
+	require.NotEqual(t, -1, platformGroup)
+	require.Less(t, logosHeader, customHeader)
+	require.Less(t, customHeader, customItem)
+	require.Less(t, customItem, catalogHeader)
+	require.Less(t, catalogHeader, platformItem)
+	require.Greater(t, searchInput, logosHeader)
+	require.Greater(t, addLogoButton, logosHeader)
+	require.Less(t, searchInput, customHeader)
+	require.Less(t, addLogoButton, customHeader)
+	require.Less(t, searchInput, catalogHeader)
+	require.Less(t, addLogoButton, catalogHeader)
+	require.Greater(t, searchInput, teamActions)
+	require.Greater(t, addLogoButton, teamActions)
+	require.Contains(t, body, `<h3>Logos <span class="admin-logo-section-count">2</span></h3>`)
+	require.Equal(t, 2, strings.Count(body, `class="admin-logo-section-header"`))
+	require.NotContains(t, body, `admin-box-header admin-logo-catalog-header`)
+	require.NotContains(t, body, "<h3>Platform logos</h3>")
+	require.NotContains(t, body, `Other Map`)
 }
 
 func TestAdminChatTemplateHandlerIncludesRecentChatSection(t *testing.T) {

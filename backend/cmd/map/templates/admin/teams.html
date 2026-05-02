@@ -100,7 +100,7 @@
           <template id="admin-teams-logo-options-template">
             <option value="random">Random (auto)</option>
             {{ range .Logos }}
-            <option value="{{ .Logo }}">{{ .Name }}</option>
+            <option value="{{ .Logo }}">{{ .Name }}{{ if not .Enabled }} (disabled){{ end }}</option>
             {{ end }}
           </template>
 
@@ -174,7 +174,7 @@
                       <select data-team-field="logo">
                         <option value="random" {{ if eq $teamLogo "random" }}selected{{ end }}>Random (auto)</option>
                         {{ range $.Logos }}
-                        <option value="{{ .Logo }}" {{ if eq .Logo $teamLogo }}selected{{ end }}>{{ .Name }}</option>
+                        <option value="{{ .Logo }}" {{ if eq .Logo $teamLogo }}selected{{ end }}>{{ .Name }}{{ if not .Enabled }} (disabled){{ end }}</option>
                         {{ end }}
                       </select>
                     </div>

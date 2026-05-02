@@ -648,3 +648,22 @@ func TestExistsLogoWithEmptyUUID(t *testing.T) {
 		t.Error("Expected logo to not exist with UUID 1")
 	}
 }
+
+func TestRandomLogoIgnoresDisabledPlatformLogos(t *testing.T) {
+	_, manager := setupTestDBForLogos(t)
+
+	disabledPlatformLogo := TeamLogo{
+		Name:      "disabled-platform",
+		Logo:      "disabled-platform.png",
+		UUID:      NoUUID,
+		Enabled:   false,
+		CreatedBy: 1,
+	}
+	if err := manager.CreateLogo(disabledPlatformLogo); err != nil {
+		t.Fatalf("Failed to create disabled platform logo: %v", err)
+	}
+
+	if _, err := manager.RandomLogo(testUUID1); err == nil {
+		t.Error("Expected disabled platform logo to be ignored")
+	}
+}

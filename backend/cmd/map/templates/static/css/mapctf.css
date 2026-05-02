@@ -5546,6 +5546,90 @@ General Admin
 }
 
 /* Denser layout for Team Logos section */
+#team-logos .admin-logo-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #21b4ba;
+}
+#team-logos .admin-logo-list-header h3,
+#team-logos .admin-logo-section-header h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: #21b4ba;
+  line-height: 1.1;
+}
+#team-logos .admin-logo-group {
+  padding-top: 18px;
+}
+#team-logos .admin-logo-group + .admin-logo-group {
+  border-top: 1px solid #1f343b;
+}
+#team-logos .admin-logo-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+  padding: 0 20px;
+}
+#team-logos .admin-logo-section-header h3 {
+  font-size: 1em;
+}
+#team-logos .admin-logo-section-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-left: auto;
+}
+#team-logos .admin-logo-section-actions .admin-management-search {
+  width: 260px;
+  margin: 0;
+}
+#team-logos .admin-logo-section-actions .mctf-cta {
+  margin: 0;
+}
+#team-logos .admin-logo-group .admin-row {
+  padding-top: 10px;
+}
+#team-logos .admin-logo-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 20px;
+  padding: 1px 7px;
+  border: 1px solid #2b3d43;
+  border-radius: 999px;
+  color: #cff8fa;
+  background: rgba(19, 36, 43, 0.72);
+  font-family: "puristasemibold", Courier, monospace;
+  font-size: 0.72em;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: none;
+}
+@media (max-width: 820px) {
+  #team-logos .admin-logo-list-header,
+  #team-logos .admin-logo-section-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  #team-logos .admin-logo-section-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  #team-logos .admin-logo-section-actions .admin-management-search {
+    flex: 1 1 180px;
+    width: auto;
+  }
+}
 #team-logos .admin-settings-list {
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 10px;

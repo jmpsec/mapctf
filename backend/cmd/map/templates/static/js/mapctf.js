@@ -2777,7 +2777,8 @@
       var adminKickerMap = [
         { pattern: /^country-(capture|help|help-opponent)$/, kicker: "Gameboard" },
         { pattern: /challenge|category/, kicker: "Admin Challenges" },
-        { pattern: /team|logo/, kicker: "Admin Teams" },
+        { pattern: /logo/, kicker: "Admin Logos" },
+        { pattern: /team/, kicker: "Admin Teams" },
         { pattern: /user/, kicker: "Admin Users" },
         { pattern: /country/, kicker: "Admin Countries" },
         { pattern: /activity/, kicker: "Admin Activity" },

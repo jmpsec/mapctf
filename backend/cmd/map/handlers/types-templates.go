@@ -181,6 +181,8 @@ type AdminTeamLogosTemplateData struct {
 	Status        string
 	Message       string
 	AllLogos      []teams.TeamLogo
+	CustomLogos   []teams.TeamLogo
+	PlatformLogos []teams.TeamLogo
 }
 
 // AdminChallengesTemplateData for passing data to the admin challenges template
