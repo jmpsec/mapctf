@@ -48,3 +48,6 @@ frontend
 *.md
 !README.md
 !ARCHITECTURE.md
+
+docs/*
+
