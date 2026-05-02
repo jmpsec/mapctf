@@ -12,6 +12,8 @@ import (
 const (
 	// ImporterCreatorID is the default user ID for created logos during initialization
 	ImporterCreatorID uint = 0
+	// NoUUID is the default UUID when no entity is specified
+	NoUUID string = ""
 )
 
 // TeamLogo to hold team logos
@@ -54,7 +56,7 @@ func loadLogosSeedData(seedFile string) ([]JSONLogo, error) {
 }
 
 // InitializeLogos initializes logo seed data for the given UUID.
-func (s *TeamManager) InitializeLogos(seedFile string, uuid string) (*InitializationStats, error) {
+func (s *TeamManager) InitializeLogos(seedFile string) (*InitializationStats, error) {
 	stats := &InitializationStats{}
 	logosData, err := loadLogosSeedData(seedFile)
 	if err != nil {
@@ -62,14 +64,15 @@ func (s *TeamManager) InitializeLogos(seedFile string, uuid string) (*Initializa
 	}
 	for _, logoData := range logosData {
 		stats.TotalLogos++
-		if s.ExistsLogo(logoData.Name, uuid) {
+		if s.ExistsLogo(logoData.Name, NoUUID) {
 			stats.ExistingLogos++
 			continue
 		}
-		logo, err := s.NewLogo(logoData.Name, logoData.Logo, true, logoData.Custom, 0, uuid)
+		logo, err := s.NewLogo(logoData.Name, logoData.Logo, true, logoData.Custom, 0, NoUUID)
 		if err != nil {
 			return stats, fmt.Errorf("failed to create logo object %s: %w", logoData.Name, err)
 		}
+		logo.Protected = true
 		logo.CreatedBy = ImporterCreatorID
 		if err := s.CreateLogo(logo); err != nil {
 			return stats, fmt.Errorf("failed to create logo %s: %w", logoData.Name, err)
