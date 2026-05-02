@@ -357,7 +357,7 @@
         var $link = $('<a href="#" class="team-card"></a>').attr("data-team", teamName);
         var $header = $('<div class="team-card-header"></div>');
         var $identity = $('<div class="team-card-identity"></div>');
-        var $badge = $('<svg class="icon--badge"><use xlink:href=""></use></svg>');
+        var $badge = $(renderBadgeMarkup(teamData.badge));
         var $text = $('<div class="team-card-text"></div>');
         var $name = $('<div class="team-card-name"></div>').text(teamName);
         var $points = $('<div class="team-card-points"></div>');
@@ -369,7 +369,6 @@
           $item.addClass("alert");
         }
 
-        $("use", $badge).attr("xlink:href", "#icon--badge-" + teamData.badge);
         $points.append('<span class="team-card-points-value mctf-numbers"></span>');
         $(".team-card-points-value", $points).text(teamData.points);
         $points.append('<span class="team-card-points-label">Points</span>');
@@ -424,7 +423,7 @@
           $(".team-name", $modal).text(team);
 
           // team badge
-          $(".icon--badge use", $modal).attr("xlink:href", "#icon--badge-" + teamData.badge);
+          $(".team-modal-top .icon--badge", $modal).replaceWith($(renderBadgeMarkup(teamData.badge)));
 
           // team members
           $teamMembers.empty();
@@ -491,9 +490,7 @@
         var markup =
           '<li class="mctf-user-card">' +
           '<div class="user-avatar">' +
-          '<svg class="icon--badge"><use xlink:href="#icon--badge-' +
-          teamData.badge +
-          '"></use></svg>' +
+          renderBadgeMarkup(teamData.badge) +
           "</div>" +
           '<div class="player-info">' +
           "<h6>" +
@@ -574,11 +571,40 @@
       return "";
     }
 
+    function isBadgeImagePath(logoValue) {
+      var logo = (logoValue || "").toString().trim();
+      return /^\/static\/img\/team-logos\/badge-[a-z0-9-]+\.(gif|jpe?g|png|svg)$/i.test(logo);
+    }
+
+    function escapeHTMLAttribute(value) {
+      return (value || "").toString().replace(/[&<>"']/g, function (char) {
+        return {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        }[char];
+      });
+    }
+
+    function renderBadgeMarkup(logoValue) {
+      var logo = (logoValue || "").toString().trim();
+      if (isBadgeImagePath(logo)) {
+        return '<img class="icon--badge icon--badge-img" src="' + escapeHTMLAttribute(logo) + '" alt="" />';
+      }
+      return '<svg class="icon--badge"><use xlink:href="#icon--badge-' + escapeHTMLAttribute(normalizeBadgeName(logo)) + '"></use></svg>';
+    }
+
     function normalizeBadgeName(logoValue) {
       var badge = (logoValue || "").toString().trim();
 
       if (!badge) {
         return "invader";
+      }
+
+      if (isBadgeImagePath(badge)) {
+        return badge;
       }
 
       if (badge.indexOf("/") > -1) {

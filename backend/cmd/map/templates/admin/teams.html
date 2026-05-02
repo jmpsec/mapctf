@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
-    <link rel="stylesheet" href="/static/css/mapctf.css" />
+    <link rel="stylesheet" href="/static/css/mapctf.css?v=20260502-logo-upload" />
     <style>
       #team-actions .admin-settings-list {
         grid-template-columns: 1fr;
@@ -111,9 +111,13 @@
               <header class="admin-box-header">
                 <h3 class="admin-team-title">
                   <span class="admin-team-icon">
+                    {{ if logoIsImage .Logo }}
+                    <img class="icon icon--badge admin-logo-img" src="{{ .Logo }}" alt="" />
+                    {{ else }}
                     <svg class="icon icon--badge">
-                      <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
+                      <use xlink:href="#icon--badge-{{ logoSymbol .Logo }}"></use>
                     </svg>
+                    {{ end }}
                   </span>
                   <span class="js-team-name-display">{{ .Name }}</span>
                 </h3>
@@ -267,6 +271,6 @@
     <script type="text/javascript" src="/static/js/plugins.js"></script>
     <script type="text/javascript" src="/static/js/mapctf.js"></script>
     <script type="text/javascript" src="/static/js/functions.js"></script>
-    <script type="text/javascript" src="/static/js/admin.js"></script>
+    <script type="text/javascript" src="/static/js/admin.js?v=20260502-logo-upload"></script>
   </body>
 </html>

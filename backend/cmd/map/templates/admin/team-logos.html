@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
-    <link rel="stylesheet" href="/static/css/mapctf.css" />
+    <link rel="stylesheet" href="/static/css/mapctf.css?v=20260502-logo-upload" />
     <style>
       #team-actions .admin-settings-list {
         grid-template-columns: 1fr;
@@ -148,16 +148,20 @@
                     data-logo-id="{{ .ID }}"
                     data-logo-name="{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}"
                     data-logo-symbol="{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"
-                    data-logo-file="{{ if .Custom }}/static/svg/icons/custom/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ else }}/static/svg/icons/badges/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ end }}"
+                    data-logo-file="{{ logoFilePath .Custom .Logo }}"
                     data-logo-enabled="{{ if .Enabled }}true{{ else }}false{{ end }}"
                     data-logo-protected="{{ if .Protected }}true{{ else }}false{{ end }}"
                     data-logo-custom="{{ if .Custom }}true{{ else }}false{{ end }}"
                     data-logo-update-url="/{{ $uuid }}/admin/team-logos/logos/{{ .ID }}"
                     aria-label="Edit logo {{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}">
                     <span class="admin-team-icon">
+                      {{ if logoIsImage .Logo }}
+                      <img class="icon icon--badge admin-logo-img" src="{{ .Logo }}" alt="" />
+                      {{ else }}
                       <svg class="icon icon--badge">
-                        <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
+                        <use xlink:href="#icon--badge-{{ logoSymbol .Logo }}"></use>
                       </svg>
+                      {{ end }}
                     </span>
                     <span class="admin-logo-name">{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}</span>
                     <span class="admin-logo-flags">
@@ -203,16 +207,20 @@
                     data-logo-id="{{ .ID }}"
                     data-logo-name="{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}"
                     data-logo-symbol="{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"
-                    data-logo-file="{{ if .Custom }}/static/svg/icons/custom/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ else }}/static/svg/icons/badges/badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}.svg{{ end }}"
+                    data-logo-file="{{ logoFilePath .Custom .Logo }}"
                     data-logo-enabled="{{ if .Enabled }}true{{ else }}false{{ end }}"
                     data-logo-protected="{{ if .Protected }}true{{ else }}false{{ end }}"
                     data-logo-custom="{{ if .Custom }}true{{ else }}false{{ end }}"
                     data-logo-update-url="/{{ $uuid }}/admin/team-logos/logos/{{ .ID }}"
                     aria-label="Edit logo {{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}">
                     <span class="admin-team-icon">
+                      {{ if logoIsImage .Logo }}
+                      <img class="icon icon--badge admin-logo-img" src="{{ .Logo }}" alt="" />
+                      {{ else }}
                       <svg class="icon icon--badge">
-                        <use xlink:href="#icon--badge-{{ if .Logo }}{{ .Logo }}{{ else }}invader{{ end }}"></use>
+                        <use xlink:href="#icon--badge-{{ logoSymbol .Logo }}"></use>
                       </svg>
+                      {{ end }}
                     </span>
                     <span class="admin-logo-name">{{ if .Name }}{{ .Name }}{{ else }}Unnamed{{ end }}</span>
                     <span class="admin-logo-flags">
@@ -251,6 +259,6 @@
     <script type="text/javascript" src="/static/js/plugins.js"></script>
     <script type="text/javascript" src="/static/js/mapctf.js"></script>
     <script type="text/javascript" src="/static/js/functions.js"></script>
-    <script type="text/javascript" src="/static/js/admin.js"></script>
+    <script type="text/javascript" src="/static/js/admin.js?v=20260502-logo-upload"></script>
   </body>
 </html>

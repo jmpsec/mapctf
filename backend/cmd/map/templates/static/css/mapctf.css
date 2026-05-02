@@ -2041,6 +2041,12 @@ select[data-dkcacheid] {
   max-height: 62px;
   height: auto;
 }
+img.icon--badge {
+  object-fit: contain;
+}
+.icon--badge-img {
+  display: block;
+}
 
 .icon--mini {
   fill: none;
@@ -3573,6 +3579,101 @@ body {
 }
 .action-main .errors-list {
   list-style: circle inside;
+}
+.admin-logo-upload-formats {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid #2b3d43;
+  border-left: 3px solid #ead44d;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.18);
+}
+.admin-logo-upload-formats-copy {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.admin-logo-upload-formats-label {
+  display: block;
+  color: #ead44d;
+  font-family: "puristasemibold", Courier, monospace;
+  font-size: 0.8em;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.admin-logo-upload-formats-note {
+  display: block;
+  margin-top: 4px;
+  color: #cff8fa;
+  font-size: 0.9em;
+  line-height: 1.35;
+}
+.admin-logo-upload-limits {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 6px;
+  order: 3;
+}
+.admin-logo-limit-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid #2b3d43;
+  border-radius: 4px;
+  color: #cff8fa;
+  font-family: "Source Code Pro", Courier, monospace;
+  font-size: 0.78em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.admin-logo-format-chips {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.admin-logo-format-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  min-width: 44px;
+  padding: 2px 8px;
+  border: 1px solid #21b4ba;
+  border-radius: 4px;
+  color: #21b4ba;
+  font-family: "Source Code Pro", Courier, monospace;
+  font-size: 0.78em;
+  line-height: 1;
+}
+.admin-logo-upload-file-size {
+  margin-top: 10px;
+  color: #b7d9de;
+  font-family: "Source Code Pro", Courier, monospace;
+  font-size: 0.82em;
+  line-height: 1.35;
+}
+.admin-logo-upload-file-size.is-over-limit {
+  color: #ff6d6d;
+}
+@media (max-width: 560px) {
+  .admin-logo-upload-formats {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .admin-logo-upload-limits,
+  .admin-logo-format-chips {
+    justify-content: flex-start;
+  }
 }
 
 /**
@@ -5663,6 +5764,10 @@ General Admin
   height: 32px;
   transition: transform 160ms ease;
   transform-origin: center center;
+}
+#team-logos .admin-setting-row .admin-logo-img {
+  width: 32px;
+  height: 32px;
 }
 #team-logos .admin-logo-name {
   color: #cff8fa;

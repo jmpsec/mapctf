@@ -17,16 +17,34 @@
       </div>
 
       <div class="form-el el--block-label el--full-text">
-        <label for="admin-add-logo-symbol">Symbol Slug</label>
+        <label for="admin-add-logo-symbol">File Slug</label>
         <input id="admin-add-logo-symbol" name="logo" type="text" style="width: 100%" placeholder="invader" />
       </div>
 
       <div class="form-el el--block-label el--full-text">
-        <label for="admin-add-logo-file">Upload Custom SVG (optional)</label>
-        <input id="admin-add-logo-file" name="logo_file" type="file" accept=".svg,image/svg+xml" style="width: 100%" />
+        <label for="admin-add-logo-file">Upload Logo File</label>
+        <input id="admin-add-logo-file" name="logo_file" type="file" accept=".svg,.gif,.png,.jpg,.jpeg,image/svg+xml,image/gif,image/png,image/jpeg" style="width: 100%" required />
       </div>
 
-      <p class="admin-copy--small">Use a symbol slug for existing icons, or upload an SVG file for a custom logo.</p>
+      <div class="admin-logo-upload-formats" aria-label="Accepted logo upload formats">
+        <div class="admin-logo-upload-formats-copy">
+          <span class="admin-logo-upload-formats-label">Accepted formats</span>
+          <span class="admin-logo-upload-formats-note">Upload an SVG, GIF, PNG, or JPG/JPEG file.</span>
+        </div>
+        <div class="admin-logo-upload-limits" aria-label="Logo upload size limits">
+          <span class="admin-logo-limit-chip">Max file size: 512 KB</span>
+          <span class="admin-logo-limit-chip">Recommended size: 64 x 48 px</span>
+        </div>
+        <div class="admin-logo-format-chips">
+          <span class="admin-logo-format-chip">SVG</span>
+          <span class="admin-logo-format-chip">GIF</span>
+          <span class="admin-logo-format-chip">PNG</span>
+          <span class="admin-logo-format-chip">JPG/JPEG</span>
+        </div>
+      </div>
+
+      <p class="admin-logo-upload-file-size" aria-live="polite">No file selected</p>
+      <p class="admin-copy--small">Use the file slug to control the stored logo name.</p>
 
       <div class="action-actionable">
         <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>

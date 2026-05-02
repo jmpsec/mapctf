@@ -16,6 +16,14 @@ dist
 tmp
 __pycache__
 
+# Generated admin logo uploads; new custom uploads use this single directory
+backend/cmd/map/templates/static/img/team-logos/*
+!backend/cmd/map/templates/static/img/team-logos/.gitkeep
+
+# Legacy custom SVG uploads from older dev checkouts
+backend/cmd/map/templates/static/svg/icons/custom/*
+!backend/cmd/map/templates/static/svg/icons/custom/.gitkeep
+
 # Logs
 *.log
 
@@ -51,4 +59,3 @@ frontend
 
 # Docs
 docs/*
-

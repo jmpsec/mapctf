@@ -22,6 +22,10 @@ RUN go mod verify
 # Create directories for binaries and configuration
 RUN mkdir -p /opt/mapctf/bin
 RUN mkdir -p /opt/mapctf/config
+RUN mkdir -p \
+    /usr/src/app/backend/cmd/map/templates/static/img/team-logos \
+    && chmod -R u+rwX,g+rwX \
+    /usr/src/app/backend/cmd/map/templates/static/img/team-logos
 
 # Copy templates and static files
 #COPY backend/cmd/map/templates/ /opt/mapctf/templates

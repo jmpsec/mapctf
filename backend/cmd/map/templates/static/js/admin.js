@@ -86,6 +86,184 @@ function initializeAdminFormDirtyTracking(form) {
   return initializeEditorDirtyTracking(form, 'input, select, textarea');
 }
 
+function isAdminLogoImagePath(logoValue) {
+  var logo = (logoValue || "").toString().trim();
+  return /^\/static\/img\/team-logos\/badge-[a-z0-9-]+\.(gif|jpe?g|png|svg)$/i.test(logo);
+}
+
+var ADMIN_LOGO_UPLOAD_ACCEPT = ".svg,.gif,.png,.jpg,.jpeg,image/svg+xml,image/gif,image/png,image/jpeg";
+var ADMIN_LOGO_UPLOAD_FORMATS = ["SVG", "GIF", "PNG", "JPG/JPEG"];
+var ADMIN_LOGO_UPLOAD_MAX_BYTES = 512 * 1024;
+var ADMIN_LOGO_UPLOAD_MAX_LABEL = "512 KB";
+var ADMIN_LOGO_UPLOAD_RECOMMENDED_SIZE = "64 x 48 px";
+
+function formatAdminLogoFileSize(bytes) {
+  var size = Number(bytes) || 0;
+  if (size < 1024) {
+    return size + " B";
+  }
+  if (size < 1024 * 1024) {
+    return Math.ceil(size / 1024) + " KB";
+  }
+  return (size / (1024 * 1024)).toFixed(1).replace(/\.0$/, "") + " MB";
+}
+
+function ensureAdminLogoUploadFormats(form) {
+  if (!form) {
+    return;
+  }
+
+  var logoFileInput = form.querySelector('input[name="logo_file"]');
+  if (logoFileInput) {
+    logoFileInput.setAttribute("accept", ADMIN_LOGO_UPLOAD_ACCEPT);
+    logoFileInput.setAttribute("required", "required");
+  }
+
+  var uploadField = logoFileInput ? logoFileInput.parentNode : null;
+  var uploadLabel = uploadField ? uploadField.querySelector('label[for="admin-add-logo-file"], label') : null;
+  if (uploadLabel) {
+    uploadLabel.textContent = "Upload Logo File";
+  }
+
+  var formats = form.querySelector(".admin-logo-upload-formats");
+  if (!formats) {
+    formats = document.createElement("div");
+    formats.className = "admin-logo-upload-formats";
+    formats.setAttribute("aria-label", "Accepted logo upload formats");
+    if (uploadField && uploadField.parentNode) {
+      uploadField.parentNode.insertBefore(formats, uploadField.nextSibling);
+    } else {
+      form.insertBefore(formats, form.firstChild);
+    }
+  }
+
+  while (formats.firstChild) {
+    formats.removeChild(formats.firstChild);
+  }
+
+  var formatCopy = document.createElement("div");
+  formatCopy.className = "admin-logo-upload-formats-copy";
+
+  var formatLabel = document.createElement("span");
+  formatLabel.className = "admin-logo-upload-formats-label";
+  formatLabel.textContent = "Accepted formats";
+  formatCopy.appendChild(formatLabel);
+
+  var formatNote = document.createElement("span");
+  formatNote.className = "admin-logo-upload-formats-note";
+  formatNote.textContent = "Upload an SVG, GIF, PNG, or JPG/JPEG file.";
+  formatCopy.appendChild(formatNote);
+  formats.appendChild(formatCopy);
+
+  var limitChips = document.createElement("div");
+  limitChips.className = "admin-logo-upload-limits";
+  limitChips.setAttribute("aria-label", "Logo upload size limits");
+
+  var maxChip = document.createElement("span");
+  maxChip.className = "admin-logo-limit-chip";
+  maxChip.textContent = "Max file size: " + ADMIN_LOGO_UPLOAD_MAX_LABEL;
+  limitChips.appendChild(maxChip);
+
+  var recommendedChip = document.createElement("span");
+  recommendedChip.className = "admin-logo-limit-chip";
+  recommendedChip.textContent = "Recommended size: " + ADMIN_LOGO_UPLOAD_RECOMMENDED_SIZE;
+  limitChips.appendChild(recommendedChip);
+  formats.appendChild(limitChips);
+
+  var formatChips = document.createElement("div");
+  formatChips.className = "admin-logo-format-chips";
+  for (var i = 0; i < ADMIN_LOGO_UPLOAD_FORMATS.length; i += 1) {
+    var chip = document.createElement("span");
+    chip.className = "admin-logo-format-chip";
+    chip.textContent = ADMIN_LOGO_UPLOAD_FORMATS[i];
+    formatChips.appendChild(chip);
+  }
+  formats.appendChild(formatChips);
+
+  var selectedFileSize = form.querySelector(".admin-logo-upload-file-size");
+  if (!selectedFileSize) {
+    selectedFileSize = document.createElement("p");
+    selectedFileSize.className = "admin-logo-upload-file-size";
+    selectedFileSize.setAttribute("aria-live", "polite");
+    if (formats.parentNode) {
+      formats.parentNode.insertBefore(selectedFileSize, formats.nextSibling);
+    } else {
+      form.appendChild(selectedFileSize);
+    }
+  }
+
+  function updateSelectedFileSize() {
+    if (!selectedFileSize) {
+      return;
+    }
+    var logoFile = logoFileInput && logoFileInput.files && logoFileInput.files.length ? logoFileInput.files[0] : null;
+    selectedFileSize.textContent = logoFile ? "Selected file: " + logoFile.name + " (" + formatAdminLogoFileSize(logoFile.size) + ")" : "No file selected";
+    selectedFileSize.classList.toggle("is-over-limit", !!(logoFile && logoFile.size > ADMIN_LOGO_UPLOAD_MAX_BYTES));
+  }
+
+  updateSelectedFileSize();
+  if (logoFileInput && !logoFileInput.dataset.logoSizeListenerBound) {
+    logoFileInput.addEventListener("change", updateSelectedFileSize);
+    logoFileInput.dataset.logoSizeListenerBound = "true";
+  }
+
+  var helperCopy = form.querySelector(".admin-copy--small");
+  if (!helperCopy) {
+    helperCopy = document.createElement("p");
+    helperCopy.className = "admin-copy--small";
+    if (formats.parentNode) {
+      formats.parentNode.insertBefore(helperCopy, formats.nextSibling);
+    } else {
+      form.appendChild(helperCopy);
+    }
+  }
+  helperCopy.textContent = "Use the file slug to control the stored logo name.";
+}
+
+function normalizeAdminLogoSymbol(logoValue) {
+  var logo = (logoValue || "").toString().trim();
+  if (!logo) {
+    return "invader";
+  }
+  if (logo.indexOf("/") > -1) {
+    logo = logo.substring(logo.lastIndexOf("/") + 1);
+  }
+  logo = logo.replace(/^#icon--badge-/, "");
+  logo = logo.replace(/^icon--badge-/, "");
+  logo = logo.replace(/^badge-/, "");
+  logo = logo.replace(/\.svg$/i, "");
+  return logo || "invader";
+}
+
+function setAdminLogoMedia(container, logoValue) {
+  if (!container) {
+    return;
+  }
+
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
+
+  if (isAdminLogoImagePath(logoValue)) {
+    var img = document.createElement("img");
+    img.className = "icon icon--badge admin-logo-img";
+    img.src = logoValue;
+    img.alt = "";
+    container.appendChild(img);
+    return;
+  }
+
+  var svgNS = "http://www.w3.org/2000/svg";
+  var svg = document.createElementNS(svgNS, "svg");
+  var use = document.createElementNS(svgNS, "use");
+  var symbol = "#icon--badge-" + normalizeAdminLogoSymbol(logoValue);
+  svg.setAttribute("class", "icon icon--badge");
+  use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", symbol);
+  use.setAttribute("href", symbol);
+  svg.appendChild(use);
+  container.appendChild(svg);
+}
+
 function hasUnsavedAdminEditorChanges() {
   return document.querySelector('[data-unsaved-changes="true"]') !== null;
 }
@@ -2084,10 +2262,10 @@ function initAdminAddTeamModal() {
       if (logoSelect && logosTemplate) {
         logoSelect.innerHTML = logosTemplate.innerHTML;
       }
-      var logoPreviewUse = form.querySelector("#admin-add-team-logo-preview use");
+      var logoPreviewContainer = form.querySelector(".admin-add-team-logo-preview-wrap");
 
       function updateAddTeamLogoPreview() {
-        if (!logoSelect || !logoPreviewUse) {
+        if (!logoSelect || !logoPreviewContainer) {
           return;
         }
 
@@ -2101,8 +2279,7 @@ function initAdminAddTeamModal() {
           logo = "invader";
         }
 
-        logoPreviewUse.setAttribute("xlink:href", "#icon--badge-" + logo);
-        logoPreviewUse.setAttribute("href", "#icon--badge-" + logo);
+        setAdminLogoMedia(logoPreviewContainer, logo);
       }
       if (logoSelect) {
         logoSelect.addEventListener("change", updateAddTeamLogoPreview);
@@ -2257,6 +2434,8 @@ function initAdminAddLogoButton() {
       if (nameInput) {
         nameInput.focus();
       }
+      var logoFileInput = form.querySelector('input[name="logo_file"]');
+      ensureAdminLogoUploadFormats(form);
 
       form.addEventListener("submit", function (submitEvent) {
         submitEvent.preventDefault();
@@ -2267,25 +2446,26 @@ function initAdminAddLogoButton() {
 
         var logoName = (form.querySelector('input[name="name"]').value || "").trim();
         var logoSymbol = (form.querySelector('input[name="logo"]').value || "").trim();
-        var logoFileInput = form.querySelector('input[name="logo_file"]');
         var logoFile = logoFileInput && logoFileInput.files && logoFileInput.files.length ? logoFileInput.files[0] : null;
 
         if (!logoName) {
           showTransientAdminStatus("error", "Logo name is required");
           return;
         }
-        if (!logoSymbol && !logoFile) {
-          showTransientAdminStatus("error", "Provide a symbol slug or upload an SVG file");
+        if (!logoFile) {
+          showTransientAdminStatus("error", "Upload a logo file before creating a custom logo");
+          return;
+        }
+        if (logoFile.size > ADMIN_LOGO_UPLOAD_MAX_BYTES) {
+          showTransientAdminStatus("error", "Maximum logo upload size is " + ADMIN_LOGO_UPLOAD_MAX_LABEL);
           return;
         }
 
         var formData = new FormData();
         formData.append("name", logoName);
         formData.append("logo", logoSymbol);
-        if (logoFile) {
-          formData.append("logo_file", logoFile);
-          formData.append("logo_slug", logoSymbol);
-        }
+        formData.append("logo_file", logoFile);
+        formData.append("logo_slug", logoSymbol);
 
         form.dataset.submitting = "true";
 
@@ -2340,7 +2520,7 @@ function initAdminEditLogoGrid() {
 
         var nameInput = form.querySelector('input[name="name"]');
         var fileInput = form.querySelector('input[name="file"]');
-        var previewUse = form.querySelector("#admin-edit-logo-preview use");
+        var previewContainer = form.querySelector(".edit-logo-preview");
         var enabledOn = form.querySelector('input[name="enabled"][value="true"]');
         var enabledOff = form.querySelector('input[name="enabled"][value="false"]');
         var protectedOn = form.querySelector('input[name="protected"][value="true"]');
@@ -2366,10 +2546,7 @@ function initAdminEditLogoGrid() {
         if (fileInput) {
           fileInput.value = logoFile;
         }
-        if (previewUse) {
-          previewUse.setAttribute("xlink:href", "#icon--badge-" + (logoSymbol || "invader"));
-          previewUse.setAttribute("href", "#icon--badge-" + (logoSymbol || "invader"));
-        }
+        setAdminLogoMedia(previewContainer, logoSymbol || "invader");
         if (enabledOn && enabledOff) {
           enabledOn.checked = logoEnabled;
           enabledOff.checked = !logoEnabled;
@@ -2441,7 +2618,7 @@ function initAdminTeamSettingsEditors() {
     var editableFields = Array.prototype.slice.call(card.querySelectorAll("[data-team-field]"));
     var nameInput = card.querySelector('input[data-team-field="name"]');
     var logoSelect = card.querySelector('select[data-team-field="logo"]');
-    var iconUse = card.querySelector(".admin-team-icon use");
+    var iconWrap = card.querySelector(".admin-team-icon");
     var nameDisplay = card.querySelector(".js-team-name-display");
     var syncInitialState = initializeEditorDirtyTracking(card, "[data-team-field]");
 
@@ -2453,15 +2630,14 @@ function initAdminTeamSettingsEditors() {
     }
 
     function updateLogoPreview() {
-      if (!logoSelect || !iconUse) {
+      if (!logoSelect || !iconWrap) {
         return;
       }
       var logo = (logoSelect.value || "").trim();
       if (!logo || logo === "random") {
         return;
       }
-      iconUse.setAttribute("xlink:href", "#icon--badge-" + logo);
-      iconUse.setAttribute("href", "#icon--badge-" + logo);
+      setAdminLogoMedia(iconWrap, logo);
     }
 
     setEditing(true);

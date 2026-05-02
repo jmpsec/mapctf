@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -188,6 +190,38 @@ func newAdminRequestWithUUID(method, target, uuid string) *http.Request {
 	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
 }
 
+func newAdminMultipartRequestWithUUID(t *testing.T, target, uuid string, fields map[string]string, fileField, fileName string, fileData []byte) *http.Request {
+	t.Helper()
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	for name, value := range fields {
+		require.NoError(t, writer.WriteField(name, value))
+	}
+	if fileField != "" {
+		part, err := writer.CreateFormFile(fileField, fileName)
+		require.NoError(t, err)
+		_, err = part.Write(fileData)
+		require.NoError(t, err)
+	}
+	require.NoError(t, writer.Close())
+
+	req := httptest.NewRequest(http.MethodPost, target, &body)
+	req.Header.Set(ContentType, writer.FormDataContentType())
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("uuid", uuid)
+	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
+}
+
+func mustReadFile(t *testing.T, path string) []byte {
+	t.Helper()
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	return data
+}
+
 func TestAdminTeamsTemplateHandlerListsPlatformAndMapLogos(t *testing.T) {
 	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
 
@@ -198,6 +232,10 @@ func TestAdminTeamsTemplateHandlerListsPlatformAndMapLogos(t *testing.T) {
 	mapLogo, err := teamManager.NewLogo("Map Custom", "custom-map", false, true, 0, jsonTestUUID)
 	require.NoError(t, err)
 	require.NoError(t, teamManager.CreateLogo(mapLogo))
+
+	rasterLogo, err := teamManager.NewLogo("Raster Custom", "/static/img/team-logos/badge-raster-custom.png", true, true, 0, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(rasterLogo))
 
 	otherLogo, err := teamManager.NewLogo("Other Map", "other-map", true, true, 0, jsonOtherTestUUID)
 	require.NoError(t, err)
@@ -221,7 +259,30 @@ func TestAdminTeamsTemplateHandlerListsPlatformAndMapLogos(t *testing.T) {
 	body := rr.Body.String()
 	require.Contains(t, body, `<option value="bee" selected>Platform Bee</option>`)
 	require.Contains(t, body, `<option value="custom-map">Map Custom (disabled)</option>`)
+	require.Contains(t, body, `<option value="/static/img/team-logos/badge-raster-custom.png">Raster Custom</option>`)
 	require.NotContains(t, body, `Other Map`)
+}
+
+func TestAdminAddTeamModalUsesImageAwareLogoPreview(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "templates", "static", "inc", "modals", "add-team.html"))
+	require.NoError(t, err)
+	require.Contains(t, string(data), `class="admin-add-team-logo-preview-wrap"`)
+
+	adminJS, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "admin.js"))
+	require.NoError(t, err)
+	js := string(adminJS)
+	require.Contains(t, js, `var logoPreviewContainer = form.querySelector(".admin-add-team-logo-preview-wrap");`)
+	require.Contains(t, js, `setAdminLogoMedia(logoPreviewContainer, logo);`)
+	require.NotContains(t, js, `logoPreviewUse.setAttribute("xlink:href", "#icon--badge-" + logo);`)
+}
+
+func TestAdminTeamsTemplateUsesVersionedStaticAssets(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "templates", "admin", "teams.html"))
+	require.NoError(t, err)
+
+	body := string(data)
+	require.Contains(t, body, `/static/css/mapctf.css?v=`)
+	require.Contains(t, body, `/static/js/admin.js?v=`)
 }
 
 func TestAdminTeamLogosTemplateHandlerSeparatesProtectedAndCustomLogos(t *testing.T) {
@@ -288,6 +349,264 @@ func TestAdminTeamLogosTemplateHandlerSeparatesProtectedAndCustomLogos(t *testin
 	require.NotContains(t, body, `admin-box-header admin-logo-catalog-header`)
 	require.NotContains(t, body, "<h3>Platform logos</h3>")
 	require.NotContains(t, body, `Other Map`)
+}
+
+func TestAdminAddLogoModalAllowsRasterImageUploads(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "templates", "static", "inc", "modals", "add-logo.html"))
+	require.NoError(t, err)
+
+	body := string(data)
+	require.Contains(t, body, `name="logo_file"`)
+	require.Contains(t, body, `accept=".svg,.gif,.png,.jpg,.jpeg,image/svg+xml,image/gif,image/png,image/jpeg"`)
+	require.Contains(t, body, `required`)
+	require.Contains(t, body, `Upload an SVG, GIF, PNG, or JPG/JPEG file.`)
+	require.Contains(t, body, `class="admin-logo-upload-formats"`)
+	require.Contains(t, body, `Accepted formats`)
+	require.Contains(t, body, `Max file size: 512 KB`)
+	require.Contains(t, body, `Recommended size: 64 x 48 px`)
+	require.Contains(t, body, `class="admin-logo-upload-file-size"`)
+	require.Contains(t, body, `No file selected`)
+	for _, format := range []string{"SVG", "GIF", "PNG", "JPG/JPEG"} {
+		require.Contains(t, body, `<span class="admin-logo-format-chip">`+format+`</span>`)
+	}
+	require.NotContains(t, body, `Upload Custom Image (optional)`)
+
+	adminJS, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "admin.js"))
+	require.NoError(t, err)
+	require.Contains(t, string(adminJS), `var ADMIN_LOGO_UPLOAD_ACCEPT = ".svg,.gif,.png,.jpg,.jpeg,image/svg+xml,image/gif,image/png,image/jpeg";`)
+	require.Contains(t, string(adminJS), `var ADMIN_LOGO_UPLOAD_FORMATS = ["SVG", "GIF", "PNG", "JPG/JPEG"];`)
+	require.Contains(t, string(adminJS), `var ADMIN_LOGO_UPLOAD_MAX_BYTES = 512 * 1024;`)
+	require.Contains(t, string(adminJS), `var ADMIN_LOGO_UPLOAD_MAX_LABEL = "512 KB";`)
+	require.Contains(t, string(adminJS), `var ADMIN_LOGO_UPLOAD_RECOMMENDED_SIZE = "64 x 48 px";`)
+	require.Contains(t, string(adminJS), `function formatAdminLogoFileSize(bytes)`)
+	require.Contains(t, string(adminJS), `Selected file: " + logoFile.name + " (" + formatAdminLogoFileSize(logoFile.size) + ")"`)
+	require.Contains(t, string(adminJS), `logoFile.size > ADMIN_LOGO_UPLOAD_MAX_BYTES`)
+	require.Contains(t, string(adminJS), `function ensureAdminLogoUploadFormats(form)`)
+	require.Contains(t, string(adminJS), `ensureAdminLogoUploadFormats(form);`)
+	require.Contains(t, string(adminJS), `logoFileInput.setAttribute("accept", ADMIN_LOGO_UPLOAD_ACCEPT);`)
+	require.Contains(t, string(adminJS), `logoFileInput.setAttribute("required", "required");`)
+	require.Contains(t, string(adminJS), `Upload a logo file before creating a custom logo`)
+}
+
+func TestAdminTeamLogosTemplateUsesVersionedStaticAssets(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "templates", "admin", "team-logos.html"))
+	require.NoError(t, err)
+
+	body := string(data)
+	require.Contains(t, body, `/static/css/mapctf.css?v=`)
+	require.Contains(t, body, `/static/js/admin.js?v=`)
+}
+
+func TestAdminTeamLogosPOSTHandlerRejectsMultipartLogoCreateWithoutFile(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+	staticDir := t.TempDir()
+	handler.Config.Map.StaticDir = staticDir
+
+	req := newAdminMultipartRequestWithUUID(t, "/admin/team-logos/logos", jsonTestUUID, map[string]string{
+		"name":      "Slug Only Badge",
+		"logo":      "slug-only-badge",
+		"logo_slug": "slug-only-badge",
+	}, "", "", nil)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamLogosPOSTHandler(rr, req)
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+	require.Error(t, teamManager.DB.Where("uuid = ? AND name = ?", jsonTestUUID, "Slug Only Badge").First(&teams.TeamLogo{}).Error)
+	require.NoFileExists(t, filepath.Join(staticDir, "svg", "icons", "custom", "badge-slug-only-badge.svg"))
+}
+
+func TestAdminTeamLogosPOSTHandlerStoresRasterLogoUpload(t *testing.T) {
+	tests := []struct {
+		name         string
+		slug         string
+		fileName     string
+		fileData     []byte
+		expectedLogo string
+	}{
+		{
+			name:         "PNG",
+			slug:         "raster-png",
+			fileName:     "raster-png.png",
+			fileData:     []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a},
+			expectedLogo: "/static/img/team-logos/badge-raster-png.png",
+		},
+		{
+			name:         "JPG",
+			slug:         "raster-jpg",
+			fileName:     "raster-jpg.jpg",
+			fileData:     []byte{0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 'J', 'F', 'I', 'F', 0x00, 0x01, 0x01, 0x01, 0x00, 0x60},
+			expectedLogo: "/static/img/team-logos/badge-raster-jpg.jpg",
+		},
+		{
+			name:         "JPEG",
+			slug:         "raster-jpeg",
+			fileName:     "raster-jpeg.jpeg",
+			fileData:     []byte{0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 'J', 'F', 'I', 'F', 0x00, 0x01, 0x01, 0x01, 0x00, 0x60},
+			expectedLogo: "/static/img/team-logos/badge-raster-jpeg.jpeg",
+		},
+		{
+			name:         "GIF",
+			slug:         "raster-gif",
+			fileName:     "raster-gif.gif",
+			fileData:     []byte{'G', 'I', 'F', '8', '9', 'a', 0x01, 0x00, 0x01, 0x00},
+			expectedLogo: "/static/img/team-logos/badge-raster-gif.gif",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+			staticDir := t.TempDir()
+			handler.Config.Map.StaticDir = staticDir
+
+			logoName := "Raster " + tt.name
+			req := newAdminMultipartRequestWithUUID(t, "/admin/team-logos/logos", jsonTestUUID, map[string]string{
+				"name":      logoName,
+				"logo":      tt.slug,
+				"logo_slug": tt.slug,
+			}, "logo_file", tt.fileName, tt.fileData)
+			ctx, err := sessions.Load(req.Context(), "")
+			require.NoError(t, err)
+			sessions.Put(ctx, string(ContextKeyUser), "admin")
+			sessions.Put(ctx, string(ContextKeyAdmin), true)
+			req = req.WithContext(ctx)
+
+			rr := httptest.NewRecorder()
+			handler.AdminTeamLogosPOSTHandler(rr, req)
+			require.Equal(t, http.StatusOK, rr.Code)
+
+			var row teams.TeamLogo
+			require.NoError(t, teamManager.DB.Where("uuid = ? AND name = ?", jsonTestUUID, logoName).First(&row).Error)
+			require.Equal(t, tt.expectedLogo, row.Logo)
+			require.True(t, row.Custom)
+			require.FileExists(t, filepath.Join(staticDir, strings.TrimPrefix(tt.expectedLogo, "/static/")))
+		})
+	}
+}
+
+func TestAdminTeamLogosPOSTHandlerStoresSVGUploadWithCustomLogoAssets(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+	staticDir := t.TempDir()
+	handler.Config.Map.StaticDir = staticDir
+
+	svgData := []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48"><script>alert(1)</script><path d="M4 4h56v40H4z"/></svg>`)
+	req := newAdminMultipartRequestWithUUID(t, "/admin/team-logos/logos", jsonTestUUID, map[string]string{
+		"name":      "SVG Badge",
+		"logo":      "svg-badge",
+		"logo_slug": "svg-badge",
+	}, "logo_file", "svg-badge.svg", svgData)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamLogosPOSTHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var row teams.TeamLogo
+	require.NoError(t, teamManager.DB.Where("uuid = ? AND name = ?", jsonTestUUID, "SVG Badge").First(&row).Error)
+	require.Equal(t, "/static/img/team-logos/badge-svg-badge.svg", row.Logo)
+	require.True(t, row.Custom)
+	savedPath := filepath.Join(staticDir, "img", "team-logos", "badge-svg-badge.svg")
+	require.FileExists(t, savedPath)
+	require.NotContains(t, strings.ToLower(string(mustReadFile(t, savedPath))), "<script")
+	require.NoFileExists(t, filepath.Join(staticDir, "svg", "icons", "custom", "badge-svg-badge.svg"))
+}
+
+func TestAdminTeamLogosPOSTHandlerRejectsUnsupportedLogoUploadType(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+	staticDir := t.TempDir()
+	handler.Config.Map.StaticDir = staticDir
+
+	req := newAdminMultipartRequestWithUUID(t, "/admin/team-logos/logos", jsonTestUUID, map[string]string{
+		"name":      "Text Badge",
+		"logo":      "text-badge",
+		"logo_slug": "text-badge",
+	}, "logo_file", "text-badge.txt", []byte("not a supported logo"))
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamLogosPOSTHandler(rr, req)
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+	require.Error(t, teamManager.DB.Where("uuid = ? AND name = ?", jsonTestUUID, "Text Badge").First(&teams.TeamLogo{}).Error)
+	require.NoFileExists(t, filepath.Join(staticDir, "img", "team-logos", "badge-text-badge.txt"))
+}
+
+func TestAdminTeamLogosPOSTHandlerRejectsDuplicateRasterLogoUpload(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+	staticDir := t.TempDir()
+	handler.Config.Map.StaticDir = staticDir
+
+	firstUpload := []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01}
+	req := newAdminMultipartRequestWithUUID(t, "/admin/team-logos/logos", jsonTestUUID, map[string]string{
+		"name":      "Raster Badge",
+		"logo":      "raster-badge",
+		"logo_slug": "raster-badge",
+	}, "logo_file", "raster-badge.png", firstUpload)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamLogosPOSTHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	secondUpload := []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x02}
+	req = newAdminMultipartRequestWithUUID(t, "/admin/team-logos/logos", jsonTestUUID, map[string]string{
+		"name":      "Duplicate Raster Badge",
+		"logo":      "raster-badge",
+		"logo_slug": "raster-badge",
+	}, "logo_file", "raster-badge.png", secondUpload)
+	ctx, err = sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr = httptest.NewRecorder()
+	handler.AdminTeamLogosPOSTHandler(rr, req)
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+	require.Error(t, teamManager.DB.Where("uuid = ? AND name = ?", jsonTestUUID, "Duplicate Raster Badge").First(&teams.TeamLogo{}).Error)
+	require.FileExists(t, filepath.Join(staticDir, "img", "team-logos", "badge-raster-badge.png"))
+	require.Equal(t, firstUpload, mustReadFile(t, filepath.Join(staticDir, "img", "team-logos", "badge-raster-badge.png")))
+}
+
+func TestAdminTeamLogosTemplateHandlerRendersRasterLogoImage(t *testing.T) {
+	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
+
+	customLogo, err := teamManager.NewLogo("Raster Badge", "/static/img/team-logos/badge-raster-badge.png", true, true, 0, jsonTestUUID)
+	require.NoError(t, err)
+	require.NoError(t, teamManager.CreateLogo(customLogo))
+
+	req := newAdminRequestWithUUID(http.MethodGet, "/admin/team-logos", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTeamLogosTemplateHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	body := rr.Body.String()
+	require.Contains(t, body, `data-logo-symbol="/static/img/team-logos/badge-raster-badge.png"`)
+	require.Contains(t, body, `data-logo-file="/static/img/team-logos/badge-raster-badge.png"`)
+	require.Contains(t, body, `<img class="icon icon--badge admin-logo-img" src="/static/img/team-logos/badge-raster-badge.png" alt="" />`)
+	require.NotContains(t, body, `#icon--badge-/static/img/team-logos/badge-raster-badge.png`)
 }
 
 func TestAdminChatTemplateHandlerIncludesRecentChatSection(t *testing.T) {

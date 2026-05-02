@@ -181,11 +181,12 @@ type adminSettingsTransferItem struct {
 const maxCustomLogoUploadBytes int64 = 512 * 1024
 
 var (
-	logoSlugCleaner     = regexp.MustCompile(`[^a-z0-9-]+`)
-	logoSlugMultiDash   = regexp.MustCompile(`-+`)
-	svgScriptTagPattern = regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
-	svgViewBoxPatternD  = regexp.MustCompile(`(?i)viewBox\s*=\s*"([^"]+)"`)
-	svgViewBoxPatternS  = regexp.MustCompile(`(?i)viewBox\s*=\s*'([^']+)'`)
+	logoSlugCleaner          = regexp.MustCompile(`[^a-z0-9-]+`)
+	logoSlugMultiDash        = regexp.MustCompile(`-+`)
+	customLogoAssetPathRegex = regexp.MustCompile(`^/static/img/team-logos/badge-[a-z0-9-]+\.(gif|jpe?g|png|svg)$`)
+	svgScriptTagPattern      = regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
+	svgViewBoxPatternD       = regexp.MustCompile(`(?i)viewBox\s*=\s*"([^"]+)"`)
+	svgViewBoxPatternS       = regexp.MustCompile(`(?i)viewBox\s*=\s*'([^']+)'`)
 )
 
 func countryCodeToFlagEmoji(code string) string {
@@ -224,6 +225,50 @@ func normalizeLogoSymbolName(logo string) string {
 		return "invader"
 	}
 	return logo
+}
+
+func normalizeLogoValue(logo string) string {
+	logo = strings.TrimSpace(logo)
+	if logo == "" {
+		return "invader"
+	}
+
+	if isCustomLogoAssetPath(logo) {
+		if !strings.HasPrefix(logo, "/") {
+			logo = "/" + logo
+		}
+		return logo
+	}
+
+	return normalizeLogoSymbolName(logo)
+}
+
+func isCustomLogoAssetPath(logo string) bool {
+	logo = strings.TrimSpace(logo)
+	if strings.HasPrefix(logo, "static/") {
+		logo = "/" + logo
+	}
+	return customLogoAssetPathRegex.MatchString(logo)
+}
+
+func logoFilePath(custom bool, logo string) string {
+	logo = normalizeLogoValue(logo)
+	if isCustomLogoAssetPath(logo) {
+		return logo
+	}
+	slug := normalizeLogoSymbolName(logo)
+	if custom {
+		return "/static/svg/icons/custom/badge-" + slug + ".svg"
+	}
+	return "/static/svg/icons/badges/badge-" + slug + ".svg"
+}
+
+func adminTemplateFuncs() template.FuncMap {
+	return template.FuncMap{
+		"logoFilePath": logoFilePath,
+		"logoIsImage":  isCustomLogoAssetPath,
+		"logoSymbol":   normalizeLogoSymbolName,
+	}
 }
 
 func sanitizeLogoSlug(raw string) string {
@@ -278,37 +323,57 @@ func buildUploadedLogoSymbol(slug string, svgData []byte) (string, error) {
 	return fmt.Sprintf(`<symbol id="%s" viewBox="%s">%s</symbol>`, symbolID, viewBox, inner), nil
 }
 
-func appendSymbolToSprite(spritePath, symbolID, symbolMarkup string) error {
-	data, err := os.ReadFile(spritePath)
-	if err != nil {
-		return fmt.Errorf("failed to read sprite file: %w", err)
-	}
+func customLogoAssetPath(slug, ext string) string {
+	return "/static/img/team-logos/badge-" + slug + ext
+}
 
-	content := string(data)
-	if strings.Contains(content, `id="`+symbolID+`"`) {
-		return fmt.Errorf("logo symbol already exists")
+func rasterLogoContentTypeForExt(ext string) string {
+	switch strings.ToLower(ext) {
+	case ".gif":
+		return "image/gif"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".png":
+		return "image/png"
+	default:
+		return ""
 	}
+}
 
-	closeIdx := strings.LastIndex(strings.ToLower(content), "</svg>")
-	if closeIdx < 0 {
-		return fmt.Errorf("invalid sprite file")
+func validateRasterLogoUpload(ext string, data []byte) error {
+	expectedContentType := rasterLogoContentTypeForExt(ext)
+	if expectedContentType == "" {
+		return fmt.Errorf("unsupported raster logo extension")
 	}
-
-	updated := content[:closeIdx] + "\n" + symbolMarkup + "\n" + content[closeIdx:]
-	if err := os.WriteFile(spritePath, []byte(updated), 0o644); err != nil {
-		return fmt.Errorf("failed to update sprite file: %w", err)
+	contentType := http.DetectContentType(data)
+	if contentType != expectedContentType {
+		return fmt.Errorf("uploaded logo content type %s does not match %s", contentType, expectedContentType)
 	}
 	return nil
 }
 
-func saveUploadedLogoFile(staticDir, slug string, svgData []byte) error {
-	customDir := filepath.Join(staticDir, "svg", "icons", "custom")
+func saveUploadedLogoAssetFile(staticDir, slug, ext string, data []byte) error {
+	if ext == "" {
+		return fmt.Errorf("missing custom logo extension")
+	}
+	customDir := filepath.Join(staticDir, "img", "team-logos")
 	if err := os.MkdirAll(customDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create custom logo dir: %w", err)
 	}
-	outputPath := filepath.Join(customDir, "badge-"+slug+".svg")
-	if err := os.WriteFile(outputPath, svgData, 0o644); err != nil {
+	outputPath := filepath.Join(customDir, "badge-"+slug+ext)
+	file, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		if os.IsExist(err) {
+			return fmt.Errorf("custom logo file already exists: %w", err)
+		}
 		return fmt.Errorf("failed to save custom logo file: %w", err)
+	}
+	defer file.Close()
+
+	if n, err := file.Write(data); err != nil {
+		return fmt.Errorf("failed to write custom logo file: %w", err)
+	} else if n != len(data) {
+		return fmt.Errorf("failed to write custom logo file: %w", io.ErrShortWrite)
 	}
 	return nil
 }
@@ -897,7 +962,7 @@ func (h *HandlersMap) buildAdminTeamsTransferPayload(uuid string) (adminTeamsTra
 	for _, logo := range logosList {
 		payload.Logos = append(payload.Logos, adminTeamsTransferLogo{
 			Name:      strings.TrimSpace(logo.Name),
-			Logo:      normalizeLogoSymbolName(strings.TrimSpace(logo.Logo)),
+			Logo:      normalizeLogoValue(strings.TrimSpace(logo.Logo)),
 			Enabled:   logo.Enabled,
 			Custom:    logo.Custom,
 			Protected: logo.Protected,
@@ -907,7 +972,7 @@ func (h *HandlersMap) buildAdminTeamsTransferPayload(uuid string) (adminTeamsTra
 	for _, team := range teamsList {
 		payload.Teams = append(payload.Teams, adminTeamsTransferTeam{
 			Name:      strings.TrimSpace(team.Name),
-			Logo:      normalizeLogoSymbolName(strings.TrimSpace(team.Logo)),
+			Logo:      normalizeLogoValue(strings.TrimSpace(team.Logo)),
 			Active:    team.Active,
 			Visible:   team.Visible,
 			Protected: team.Protected,
@@ -1656,7 +1721,7 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 	// Prepare template
-	t, err := template.ParseFiles(
+	t, err := template.New("teams.html").Funcs(adminTemplateFuncs()).ParseFiles(
 		h.Config.Map.TemplatesDir + "/admin/teams.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
@@ -1677,7 +1742,7 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		log.Warn().Err(err).Msg("error loading teams")
 	} else {
 		for i := range teamList {
-			teamList[i].Logo = normalizeLogoSymbolName(teamList[i].Logo)
+			teamList[i].Logo = normalizeLogoValue(teamList[i].Logo)
 		}
 		templateData.Teams = teamList
 	}
@@ -1687,7 +1752,7 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		log.Warn().Err(err).Msg("error loading team logos")
 	} else {
 		for i := range logos {
-			logos[i].Logo = normalizeLogoSymbolName(logos[i].Logo)
+			logos[i].Logo = normalizeLogoValue(logos[i].Logo)
 		}
 		templateData.Logos = logos
 	}
@@ -1718,7 +1783,7 @@ func (h *HandlersMap) AdminTeamLogosTemplateHandler(w http.ResponseWriter, r *ht
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-	t, err := template.ParseFiles(
+	t, err := template.New("team-logos.html").Funcs(adminTemplateFuncs()).ParseFiles(
 		h.Config.Map.TemplatesDir + "/admin/team-logos.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin team-logos template")
@@ -1741,7 +1806,7 @@ func (h *HandlersMap) AdminTeamLogosTemplateHandler(w http.ResponseWriter, r *ht
 	platformLogos := make([]teams.TeamLogo, 0, len(allLogos))
 	customLogos := make([]teams.TeamLogo, 0, len(allLogos))
 	for i := range allLogos {
-		allLogos[i].Logo = normalizeLogoSymbolName(allLogos[i].Logo)
+		allLogos[i].Logo = normalizeLogoValue(allLogos[i].Logo)
 		if allLogos[i].Protected {
 			platformLogos = append(platformLogos, allLogos[i])
 			continue
@@ -1828,7 +1893,7 @@ func (h *HandlersMap) importAdminTeamLogosFromPayload(uuid string, logos []admin
 	skippedLogos := 0
 	for _, inLogo := range logos {
 		name := strings.TrimSpace(inLogo.Name)
-		logo := normalizeLogoSymbolName(strings.TrimSpace(inLogo.Logo))
+		logo := normalizeLogoValue(strings.TrimSpace(inLogo.Logo))
 		if name == "" || logo == "" {
 			skippedLogos++
 			continue
@@ -1906,13 +1971,13 @@ func (h *HandlersMap) importAdminTeamsFromPayload(uuid string, inTeams []adminTe
 			skippedTeams++
 			continue
 		}
-		logo := normalizeLogoSymbolName(strings.TrimSpace(inTeam.Logo))
+		logo := normalizeLogoValue(strings.TrimSpace(inTeam.Logo))
 		if logo == "" || strings.EqualFold(logo, "random") {
 			randomLogo, err := h.Teams.RandomLogo(uuid)
 			if err != nil {
 				logo = "invader"
 			} else {
-				logo = normalizeLogoSymbolName(randomLogo.Logo)
+				logo = normalizeLogoValue(randomLogo.Logo)
 			}
 		}
 
@@ -2023,7 +2088,7 @@ func (h *HandlersMap) AdminTeamsExportTeamsHandler(w http.ResponseWriter, r *htt
 	for _, team := range teamsList {
 		payload.Teams = append(payload.Teams, adminTeamsTransferTeam{
 			Name:      strings.TrimSpace(team.Name),
-			Logo:      normalizeLogoSymbolName(strings.TrimSpace(team.Logo)),
+			Logo:      normalizeLogoValue(strings.TrimSpace(team.Logo)),
 			Active:    team.Active,
 			Visible:   team.Visible,
 			Protected: team.Protected,
@@ -2083,7 +2148,7 @@ func (h *HandlersMap) AdminTeamsExportLogosHandler(w http.ResponseWriter, r *htt
 	for _, logo := range logosList {
 		payload.Logos = append(payload.Logos, adminTeamsTransferLogo{
 			Name:      strings.TrimSpace(logo.Name),
-			Logo:      normalizeLogoSymbolName(strings.TrimSpace(logo.Logo)),
+			Logo:      normalizeLogoValue(strings.TrimSpace(logo.Logo)),
 			Enabled:   logo.Enabled,
 			Custom:    logo.Custom,
 			Protected: logo.Protected,
@@ -2179,14 +2244,14 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 			skippedTeams++
 			continue
 		}
-		logo := normalizeLogoSymbolName(strings.TrimSpace(inTeam.Logo))
+		logo := normalizeLogoValue(strings.TrimSpace(inTeam.Logo))
 		if logo == "" || strings.EqualFold(logo, "random") {
 			randomLogo, err := h.Teams.RandomLogo(uuid)
 			if err != nil {
 				log.Err(err).Msg("error resolving random logo during team import")
 				logo = "invader"
 			} else {
-				logo = normalizeLogoSymbolName(randomLogo.Logo)
+				logo = normalizeLogoValue(randomLogo.Logo)
 			}
 		}
 
@@ -2505,6 +2570,16 @@ func (h *HandlersMap) removeCustomUploadedLogoFile(logoSymbol string) {
 	if staticDir == "" {
 		return
 	}
+	if isCustomLogoAssetPath(logoSymbol) {
+		logoPath := strings.TrimSpace(logoSymbol)
+		logoPath = strings.TrimPrefix(logoPath, "/static/")
+		logoPath = strings.TrimPrefix(logoPath, "static/")
+		path := filepath.Join(staticDir, filepath.FromSlash(logoPath))
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			log.Warn().Err(err).Str("path", path).Msg("failed to remove custom logo asset file")
+		}
+		return
+	}
 	slug := normalizeLogoSymbolName(logoSymbol)
 	if slug == "" {
 		return
@@ -2669,7 +2744,7 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 	}
 
 	logoInput := strings.TrimSpace(req.Logo)
-	logo := normalizeLogoSymbolName(logoInput)
+	logo := normalizeLogoValue(logoInput)
 	if logoInput == "" {
 		writeError(http.StatusBadRequest, "Logo is required")
 		return
@@ -2681,7 +2756,7 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 			writeError(http.StatusInternalServerError, "Failed to resolve random logo")
 			return
 		}
-		logo = normalizeLogoSymbolName(randomLogo.Logo)
+		logo = normalizeLogoValue(randomLogo.Logo)
 	}
 
 	active, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Active)))
@@ -2889,11 +2964,12 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 	}
 
 	var (
-		name               string
-		rawLogo            string
-		uploadedLogoSlug   string
-		uploadedLogoData   []byte
-		uploadedLogoSymbol string
+		name              string
+		rawLogo           string
+		uploadedLogoSlug  string
+		uploadedLogoData  []byte
+		uploadedLogoExt   string
+		uploadedLogoAsset bool
 	)
 
 	if isMultipart {
@@ -2908,12 +2984,12 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 		if err == nil && file != nil {
 			defer file.Close()
 
-			svgData, readErr := io.ReadAll(io.LimitReader(file, maxCustomLogoUploadBytes+1))
+			uploadData, readErr := io.ReadAll(io.LimitReader(file, maxCustomLogoUploadBytes+1))
 			if readErr != nil {
 				writeError(http.StatusBadRequest, "Failed to read uploaded logo file")
 				return
 			}
-			if int64(len(svgData)) > maxCustomLogoUploadBytes {
+			if int64(len(uploadData)) > maxCustomLogoUploadBytes {
 				writeError(http.StatusBadRequest, "Uploaded logo file is too large")
 				return
 			}
@@ -2928,17 +3004,36 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 				return
 			}
 
-			symbolMarkup, symbolErr := buildUploadedLogoSymbol(slug, svgData)
-			if symbolErr != nil {
-				writeError(http.StatusBadRequest, "Invalid SVG file")
+			uploadedLogoSlug = slug
+			uploadedLogoData = uploadData
+
+			ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
+			if rasterLogoContentTypeForExt(ext) != "" {
+				if rasterErr := validateRasterLogoUpload(ext, uploadData); rasterErr != nil {
+					writeError(http.StatusBadRequest, "Invalid raster logo file")
+					return
+				}
+				uploadedLogoExt = ext
+				uploadedLogoAsset = true
+				rawLogo = customLogoAssetPath(slug, ext)
+			} else if ext != "" && ext != ".svg" {
+				writeError(http.StatusBadRequest, "Invalid uploaded logo file type")
+				return
+			} else {
+				if _, svgErr := buildUploadedLogoSymbol(slug, uploadData); svgErr != nil {
+					writeError(http.StatusBadRequest, "Invalid SVG file")
+					return
+				}
+				uploadedLogoData = []byte(svgScriptTagPattern.ReplaceAllString(string(uploadData), ""))
+				uploadedLogoExt = ".svg"
+				uploadedLogoAsset = true
+				rawLogo = customLogoAssetPath(slug, uploadedLogoExt)
+			}
+		} else if err != nil {
+			if errors.Is(err, http.ErrMissingFile) {
+				writeError(http.StatusBadRequest, "Logo file is required")
 				return
 			}
-
-			uploadedLogoSlug = slug
-			uploadedLogoData = svgData
-			uploadedLogoSymbol = symbolMarkup
-			rawLogo = slug
-		} else if err != nil && !errors.Is(err, http.ErrMissingFile) {
 			writeError(http.StatusBadRequest, "Invalid uploaded logo file")
 			return
 		}
@@ -2961,7 +3056,7 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 		writeError(http.StatusBadRequest, "Random is not a valid logo for logo creation")
 		return
 	}
-	logo := normalizeLogoSymbolName(rawLogo)
+	logo := normalizeLogoValue(rawLogo)
 	if rawLogo == "" || logo == "" {
 		writeError(http.StatusBadRequest, "Logo symbol is required")
 		return
@@ -2970,18 +3065,12 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 		writeError(http.StatusBadRequest, "Logo already exists")
 		return
 	}
-	if uploadedLogoSlug != "" {
-		spritePath := filepath.Join(h.Config.Map.StaticDir, "svg", "icons", "icons.svg")
-		if err := appendSymbolToSprite(spritePath, "icon--badge-"+uploadedLogoSlug, uploadedLogoSymbol); err != nil {
+	if uploadedLogoSlug != "" && uploadedLogoAsset {
+		if err := saveUploadedLogoAssetFile(h.Config.Map.StaticDir, uploadedLogoSlug, uploadedLogoExt, uploadedLogoData); err != nil {
 			if strings.Contains(strings.ToLower(err.Error()), "already exists") {
-				writeError(http.StatusBadRequest, "Logo symbol already exists")
+				writeError(http.StatusBadRequest, "Logo file already exists")
 				return
 			}
-			log.Err(err).Msg("error appending custom logo symbol")
-			writeError(http.StatusInternalServerError, "Failed to register custom logo")
-			return
-		}
-		if err := saveUploadedLogoFile(h.Config.Map.StaticDir, uploadedLogoSlug, uploadedLogoData); err != nil {
 			log.Err(err).Msg("error saving custom logo file")
 			writeError(http.StatusInternalServerError, "Failed to store custom logo file")
 			return
