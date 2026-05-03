@@ -7,9 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
-    <link rel="stylesheet" href="/static/css/mapctf.css" />
+    <link rel="stylesheet" href="/static/css/mapctf.css?v=20260503-admin-dashboard" />
   </head>
-  <body data-section="admin">
+  <body data-section="admin" data-admin-page="dashboard">
     <div class="mctf-sprite" id="mctf-svg-sprite"></div>
     <div class="mctf-viewport admin-viewport">
       <div id="mctf-admin-nav">
@@ -51,8 +51,14 @@
       </div>
       <div id="mctf-main-content" class="mctf-page mctf-admin-main">
         <div class="admin-sections">
-          <header class="admin-page-header">
-            <h3>Game Dashboard</h3>
+          <header class="admin-page-header admin-page-header--with-action">
+            <div class="admin-page-header-top">
+              <h3>Operations dashboard</h3>
+              <div class="admin-page-header-actions">
+                <a class="mctf-cta" href="/{{ .UUID }}/gameboard">Open Gameboard</a>
+                <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/controls">Game Controls</a>
+              </div>
+            </div>
             <span class="admin-section--status" data-ready-status="ready">
               status_
               <span class="highlighted">ready</span>
@@ -60,116 +66,198 @@
             </span>
           </header>
 
-          <section id="metrics" class="admin-box">
-            <header class="admin-box-header mctf-cf">
-              <h3>Dashboard Placeholders</h3>
-            </header>
-
-            <div class="admin-row">
-              <h4>Live Match Snapshot</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Metric</th>
-                    <th>Current</th>
-                    <th>Target / Alert</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Teams online</td>
-                    <td>--</td>
-                    <td>&lt; 4 triggers onboarding banner</td>
-                  </tr>
-                  <tr>
-                    <td>Flags submitted (last 10m)</td>
-                    <td>--</td>
-                    <td>&gt; 25 suggests high load</td>
-                  </tr>
-                  <tr>
-                    <td>Average solve time</td>
-                    <td>--</td>
-                    <td>Track against challenge difficulty</td>
-                  </tr>
-                  <tr>
-                    <td>Top scoring team</td>
-                    <td>--</td>
-                    <td>Monitor lead changes</td>
-                  </tr>
-                </tbody>
-              </table>
+          <section class="admin-dashboard" aria-label="Live game metrics">
+            <div class="dashboard-command-strip">
+              <div class="dashboard-command-status">
+                <span class="dashboard-status-dot dashboard-status-dot--live"></span>
+                <span>Live game metrics</span>
+              </div>
+              <div class="dashboard-command-meta">
+                <span>Event window 14:00-18:30 UTC</span>
+                <span>Telemetry sample 12:42:16</span>
+              </div>
             </div>
 
-            <div class="admin-row">
-              <h4>System Health Widgets</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Widget</th>
-                    <th>Placeholder</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>API latency</td>
-                    <td>Sparkline + p95 counter</td>
-                  </tr>
-                  <tr>
-                    <td>Error rate</td>
-                    <td>Last hour percentage with threshold marker</td>
-                  </tr>
-                  <tr>
-                    <td>Database health</td>
-                    <td>Connection pool usage and slow query count</td>
-                  </tr>
-                  <tr>
-                    <td>Queue depth</td>
-                    <td>Pending jobs by type (scoring, notifications)</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="dashboard-kpi-grid">
+              <article class="dashboard-kpi dashboard-kpi--strong">
+                <span class="dashboard-kpi-label">Game state</span>
+                <strong>Live</strong>
+                <span class="dashboard-kpi-detail">4h 17m remaining</span>
+              </article>
+              <article class="dashboard-kpi">
+                <span class="dashboard-kpi-label">Teams online</span>
+                <strong>18 / 24</strong>
+                <span class="dashboard-kpi-detail">75% active in last 5m</span>
+              </article>
+              <article class="dashboard-kpi">
+                <span class="dashboard-kpi-label">Flags per hour</span>
+                <strong>142</strong>
+                <span class="dashboard-kpi-detail">+18% over baseline</span>
+              </article>
+              <article class="dashboard-kpi">
+                <span class="dashboard-kpi-label">Solve coverage</span>
+                <strong>73%</strong>
+                <span class="dashboard-kpi-detail">34 of 46 challenges touched</span>
+              </article>
+              <article class="dashboard-kpi">
+                <span class="dashboard-kpi-label">Platform pulse</span>
+                <strong>p95 118ms</strong>
+                <span class="dashboard-kpi-detail">API stable, DB nominal</span>
+              </article>
             </div>
 
-            <div class="admin-row">
-              <h4>Moderation and Incident Queue</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Priority</th>
-                    <th>Item</th>
-                    <th>Owner</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>High</td>
-                    <td>Suspicious submission burst from same IP block</td>
-                    <td>--</td>
-                    <td>Open</td>
-                  </tr>
-                  <tr>
-                    <td>Medium</td>
-                    <td>Challenge hint request backlog</td>
-                    <td>--</td>
-                    <td>Investigating</td>
-                  </tr>
-                  <tr>
-                    <td>Low</td>
-                    <td>Localization QA pass for scoreboard labels</td>
-                    <td>--</td>
-                    <td>Planned</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <div class="dashboard-layout">
+              <div class="dashboard-main-grid">
+                <article class="dashboard-panel dashboard-panel--wide">
+                  <header class="dashboard-panel-header">
+                    <div>
+                      <span class="dashboard-panel-kicker">Competition</span>
+                      <h4>Leaderboard preview</h4>
+                    </div>
+                    <a href="/{{ .UUID }}/gameboard">View board</a>
+                  </header>
+                  <div class="dashboard-leaderboard">
+                    <div class="dashboard-leader-row">
+                      <span class="dashboard-rank">01</span>
+                      <span class="dashboard-team">Orion Labs</span>
+                      <span class="dashboard-score">12,480</span>
+                      <span class="dashboard-meter"><span style="width: 96%"></span></span>
+                    </div>
+                    <div class="dashboard-leader-row">
+                      <span class="dashboard-rank">02</span>
+                      <span class="dashboard-team">Cipher Forge</span>
+                      <span class="dashboard-score">11,920</span>
+                      <span class="dashboard-meter"><span style="width: 88%"></span></span>
+                    </div>
+                    <div class="dashboard-leader-row">
+                      <span class="dashboard-rank">03</span>
+                      <span class="dashboard-team">Blue Sector</span>
+                      <span class="dashboard-score">10,640</span>
+                      <span class="dashboard-meter"><span style="width: 78%"></span></span>
+                    </div>
+                    <div class="dashboard-leader-row">
+                      <span class="dashboard-rank">04</span>
+                      <span class="dashboard-team">Null Route</span>
+                      <span class="dashboard-score">9,870</span>
+                      <span class="dashboard-meter"><span style="width: 70%"></span></span>
+                    </div>
+                  </div>
+                </article>
 
-            <div class="admin-row">
-              <h4>Recent Activity Feed (Placeholder)</h4>
-              <p>[12:03] Team Orion solved <strong>forensics_02</strong> in 00:14:18.</p>
-              <p>[12:05] Rate limiter elevated to profile <strong>balanced</strong>.</p>
-              <p>[12:08] New team registration from region <strong>EU-West</strong>.</p>
-              <p>[12:12] Admin action: challenge <strong>web_04</strong> hint published.</p>
+                <article class="dashboard-panel">
+                  <header class="dashboard-panel-header">
+                    <div>
+                      <span class="dashboard-panel-kicker">Progress</span>
+                      <h4>Capture velocity</h4>
+                    </div>
+                  </header>
+                  <div class="dashboard-velocity-chart" aria-label="Capture velocity by hour">
+                    <span style="height: 34%"></span>
+                    <span style="height: 48%"></span>
+                    <span style="height: 42%"></span>
+                    <span style="height: 66%"></span>
+                    <span style="height: 58%"></span>
+                    <span style="height: 82%"></span>
+                    <span style="height: 73%"></span>
+                    <span style="height: 91%"></span>
+                    <span style="height: 76%"></span>
+                    <span style="height: 68%"></span>
+                  </div>
+                  <div class="dashboard-split-stat">
+                    <span>Last 10m</span>
+                    <strong>27 solves</strong>
+                  </div>
+                </article>
+
+                <article class="dashboard-panel">
+                  <header class="dashboard-panel-header">
+                    <div>
+                      <span class="dashboard-panel-kicker">Challenges</span>
+                      <h4>Challenge health</h4>
+                    </div>
+                    <a href="/{{ .UUID }}/admin/challenges">Manage</a>
+                  </header>
+                  <div class="dashboard-health-list">
+                    <div>
+                      <span>Web</span>
+                      <strong>12 / 14 solved</strong>
+                      <span class="dashboard-meter"><span style="width: 86%"></span></span>
+                    </div>
+                    <div>
+                      <span>Forensics</span>
+                      <strong>8 / 10 solved</strong>
+                      <span class="dashboard-meter"><span style="width: 80%"></span></span>
+                    </div>
+                    <div>
+                      <span>Crypto</span>
+                      <strong>5 / 8 solved</strong>
+                      <span class="dashboard-meter dashboard-meter--warn"><span style="width: 62%"></span></span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="dashboard-panel">
+                  <header class="dashboard-panel-header">
+                    <div>
+                      <span class="dashboard-panel-kicker">Platform</span>
+                      <h4>Infrastructure status</h4>
+                    </div>
+                  </header>
+                  <div class="dashboard-service-list">
+                    <div><span class="dashboard-status-dot dashboard-status-dot--ok"></span><span>API gateway</span><strong>98.8%</strong></div>
+                    <div><span class="dashboard-status-dot dashboard-status-dot--ok"></span><span>PostgreSQL</span><strong>36 conns</strong></div>
+                    <div><span class="dashboard-status-dot dashboard-status-dot--warn"></span><span>Submission queue</span><strong>41 jobs</strong></div>
+                    <div><span class="dashboard-status-dot dashboard-status-dot--ok"></span><span>Redis cache</span><strong>2.1ms</strong></div>
+                  </div>
+                </article>
+
+                <article class="dashboard-panel">
+                  <header class="dashboard-panel-header">
+                    <div>
+                      <span class="dashboard-panel-kicker">Operations</span>
+                      <h4>Incident queue</h4>
+                    </div>
+                  </header>
+                  <div class="dashboard-incident-list">
+                    <div><span class="dashboard-severity dashboard-severity--high">High</span><span>Submission burst from shared ASN</span></div>
+                    <div><span class="dashboard-severity dashboard-severity--medium">Medium</span><span>Hint requests above forecast</span></div>
+                    <div><span class="dashboard-severity dashboard-severity--low">Low</span><span>Two teams idle after onboarding</span></div>
+                  </div>
+                </article>
+              </div>
+
+              <aside class="dashboard-side-rail">
+                <article class="dashboard-panel">
+                  <header class="dashboard-panel-header">
+                    <div>
+                      <span class="dashboard-panel-kicker">Timeline</span>
+                      <h4>Recent game activity</h4>
+                    </div>
+                  </header>
+                  <ol class="dashboard-activity-feed">
+                    <li><time>12:39</time><span>Orion Labs solved <strong>forensics_02</strong></span></li>
+                    <li><time>12:41</time><span>Rate limiter shifted to balanced profile</span></li>
+                    <li><time>12:43</time><span>New registration from EU-West</span></li>
+                    <li><time>12:46</time><span>Hint published for <strong>web_04</strong></span></li>
+                    <li><time>12:49</time><span>Crypto track crossed 60% coverage</span></li>
+                  </ol>
+                </article>
+
+                <article class="dashboard-panel">
+                  <header class="dashboard-panel-header">
+                    <div>
+                      <span class="dashboard-panel-kicker">Control plane</span>
+                      <h4>Quick actions</h4>
+                    </div>
+                  </header>
+                  <div class="dashboard-action-list">
+                    <a href="/{{ .UUID }}/admin/users">Review users</a>
+                    <a href="/{{ .UUID }}/admin/teams">Manage teams</a>
+                    <a href="/{{ .UUID }}/admin/activity">Audit activity</a>
+                    <a href="/{{ .UUID }}/admin/chat">Moderate chat</a>
+                  </div>
+                </article>
+              </aside>
             </div>
           </section>
 

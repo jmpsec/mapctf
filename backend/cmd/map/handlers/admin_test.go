@@ -222,6 +222,37 @@ func mustReadFile(t *testing.T, path string) []byte {
 	return data
 }
 
+func TestAdminDashboardTemplateRendersOpsDashboard(t *testing.T) {
+	handler, sessions, _, _ := newAdminTemplateHandler(t)
+
+	req := newAdminRequestWithUUID(http.MethodGet, "/admin", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminTemplateHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	body := rr.Body.String()
+	require.Contains(t, body, `class="admin-dashboard"`)
+	require.Contains(t, body, `class="dashboard-kpi-grid"`)
+	require.Contains(t, body, `Live game metrics`)
+	require.Contains(t, body, `Platform pulse`)
+	require.Contains(t, body, `Leaderboard preview`)
+	require.Contains(t, body, `Recent game activity`)
+	require.Contains(t, body, `Infrastructure status`)
+	require.Contains(t, body, `Quick actions`)
+	require.Contains(t, body, `73%`)
+	require.Contains(t, body, `p95 118ms`)
+	require.Contains(t, body, `href="/`+jsonTestUUID+`/admin/challenges"`)
+	require.Contains(t, body, `/static/css/mapctf.css?v=`)
+	require.NotContains(t, body, `Dashboard Placeholders`)
+	require.NotContains(t, body, `<table>`)
+}
+
 func TestAdminTeamsTemplateHandlerListsPlatformAndMapLogos(t *testing.T) {
 	handler, sessions, _, teamManager := newAdminTemplateHandler(t)
 
