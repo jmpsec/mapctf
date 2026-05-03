@@ -1,5 +1,4 @@
 var ajaxRedirectTimeout = null;
-var ajaxRedirectCountdownInterval = null;
 
 function getAjaxMessageBox() {
   return $("#ajax-message-box");
@@ -9,10 +8,6 @@ function clearAjaxMessage() {
   if (ajaxRedirectTimeout !== null) {
     clearTimeout(ajaxRedirectTimeout);
     ajaxRedirectTimeout = null;
-  }
-  if (ajaxRedirectCountdownInterval !== null) {
-    clearInterval(ajaxRedirectCountdownInterval);
-    ajaxRedirectCountdownInterval = null;
   }
 
   var $messageBox = getAjaxMessageBox();
@@ -92,31 +87,13 @@ function sendPostRequest(req_data, req_url, _redir, _modal, _callback) {
       if (_redirectUrl !== "") {
         var _isAdminRedirect = /\/admin(?:\/|$)/.test(_redirectUrl);
         if (_isAdminRedirect) {
-          var _secondsLeft = 3;
-          var _baseMessage = data.message || "Login successful";
-          var _countdownLabel = _secondsLeft === 1 ? "second" : "seconds";
+          var _adminRedirectDelayMs = 1000;
 
-          showAjaxMessage(_baseMessage + ". Redirecting in " + _secondsLeft + " " + _countdownLabel + "...", "success");
-
-          ajaxRedirectCountdownInterval = setInterval(function () {
-            _secondsLeft -= 1;
-            if (_secondsLeft <= 0) {
-              clearInterval(ajaxRedirectCountdownInterval);
-              ajaxRedirectCountdownInterval = null;
-              return;
-            }
-            _countdownLabel = _secondsLeft === 1 ? "second" : "seconds";
-            showAjaxMessage(_baseMessage + ". Redirecting in " + _secondsLeft + " " + _countdownLabel + "...", "success");
-          }, 1000);
-
+          showAjaxMessage(data.message || "Login successful. Redirecting...", "success");
           ajaxRedirectTimeout = setTimeout(function () {
-            if (ajaxRedirectCountdownInterval !== null) {
-              clearInterval(ajaxRedirectCountdownInterval);
-              ajaxRedirectCountdownInterval = null;
-            }
             ajaxRedirectTimeout = null;
             window.location.replace(_redirectUrl);
-          }, 3000);
+          }, _adminRedirectDelayMs);
         } else {
           showAjaxMessage(data.message || "Success. Redirecting...", "success");
           ajaxRedirectTimeout = setTimeout(function () {

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/alexedwards/scs/v2"
@@ -101,6 +103,27 @@ func TestLoginPOSTHandlerAllowsAdminWhenLoginDisabled(t *testing.T) {
 	require.Equal(t, "/"+jsonTestUUID+"/admin", resp.Redirect)
 	require.Equal(t, "admin", sessions.GetString(req.Context(), string(ContextKeyUser)))
 	require.True(t, sessions.GetBool(req.Context(), string(ContextKeyAdmin)))
+}
+
+func TestLoginJavaScriptRedirectsAdminAfterOneSecondWithoutCountdown(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "functions.js"))
+	require.NoError(t, err)
+
+	js := string(data)
+	require.NotContains(t, js, "Redirecting in")
+	require.NotContains(t, js, "ajaxRedirectCountdownInterval")
+	require.Contains(t, js, `var _adminRedirectDelayMs = 1000;`)
+	require.Contains(t, js, `}, _adminRedirectDelayMs);`)
+}
+
+func TestModalKickerDoesNotClassifyLogoutAsLogos(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+
+	js := string(data)
+	require.NotContains(t, js, `{ pattern: /logo/, kicker: "Admin Logos" }`)
+	require.Contains(t, js, `{ pattern: /(^|-)logos?($|-)/, kicker: "Admin Logos" }`)
+	require.Contains(t, js, `if (/^action-/.test(modalName) || /^add-/.test(modalName) || /^edit-/.test(modalName))`)
 }
 
 func TestLoginPOSTHandlerAllowsNonAdminWhenLoginEnabled(t *testing.T) {
