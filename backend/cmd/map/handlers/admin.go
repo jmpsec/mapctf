@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -3435,6 +3436,22 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
+	updates := map[string]interface{}{}
+	if req.Name != nil {
+		updates["name"] = strings.TrimSpace(*req.Name)
+	}
+	if req.Email != nil {
+		email := strings.TrimSpace(*req.Email)
+		if email != "" {
+			parsedEmail, err := mail.ParseAddress(email)
+			if err != nil || parsedEmail.Address != email {
+				writeError(http.StatusBadRequest, "email is invalid")
+				return
+			}
+		}
+		updates["email"] = email
+	}
+
 	teamIDStr := strings.TrimSpace(req.TeamID)
 	if teamIDStr == "" {
 		teamIDStr = "0"
@@ -3482,14 +3499,14 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		}
 	}
 
+	updates["team_id"] = teamID
+	updates["admin"] = adminValue
+	updates["service"] = serviceValue
+	updates["active"] = activeValue
+
 	updateResult := h.Users.DB.Model(&users.PlatformUser{}).
 		Where("id = ? AND uuid = ?", uint(userID), uuid).
-		Updates(map[string]interface{}{
-			"team_id": teamID,
-			"admin":   adminValue,
-			"service": serviceValue,
-			"active":  activeValue,
-		})
+		Updates(updates)
 	if updateResult.Error != nil {
 		log.Err(updateResult.Error).Msg("error updating user")
 		writeError(http.StatusInternalServerError, "Failed to update user")

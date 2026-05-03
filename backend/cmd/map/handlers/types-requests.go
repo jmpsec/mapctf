@@ -172,10 +172,12 @@ type AdminUserCreateRequest struct {
 
 // AdminUserUpdateRequest to receive admin user update requests
 type AdminUserUpdateRequest struct {
-	TeamID  string `json:"team_id"`
-	Admin   string `json:"admin"`
-	Service string `json:"service"`
-	Active  string `json:"active"`
+	Name    *string `json:"name"`
+	Email   *string `json:"email"`
+	TeamID  string  `json:"team_id"`
+	Admin   string  `json:"admin"`
+	Service string  `json:"service"`
+	Active  string  `json:"active"`
 }
 
 // AdminTeamCreateRequest to receive admin team creation requests

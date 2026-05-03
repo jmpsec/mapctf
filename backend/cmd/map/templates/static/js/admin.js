@@ -2340,6 +2340,8 @@ function initAdminUserSettingsEditors() {
   userCards.forEach(function (card) {
     var saveBtn = card.querySelector('[data-action="save"]');
     var updateURL = card.getAttribute("data-user-update-url");
+    var nameInput = card.querySelector('input[data-user-field="name"]');
+    var emailInput = card.querySelector('input[data-user-field="email"]');
     var teamSelect = card.querySelector('select[data-user-field="team_id"]');
     var syncInitialState = initializeEditorDirtyTracking(card, "[data-user-field]");
 
@@ -2355,6 +2357,13 @@ function initAdminUserSettingsEditors() {
         return;
       }
       if (saveBtn.dataset.submitting === "true") {
+        return;
+      }
+
+      var nameValue = nameInput && typeof nameInput.value === "string" ? nameInput.value.trim() : "";
+      var emailValue = emailInput && typeof emailInput.value === "string" ? emailInput.value.trim() : "";
+      if (emailValue && emailInput && typeof emailInput.checkValidity === "function" && !emailInput.checkValidity()) {
+        showTransientAdminStatus("error", "Email is invalid");
         return;
       }
 
@@ -2378,12 +2387,26 @@ function initAdminUserSettingsEditors() {
       saveBtn.disabled = true;
 
       updateAdminUser(updateURL, {
+        name: nameValue,
+        email: emailValue,
         team_id: teamValue,
         admin: adminValue,
         service: serviceValue,
         active: activeValue,
       })
         .then(function (data) {
+          if (nameInput) {
+            nameInput.value = nameValue;
+          }
+          if (emailInput) {
+            emailInput.value = emailValue;
+          }
+          var sessionSearch = Array.prototype.map
+            .call(card.querySelectorAll("input:not([data-user-field]), textarea"), function (field) {
+              return field.value || field.textContent || "";
+            })
+            .join(" ");
+          card.setAttribute("data-user-search", [card.querySelector("h3") ? card.querySelector("h3").textContent : "", nameValue, emailValue, teamValue, sessionSearch].join(" "));
           if (typeof syncInitialState === "function") {
             syncInitialState();
           }

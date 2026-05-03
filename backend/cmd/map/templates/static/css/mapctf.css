@@ -6520,24 +6520,74 @@ General Admin
   text-align: right;
 }
 .admin-users-compact .admin-box {
-  margin-top: 14px;
+  margin-top: 18px;
 }
 .admin-users-compact .admin-box .admin-box-header {
-  padding: 14px 16px;
+  padding: 16px 20px;
 }
 .admin-users-compact .admin-box .admin-row {
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-bottom: 12px;
+  padding-top: 4px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 18px;
 }
 .admin-users-compact .admin-box .admin-row:last-child {
-  padding-bottom: 16px;
+  padding-bottom: 20px;
 }
 .admin-users-compact .admin-box .form-el + .form-el {
-  margin-top: 10px;
+  margin-top: 14px;
 }
 .admin-users-compact .admin-box .admin-label {
-  padding-bottom: 6px;
+  padding-bottom: 8px;
+}
+.admin-users-compact .admin-user-field-grid {
+  display: grid;
+  column-gap: 16px;
+  row-gap: 18px;
+  width: 100%;
+  align-items: end;
+}
+.admin-users-compact .admin-user-account-grid {
+  grid-template-columns: repeat(4, minmax(130px, 1fr)) minmax(140px, 0.85fr);
+}
+.admin-users-compact .admin-user-session-grid {
+  grid-template-columns: minmax(130px, 1fr) minmax(260px, 2fr) minmax(150px, 1fr) minmax(140px, 0.85fr);
+}
+.admin-users-compact .admin-user-toggle-field .admin-section-toggle {
+  margin: 0;
+  min-height: 38px;
+  padding-top: 2px;
+}
+.admin-users-compact .admin-user-account-row input[type=text],
+.admin-users-compact .admin-user-account-row input[type=email],
+.admin-users-compact .admin-user-account-row select,
+.admin-users-compact .admin-user-session-row input[type=text],
+.admin-users-compact .admin-user-session-row textarea {
+  box-sizing: border-box;
+  width: 100%;
+}
+.admin-users-compact .admin-user-session-row textarea {
+  min-height: 58px;
+  line-height: 1.4;
+  resize: vertical;
+}
+.admin-users-compact .admin-user-account-row input[type=text],
+.admin-users-compact .admin-user-account-row input[type=email],
+.admin-users-compact .admin-user-account-row select,
+.admin-users-compact .admin-user-session-row input[type=text] {
+  min-height: 38px;
+}
+@media (max-width: 1180px) {
+  .admin-users-compact .admin-user-account-grid,
+  .admin-users-compact .admin-user-session-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .admin-users-compact .admin-user-account-grid,
+  .admin-users-compact .admin-user-session-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .admin-teams-compact .admin-box {
   margin-top: 14px;

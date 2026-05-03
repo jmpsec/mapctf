@@ -107,7 +107,7 @@
           <div id="users" class="admin-users-compact">
             {{ if .Users }}
             {{ range .Users }}
-            <section class="admin-box validate-form" data-user-search="{{ .Username }} {{ .ID }} {{ .Email }} {{ .TeamID }} {{ .LastIPAddress }}" data-user-update-url="/{{ $.UUID }}/admin/users/{{ .ID }}">
+            <section class="admin-box validate-form" data-user-search="{{ .Username }} {{ .ID }} {{ .Name }} {{ .Email }} {{ .TeamID }} {{ .LastIPAddress }} {{ .LastUserAgent }}" data-user-update-url="/{{ $.UUID }}/admin/users/{{ .ID }}">
               <header class="admin-box-header">
                 <h3>{{ .Username }}</h3>
                 <div class="admin-section-toggle radio-inline">
@@ -119,38 +119,27 @@
                 </div>
               </header>
 
-              <div class="admin-row">
-                <div class="mctf-column-container">
-                  <div class="col col-pad col-1-4">
+              <div class="admin-row admin-user-account-row">
+                <div class="admin-user-field-grid admin-user-account-grid">
+                  <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
                       <label class="admin-label">Username</label>
                       <input type="text" value="{{ .Username }}" disabled />
                     </div>
                   </div>
-                  <div class="col col-pad col-1-4">
+                  <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
                       <label class="admin-label">Name</label>
-                      <input type="text" value="{{ if .Name }}{{ .Name }}{{ else }}--{{ end }}" disabled />
+                      <input type="text" value="{{ .Name }}" data-user-field="name" autocomplete="name" />
                     </div>
                   </div>
-                  <div class="col col-pad col-1-4">
+                  <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
                       <label class="admin-label">Email</label>
-                      <input type="text" value="{{ .Email }}" disabled />
+                      <input type="email" value="{{ .Email }}" data-user-field="email" autocomplete="email" />
                     </div>
                   </div>
-                  <div class="col col-pad col-1-4">
-                    <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Last IP</label>
-                      <input type="text" value="{{ if .LastIPAddress }}{{ .LastIPAddress }}{{ else }}--{{ end }}" disabled />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="admin-row">
-                <div class="mctf-column-container">
-                  <div class="col col-pad col-1-4">
+                  <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
                       <label class="admin-label">Team</label>
                       {{ $userTeamID := .TeamID }}
@@ -162,7 +151,7 @@
                       </select>
                     </div>
                   </div>
-                  <div class="col col-pad col-1-4">
+                  <div class="admin-user-grid-field admin-user-toggle-field">
                     <div class="form-el el--block-label el--full-text admin-section-toggle radio-inline">
                       <label class="admin-label">Admin</label>
                       <input type="radio" name="user-admin-{{ .ID }}" id="user-admin-{{ .ID }}-on" value="true" data-user-field="admin" {{ if .Admin }}checked{{ end }} />
@@ -171,13 +160,30 @@
                       <label for="user-admin-{{ .ID }}-off">Off</label>
                     </div>
                   </div>
-                  <div class="col col-pad col-1-4">
+                </div>
+              </div>
+
+              <div class="admin-row admin-user-session-row">
+                <div class="admin-user-field-grid admin-user-session-grid">
+                  <div class="admin-user-grid-field">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Last IP</label>
+                      <input type="text" value="{{ if .LastIPAddress }}{{ .LastIPAddress }}{{ else }}--{{ end }}" disabled />
+                    </div>
+                  </div>
+                  <div class="admin-user-grid-field">
+                    <div class="form-el el--block-label el--full-text">
+                      <label class="admin-label">Last User Agent</label>
+                      <textarea readonly>{{ if .LastUserAgent }}{{ .LastUserAgent }}{{ else }}--{{ end }}</textarea>
+                    </div>
+                  </div>
+                  <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
                       <label class="admin-label">Last Access</label>
                       <input type="text" value="{{ if .LastAccess.IsZero }}never{{ else }}{{ .LastAccess.Format "2006-01-02 15:04" }}{{ end }}" disabled />
                     </div>
                   </div>
-                  <div class="col col-pad col-1-4">
+                  <div class="admin-user-grid-field admin-user-toggle-field">
                     <div class="form-el el--block-label el--full-text admin-section-toggle radio-inline">
                       <label class="admin-label">Service</label>
                       <input type="radio" name="user-service-{{ .ID }}" id="user-service-{{ .ID }}-on" value="true" data-user-field="service" {{ if .Service }}checked{{ end }} />

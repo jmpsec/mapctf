@@ -214,6 +214,22 @@ func newAdminMultipartRequestWithUUID(t *testing.T, target, uuid string, fields 
 	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
 }
 
+func newAdminUserUpdateRequestWithUUID(t *testing.T, uuid string, userID uint, body any) *http.Request {
+	t.Helper()
+
+	payload, err := json.Marshal(body)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/admin/users/"+strconv.FormatUint(uint64(userID), 10), bytes.NewReader(payload))
+	req.Header.Set(ContentType, JSONApplicationUTF8)
+	req.Header.Set("X-Requested-With", "XMLHttpRequest")
+
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("uuid", uuid)
+	routeCtx.URLParams.Add("id", strconv.FormatUint(uint64(userID), 10))
+	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
+}
+
 func mustReadFile(t *testing.T, path string) []byte {
 	t.Helper()
 
@@ -251,6 +267,194 @@ func TestAdminDashboardTemplateRendersOpsDashboard(t *testing.T) {
 	require.Contains(t, body, `/static/css/mapctf.css?v=`)
 	require.NotContains(t, body, `Dashboard Placeholders`)
 	require.NotContains(t, body, `<table>`)
+}
+
+func TestAdminUsersTemplateRendersEditableAccountAndUserAgent(t *testing.T) {
+	handler, sessions, _, _ := newAdminTemplateHandler(t)
+
+	user, err := handler.Users.New("alice", "password123", "alice@example.com", "Alice Admin", false, false, jsonTestUUID, users.NoTeamID)
+	require.NoError(t, err)
+	user.LastIPAddress = "203.0.113.10"
+	user.LastUserAgent = "Mozilla/5.0 Admin Browser"
+	user.LastAccess = time.Date(2026, 5, 3, 15, 45, 0, 0, time.UTC)
+	require.NoError(t, handler.Users.Create(user))
+
+	req := newAdminRequestWithUUID(http.MethodGet, "/admin/users", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminUsersTemplateHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	body := rr.Body.String()
+	require.Contains(t, body, `data-user-search="alice 1 Alice Admin alice@example.com 0 203.0.113.10 Mozilla/5.0 Admin Browser"`)
+
+	accountRowStart := strings.Index(body, `class="admin-row admin-user-account-row"`)
+	require.NotEqual(t, -1, accountRowStart)
+	accountRowRest := body[accountRowStart+len(`class="admin-row admin-user-account-row"`):]
+	accountRowEnd := strings.Index(accountRowRest, `class="admin-row`)
+	require.NotEqual(t, -1, accountRowEnd)
+	accountRow := accountRowRest[:accountRowEnd]
+	require.Contains(t, accountRow, `<label class="admin-label">Username</label>`)
+	require.Contains(t, accountRow, `<label class="admin-label">Name</label>`)
+	require.Contains(t, accountRow, `<label class="admin-label">Email</label>`)
+	require.Contains(t, accountRow, `<label class="admin-label">Team</label>`)
+	require.Contains(t, accountRow, `<label class="admin-label">Admin</label>`)
+	require.Contains(t, accountRow, `<select data-user-field="team_id">`)
+	require.NotContains(t, accountRow, `<label class="admin-label">Last IP</label>`)
+	require.NotContains(t, accountRow, `<label class="admin-label">Service</label>`)
+	require.Less(t, strings.Index(accountRow, `>Team</label>`), strings.Index(accountRow, `>Admin</label>`))
+
+	sessionRowStart := strings.Index(body, `class="admin-row admin-user-session-row"`)
+	require.NotEqual(t, -1, sessionRowStart)
+	sessionRowRest := body[sessionRowStart+len(`class="admin-row admin-user-session-row"`):]
+	sessionRowEnd := strings.Index(sessionRowRest, `class="admin-row`)
+	require.NotEqual(t, -1, sessionRowEnd)
+	sessionRow := sessionRowRest[:sessionRowEnd]
+	require.Contains(t, sessionRow, `<label class="admin-label">Last IP</label>`)
+	require.Contains(t, sessionRow, `<label class="admin-label">Last User Agent</label>`)
+	require.Contains(t, sessionRow, `<label class="admin-label">Last Access</label>`)
+	require.Contains(t, sessionRow, `<label class="admin-label">Service</label>`)
+	require.Contains(t, sessionRow, `<textarea readonly>Mozilla/5.0 Admin Browser</textarea>`)
+	require.Less(t, strings.Index(sessionRow, `>Last IP</label>`), strings.Index(sessionRow, `>Last User Agent</label>`))
+	require.Less(t, strings.Index(sessionRow, `>Last User Agent</label>`), strings.Index(sessionRow, `>Last Access</label>`))
+	require.Less(t, strings.Index(sessionRow, `>Last Access</label>`), strings.Index(sessionRow, `>Service</label>`))
+
+	require.Contains(t, body, `<label class="admin-label">Name</label>`)
+	require.Contains(t, body, `<input type="text" value="Alice Admin" data-user-field="name" autocomplete="name" />`)
+	require.Contains(t, body, `<label class="admin-label">Email</label>`)
+	require.Contains(t, body, `<input type="email" value="alice@example.com" data-user-field="email" autocomplete="email" />`)
+	require.Contains(t, body, `<label class="admin-label">Last User Agent</label>`)
+	require.Contains(t, body, `<textarea readonly>Mozilla/5.0 Admin Browser</textarea>`)
+	require.NotContains(t, body, `value="Alice Admin" disabled`)
+	require.NotContains(t, body, `value="alice@example.com" disabled`)
+
+	adminJS := string(mustReadFile(t, filepath.Join("..", "templates", "static", "js", "admin.js")))
+	require.Contains(t, adminJS, `input[data-user-field="name"]`)
+	require.Contains(t, adminJS, `input[data-user-field="email"]`)
+	require.Contains(t, adminJS, `name: nameValue`)
+	require.Contains(t, adminJS, `email: emailValue`)
+}
+
+func TestAdminUserUpdatePOSTHandlerUpdatesAccountFields(t *testing.T) {
+	handler, sessions, _, _ := newAdminTemplateHandler(t)
+
+	user, err := handler.Users.New("alice", "password123", "alice@example.com", "Alice Old", false, false, jsonTestUUID, users.NoTeamID)
+	require.NoError(t, err)
+	require.NoError(t, handler.Users.Create(user))
+	created, err := handler.Users.Get("alice", jsonTestUUID)
+	require.NoError(t, err)
+
+	req := newAdminUserUpdateRequestWithUUID(t, jsonTestUUID, created.ID, map[string]string{
+		"name":    "  Alice New  ",
+		"email":   "  alice.new@example.com  ",
+		"team_id": "0",
+		"admin":   "true",
+		"service": "false",
+		"active":  "true",
+	})
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminUserUpdatePOSTHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var resp adminActionResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.True(t, resp.Success)
+	require.Equal(t, "User updated", resp.Message)
+
+	updated, err := handler.Users.Get("alice", jsonTestUUID)
+	require.NoError(t, err)
+	require.Equal(t, "Alice New", updated.Name)
+	require.Equal(t, "alice.new@example.com", updated.Email)
+	require.True(t, updated.Admin)
+	require.False(t, updated.Service)
+	require.True(t, updated.Active)
+	require.Equal(t, users.NoTeamID, updated.TeamID)
+}
+
+func TestAdminUserUpdatePOSTHandlerRejectsInvalidEmail(t *testing.T) {
+	handler, sessions, _, _ := newAdminTemplateHandler(t)
+
+	user, err := handler.Users.New("alice", "password123", "alice@example.com", "Alice Old", false, false, jsonTestUUID, users.NoTeamID)
+	require.NoError(t, err)
+	require.NoError(t, handler.Users.Create(user))
+	created, err := handler.Users.Get("alice", jsonTestUUID)
+	require.NoError(t, err)
+
+	req := newAdminUserUpdateRequestWithUUID(t, jsonTestUUID, created.ID, map[string]string{
+		"name":    "Alice Changed",
+		"email":   "not an email",
+		"team_id": "0",
+		"admin":   "true",
+		"service": "true",
+		"active":  "false",
+	})
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminUserUpdatePOSTHandler(rr, req)
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var resp adminActionResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.False(t, resp.Success)
+	require.Equal(t, "email is invalid", resp.Message)
+
+	unchanged, err := handler.Users.Get("alice", jsonTestUUID)
+	require.NoError(t, err)
+	require.Equal(t, "Alice Old", unchanged.Name)
+	require.Equal(t, "alice@example.com", unchanged.Email)
+	require.False(t, unchanged.Admin)
+	require.False(t, unchanged.Service)
+	require.True(t, unchanged.Active)
+}
+
+func TestAdminUserUpdatePOSTHandlerPreservesOmittedAccountFields(t *testing.T) {
+	handler, sessions, _, _ := newAdminTemplateHandler(t)
+
+	user, err := handler.Users.New("alice", "password123", "alice@example.com", "Alice Old", false, false, jsonTestUUID, users.NoTeamID)
+	require.NoError(t, err)
+	require.NoError(t, handler.Users.Create(user))
+	created, err := handler.Users.Get("alice", jsonTestUUID)
+	require.NoError(t, err)
+
+	req := newAdminUserUpdateRequestWithUUID(t, jsonTestUUID, created.ID, map[string]string{
+		"team_id": "0",
+		"admin":   "true",
+		"service": "false",
+		"active":  "true",
+	})
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminUserUpdatePOSTHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	updated, err := handler.Users.Get("alice", jsonTestUUID)
+	require.NoError(t, err)
+	require.Equal(t, "Alice Old", updated.Name)
+	require.Equal(t, "alice@example.com", updated.Email)
+	require.True(t, updated.Admin)
+	require.False(t, updated.Service)
+	require.True(t, updated.Active)
 }
 
 func TestAdminTeamsTemplateHandlerListsPlatformAndMapLogos(t *testing.T) {
