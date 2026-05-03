@@ -1,0 +1,98 @@
+<div class="mctf-modal-content">
+  <header class="modal-title">
+    <h4>
+      <span class="modal-kicker">Account</span>
+      <span class="highlighted">Profile</span>
+    </h4>
+    <a href="#" class="js-close-modal">
+      <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
+    </a>
+  </header>
+
+  <div class="mctf-modal-main profile-modal">
+    <div class="profile-modal-summary">
+      <div class="profile-modal-logo js-profile-logo" aria-hidden="true">
+        <svg class="icon--badge"><use xlink:href="#icon--badge-invader"></use></svg>
+      </div>
+      <div class="profile-team-heading">
+        <span class="profile-modal-label">Team</span>
+        <h5 class="js-profile-team-name">Loading...</h5>
+        <p class="profile-modal-muted">Signed in as <span class="js-profile-username">Loading...</span></p>
+      </div>
+      <div class="profile-team-metrics" aria-label="Team performance">
+        <div class="profile-team-metric profile-team-metric-points">
+          <span class="mctf-numbers js-profile-team-points">--</span>
+          <span>points</span>
+        </div>
+        <div class="profile-team-metric">
+          <span class="profile-team-metric-value js-profile-team-rank">--</span>
+          <span>rank</span>
+        </div>
+        <div class="profile-team-metric">
+          <span class="profile-team-metric-value js-profile-team-last-score">Loading...</span>
+          <span>last score</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-actions-grid">
+      <section class="profile-modal-panel profile-account-panel">
+        <header>
+          <span class="highlighted">account</span>
+        </header>
+        <form class="profile-account-form js-profile-account-form">
+          <div class="profile-account-fields">
+            <div class="form-el el--block-label">
+              <label for="profile-full-name">Full name</label>
+              <input id="profile-full-name" type="text" name="full_name" autocomplete="name" />
+            </div>
+            <div class="form-el el--block-label">
+              <label for="profile-email">Email</label>
+              <input id="profile-email" type="email" name="email" autocomplete="email" />
+            </div>
+          </div>
+          <dl class="profile-modal-list profile-account-readonly">
+            <div>
+              <dt>Role</dt>
+              <dd class="js-profile-role">Loading...</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd class="js-profile-status-label">Loading...</dd>
+            </div>
+          </dl>
+          <div class="profile-account-actions">
+            <p class="profile-modal-status js-profile-account-status" aria-live="polite"></p>
+            <button type="submit" class="mctf-cta cta--yellow">Save</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="profile-modal-panel profile-password-panel">
+        <header>
+          <span class="highlighted">change_password</span>
+        </header>
+        <form class="profile-password-form js-profile-password-form">
+          <div class="profile-password-grid">
+            <div class="form-el el--block-label profile-password-current">
+              <label for="profile-current-password">Current password</label>
+              <input id="profile-current-password" type="password" name="current_password" autocomplete="current-password" required />
+            </div>
+            <div class="form-el el--block-label">
+              <label for="profile-new-password">New password</label>
+              <input id="profile-new-password" type="password" name="new_password" autocomplete="new-password" minlength="8" required />
+            </div>
+            <div class="form-el el--block-label">
+              <label for="profile-confirm-password">Confirm password</label>
+              <input id="profile-confirm-password" type="password" name="confirm_password" autocomplete="new-password" minlength="8" required />
+            </div>
+          </div>
+          <div class="profile-password-actions">
+            <p class="profile-modal-status js-profile-status" aria-live="polite"></p>
+            <button type="submit" class="mctf-cta cta--yellow">Update</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>

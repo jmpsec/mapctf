@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
-    <link rel="stylesheet" href="/static/css/mapctf.css?v=20260428b" />
+    <link rel="stylesheet" href="/static/css/mapctf.css?v=20260503a" />
   </head>
 
-  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-scoring-hints="{{ if .ScoringHints }}true{{ else }}false{{ end }}" data-scoring-help="{{ if .ScoringHelp }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ .CurrentUsername }}" data-game-started="{{ if .GameStarted }}true{{ else }}false{{ end }}"{{ if .GameStartSet }} data-game-start-time="{{ .GameStartTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}{{ if .GameEndSet }} data-game-end-time="{{ .GameEndTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}>
+  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-scoring-hints="{{ if .ScoringHints }}true{{ else }}false{{ end }}" data-scoring-help="{{ if .ScoringHelp }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ .CurrentUsername }}" data-game-started="{{ if .GameStarted }}true{{ else }}false{{ end }}" data-profile-url="/{{ .UUID }}/profile" data-profile-password-url="/{{ .UUID }}/profile/password"{{ if .GameStartSet }} data-game-start-time="{{ .GameStartTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}{{ if .GameEndSet }} data-game-end-time="{{ .GameEndTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}>
     <!--
      *
      * SVG icon sprite object
@@ -1902,7 +1902,7 @@
                     <a href="/{{ .UUID }}/rules">Rules</a>
                   </li>
                   <li>
-                    <a href="/{{ .UUID }}/registration">Registration</a>
+                    <a href="/{{ .UUID }}/profile" id="gameboard-profile-link" data-profile-url="/{{ .UUID }}/profile" data-profile-password-url="/{{ .UUID }}/profile/password">Profile</a>
                   </li>
                   {{ if .Admin }}
                   <li>
@@ -2559,6 +2559,299 @@
 
         document.addEventListener("DOMContentLoaded", initGameTimer);
         initGameTimer();
+      })();
+    </script>
+    <script type="text/javascript">
+      (function () {
+        var profileLink = document.getElementById("gameboard-profile-link");
+        if (!profileLink) {
+          return;
+        }
+
+        function setText(root, selector, value, fallback) {
+          var el = root.querySelector(selector);
+          if (!el) {
+            return;
+          }
+          var text = value;
+          if (text === undefined || text === null || text === "") {
+            text = fallback || "Not set";
+          }
+          el.textContent = text;
+        }
+
+        function setMessage(root, type, message) {
+          setStatus(root, ".js-profile-status", type, message);
+        }
+
+        function setAccountMessage(root, type, message) {
+          setStatus(root, ".js-profile-account-status", type, message);
+        }
+
+        function setStatus(root, selector, type, message) {
+          var el = root.querySelector(selector);
+          if (!el) {
+            return;
+          }
+          el.textContent = message || "";
+          el.classList.remove("is-error", "is-success");
+          if (type) {
+            el.classList.add(type === "success" ? "is-success" : "is-error");
+          }
+        }
+
+        function setFieldValue(root, selector, value) {
+          var el = root.querySelector(selector);
+          if (!el) {
+            return;
+          }
+          el.value = value || "";
+        }
+
+        function formatDate(value) {
+          if (!value) {
+            return "Never";
+          }
+          var date = new Date(value);
+          if (isNaN(date.getTime())) {
+            return "Never";
+          }
+          return date.toLocaleString([], {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        }
+
+        function isLogoImagePath(value) {
+          return /^\/static\/img\/team-logos\/badge-[a-z0-9-]+\.(gif|jpe?g|png|svg)$/i.test((value || "").toString().trim());
+        }
+
+        function normalizedBadgeName(value) {
+          var badge = (value || "").toString().trim();
+          if (!badge || isLogoImagePath(badge)) {
+            return "invader";
+          }
+          if (badge.indexOf("/") > -1) {
+            badge = badge.substring(badge.lastIndexOf("/") + 1);
+          }
+          badge = badge.replace(/^#icon--badge-/, "");
+          badge = badge.replace(/^icon--badge-/, "");
+          badge = badge.replace(/^badge-/, "");
+          badge = badge.replace(/\.svg$/i, "");
+          badge = badge.replace(/[^a-z0-9-]/gi, "").toLowerCase();
+          return badge || "invader";
+        }
+
+        function renderProfileLogo(root, logo) {
+          var holder = root.querySelector(".js-profile-logo");
+          if (!holder) {
+            return;
+          }
+          while (holder.firstChild) {
+            holder.removeChild(holder.firstChild);
+          }
+          if (isLogoImagePath(logo)) {
+            var img = document.createElement("img");
+            img.className = "icon--badge icon--badge-img";
+            img.src = logo;
+            img.alt = "";
+            holder.appendChild(img);
+            return;
+          }
+          var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          var use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+          svg.setAttribute("class", "icon--badge");
+          use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "#icon--badge-" + normalizedBadgeName(logo));
+          svg.appendChild(use);
+          holder.appendChild(svg);
+        }
+
+        function fillProfile(root, data) {
+          var account = (data && data.account) || {};
+          var team = data && data.team;
+
+          setText(root, ".js-profile-username", account.username);
+          setFieldValue(root, '.js-profile-account-form [name="full_name"]', account.name);
+          setFieldValue(root, '.js-profile-account-form [name="email"]', account.email);
+          setText(root, ".js-profile-role", account.role);
+          setText(root, ".js-profile-status-label", account.status);
+          if (!team) {
+            setText(root, ".js-profile-team-name", "No team assigned");
+            setText(root, ".js-profile-team-points", "--");
+            setText(root, ".js-profile-team-rank", "--");
+            setText(root, ".js-profile-team-last-score", "No score yet");
+            renderProfileLogo(root, "invader");
+            return;
+          }
+
+          setText(root, ".js-profile-team-name", team.name);
+          setText(root, ".js-profile-team-points", team.points);
+          setText(root, ".js-profile-team-rank", team.rank ? "#" + team.rank : "--");
+          setText(root, ".js-profile-team-last-score", formatDate(team.last_score), "No score yet");
+          renderProfileLogo(root, team.logo);
+        }
+
+        function loadProfile(root, profileURL) {
+          setAccountMessage(root, "", "Loading profile...");
+          fetch(profileURL, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            credentials: "same-origin",
+          })
+            .then(function (response) {
+              return response.json().then(function (data) {
+                if (!response.ok) {
+                  throw new Error((data && data.error) || "Profile could not be loaded");
+                }
+                return data;
+              });
+            })
+            .then(function (data) {
+              fillProfile(root, data);
+              setAccountMessage(root, "", "");
+            })
+            .catch(function (error) {
+              setAccountMessage(root, "error", error.message || "Profile could not be loaded");
+            });
+        }
+
+        function bindAccountForm(root, profileURL) {
+          var form = root.querySelector(".js-profile-account-form");
+          if (!form) {
+            return;
+          }
+          form.addEventListener("submit", function (event) {
+            event.preventDefault();
+            var submitBtn = form.querySelector('button[type="submit"]');
+            var payload = {
+              full_name: form.elements.full_name.value,
+              email: form.elements.email.value,
+            };
+
+            if (submitBtn) {
+              submitBtn.disabled = true;
+            }
+            setAccountMessage(root, "", "Saving profile...");
+
+            fetch(profileURL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify(payload),
+              credentials: "same-origin",
+            })
+              .then(function (response) {
+                return response.json().then(function (data) {
+                  if (!response.ok) {
+                    throw new Error((data && data.error) || "Profile could not be updated");
+                  }
+                  return data;
+                });
+              })
+              .then(function (data) {
+                var account = (data && data.account) || {};
+                setFieldValue(root, '.js-profile-account-form [name="full_name"]', account.name);
+                setFieldValue(root, '.js-profile-account-form [name="email"]', account.email);
+                setText(root, ".js-profile-role", account.role);
+                setText(root, ".js-profile-status-label", account.status);
+                setAccountMessage(root, "success", (data && data.message) || "Profile updated");
+              })
+              .catch(function (error) {
+                setAccountMessage(root, "error", error.message || "Profile could not be updated");
+              })
+              .finally(function () {
+                if (submitBtn) {
+                  submitBtn.disabled = false;
+                }
+              });
+          });
+        }
+
+        function bindPasswordForm(root, passwordURL) {
+          var form = root.querySelector(".js-profile-password-form");
+          if (!form) {
+            return;
+          }
+          form.addEventListener("submit", function (event) {
+            event.preventDefault();
+            var submitBtn = form.querySelector('button[type="submit"]');
+            var payload = {
+              current_password: form.elements.current_password.value,
+              new_password: form.elements.new_password.value,
+              confirm_password: form.elements.confirm_password.value,
+            };
+
+            if (payload.new_password !== payload.confirm_password) {
+              setMessage(root, "error", "New passwords do not match");
+              return;
+            }
+
+            if (submitBtn) {
+              submitBtn.disabled = true;
+            }
+            setMessage(root, "", "Updating password...");
+
+            fetch(passwordURL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify(payload),
+              credentials: "same-origin",
+            })
+              .then(function (response) {
+                return response.json().then(function (data) {
+                  if (!response.ok) {
+                    throw new Error((data && data.error) || "Password could not be updated");
+                  }
+                  return data;
+                });
+              })
+              .then(function (data) {
+                form.reset();
+                setMessage(root, "success", (data && data.message) || "Password updated");
+              })
+              .catch(function (error) {
+                setMessage(root, "error", error.message || "Password could not be updated");
+              })
+              .finally(function () {
+                if (submitBtn) {
+                  submitBtn.disabled = false;
+                }
+              });
+          });
+        }
+
+        profileLink.addEventListener("click", function (event) {
+          event.preventDefault();
+
+          var profileURL = profileLink.getAttribute("data-profile-url") || document.body.getAttribute("data-profile-url");
+          var passwordURL = profileLink.getAttribute("data-profile-password-url") || document.body.getAttribute("data-profile-password-url");
+          if (!profileURL || !passwordURL) {
+            return;
+          }
+
+          if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+            window.location.href = profileURL;
+            return;
+          }
+
+          MAP_CTF.modal.loadPopup("profile", function () {
+            var modal = document.getElementById("mctf-modal");
+            if (!modal) {
+              return;
+            }
+            bindAccountForm(modal, profileURL);
+            bindPasswordForm(modal, passwordURL);
+            loadProfile(modal, profileURL);
+          });
+        });
       })();
     </script>
     <script type="text/javascript">

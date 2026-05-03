@@ -2800,6 +2800,10 @@
         return "";
       }
 
+      if (modalName === "action-logout" && $body && $body.attr("data-section") === "gameboard") {
+        return "Gameboard";
+      }
+
       var adminKickerMap = [
         { pattern: /^country-(capture|help|help-opponent)$/, kicker: "Gameboard" },
         { pattern: /challenge|category/, kicker: "Admin Challenges" },

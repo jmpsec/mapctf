@@ -71,6 +71,8 @@ const (
 	mapGameboardPath = "/gameboard"
 	// Registration path
 	registrationPath = "/registration"
+	// Profile path
+	profilePath = "/profile"
 	// Countdown path
 	countdownPath = "/countdown"
 	// Rules path
@@ -319,6 +321,10 @@ func mapCTFService() {
 		// Protected routes group (require authentication)
 		r.Group(func(r chi.Router) {
 			r.Use(handlersMap.RequireAuth)
+			// Protected profile routes
+			r.Get(profilePath, handlersMap.ProfileGETHandler)
+			r.Post(profilePath, handlersMap.ProfilePOSTHandler)
+			r.Post(profilePath+"/password", handlersMap.ProfilePasswordPOSTHandler)
 			// Protected gameboard routes
 			r.Route(mapGameboardPath, func(r chi.Router) {
 				r.Get(rootPath, handlersMap.GameboardTemplateHandler)

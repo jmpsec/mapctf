@@ -75,6 +75,58 @@ type MapHintResponse struct {
 // MapLogoutResponse to be returned to map requests after a successful logout
 type MapLogoutResponse MapLoginResponse
 
+// MapProfileAccountUpdateRequest receives editable profile account fields.
+type MapProfileAccountUpdateRequest struct {
+	FullName string `json:"full_name"`
+	Email    string `json:"email"`
+}
+
+// MapProfilePasswordRequest receives password changes from the profile modal.
+type MapProfilePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
+}
+
+type MapProfileAccountResponse struct {
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
+	Status   string `json:"status"`
+}
+
+type MapProfileTeamResponse struct {
+	ID        uint   `json:"id"`
+	Name      string `json:"name"`
+	Logo      string `json:"logo"`
+	Points    int    `json:"points"`
+	Rank      int    `json:"rank"`
+	Visible   bool   `json:"visible"`
+	Active    bool   `json:"active"`
+	LastScore string `json:"last_score"`
+}
+
+// MapProfileResponse returns the current authenticated user's profile summary.
+type MapProfileResponse struct {
+	Success bool                      `json:"success"`
+	Account MapProfileAccountResponse `json:"account"`
+	Team    *MapProfileTeamResponse   `json:"team,omitempty"`
+}
+
+// MapProfilePasswordResponse returns password-change status.
+type MapProfilePasswordResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+// MapProfileAccountUpdateResponse returns updated account details.
+type MapProfileAccountUpdateResponse struct {
+	Success bool                      `json:"success"`
+	Message string                    `json:"message"`
+	Account MapProfileAccountResponse `json:"account"`
+}
+
 // AdminSettingsRequest to receive admin settings update requests
 type AdminSettingsRequest struct {
 	SettingName  string `json:"setting_name,omitempty"`

@@ -126,6 +126,16 @@ func TestModalKickerDoesNotClassifyLogoutAsLogos(t *testing.T) {
 	require.Contains(t, js, `if (/^action-/.test(modalName) || /^add-/.test(modalName) || /^edit-/.test(modalName))`)
 }
 
+func TestModalKickerClassifiesGameboardLogoutAsGameboard(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+
+	js := string(data)
+	require.Contains(t, js, `if (modalName === "action-logout" && $body && $body.attr("data-section") === "gameboard") {
+        return "Gameboard";
+      }`)
+}
+
 func TestLoginPOSTHandlerAllowsNonAdminWhenLoginEnabled(t *testing.T) {
 	handler, sessions, userManager, settingsManager := newAuthHandler(t)
 
