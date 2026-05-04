@@ -448,7 +448,6 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updatedTotalPoints := team.Points - penalty
-	now := time.Now().UTC()
 	categoryName := ""
 	if challenge.CategoryID != 0 {
 		category, err := h.Challenges.GetCategoryByID(challenge.CategoryID, uuid)
@@ -480,8 +479,7 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		if err := tx.Model(&teams.PlatformTeam{}).
 			Where("id = ? AND uuid = ?", user.TeamID, uuid).
 			Updates(map[string]any{
-				"points":     gorm.Expr("points - ?", penalty),
-				"last_score": now,
+				"points": gorm.Expr("points - ?", penalty),
 			}).Error; err != nil {
 			return err
 		}

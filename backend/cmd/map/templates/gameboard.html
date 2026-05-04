@@ -4,10 +4,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
-    <link rel="stylesheet" href="/static/css/mapctf.css?v=20260503a" />
+    <link rel="stylesheet" href="/static/css/mapctf.css?v=20260504a" />
   </head>
 
-  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-scoring-hints="{{ if .ScoringHints }}true{{ else }}false{{ end }}" data-scoring-help="{{ if .ScoringHelp }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ .CurrentUsername }}" data-game-started="{{ if .GameStarted }}true{{ else }}false{{ end }}" data-profile-url="/{{ .UUID }}/profile" data-profile-password-url="/{{ .UUID }}/profile/password"{{ if .GameStartSet }} data-game-start-time="{{ .GameStartTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}{{ if .GameEndSet }} data-game-end-time="{{ .GameEndTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}>
+  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-scoring-hints="{{ if .ScoringHints }}true{{ else }}false{{ end }}" data-scoring-help="{{ if .ScoringHelp }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ htmlAttr .CurrentUsername }}" data-current-team="{{ htmlAttr .CurrentTeam }}" data-game-started="{{ if .GameStarted }}true{{ else }}false{{ end }}" data-profile-url="/{{ .UUID }}/profile" data-profile-password-url="/{{ .UUID }}/profile/password"{{ if .GameStartSet }} data-game-start-time="{{ .GameStartTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}{{ if .GameEndSet }} data-game-end-time="{{ .GameEndTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}>
     <!--
      *
      * SVG icon sprite object
@@ -2011,6 +2011,7 @@
             <div class="module-content">
               <div class="mctf-section-border">
                 <div class="module-top player-info">
+                  <span class="player-kicker">Your team</span>
                   <h5 class="player-name">No Team</h5>
                   <span class="player-rank"><span class="stat-label">Rank</span><span class="stat-value">--</span></span>
                   <span class="player-score"><span class="stat-label">Points</span><span class="stat-value">0</span></span>
@@ -2248,7 +2249,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>
-    <script type="text/javascript" src="/static/js/mapctf.js?v=20260428b"></script>
+    <script type="text/javascript" src="/static/js/mapctf.js?v=20260504a"></script>
     <script type="text/javascript">
       (function () {
         var body = document.body;

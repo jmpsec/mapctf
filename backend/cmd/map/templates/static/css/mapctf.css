@@ -4562,6 +4562,13 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
   padding: 10px;
   border-bottom: 1px solid #21b4ba;
 }
+.mctf-gameboard aside[data-module][data-module=leaderboard] .player-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: rgba(207, 248, 250, 0.58);
+  font-size: 0.68em;
+  letter-spacing: 0.14em;
+}
 .mctf-gameboard aside[data-module][data-module=leaderboard] .leaderboard-empty {
   padding: 12px;
   border: 1px solid rgba(33, 180, 186, 0.28);

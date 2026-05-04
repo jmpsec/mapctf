@@ -514,6 +514,10 @@
         return MAP_CTF.data.CONF.currentTeam;
       }
 
+      if ($body && $body.attr("data-current-team")) {
+        return $body.attr("data-current-team");
+      }
+
       return "";
     }
 
@@ -1065,6 +1069,7 @@
       $('input[name="mctf--map-select"]').on("change", function (event) {
         event.preventDefault();
         var select = $(this).val();
+        var currentTeam = getCurrentTeamName();
 
         $svgCountries.each(function () {
           var countryGroup = d3.select(this),
@@ -1074,7 +1079,7 @@
           countryGroup.classed("highlighted", false);
 
           if (select !== "all") {
-            if ((select === "your-team" && captureTeam === MAP_CTF.data.CONF.currentTeam) || (select === "opponent-team" && captureTeam && captureTeam !== MAP_CTF.data.CONF.currentTeam)) {
+            if ((select === "your-team" && currentTeam && captureTeam === currentTeam) || (select === "opponent-team" && currentTeam && captureTeam && captureTeam !== currentTeam)) {
               countryGroup.classed("highlighted", true);
             } else {
               countryGroup.classed("inactive", true);
@@ -1088,7 +1093,7 @@
             captureTeam = $self.data("captured");
 
           if (select !== "all") {
-            if ((select === "your-team" && captureTeam === MAP_CTF.data.CONF.currentTeam) || (select === "opponent-team" && captureTeam && captureTeam !== MAP_CTF.data.CONF.currentTeam) || (select === "give-help" && $(".status--give-help", $tr).length > 0) || (select === "need-help" && $(".status--incoming-help", $tr).length > 0)) {
+            if ((select === "your-team" && currentTeam && captureTeam === currentTeam) || (select === "opponent-team" && currentTeam && captureTeam && captureTeam !== currentTeam) || (select === "give-help" && $(".status--give-help", $tr).length > 0) || (select === "need-help" && $(".status--incoming-help", $tr).length > 0)) {
               $self.addClass("highlighted");
             } else {
               $self.addClass("inactive");
@@ -1223,7 +1228,7 @@
      */
     function captureViewOnly(country, capturedBy, capturingTeam) {
       if (capturingTeam === undefined) {
-        capturingTeam = MAP_CTF.data.CONF.currentTeam;
+        capturingTeam = getCurrentTeamName() || "No Team";
       }
 
       MAP_CTF.modal.viewmodePopup(function () {

@@ -337,6 +337,7 @@ func TestHintPOSTHandlerUnlocksHintAndDeductsPoints(t *testing.T) {
 	var updatedTeam teams.PlatformTeam
 	require.NoError(t, teamManager.DB.Where("id = ? AND uuid = ?", 12, jsonTestUUID).First(&updatedTeam).Error)
 	require.Equal(t, 105, updatedTeam.Points)
+	require.True(t, updatedTeam.LastScore.IsZero())
 
 	hintLogs, err := logManager.AllHintsLogs(jsonTestUUID)
 	require.NoError(t, err)

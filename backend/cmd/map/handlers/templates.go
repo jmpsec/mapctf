@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
 	"strings"
 	"text/template"
@@ -12,6 +13,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/settings"
+	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -48,6 +50,34 @@ func (h *HandlersMap) IndexTemplateHandler(w http.ResponseWriter, r *http.Reques
 		log.Err(err).Msg("template error")
 		return
 	}
+}
+
+func (h *HandlersMap) currentGameboardTeamName(username, uuid string) string {
+	username = strings.TrimSpace(username)
+	if username == "" || h.Users == nil || h.Teams == nil {
+		return ""
+	}
+
+	user, err := h.Users.Get(username, uuid)
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Warn().Err(err).Str("username", username).Msg("error loading current gameboard user")
+		}
+		return ""
+	}
+	if user.TeamID == 0 {
+		return ""
+	}
+
+	var currentTeam teams.PlatformTeam
+	if err := h.Teams.DB.Where("id = ? AND uuid = ? AND active = ? AND visible = ?", user.TeamID, uuid, true, true).First(&currentTeam).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Warn().Err(err).Uint("team_id", user.TeamID).Msg("error loading current gameboard team")
+		}
+		return ""
+	}
+
+	return currentTeam.Name
 }
 
 // LoginHandler for login page for GET requests
@@ -300,8 +330,9 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/gameboard.html")
+	t, err := template.New("gameboard.html").Funcs(template.FuncMap{
+		"htmlAttr": html.EscapeString,
+	}).ParseFiles(h.Config.Map.TemplatesDir + "/gameboard.html")
 	if err != nil {
 		log.Err(err).Msg("error getting gameboard template")
 		return
@@ -309,12 +340,14 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
+	currentUsername := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
 	templateData := GameboardTemplateData{
 		Title:               "MapCTF: Gameboard",
 		UUID:                uuid,
 		Authenticated:       authenticated,
 		Admin:               isAdmin,
-		CurrentUsername:     h.Sessions.GetString(r.Context(), string(ContextKeyUser)),
+		CurrentUsername:     currentUsername,
+		CurrentTeam:         h.currentGameboardTeamName(currentUsername, uuid),
 		GameboardChatMaxLen: chat.DefaultMaxLen,
 	}
 	chatMaxLen, err := h.Settings.GetGameboardChatMaxLen(uuid)

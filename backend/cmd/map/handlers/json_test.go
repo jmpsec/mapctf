@@ -227,7 +227,32 @@ func TestJSONTeamsHandlerFiltersInactiveAndInvisibleTeams(t *testing.T) {
 	require.False(t, hasMembers)
 
 	parsed := decodeJSONTeamResponses(t, rr.Body.Bytes())
+	require.NotNil(t, parsed[0].LastScore)
 	require.Equal(t, visibleLastScore.UTC(), parsed[0].LastScore.UTC())
+}
+
+func TestJSONTeamsHandlerOmitsZeroLastScore(t *testing.T) {
+	handler, teamManager, _, _ := newJSONTeamsHandler(t)
+
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{
+		Name:    "new-team",
+		Logo:    "alpha.svg",
+		Points:  0,
+		Visible: true,
+		Active:  true,
+		UUID:    jsonTestUUID,
+	}))
+
+	req := newRequestWithUUID(http.MethodGet, "/json/teams", jsonTestUUID)
+	rr := httptest.NewRecorder()
+
+	handler.JSONTeamsHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	resp := decodeJSONMapSlice(t, rr.Body.Bytes())
+	require.Len(t, resp, 1)
+	_, hasLastScore := resp[0]["last_score"]
+	require.False(t, hasLastScore)
 }
 
 func TestJSONTeamsHandlerIncludesMembersOnlyWhenSettingEnabled(t *testing.T) {

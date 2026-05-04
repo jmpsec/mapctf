@@ -15,11 +15,11 @@ import (
 )
 
 type JSONTeamResponse struct {
-	Name        string    `json:"name"`
-	Logo        string    `json:"logo"`
-	Points      int       `json:"points"`
-	LastScore   time.Time `json:"last_score"`
-	TeamMembers []string  `json:"team_members,omitempty"`
+	Name        string     `json:"name"`
+	Logo        string     `json:"logo"`
+	Points      int        `json:"points"`
+	LastScore   *time.Time `json:"last_score,omitempty"`
+	TeamMembers []string   `json:"team_members,omitempty"`
 }
 
 type JSONCountryDataResponse struct {
@@ -138,12 +138,19 @@ func (h *HandlersMap) JSONTeamsHandler(w http.ResponseWriter, r *http.Request) {
 			Name:        team.Name,
 			Logo:        team.Logo,
 			Points:      team.Points,
-			LastScore:   team.LastScore,
+			LastScore:   teamLastScorePtr(team.LastScore),
 			TeamMembers: membersByTeamID[team.ID],
 		})
 	}
 	// Send response
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, filteredTeams)
+}
+
+func teamLastScorePtr(lastScore time.Time) *time.Time {
+	if lastScore.IsZero() {
+		return nil
+	}
+	return &lastScore
 }
 
 // JSONChallengesHandler to return all challenges for a given UUID in JSON format

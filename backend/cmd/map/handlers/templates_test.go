@@ -16,6 +16,8 @@ import (
 	"github.com/jmpsec/mapctf/pkg/config"
 	"github.com/jmpsec/mapctf/pkg/countries"
 	"github.com/jmpsec/mapctf/pkg/settings"
+	"github.com/jmpsec/mapctf/pkg/teams"
+	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,6 +32,10 @@ func newGameboardTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManage
 	require.NoError(t, err)
 	challengesManager, err := challenges.CreateChallengeManager(db)
 	require.NoError(t, err)
+	teamManager, err := teams.CreateTeams(db)
+	require.NoError(t, err)
+	userManager, err := users.CreateUserManager(db, nil)
+	require.NoError(t, err)
 
 	sessionManager := scs.New()
 
@@ -43,6 +49,8 @@ func newGameboardTemplateHandler(t *testing.T) (*HandlersMap, *scs.SessionManage
 		WithSettings(settingsManager),
 		WithCountries(countriesManager),
 		WithChallenges(challengesManager),
+		WithTeams(teamManager),
+		WithUsers(userManager),
 		WithSessions(sessionManager),
 	)
 
@@ -88,6 +96,35 @@ func TestGameboardTemplateHandlerIncludesChatTemplateData(t *testing.T) {
 	require.Contains(t, body, `data-game-start-time="2030-01-02T09:00:00+02:00"`)
 	require.Contains(t, body, `data-game-end-time="2030-01-02T18:30:00+02:00"`)
 	require.Contains(t, body, `data-module="world-chat"`)
+}
+
+func TestGameboardTemplateHandlerIncludesCurrentTeam(t *testing.T) {
+	handler, sessions, _, _, _ := newGameboardTemplateHandler(t)
+
+	require.NoError(t, handler.Teams.Create(teams.PlatformTeam{
+		Name:    "Blue Team",
+		Logo:    "bee",
+		Active:  true,
+		Visible: true,
+		UUID:    jsonTestUUID,
+	}))
+	team, err := handler.Teams.Get("Blue Team", jsonTestUUID)
+	require.NoError(t, err)
+	user, err := handler.Users.New("alice", "password123", "alice@example.com", "Alice", false, false, jsonTestUUID, team.ID)
+	require.NoError(t, err)
+	require.NoError(t, handler.Users.Create(user))
+
+	req := newTemplateRequestWithUUID(http.MethodGet, "/gameboard", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "alice")
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.GameboardTemplateHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	require.Contains(t, rr.Body.String(), `data-current-team="Blue Team"`)
 }
 
 func TestGameboardTemplateHandlerFallsBackToDefaultChatMaxLen(t *testing.T) {
