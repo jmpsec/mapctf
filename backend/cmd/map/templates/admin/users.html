@@ -199,6 +199,7 @@
                 <div class="admin-buttons">
                   <a href="#" class="admin--edit" data-action="edit">EDIT</a>
                   <button class="mctf-cta cta--red" data-action="delete" type="button">Delete</button>
+                  <button class="mctf-cta" data-action="set-password" data-user-password-url="/{{ $.UUID }}/admin/users/{{ .ID }}/password" data-user-username="{{ .Username }}" type="button">Set Password</button>
                   <button class="mctf-cta cta--yellow" data-action="save" type="button">Save</button>
                 </div>
               </div>

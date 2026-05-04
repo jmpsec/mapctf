@@ -375,6 +375,7 @@ func mapCTFService() {
 				r.Post(usersPath+"/enable-all", handlersMap.AdminUsersEnableAllPOSTHandler)
 				r.Post(usersPath+"/disable-all", handlersMap.AdminUsersDisableAllPOSTHandler)
 				r.Post(usersPath+"/delete-all", handlersMap.AdminUsersDeleteAllPOSTHandler)
+				r.Post(usersPath+"/{id}/password", handlersMap.AdminUserPasswordPOSTHandler)
 				r.Post(usersPath+"/{id}", handlersMap.AdminUserUpdatePOSTHandler)
 				r.Get(teamsPath, handlersMap.AdminTeamsTemplateHandler)
 				r.Post(teamsPath, handlersMap.AdminTeamsPOSTHandler)

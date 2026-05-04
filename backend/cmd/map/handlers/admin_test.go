@@ -332,12 +332,27 @@ func TestAdminUsersTemplateRendersEditableAccountAndUserAgent(t *testing.T) {
 	require.Contains(t, body, `<textarea readonly>Mozilla/5.0 Admin Browser</textarea>`)
 	require.NotContains(t, body, `value="Alice Admin" disabled`)
 	require.NotContains(t, body, `value="alice@example.com" disabled`)
+	require.Contains(t, body, `data-action="set-password"`)
+	require.Contains(t, body, `data-user-password-url="/`+jsonTestUUID+`/admin/users/1/password"`)
+	require.Less(t, strings.Index(body, `data-action="delete"`), strings.Index(body, `data-action="set-password"`))
+	require.Less(t, strings.Index(body, `data-action="set-password"`), strings.Index(body, `data-action="save"`))
 
 	adminJS := string(mustReadFile(t, filepath.Join("..", "templates", "static", "js", "admin.js")))
 	require.Contains(t, adminJS, `input[data-user-field="name"]`)
 	require.Contains(t, adminJS, `input[data-user-field="email"]`)
 	require.Contains(t, adminJS, `name: nameValue`)
 	require.Contains(t, adminJS, `email: emailValue`)
+	require.Contains(t, adminJS, `data-action="set-password"`)
+	require.Contains(t, adminJS, `admin-set-user-password-form`)
+
+	passwordModal := string(mustReadFile(t, filepath.Join("..", "templates", "static", "inc", "modals", "set-user-password.html")))
+	require.Contains(t, passwordModal, `admin_`)
+	require.Contains(t, passwordModal, `Set Password`)
+	require.Contains(t, passwordModal, `id="admin-set-user-password-form"`)
+	require.Contains(t, passwordModal, `name="new_password"`)
+	require.Contains(t, passwordModal, `type="password"`)
+	require.Contains(t, passwordModal, `required`)
+	require.NotContains(t, passwordModal, `minlength`)
 }
 
 func TestAdminUserUpdatePOSTHandlerUpdatesAccountFields(t *testing.T) {
@@ -455,6 +470,70 @@ func TestAdminUserUpdatePOSTHandlerPreservesOmittedAccountFields(t *testing.T) {
 	require.True(t, updated.Admin)
 	require.False(t, updated.Service)
 	require.True(t, updated.Active)
+}
+
+func TestAdminUserPasswordPOSTHandlerUpdatesPassword(t *testing.T) {
+	handler, sessions, _, _ := newAdminTemplateHandler(t)
+
+	user, err := handler.Users.New("alice", "password123", "alice@example.com", "Alice Old", false, false, jsonTestUUID, users.NoTeamID)
+	require.NoError(t, err)
+	require.NoError(t, handler.Users.Create(user))
+	created, err := handler.Users.Get("alice", jsonTestUUID)
+	require.NoError(t, err)
+
+	req := newAdminUserUpdateRequestWithUUID(t, jsonTestUUID, created.ID, map[string]string{
+		"new_password": "x",
+	})
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminUserPasswordPOSTHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var resp adminActionResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.True(t, resp.Success)
+	require.Equal(t, "Password updated", resp.Message)
+
+	validOld, _ := handler.Users.CheckLoginCredentials("alice", "password123", jsonTestUUID)
+	require.False(t, validOld)
+	validNew, _ := handler.Users.CheckLoginCredentials("alice", "x", jsonTestUUID)
+	require.True(t, validNew)
+}
+
+func TestAdminUserPasswordPOSTHandlerRejectsEmptyPassword(t *testing.T) {
+	handler, sessions, _, _ := newAdminTemplateHandler(t)
+
+	user, err := handler.Users.New("alice", "password123", "alice@example.com", "Alice Old", false, false, jsonTestUUID, users.NoTeamID)
+	require.NoError(t, err)
+	require.NoError(t, handler.Users.Create(user))
+	created, err := handler.Users.Get("alice", jsonTestUUID)
+	require.NoError(t, err)
+
+	req := newAdminUserUpdateRequestWithUUID(t, jsonTestUUID, created.ID, map[string]string{
+		"new_password": "   ",
+	})
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminUserPasswordPOSTHandler(rr, req)
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var resp adminActionResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.False(t, resp.Success)
+	require.Equal(t, "new password is required", resp.Message)
+
+	validOriginal, _ := handler.Users.CheckLoginCredentials("alice", "password123", jsonTestUUID)
+	require.True(t, validOriginal)
 }
 
 func TestAdminTeamsTemplateHandlerListsPlatformAndMapLogos(t *testing.T) {

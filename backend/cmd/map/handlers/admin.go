@@ -3520,6 +3520,90 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 	writeSuccess("User updated")
 }
 
+// AdminUserPasswordPOSTHandler resets a user's password from the admin view
+func (h *HandlersMap) AdminUserPasswordPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, false)
+	}
+
+	uuid := chi.URLParam(r, "uuid")
+	if uuid == "" || uuid != h.Config.Map.UUID {
+		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		h.ErrorInvalidUUID(w, r)
+		return
+	}
+
+	userIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
+	userID, err := strconv.ParseUint(userIDStr, 10, 64)
+	if err != nil || userID == 0 {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: "Invalid user id",
+		})
+		return
+	}
+
+	writeError := func(code int, msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, code, adminActionResponse{
+			Success: false,
+			Status:  "error",
+			Message: msg,
+		})
+	}
+	writeSuccess := func(msg string) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
+			Success: true,
+			Status:  "ok",
+			Message: msg,
+		})
+	}
+
+	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
+		writeError(http.StatusBadRequest, "AJAX requests only")
+		return
+	}
+	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
+		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	var req AdminUserPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Err(err).Msg("error parsing admin user password JSON payload")
+		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+
+	switch {
+	case strings.TrimSpace(req.NewPassword) == "":
+		writeError(http.StatusBadRequest, "new password is required")
+		return
+	}
+
+	passHash, err := h.Users.HashPasswordWithSalt(req.NewPassword)
+	if err != nil {
+		log.Err(err).Msg("error hashing admin user password")
+		writeError(http.StatusInternalServerError, "Failed to update password")
+		return
+	}
+
+	updateResult := h.Users.DB.Model(&users.PlatformUser{}).
+		Where("id = ? AND uuid = ?", uint(userID), uuid).
+		Update("pass_hash", passHash)
+	if updateResult.Error != nil {
+		log.Err(updateResult.Error).Msg("error updating admin user password")
+		writeError(http.StatusInternalServerError, "Failed to update password")
+		return
+	}
+	if updateResult.RowsAffected == 0 {
+		writeError(http.StatusNotFound, "User not found")
+		return
+	}
+
+	writeSuccess("Password updated")
+}
+
 // AdminUsersExportHandler exports users as JSON
 func (h *HandlersMap) AdminUsersExportHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {

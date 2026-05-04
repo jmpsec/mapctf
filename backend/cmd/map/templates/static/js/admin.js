@@ -746,6 +746,31 @@ function updateAdminUser(updateURL, payload) {
   });
 }
 
+function setAdminUserPassword(updateURL, payload) {
+  return fetch(updateURL, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify(payload),
+  }).then(function (response) {
+    return response
+      .json()
+      .catch(function () {
+        return {};
+      })
+      .then(function (data) {
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to update password");
+        }
+        return data;
+      });
+  });
+}
+
 function createAdminChallenge(createURL, payload) {
   return fetch(createURL, {
     method: "POST",
@@ -2339,11 +2364,96 @@ function initAdminUserSettingsEditors() {
 
   userCards.forEach(function (card) {
     var saveBtn = card.querySelector('[data-action="save"]');
+    var setPasswordBtn = card.querySelector('[data-action="set-password"]');
     var updateURL = card.getAttribute("data-user-update-url");
     var nameInput = card.querySelector('input[data-user-field="name"]');
     var emailInput = card.querySelector('input[data-user-field="email"]');
     var teamSelect = card.querySelector('select[data-user-field="team_id"]');
     var syncInitialState = initializeEditorDirtyTracking(card, "[data-user-field]");
+
+    if (setPasswordBtn) {
+      setPasswordBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+
+        var passwordURL = setPasswordBtn.getAttribute("data-user-password-url");
+        if (!passwordURL) {
+          showTransientAdminStatus("error", "Missing user password URL");
+          return;
+        }
+        if (setPasswordBtn.dataset.submitting === "true") {
+          return;
+        }
+        if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
+          showTransientAdminStatus("error", "Password modal is unavailable");
+          return;
+        }
+
+        MAP_CTF.modal.loadPopup("set-user-password", function () {
+          var modal = document.getElementById("mctf-modal");
+          if (!modal) {
+            return;
+          }
+
+          var form = modal.querySelector("#admin-set-user-password-form");
+          var passwordInput = form ? form.querySelector('input[name="new_password"]') : null;
+          var usernameEl = modal.querySelector(".js-set-user-password-username");
+          if (!form || !passwordInput) {
+            return;
+          }
+
+          var username = setPasswordBtn.getAttribute("data-user-username") || (card.querySelector("h3") ? card.querySelector("h3").textContent : "this user");
+          if (usernameEl) {
+            usernameEl.textContent = username;
+          }
+          passwordInput.focus();
+
+          form.addEventListener("submit", function (submitEvent) {
+            submitEvent.preventDefault();
+
+            if (form.dataset.submitting === "true") {
+              return;
+            }
+
+            var newPassword = passwordInput.value || "";
+            if (!newPassword.trim()) {
+              showTransientAdminStatus("error", "New password is required");
+              return;
+            }
+            if (typeof passwordInput.checkValidity === "function" && !passwordInput.checkValidity()) {
+              if (typeof passwordInput.reportValidity === "function") {
+                passwordInput.reportValidity();
+              } else {
+                showTransientAdminStatus("error", "New password is required");
+              }
+              return;
+            }
+
+            form.dataset.submitting = "true";
+            setPasswordBtn.dataset.submitting = "true";
+            setPasswordBtn.disabled = true;
+
+            setAdminUserPassword(passwordURL, {
+              new_password: newPassword,
+            })
+              .then(function (data) {
+                showTransientAdminStatus(data.status || "ok", data.message || "Password updated");
+                if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
+                  MAP_CTF.modal.close();
+                }
+              })
+              .catch(function (error) {
+                showTransientAdminStatus("error", error.message || "Failed to update password");
+              })
+              .finally(function () {
+                delete form.dataset.submitting;
+                delete setPasswordBtn.dataset.submitting;
+                setPasswordBtn.disabled = false;
+                passwordInput.value = "";
+              });
+          });
+        });
+      });
+    }
 
     if (!saveBtn || !teamSelect) {
       return;

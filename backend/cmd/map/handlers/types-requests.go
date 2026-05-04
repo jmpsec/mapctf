@@ -180,6 +180,11 @@ type AdminUserUpdateRequest struct {
 	Active  string  `json:"active"`
 }
 
+// AdminUserPasswordRequest receives admin user password reset requests
+type AdminUserPasswordRequest struct {
+	NewPassword string `json:"new_password"`
+}
+
 // AdminTeamCreateRequest to receive admin team creation requests
 type AdminTeamCreateRequest struct {
 	Name string `json:"name"`
