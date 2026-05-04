@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -125,6 +126,20 @@ func TestGameboardTemplateHandlerIncludesCurrentTeam(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rr.Code)
 	require.Contains(t, rr.Body.String(), `data-current-team="Blue Team"`)
+}
+
+func TestGameboardActivityRendererIncludesTimestamps(t *testing.T) {
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+	css, err := os.ReadFile(filepath.Join("..", "templates", "static", "css", "mapctf.css"))
+	require.NoError(t, err)
+
+	jsBody := string(js)
+	require.Contains(t, jsBody, "function formatActivityTime")
+	require.Contains(t, jsBody, "activity-time")
+	require.Contains(t, jsBody, "CreatedAt")
+	require.Contains(t, jsBody, "hour12: false")
+	require.Contains(t, string(css), ".activity-time")
 }
 
 func TestGameboardTemplateHandlerFallsBackToDefaultChatMaxLen(t *testing.T) {

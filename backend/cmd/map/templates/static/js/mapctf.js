@@ -532,10 +532,20 @@
         $.each(ACTIVITY_DATA, function (_, entry) {
           var subject = entry && entry.Subject ? entry.Subject.toString() : "";
           var messageText = entry && entry.Message ? entry.Message.toString() : "";
+          var createdAt = entry && (entry.CreatedAt || entry.created_at) ? entry.CreatedAt || entry.created_at : "";
+          var activityTime = formatActivityTime(createdAt);
           var isYourTeam = currentTeam && subject === currentTeam;
           var itemClass = isYourTeam ? "your-team" : "opponent-team";
           var subjectClass = isYourTeam ? "your-name" : "opponent-name";
           var $item = $("<li></li>").addClass(itemClass + " activity-entry");
+
+          if (!subject && !messageText) {
+            return;
+          }
+
+          if (activityTime) {
+            $item.append($("<time></time>").addClass("activity-time").attr("datetime", createdAt).attr("title", formatActivityDateTime(createdAt)).text(activityTime));
+          }
 
           if (subject) {
             $item.append($("<span></span>").addClass(subjectClass).text(subject));
@@ -544,10 +554,6 @@
             }
           } else if (messageText) {
             $item.text(messageText);
-          }
-
-          if (!subject && !messageText) {
-            return;
           }
 
           $activityStream.append($item);
@@ -562,6 +568,48 @@
       var hasVisibleEntries = $activityStream.find(".activity-entry:visible").length > 0;
 
       $emptyState.toggle(!hasVisibleEntries);
+    }
+
+    function parseActivityDate(createdAtValue) {
+      if (!createdAtValue) {
+        return null;
+      }
+
+      var activityDate = new Date(createdAtValue);
+      if (isNaN(activityDate.getTime())) {
+        return null;
+      }
+
+      return activityDate;
+    }
+
+    function formatActivityTime(createdAtValue) {
+      var activityDate = parseActivityDate(createdAtValue);
+      if (!activityDate) {
+        return "";
+      }
+
+      return activityDate.toLocaleTimeString([], {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    function formatActivityDateTime(createdAtValue) {
+      var activityDate = parseActivityDate(createdAtValue);
+      if (!activityDate) {
+        return "";
+      }
+
+      return activityDate.toLocaleString([], {
+        hour12: false,
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     }
 
     function getCurrentUUID() {
