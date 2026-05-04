@@ -139,6 +139,7 @@ type AdminSettingsRequest struct {
 type AdminChallengeCreateRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	URL         string `json:"url"`
 	CategoryID  string `json:"category_id"`
 	Country     string `json:"country"`
 	Active      string `json:"active"`

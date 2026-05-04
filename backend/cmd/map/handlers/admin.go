@@ -39,6 +39,10 @@ type adminChatVisibilityRequest struct {
 }
 
 func (h *HandlersMap) createAdminActivityLog(r *http.Request, action, message string, challengeID uint) {
+	h.createAdminActivityLogVisible(r, true, action, message, challengeID)
+}
+
+func (h *HandlersMap) createAdminActivityLogVisible(r *http.Request, visible bool, action, message string, challengeID uint) {
 	if h.Logs == nil || h.Sessions == nil {
 		return
 	}
@@ -49,7 +53,7 @@ func (h *HandlersMap) createAdminActivityLog(r *http.Request, action, message st
 		username = h.ServiceName
 	}
 
-	activity, err := h.Logs.NewActivity(true, username, action, message, challengeID, uuid)
+	activity, err := h.Logs.NewActivity(visible, username, action, message, challengeID, uuid)
 	if err != nil {
 		log.Warn().Err(err).Msg("error building admin activity log")
 		return
@@ -100,6 +104,7 @@ type adminChallengesTransferCategory struct {
 type adminChallengesTransferItem struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	URL         string `json:"url,omitempty"`
 	Category    string `json:"category"`
 	Country     string `json:"country"`
 	Active      bool   `json:"active"`
@@ -1014,9 +1019,11 @@ func (h *HandlersMap) buildAdminChallengesTransferPayload(uuid string) (adminCha
 
 	transferChallenges := make([]adminChallengesTransferItem, 0, len(challengesList))
 	for _, challenge := range challengesList {
+		challengeURL, _ := challenges.NormalizeChallengeURL(challenge.URL)
 		transferItem := adminChallengesTransferItem{
 			Title:       strings.TrimSpace(challenge.Title),
 			Description: strings.TrimSpace(challenge.Description),
+			URL:         challengeURL,
 			Country:     strings.ToUpper(strings.TrimSpace(challenge.Country)),
 			Active:      challenge.Active,
 			Points:      challenge.Points,
@@ -1302,10 +1309,16 @@ func (h *HandlersMap) importAdminChallengesFromPayload(uuid string, payload admi
 		if hintPenalty == 0 && item.Penalty != 0 {
 			hintPenalty = item.Penalty
 		}
+		challengeURL, err := challenges.NormalizeChallengeURL(item.URL)
+		if err != nil {
+			skippedChallenges++
+			continue
+		}
 
 		challenge := h.Challenges.New(
 			title,
 			strings.TrimSpace(item.Description),
+			challengeURL,
 			categoryID,
 			countryCode,
 			item.Active,
@@ -4350,6 +4363,11 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 
 	title := strings.TrimSpace(req.Title)
 	description := strings.TrimSpace(req.Description)
+	challengeURL, err := challenges.NormalizeChallengeURL(req.URL)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid challenge URL")
+		return
+	}
 	categoryIDStr := strings.TrimSpace(req.CategoryID)
 	country := strings.ToUpper(strings.TrimSpace(req.Country))
 	activeStr := strings.TrimSpace(req.Active)
@@ -4387,14 +4405,19 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 		writeError(http.StatusBadRequest, "Please select a category")
 		return
 	}
-	if _, err := h.Challenges.GetCategoryByID(uint(categoryID), uuid); err != nil {
+	category, err := h.Challenges.GetCategoryByID(uint(categoryID), uuid)
+	if err != nil {
 		writeError(http.StatusBadRequest, "Please select a valid category")
 		return
 	}
-	active, err := strconv.ParseBool(activeStr)
-	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid active value")
-		return
+	active := false
+	if activeStr != "" {
+		parsedActive, err := strconv.ParseBool(activeStr)
+		if err != nil {
+			writeError(http.StatusBadRequest, "Invalid active value")
+			return
+		}
+		active = parsedActive
 	}
 	points, err := strconv.ParseInt(pointsStr, 10, 64)
 	if err != nil {
@@ -4425,6 +4448,7 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	challenge := h.Challenges.New(
 		title,
 		description,
+		challengeURL,
 		uint(categoryID),
 		country,
 		active,
@@ -4451,6 +4475,13 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 			return
 		}
 	}
+
+	countryLabel := strings.TrimSpace(challenge.Country)
+	if countryLabel == "" {
+		countryLabel = strings.TrimSpace(challenge.Title)
+	}
+	createMsg := fmt.Sprintf(logs.ActivityCreateChallenge, countryLabel, category.Name, challenge.Points)
+	h.createAdminActivityLogVisible(r, false, "created", createMsg, challenge.ID)
 
 	writeSuccess("Challenge created")
 }
@@ -4505,6 +4536,11 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 
 	title := strings.TrimSpace(req.Title)
 	description := strings.TrimSpace(req.Description)
+	challengeURL, err := challenges.NormalizeChallengeURL(req.URL)
+	if err != nil {
+		writeError(http.StatusBadRequest, "Invalid challenge URL")
+		return
+	}
 	categoryIDStr := strings.TrimSpace(req.CategoryID)
 	country := strings.ToUpper(strings.TrimSpace(req.Country))
 	activeStr := strings.TrimSpace(req.Active)
@@ -4591,6 +4627,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 
 	challenge.Title = title
 	challenge.Description = description
+	challenge.URL = challengeURL
 	challenge.CategoryID = uint(categoryID)
 	challenge.Country = country
 	challenge.Active = active

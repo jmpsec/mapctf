@@ -1348,6 +1348,7 @@
       MAP_CTF.modal.loadPopup("country-capture", function () {
         var $container = $("#mctf-modal .mctf-modal-content").first(),
           intro = data ? data.intro : "",
+          challengeURL = data ? data.url : "",
           points = data ? data.points : "",
           category = data ? data.category : "",
           completed = data ? data.completed : "";
@@ -1356,6 +1357,15 @@
 
         $(".country-name", $container).text(formatCountryLabel(country));
         $(".capture-text", $container).text(intro);
+        var $resource = $(".capture-resource", $container),
+          $resourceLink = $(".capture-resource-link", $container);
+        if (challengeURL && $resource.length && $resourceLink.length) {
+          $resourceLink.attr("href", challengeURL).attr("title", challengeURL).text("Open challenge");
+          $resource.removeAttr("hidden").show();
+        } else if ($resource.length && $resourceLink.length) {
+          $resourceLink.attr("href", "#").removeAttr("title");
+          $resource.attr("hidden", "hidden").hide();
+        }
         $(".points-number", $container).text(points);
         $(".country-category", $container).text(category);
         $(".country-owner", $container).html(capturedBy);

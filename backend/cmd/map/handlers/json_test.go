@@ -14,6 +14,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/challenges"
 	"github.com/jmpsec/mapctf/pkg/config"
 	"github.com/jmpsec/mapctf/pkg/countries"
+	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
@@ -66,6 +67,22 @@ func newJSONTeamsHandler(t *testing.T) (*HandlersMap, *teams.TeamManager, *users
 	)
 
 	return handler, teamManager, userManager, settingsManager
+}
+
+func newJSONActivityHandler(t *testing.T) (*HandlersMap, *logs.LogManager) {
+	t.Helper()
+
+	db := newJSONTestDB(t)
+
+	logManager, err := logs.CreateLogManager(db)
+	require.NoError(t, err)
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID}}),
+		WithLogs(logManager),
+	)
+
+	return handler, logManager
 }
 
 func newJSONCountryDataHandler(t *testing.T) (*HandlersMap, *countries.CountriesManager, *challenges.ChallengeManager) {
@@ -141,6 +158,45 @@ func decodeJSONMapSlice(t *testing.T, body []byte) []map[string]any {
 	var resp []map[string]any
 	require.NoError(t, json.Unmarshal(body, &resp))
 	return resp
+}
+
+func TestJSONActivityHandlerExcludesHiddenEntries(t *testing.T) {
+	handler, logManager := newJSONActivityHandler(t)
+
+	require.NoError(t, logManager.CreateActivity(logs.ActivityLog{
+		Visible: true,
+		Subject: "Blue Team",
+		Action:  "completed",
+		Message: "Shown",
+		UUID:    jsonTestUUID,
+	}))
+	require.NoError(t, logManager.CreateActivity(logs.ActivityLog{
+		Visible: false,
+		Subject: "admin",
+		Action:  "created",
+		Message: "Hidden",
+		UUID:    jsonTestUUID,
+	}))
+	require.NoError(t, logManager.CreateActivity(logs.ActivityLog{
+		Visible: true,
+		Subject: "Other",
+		Action:  "completed",
+		Message: "Other UUID",
+		UUID:    jsonOtherTestUUID,
+	}))
+
+	req := newRequestWithUUID(http.MethodGet, "/json/activity", jsonTestUUID)
+	rr := httptest.NewRecorder()
+
+	handler.JSONActivityHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var resp []logs.ActivityLog
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.Len(t, resp, 1)
+	require.Equal(t, "Shown", resp[0].Message)
+	require.True(t, resp[0].Visible)
 }
 
 func TestJSONTeamsHandlerRequiresUUID(t *testing.T) {
@@ -395,6 +451,7 @@ func TestJSONCountriesHandlerReturnsAllCountriesAndMarksChallengeBackedOnesActiv
 	require.NoError(t, challengeManager.Create(challenges.Challenge{
 		Title:       "Spanish challenge",
 		Description: "Live intro",
+		URL:         "https://example.com/challenges/spain",
 		CategoryID:  7,
 		Country:     "ES",
 		Active:      true,
@@ -448,6 +505,7 @@ func TestJSONCountriesHandlerReturnsAllCountriesAndMarksChallengeBackedOnesActiv
 	require.Equal(t, 40, spain.HelpPenalty)
 	require.Equal(t, "Web", spain.Category)
 	require.Equal(t, "Live intro", spain.Intro)
+	require.Equal(t, "https://example.com/challenges/spain", spain.URL)
 	require.Equal(t, "", spain.Owner)
 	require.Empty(t, spain.Completed)
 	require.False(t, spain.SolvedByCurrent)

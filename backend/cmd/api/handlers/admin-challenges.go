@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmpsec/mapctf/pkg/challenges"
 )
 
 // AdminChallengesHandler - Handle admin challenges requests
@@ -41,6 +42,7 @@ func (h *HandlersAPI) AdminChallengesHandler(w http.ResponseWriter, r *http.Requ
 	// Convert internal Challenge structs to AdminChallenge structs
 	adminChallenges := make([]AdminChallenge, 0, len(dbChallenges))
 	for _, dbChallenge := range dbChallenges {
+		challengeURL, _ := challenges.NormalizeChallengeURL(dbChallenge.URL)
 		// Get category name if category ID exists
 		categoryName := ""
 		if dbChallenge.CategoryID > 0 {
@@ -54,6 +56,7 @@ func (h *HandlersAPI) AdminChallengesHandler(w http.ResponseWriter, r *http.Requ
 			ID:          strconv.FormatUint(uint64(dbChallenge.ID), 10),
 			Title:       dbChallenge.Title,
 			Description: dbChallenge.Description,
+			URL:         challengeURL,
 			Category:    categoryName,
 			Points:      dbChallenge.Points,
 			Flag:        dbChallenge.Flag,
@@ -106,11 +109,17 @@ func (h *HandlersAPI) CreateChallengeHandler(w http.ResponseWriter, r *http.Requ
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "flag is required"})
 		return
 	}
+	challengeURL, err := challenges.NormalizeChallengeURL(req.URL)
+	if err != nil {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, ApiErrorResponse{Error: "invalid challenge URL"})
+		return
+	}
 
 	// Create challenge using the New method
 	challenge := h.Challenges.New(
 		req.Title,
 		req.Description,
+		challengeURL,
 		req.CategoryID,
 		"",
 		req.Active,
@@ -144,6 +153,7 @@ func (h *HandlersAPI) CreateChallengeHandler(w http.ResponseWriter, r *http.Requ
 		ID:          strconv.FormatUint(uint64(challenge.ID), 10),
 		Title:       challenge.Title,
 		Description: challenge.Description,
+		URL:         challenge.URL,
 		Category:    categoryName,
 		Points:      challenge.Points,
 		Flag:        challenge.Flag,

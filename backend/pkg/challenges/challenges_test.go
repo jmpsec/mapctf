@@ -89,6 +89,7 @@ func TestCreate(t *testing.T) {
 	challenge := Challenge{
 		Title:       "Test Challenge",
 		Description: "Test Description",
+		URL:         "https://example.com/challenges/test",
 		CategoryID:  1,
 		Active:      true,
 		Points:      100,
@@ -117,6 +118,77 @@ func TestCreate(t *testing.T) {
 	}
 	if retrieved.Points != 100 {
 		t.Errorf("Expected points 100, got %d", retrieved.Points)
+	}
+	if retrieved.URL != "https://example.com/challenges/test" {
+		t.Errorf("Expected URL to be persisted, got '%s'", retrieved.URL)
+	}
+}
+
+func TestUpdatePersistsChallengeURL(t *testing.T) {
+	db := setupTestDB(t)
+	manager, err := CreateChallengeManager(db)
+	if err != nil {
+		t.Fatalf("Failed to create ChallengeManager: %v", err)
+	}
+
+	challenge := Challenge{
+		Title:       "Test Challenge",
+		Description: "Test Description",
+		URL:         "https://example.com/old",
+		Flag:        "flag{test}",
+		UUID:        testUUID1,
+	}
+	if err := manager.CreateAndReturn(&challenge); err != nil {
+		t.Fatalf("Failed to create challenge: %v", err)
+	}
+
+	challenge.URL = "/content/updated"
+	if err := manager.Update(challenge); err != nil {
+		t.Fatalf("Failed to update challenge: %v", err)
+	}
+
+	retrieved, err := manager.GetByID(challenge.ID, testUUID1)
+	if err != nil {
+		t.Fatalf("Failed to retrieve updated challenge: %v", err)
+	}
+	if retrieved.URL != "/content/updated" {
+		t.Errorf("Expected URL '/content/updated', got '%s'", retrieved.URL)
+	}
+}
+
+func TestNormalizeChallengeURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{name: "empty", input: "  ", want: ""},
+		{name: "http", input: " http://example.com/challenge ", want: "http://example.com/challenge"},
+		{name: "https", input: "https://example.com/challenge", want: "https://example.com/challenge"},
+		{name: "root relative", input: "/files/challenge.html", want: "/files/challenge.html"},
+		{name: "protocol relative rejected", input: "//example.com/challenge", wantErr: true},
+		{name: "javascript rejected", input: "javascript:alert(1)", wantErr: true},
+		{name: "mailto rejected", input: "mailto:test@example.com", wantErr: true},
+		{name: "missing host rejected", input: "https://", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NormalizeChallengeURL(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("Expected error for %q", tt.input)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Expected no error for %q, got %v", tt.input, err)
+			}
+			if got != tt.want {
+				t.Fatalf("Expected %q, got %q", tt.want, got)
+			}
+		})
 	}
 }
 
@@ -329,6 +401,7 @@ func TestNew(t *testing.T) {
 	challenge := manager.New(
 		"SQL Injection",
 		"Find the SQL injection vulnerability",
+		"https://example.com/challenges/sql",
 		1,
 		"Argentina",
 		true,
@@ -347,6 +420,9 @@ func TestNew(t *testing.T) {
 	}
 	if challenge.Description != "Find the SQL injection vulnerability" {
 		t.Errorf("Expected description to match, got '%s'", challenge.Description)
+	}
+	if challenge.URL != "https://example.com/challenges/sql" {
+		t.Errorf("Expected URL to match, got '%s'", challenge.URL)
 	}
 	if challenge.CategoryID != 1 {
 		t.Errorf("Expected category ID 1, got %d", challenge.CategoryID)

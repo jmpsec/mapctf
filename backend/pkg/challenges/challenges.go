@@ -2,6 +2,8 @@ package challenges
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -11,6 +13,7 @@ type Challenge struct {
 	gorm.Model
 	Title       string
 	Description string
+	URL         string
 	CategoryID  uint
 	Country     string
 	Active      bool
@@ -85,6 +88,7 @@ func (m *ChallengeManager) Update(challenge Challenge) error {
 		Updates(map[string]interface{}{
 			"title":        challenge.Title,
 			"description":  challenge.Description,
+			"url":          challenge.URL,
 			"category_id":  challenge.CategoryID,
 			"country":      challenge.Country,
 			"active":       challenge.Active,
@@ -99,6 +103,31 @@ func (m *ChallengeManager) Update(challenge Challenge) error {
 		return fmt.Errorf("Update Challenge %w", err)
 	}
 	return nil
+}
+
+// NormalizeChallengeURL trims and validates optional challenge resource URLs.
+func NormalizeChallengeURL(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	if strings.HasPrefix(value, "/") {
+		if strings.HasPrefix(value, "//") {
+			return "", fmt.Errorf("invalid challenge URL")
+		}
+		return value, nil
+	}
+
+	parsed, err := url.Parse(value)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return "", fmt.Errorf("invalid challenge URL")
+	}
+	switch strings.ToLower(parsed.Scheme) {
+	case "http", "https":
+		return value, nil
+	default:
+		return "", fmt.Errorf("invalid challenge URL")
+	}
 }
 
 // Delete challenge
@@ -232,10 +261,11 @@ func (m *ChallengeManager) ExistCategory(name string, uuid string) bool {
 }
 
 // New empty challenge
-func (m *ChallengeManager) New(title, description string, categoryID uint, country string, active bool, points, bonus, bonusDecay, hintPenalty, helpPenalty int, flag, hint string, uuid string) Challenge {
+func (m *ChallengeManager) New(title, description, challengeURL string, categoryID uint, country string, active bool, points, bonus, bonusDecay, hintPenalty, helpPenalty int, flag, hint string, uuid string) Challenge {
 	return Challenge{
 		Title:       title,
 		Description: description,
+		URL:         challengeURL,
 		CategoryID:  categoryID,
 		Country:     country,
 		Active:      active,

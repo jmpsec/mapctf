@@ -205,7 +205,6 @@
                 <div class="admin-setting-row admin-challenge-row">
                   <div class="admin-challenge-row-layout">
                     <div class="admin-challenges-editor">
-                      <label>{{ .Title }}</label>
                       <form class="admin-challenge-form" autocomplete="off">
                         <div class="admin-challenge-grid">
                           <div class="admin-form-field">
@@ -219,26 +218,33 @@
                           </div>
 
                           <div class="admin-form-field">
-                            <label class="admin-field-label" for="challenge-category-{{ .ID }}">Category</label>
-                            <select id="challenge-category-{{ .ID }}" name="category_id">
-                              {{ range $.Categories }}
-                              <option value="{{ .ID }}" {{ if eq .ID $challenge.CategoryID }}selected{{ end }}>{{ .Name }}</option>
-                              {{ end }}
-                            </select>
+                            <label class="admin-field-label" for="challenge-url-{{ .ID }}">Resource URL</label>
+                            <input id="challenge-url-{{ .ID }}" name="url" type="text" inputmode="url" value="{{ .URL }}" />
                           </div>
 
-                          <div class="admin-form-field">
-                            <label class="admin-field-label" for="challenge-country-{{ .ID }}">Country</label>
-                            <select id="challenge-country-{{ .ID }}" name="country" class="admin-country-select">
-                              <option value="" {{ if not .Country }}selected{{ end }}>Select country</option>
-                              {{ if $challengeCountryOptions }}
-                              {{ range $challengeCountryOptions }}
-                              <option value="{{ .CountryCode }}" {{ if eq .CountryCode $challenge.Country }}selected{{ end }}>{{ .Name }}{{ with index $.CountryFlag .CountryCode }} {{ . }}{{ end }} ({{ .CountryCode }})</option>
-                              {{ end }}
-                              {{ else if .Country }}
-                              <option value="{{ .Country }}" selected>{{ .Country }}</option>
-                              {{ end }}
-                            </select>
+                          <div class="admin-challenge-grid-row admin-challenge-grid-row--taxonomy">
+                            <div class="admin-form-field">
+                              <label class="admin-field-label" for="challenge-category-{{ .ID }}">Category</label>
+                              <select id="challenge-category-{{ .ID }}" name="category_id">
+                                {{ range $.Categories }}
+                                <option value="{{ .ID }}" {{ if eq .ID $challenge.CategoryID }}selected{{ end }}>{{ .Name }}</option>
+                                {{ end }}
+                              </select>
+                            </div>
+
+                            <div class="admin-form-field">
+                              <label class="admin-field-label" for="challenge-country-{{ .ID }}">Country</label>
+                              <select id="challenge-country-{{ .ID }}" name="country" class="admin-country-select">
+                                <option value="" {{ if not .Country }}selected{{ end }}>Select country</option>
+                                {{ if $challengeCountryOptions }}
+                                {{ range $challengeCountryOptions }}
+                                <option value="{{ .CountryCode }}" {{ if eq .CountryCode $challenge.Country }}selected{{ end }}>{{ .Name }}{{ with index $.CountryFlag .CountryCode }} {{ . }}{{ end }} ({{ .CountryCode }})</option>
+                                {{ end }}
+                                {{ else if .Country }}
+                                <option value="{{ .Country }}" selected>{{ .Country }}</option>
+                                {{ end }}
+                              </select>
+                            </div>
                           </div>
 
                           <div class="admin-form-field">

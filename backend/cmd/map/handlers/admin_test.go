@@ -1081,6 +1081,7 @@ func TestAdminChallengesTemplateHandlerShowsChallengeRelatedActivity(t *testing.
 	require.NoError(t, challengesManager.Create(challenges.Challenge{
 		Model:      gorm.Model{ID: 77},
 		Title:      "Spanish Challenge",
+		URL:        "https://example.com/challenges/spain",
 		CategoryID: 3,
 		Country:    "ES",
 		Active:     true,
@@ -1119,6 +1120,8 @@ func TestAdminChallengesTemplateHandlerShowsChallengeRelatedActivity(t *testing.
 	require.Equal(t, http.StatusOK, rr.Code)
 	body := rr.Body.String()
 	require.Contains(t, body, "Spanish Challenge")
+	require.Contains(t, body, `name="url"`)
+	require.Contains(t, body, `value="https://example.com/challenges/spain"`)
 	require.Contains(t, body, "Blue Team")
 	require.Contains(t, body, "completed")
 	require.Contains(t, body, "Failure")
@@ -1152,6 +1155,7 @@ func TestAdminChallengeUpdatePOSTHandlerLogsEnableAndDisableStateChanges(t *test
 		payload := AdminChallengeCreateRequest{
 			Title:       "Spain",
 			Description: "",
+			URL:         "/challenges/spain",
 			CategoryID:  "1",
 			Country:     "",
 			Active:      activeValue,
@@ -1186,6 +1190,10 @@ func TestAdminChallengeUpdatePOSTHandlerLogsEnableAndDisableStateChanges(t *test
 	handler.AdminChallengeUpdatePOSTHandler(rr, makeRequest("false"))
 	require.Equal(t, http.StatusOK, rr.Code)
 
+	updated, err := challengesManager.GetByID(50, jsonTestUUID)
+	require.NoError(t, err)
+	require.Equal(t, "/challenges/spain", updated.URL)
+
 	activityEntries, err := logManager.AllActivity(jsonTestUUID)
 	require.NoError(t, err)
 	require.Len(t, activityEntries, 2)
@@ -1194,6 +1202,142 @@ func TestAdminChallengeUpdatePOSTHandlerLogsEnableAndDisableStateChanges(t *test
 	require.Equal(t, "Challenge Spain (Web) was enabled: 100 points", activityEntries[0].Message)
 	require.Equal(t, uint(50), activityEntries[0].ChallengeID)
 	require.Equal(t, "disabled", activityEntries[1].Action)
+}
+
+func TestAdminChallengesPOSTHandlerDefaultsInactiveAndLogsHiddenCreation(t *testing.T) {
+	handler, sessions, countriesManager, challengesManager, logManager := newAdminChallengeActivityHandler(t)
+
+	require.NoError(t, countriesManager.Create(countries.MapCountry{
+		Name:        "Spain",
+		CountryCode: "ES",
+		Active:      true,
+	}))
+	require.NoError(t, challengesManager.CreateCategory(challenges.Category{
+		Model: gorm.Model{ID: 1},
+		Name:  "Web",
+		UUID:  jsonTestUUID,
+	}))
+
+	payload := map[string]string{
+		"title":        "Spanish Challenge",
+		"description":  "Find the flag",
+		"url":          "https://example.com/challenges/spain",
+		"category_id":  "1",
+		"country":      "ES",
+		"points":       "100",
+		"bonus":        "0",
+		"bonus_decay":  "0",
+		"hint_penalty": "0",
+		"help_penalty": "0",
+		"flag":         "MAP{es}",
+		"hint":         "Look closer",
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodPost, "/admin/challenges", bytes.NewReader(body))
+	req.Header.Set(ContentType, JSONApplicationUTF8)
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("uuid", jsonTestUUID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminChallengesPOSTHandler(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	created, err := challengesManager.GetByID(1, jsonTestUUID)
+	require.NoError(t, err)
+	require.False(t, created.Active)
+	require.Equal(t, "ES", created.Country)
+	require.Equal(t, "https://example.com/challenges/spain", created.URL)
+
+	activityEntries, err := logManager.AllActivity(jsonTestUUID)
+	require.NoError(t, err)
+	require.Len(t, activityEntries, 1)
+	require.False(t, activityEntries[0].Visible)
+	require.Equal(t, "admin", activityEntries[0].Subject)
+	require.Equal(t, "created", activityEntries[0].Action)
+	require.Equal(t, "Challenge ES (Web) was created: 100 points", activityEntries[0].Message)
+	require.Equal(t, created.ID, activityEntries[0].ChallengeID)
+}
+
+func TestAdminChallengesPOSTHandlerRejectsUnsafeChallengeURL(t *testing.T) {
+	handler, sessions, _, challengesManager, _ := newAdminChallengeActivityHandler(t)
+
+	require.NoError(t, challengesManager.CreateCategory(challenges.Category{
+		Model: gorm.Model{ID: 1},
+		Name:  "Web",
+		UUID:  jsonTestUUID,
+	}))
+
+	payload := map[string]string{
+		"title":        "Unsafe Challenge",
+		"description":  "Do not link unsafe schemes",
+		"url":          "javascript:alert(1)",
+		"category_id":  "1",
+		"points":       "100",
+		"bonus":        "0",
+		"bonus_decay":  "0",
+		"hint_penalty": "0",
+		"help_penalty": "0",
+		"flag":         "MAP{unsafe}",
+	}
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodPost, "/admin/challenges", bytes.NewReader(body))
+	req.Header.Set(ContentType, JSONApplicationUTF8)
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("uuid", jsonTestUUID)
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, routeCtx))
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminChallengesPOSTHandler(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+	require.Contains(t, rr.Body.String(), "Invalid challenge URL")
+	var count int64
+	require.NoError(t, challengesManager.DB.Model(&challenges.Challenge{}).Count(&count).Error)
+	require.Equal(t, int64(0), count)
+}
+
+func TestAdminAddChallengeModalHidesActiveAndSubmitsInactive(t *testing.T) {
+	modal := string(mustReadFile(t, filepath.Join("..", "templates", "static", "inc", "modals", "add-challenge.html")))
+	adminJS := string(mustReadFile(t, filepath.Join("..", "templates", "static", "js", "admin.js")))
+
+	require.NotContains(t, modal, `admin-add-challenge-active`)
+	require.NotContains(t, modal, `<label for="admin-add-challenge-active">Active</label>`)
+	require.NotContains(t, modal, `admin-challenge-section-title`)
+	require.NotContains(t, modal, `Essentials`)
+	require.NotContains(t, modal, `Scoring`)
+	require.NotContains(t, modal, `Guidance`)
+	require.Contains(t, modal, `admin-challenge-section`)
+	require.Contains(t, modal, `admin-add-challenge-url`)
+	require.Contains(t, modal, `name="url"`)
+	require.NotContains(t, adminJS, `select[name="active"]`)
+	require.Contains(t, adminJS, `active: "false"`)
+	require.Contains(t, adminJS, `url: url`)
+}
+
+func TestAdminChallengesEditorGroupsTaxonomyAndScoringRows(t *testing.T) {
+	template := string(mustReadFile(t, filepath.Join("..", "templates", "admin", "challenges.html")))
+	css := string(mustReadFile(t, filepath.Join("..", "templates", "static", "css", "mapctf.css")))
+
+	require.Contains(t, template, `admin-challenge-grid-row admin-challenge-grid-row--taxonomy`)
+	require.Contains(t, template, `for="challenge-category-{{ .ID }}">Category`)
+	require.Contains(t, template, `for="challenge-country-{{ .ID }}">Country`)
+	require.Contains(t, css, `.admin-box .admin-challenge-grid-row--taxonomy`)
+	require.Contains(t, css, `grid-template-columns: repeat(2, minmax(0, 1fr));`)
+	require.Contains(t, css, `.admin-box .admin-score-group`)
+	require.Contains(t, css, `grid-template-columns: repeat(5, minmax(0, 1fr));`)
 }
 
 func TestAdminChallengesBulkStateChangeHandlersLogActivity(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmpsec/mapctf/pkg/challenges"
+	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -34,6 +35,7 @@ type JSONCountryDataResponse struct {
 	Owner           string   `json:"owner"`
 	Completed       []string `json:"completed"`
 	Intro           string   `json:"intro"`
+	URL             string   `json:"url"`
 	LandPath        string   `json:"land_path"`
 	LandClass       string   `json:"land_class"`
 	LandStyle       string   `json:"land_style"`
@@ -84,8 +86,14 @@ func (h *HandlersMap) JSONActivityHandler(w http.ResponseWriter, r *http.Request
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving activity logs"})
 		return
 	}
+	visibleActivityLogs := make([]logs.ActivityLog, 0, len(activityLogs))
+	for _, activityLog := range activityLogs {
+		if activityLog.Visible {
+			visibleActivityLogs = append(visibleActivityLogs, activityLog)
+		}
+	}
 	// Send response
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, activityLogs)
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, visibleActivityLogs)
 }
 
 // JSONTeamsHandler to return all teams for a given UUID in JSON format
@@ -311,6 +319,12 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 				categoryName = category.Name
 			}
 		}
+		challengeURL := ""
+		if hasChallenge {
+			if normalizedURL, err := challenges.NormalizeChallengeURL(challenge.URL); err == nil {
+				challengeURL = normalizedURL
+			}
+		}
 
 		response[country.Name] = JSONCountryDataResponse{
 			CountryCode:     country.CountryCode,
@@ -324,6 +338,7 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 			Owner:           ownerByCountry[countryCode],
 			Completed:       completed,
 			Intro:           challenge.Description,
+			URL:             challengeURL,
 			LandPath:        country.LandPath,
 			LandClass:       country.LandClass,
 			LandStyle:       country.LandStyle,

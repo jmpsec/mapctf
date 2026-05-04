@@ -3580,6 +3580,48 @@ body {
 .action-main .errors-list {
   list-style: circle inside;
 }
+.mctf-modal-content.admin-challenge-modal {
+  max-width: 760px;
+}
+.admin-challenge-form input,
+.admin-challenge-form select,
+.admin-challenge-form textarea {
+  width: 100%;
+}
+.admin-challenge-form textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+.admin-challenge-section {
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(33, 180, 186, 0.28);
+}
+.admin-challenge-section + .admin-challenge-section {
+  padding-top: 14px;
+}
+.admin-challenge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.admin-challenge-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.admin-challenge-grid + .admin-challenge-grid {
+  margin-top: 8px;
+}
+.admin-challenge-modal .form-el {
+  margin-bottom: 10px;
+}
+.admin-challenge-grid .form-el {
+  margin-bottom: 10px;
+}
+@media screen and (max-width: 720px) {
+  .admin-challenge-grid,
+  .admin-challenge-grid--three {
+    grid-template-columns: 1fr;
+  }
+}
 .admin-logo-upload-formats {
   display: flex;
   align-items: flex-start;
@@ -5397,6 +5439,28 @@ body[data-section=gameboard] .mctf-page {
 .help-enabled .country-capture-form .actions--right .mctf-cta, .help-enabled .country-capture-form .actions--right .cta-toggle input[type=checkbox] + label, .cta-toggle .help-enabled .country-capture-form .actions--right input[type=checkbox] + label {
   display: none;
 }
+.capture-resource {
+  margin: 12px 0 0;
+}
+.capture-resource[hidden] {
+  display: none;
+}
+.capture-resource-link {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  border-bottom: 1px solid rgba(92, 240, 246, 0.55);
+  color: #5cf0f6;
+  font-family: "Source Code Pro", Courier, monospace;
+  font-size: 0.86rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.capture-resource-link:hover {
+  color: #ead44d;
+  border-bottom-color: rgba(234, 212, 77, 0.65);
+}
 .country-capture-feedback {
   min-height: 1.5em;
   margin: 10px 0 0;
@@ -6436,6 +6500,14 @@ General Admin
   flex-direction: column;
   gap: 12px;
 }
+.admin-box .admin-challenge-grid-row {
+  width: 100%;
+  display: grid;
+  gap: 12px;
+}
+.admin-box .admin-challenge-grid-row--taxonomy {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .admin-box .admin-field-label {
   margin: 0 0 4px;
   color: #8ed9de;
@@ -6466,7 +6538,7 @@ General Admin
 .admin-box .admin-score-group {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 .admin-box .admin-score-item {
@@ -6517,6 +6589,9 @@ General Admin
 }
 @media (max-width: 780px) {
   .admin-box .admin-settings-list {
+    grid-template-columns: 1fr;
+  }
+  .admin-box .admin-challenge-grid-row--taxonomy {
     grid-template-columns: 1fr;
   }
   .admin-box .admin-score-group {

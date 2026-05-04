@@ -142,6 +142,21 @@ func TestGameboardActivityRendererIncludesTimestamps(t *testing.T) {
 	require.Contains(t, string(css), ".activity-time")
 }
 
+func TestGameboardCaptureModalSupportsChallengeURL(t *testing.T) {
+	modal, err := os.ReadFile(filepath.Join("..", "templates", "static", "inc", "modals", "country-capture.html"))
+	require.NoError(t, err)
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+	css, err := os.ReadFile(filepath.Join("..", "templates", "static", "css", "mapctf.css"))
+	require.NoError(t, err)
+
+	require.Contains(t, string(modal), "capture-resource")
+	require.Contains(t, string(modal), "capture-resource-link")
+	require.Contains(t, string(js), "data.url")
+	require.Contains(t, string(js), "capture-resource-link")
+	require.Contains(t, string(css), ".capture-resource")
+}
+
 func TestGameboardTemplateHandlerFallsBackToDefaultChatMaxLen(t *testing.T) {
 	handler, sessions, _, _, _ := newGameboardTemplateHandler(t)
 

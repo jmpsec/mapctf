@@ -36,6 +36,7 @@ type AdminChallenge struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	URL         string `json:"url"`
 	Category    string `json:"category"`
 	Points      int    `json:"points"`
 	Flag        string `json:"flag"`
@@ -54,6 +55,7 @@ type CreateTeamRequest struct {
 type CreateChallengeRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	URL         string `json:"url"`
 	CategoryID  uint   `json:"categoryID"`
 	Active      bool   `json:"active"`
 	Points      int    `json:"points"`

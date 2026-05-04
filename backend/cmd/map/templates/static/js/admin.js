@@ -1934,17 +1934,17 @@ function initAdminAddChallengeModal() {
         }
 
         var title = (form.querySelector('input[name="title"]').value || "").trim();
-        var description = (form.querySelector('input[name="description"]').value || "").trim();
+        var description = (form.querySelector('[name="description"]').value || "").trim();
+        var url = (form.querySelector('[name="url"]').value || "").trim();
         var categoryID = (form.querySelector('select[name="category_id"]').value || "").trim();
         var country = (form.querySelector('[name="country"]').value || "").trim();
         var flag = (form.querySelector('input[name="flag"]').value || "").trim();
-        var hint = (form.querySelector('input[name="hint"]').value || "").trim();
+        var hint = (form.querySelector('[name="hint"]').value || "").trim();
         var points = String(form.querySelector('input[name="points"]').value || "0").trim();
         var bonus = String(form.querySelector('input[name="bonus"]').value || "0").trim();
         var bonusDecay = String(form.querySelector('input[name="bonus_decay"]').value || "0").trim();
         var hintPenalty = String(form.querySelector('input[name="hint_penalty"]').value || "0").trim();
         var helpPenalty = String(form.querySelector('input[name="help_penalty"]').value || "0").trim();
-        var active = String(form.querySelector('select[name="active"]').value || "true").trim();
 
         if (!title || !flag) {
           showTransientAdminStatus("error", "Title and flag are required");
@@ -1960,9 +1960,10 @@ function initAdminAddChallengeModal() {
         createAdminChallenge(createURL, {
           title: title,
           description: description,
+          url: url,
           category_id: categoryID,
           country: country,
-          active: active,
+          active: "false",
           points: points,
           bonus: bonus,
           bonus_decay: bonusDecay,
@@ -3201,6 +3202,7 @@ function submitAdminChallengeRow(triggerEl) {
 
   var title = (form.querySelector('input[name="title"]').value || "").trim();
   var description = (form.querySelector('textarea[name="description"]').value || "").trim();
+  var url = (form.querySelector('input[name="url"]').value || "").trim();
   var categoryID = (form.querySelector('select[name="category_id"]').value || "").trim();
   var country = (form.querySelector('select[name="country"]').value || "").trim();
   var flag = (form.querySelector('input[name="flag"]').value || "").trim();
@@ -3230,6 +3232,7 @@ function submitAdminChallengeRow(triggerEl) {
   createAdminChallengeUpdate(updateURL, {
     title: title,
     description: description,
+    url: url,
     category_id: categoryID,
     country: country,
     active: active,
