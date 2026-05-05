@@ -998,6 +998,34 @@ func TestAdminActivityTemplateHandlerIncludesActivityEntries(t *testing.T) {
 	require.Contains(t, body, "Captured Spain")
 }
 
+func TestAdminActivityTemplateHandlerPrefillsNewActivitySubjectWithCurrentUsername(t *testing.T) {
+	handler, sessions, _ := newAdminActivityTemplateHandler(t)
+
+	req := newAdminRequestWithUUID(http.MethodGet, "/admin/activity", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), `admin" data-owned="true`)
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.AdminActivityTemplateHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	body := rr.Body.String()
+	require.Contains(t, body, `data-default-subject="admin&#34; data-owned=&#34;true"`)
+	require.NotContains(t, body, `data-owned="true"`)
+}
+
+func TestAdminAddActivityModalUsesDefaultSubject(t *testing.T) {
+	adminTemplate := string(mustReadFile(t, filepath.Join("..", "templates", "admin", "activity.html")))
+	adminJS := string(mustReadFile(t, filepath.Join("..", "templates", "static", "js", "admin.js")))
+
+	require.Contains(t, adminTemplate, `data-default-subject="{{ .CurrentUsername }}"`)
+	require.Contains(t, adminJS, `getAttribute("data-default-subject")`)
+	require.Contains(t, adminJS, `subjectInput.value = defaultSubject`)
+}
+
 func TestAdminActivityPOSTHandlerCreatesCustomEntry(t *testing.T) {
 	handler, sessions, logManager := newAdminActivityTemplateHandler(t)
 

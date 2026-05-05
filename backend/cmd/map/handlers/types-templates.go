@@ -214,13 +214,14 @@ type AdminChallengeActivityEntry struct {
 
 // AdminActivityTemplateData for passing data to the admin activity template
 type AdminActivityTemplateData struct {
-	Title         string
-	UUID          string
-	Authenticated bool
-	Admin         bool
-	Status        string
-	Message       string
-	Activity      []logs.ActivityLog
+	Title           string
+	UUID            string
+	Authenticated   bool
+	Admin           bool
+	CurrentUsername string
+	Status          string
+	Message         string
+	Activity        []logs.ActivityLog
 }
 
 // AdminChatTemplateData for passing data to the admin chat template

@@ -66,6 +66,8 @@
       COUNTRY_POLL_IN_FLIGHT = false,
       COUNTRY_POLL_TIMER = null,
       ACTIVITY_DATA,
+      ACTIVITY_SEEN_ENTRY_KEYS = {},
+      ACTIVITY_HAS_RENDERED = false,
       TEAM_DATA,
       DOMINATION_DATA,
       TEAM_POLL_IN_FLIGHT = false,
@@ -522,8 +524,12 @@
     }
 
     function setupActivity() {
-      var $activityStream = $('aside[data-module="activity"] .activity-stream');
+      var $activityModule = $('aside[data-module="activity"]');
+      var $activityStream = $(".activity-stream", $activityModule);
       var currentTeam = getCurrentTeamName();
+      var moduleIsOpen = $activityModule.hasClass("active");
+      var nextEntryKeys = {};
+      var newEntryType = "";
 
       $activityStream.empty();
       $activityStream.append('<li class="activity-empty" style="display: none">No activity yet</li>');
@@ -531,36 +537,111 @@
       if ($.isArray(ACTIVITY_DATA) && ACTIVITY_DATA.length) {
         $.each(ACTIVITY_DATA, function (_, entry) {
           var subject = entry && entry.Subject ? entry.Subject.toString() : "";
+          var action = entry && (entry.Action || entry.action) ? (entry.Action || entry.action).toString() : "";
           var messageText = entry && entry.Message ? entry.Message.toString() : "";
           var createdAt = entry && (entry.CreatedAt || entry.created_at) ? entry.CreatedAt || entry.created_at : "";
           var activityTime = formatActivityTime(createdAt);
           var isYourTeam = currentTeam && subject === currentTeam;
+          var isAnnouncement = action.toLowerCase() === "announcement";
+          var activityType = isAnnouncement ? "announcement" : "regular";
+          var entryKey = getActivityEntryKey(entry);
+          var isNewEntry = ACTIVITY_HAS_RENDERED && entryKey && !ACTIVITY_SEEN_ENTRY_KEYS[entryKey];
           var itemClass = isYourTeam ? "your-team" : "opponent-team";
           var subjectClass = isYourTeam ? "your-name" : "opponent-name";
+          if (isAnnouncement) {
+            itemClass += " activity-entry--announcement";
+          }
+          if (isNewEntry && moduleIsOpen) {
+            if (activityType === "announcement") {
+              itemClass += " activity-entry--new activity-entry--new-announcement";
+            } else {
+              itemClass += " activity-entry--new activity-entry--new-regular";
+            }
+          }
           var $item = $("<li></li>").addClass(itemClass + " activity-entry");
 
           if (!subject && !messageText) {
             return;
           }
 
+          if (entryKey) {
+            nextEntryKeys[entryKey] = true;
+          }
+
+          if (isNewEntry) {
+            if (activityType === "announcement") {
+              newEntryType = "announcement";
+            } else if (!newEntryType) {
+              newEntryType = "regular";
+            }
+          }
+
           if (activityTime) {
             $item.append($("<time></time>").addClass("activity-time").attr("datetime", createdAt).attr("title", formatActivityDateTime(createdAt)).text(activityTime));
           }
 
-          if (subject) {
+          if (isAnnouncement) {
+            $item.append($("<span></span>").addClass("activity-announcement-label").attr("aria-label", "Announcement").text("📢"));
+          }
+
+          if (isAnnouncement) {
+            if (messageText) {
+              $item.append(document.createTextNode(" " + messageText));
+            }
+          } else if (subject) {
             $item.append($("<span></span>").addClass(subjectClass).text(subject));
             if (messageText) {
               $item.append(document.createTextNode(" " + messageText));
             }
           } else if (messageText) {
-            $item.text(messageText);
+            $item.append(document.createTextNode(messageText));
           }
 
           $activityStream.append($item);
         });
       }
 
+      $.extend(ACTIVITY_SEEN_ENTRY_KEYS, nextEntryKeys);
+      ACTIVITY_HAS_RENDERED = true;
+
+      if (newEntryType && !moduleIsOpen) {
+        flashActivityModuleHeader($activityModule, newEntryType);
+      }
+
       updateActivityEmptyState($activityStream);
+    }
+
+    function getActivityEntryKey(entry) {
+      if (!entry) {
+        return "";
+      }
+
+      var id = entry.ID || entry.id;
+      if (id !== undefined && id !== null && id !== "") {
+        return "id:" + id;
+      }
+
+      return [
+        entry.CreatedAt || entry.created_at || "",
+        entry.Action || entry.action || "",
+        entry.Subject || entry.subject || "",
+        entry.Message || entry.message || "",
+      ].join("|");
+    }
+
+    function flashActivityModuleHeader($activityModule, activityType) {
+      var flashClass = activityType === "announcement" ? "activity-module-flash--announcement" : "activity-module-flash--regular";
+      var moduleNode = $activityModule.get(0);
+
+      $activityModule.removeClass("activity-module-flash--regular activity-module-flash--announcement");
+      if (moduleNode) {
+        void moduleNode.offsetWidth;
+      }
+      $activityModule.addClass(flashClass);
+
+      setTimeout(function () {
+        $activityModule.removeClass(flashClass);
+      }, 1500);
     }
 
     function updateActivityEmptyState($activityStream) {

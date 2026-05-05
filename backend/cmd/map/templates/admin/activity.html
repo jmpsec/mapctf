@@ -279,7 +279,7 @@
             <header class="admin-box-header mctf-cf" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap">
               <h3>Activity Log</h3>
               <div class="admin-section-toggle" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto">
-                <button class="mctf-cta" data-action="add-custom-activity" data-create-url="/{{ .UUID }}/admin/activity" type="button">Add Entry</button>
+                <button class="mctf-cta" data-action="add-custom-activity" data-create-url="/{{ .UUID }}/admin/activity" data-default-subject="{{ .CurrentUsername }}" type="button">Add Entry</button>
               </div>
             </header>
 

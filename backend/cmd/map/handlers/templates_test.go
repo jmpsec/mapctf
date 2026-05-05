@@ -142,6 +142,50 @@ func TestGameboardActivityRendererIncludesTimestamps(t *testing.T) {
 	require.Contains(t, string(css), ".activity-time")
 }
 
+func TestGameboardActivityRendererHighlightsAnnouncements(t *testing.T) {
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+	css, err := os.ReadFile(filepath.Join("..", "templates", "static", "css", "mapctf.css"))
+	require.NoError(t, err)
+
+	jsBody := string(js)
+	require.Contains(t, jsBody, "entry.Action")
+	require.Contains(t, jsBody, "activity-entry--announcement")
+	require.Contains(t, jsBody, "activity-announcement-label")
+	require.Contains(t, jsBody, `.text("📢")`)
+	require.Contains(t, jsBody, `else if (subject)`)
+	require.NotContains(t, jsBody, `.text("Announcement")`)
+	require.Contains(t, string(css), ".activity-entry--announcement")
+	require.Contains(t, string(css), ".activity-announcement-label")
+}
+
+func TestGameboardActivityRendererPulsesNewEntries(t *testing.T) {
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+	css, err := os.ReadFile(filepath.Join("..", "templates", "static", "css", "mapctf.css"))
+	require.NoError(t, err)
+
+	jsBody := string(js)
+	require.Contains(t, jsBody, "ACTIVITY_SEEN_ENTRY_KEYS")
+	require.Contains(t, jsBody, "getActivityEntryKey")
+	require.Contains(t, jsBody, "activity-entry--new-regular")
+	require.Contains(t, jsBody, "activity-entry--new-announcement")
+	require.Contains(t, jsBody, "activity-module-flash--regular")
+	require.Contains(t, jsBody, "activity-module-flash--announcement")
+	require.Contains(t, jsBody, `$activityModule.hasClass("active")`)
+	require.Contains(t, jsBody, "setTimeout(function () {")
+
+	cssBody := string(css)
+	require.Contains(t, cssBody, ".activity-entry--new-regular")
+	require.Contains(t, cssBody, ".activity-entry--new-announcement")
+	require.Contains(t, cssBody, ".activity-module-flash--regular .module-header")
+	require.Contains(t, cssBody, ".activity-module-flash--announcement .module-header")
+	require.Contains(t, cssBody, "@keyframes activity-entry-pulse-regular")
+	require.Contains(t, cssBody, "@keyframes activity-entry-pulse-announcement")
+	require.Contains(t, cssBody, "@keyframes activity-module-header-flash-regular")
+	require.Contains(t, cssBody, "@keyframes activity-module-header-flash-announcement")
+}
+
 func TestGameboardCaptureModalSupportsChallengeURL(t *testing.T) {
 	modal, err := os.ReadFile(filepath.Join("..", "templates", "static", "inc", "modals", "country-capture.html"))
 	require.NoError(t, err)

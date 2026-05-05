@@ -4985,13 +4985,15 @@ func (h *HandlersMap) AdminActivityTemplateHandler(w http.ResponseWriter, r *htt
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	currentUsername := strings.TrimSpace(h.Sessions.GetString(r.Context(), string(ContextKeyUser)))
 	templateData := AdminActivityTemplateData{
-		Title:         "MapCTF Admin: Activity",
-		UUID:          uuid,
-		Authenticated: authenticated,
-		Admin:         h.IsAdmin(r.Context()),
-		Status:        r.URL.Query().Get("status"),
-		Message:       r.URL.Query().Get("msg"),
+		Title:           "MapCTF Admin: Activity",
+		UUID:            uuid,
+		Authenticated:   authenticated,
+		Admin:           h.IsAdmin(r.Context()),
+		CurrentUsername: template.HTMLEscapeString(currentUsername),
+		Status:          r.URL.Query().Get("status"),
+		Message:         r.URL.Query().Get("msg"),
 	}
 	activity, err := h.Logs.AllActivity(uuid)
 	if err != nil {

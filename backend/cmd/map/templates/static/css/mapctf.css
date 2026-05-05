@@ -4629,6 +4629,25 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
   position: relative;
   padding: 4px 0 4px 18px;
 }
+.mctf-gameboard aside[data-module][data-module=activity] .activity-stream li.activity-entry--announcement {
+  margin: 6px 0;
+  padding: 7px 10px 7px 22px;
+  border: 1px solid rgba(234, 212, 77, 0.34);
+  border-left: 3px solid #ead44d;
+  background: rgba(234, 212, 77, 0.08);
+}
+.mctf-gameboard aside[data-module][data-module=activity] .activity-stream li.activity-entry--new-regular {
+  animation: activity-entry-pulse-regular 1.35s ease-out 1;
+}
+.mctf-gameboard aside[data-module][data-module=activity] .activity-stream li.activity-entry--new-announcement {
+  animation: activity-entry-pulse-announcement 1.35s ease-out 1;
+}
+.mctf-gameboard aside[data-module][data-module=activity].activity-module-flash--regular .module-header {
+  animation: activity-module-header-flash-regular 1.35s ease-out 1;
+}
+.mctf-gameboard aside[data-module][data-module=activity].activity-module-flash--announcement .module-header {
+  animation: activity-module-header-flash-announcement 1.35s ease-out 1;
+}
 .mctf-gameboard aside[data-module][data-module=activity] .activity-stream li:before {
   content: "";
   position: absolute;
@@ -4646,6 +4665,10 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
 .mctf-gameboard aside[data-module][data-module=activity] .activity-stream li.your-team:before {
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20id%3D%22Layer_1%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%22-300%20391.6%2010%2010.4%22%3E%3Cstyle%3E.st0%7Bfill%3A%23EAD44D%3B%7D%3C%2Fstyle%3E%3Cpath%20class%3D%22st0%22%20d%3D%22M-299.7%20391.9l9.1%204.8v.1l-9.1%204.8v-9.7z%22%2F%3E%3C%2Fsvg%3E");
 }
+.mctf-gameboard aside[data-module][data-module=activity] .activity-stream li.activity-entry--announcement:before {
+  top: 10px;
+  left: 7px;
+}
 .mctf-gameboard aside[data-module][data-module=activity] .activity-stream li .activity-time {
   display: inline-block;
   min-width: 44px;
@@ -4658,6 +4681,77 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
 .mctf-gameboard aside[data-module][data-module=activity] .activity-stream li span {
   font-family: "Source Code Pro", Courier, monospace;
   font-weight: 700;
+}
+.mctf-gameboard aside[data-module][data-module=activity] .activity-stream li .activity-announcement-label {
+  display: inline-block;
+  margin-right: 6px;
+  color: #ead44d;
+  font-size: 1em;
+  letter-spacing: 0;
+  line-height: 1;
+  vertical-align: -0.08em;
+}
+@keyframes activity-entry-pulse-regular {
+  0% {
+    background-color: rgba(33, 180, 186, 0.2);
+    box-shadow: inset 3px 0 0 rgba(33, 180, 186, 0.9), 0 0 0 rgba(33, 180, 186, 0);
+  }
+  35% {
+    background-color: rgba(33, 180, 186, 0.14);
+    box-shadow: inset 3px 0 0 rgba(92, 240, 246, 0.85), 0 0 18px rgba(33, 180, 186, 0.28);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 3px 0 0 rgba(33, 180, 186, 0), 0 0 0 rgba(33, 180, 186, 0);
+  }
+}
+@keyframes activity-entry-pulse-announcement {
+  0% {
+    background-color: rgba(234, 212, 77, 0.22);
+    box-shadow: inset 3px 0 0 rgba(234, 212, 77, 0.95), 0 0 0 rgba(234, 212, 77, 0);
+  }
+  35% {
+    background-color: rgba(234, 212, 77, 0.16);
+    box-shadow: inset 3px 0 0 rgba(255, 244, 168, 0.85), 0 0 18px rgba(234, 212, 77, 0.3);
+  }
+  100% {
+    background-color: rgba(234, 212, 77, 0.08);
+    box-shadow: inset 3px 0 0 rgba(234, 212, 77, 0), 0 0 0 rgba(234, 212, 77, 0);
+  }
+}
+@keyframes activity-module-header-flash-regular {
+  0% {
+    background-color: rgba(33, 180, 186, 0.18);
+    border-color: #21b4ba;
+    box-shadow: 0 0 0 rgba(33, 180, 186, 0);
+  }
+  35% {
+    background-color: rgba(33, 180, 186, 0.12);
+    border-color: #5cf0f6;
+    box-shadow: 0 0 18px rgba(33, 180, 186, 0.35);
+  }
+  100% {
+    background-color: transparent;
+    border-color: #21b4ba;
+    box-shadow: 0 0 0 rgba(33, 180, 186, 0);
+  }
+}
+@keyframes activity-module-header-flash-announcement {
+  0% {
+    background-color: rgba(234, 212, 77, 0.2);
+    border-color: #ead44d;
+    box-shadow: 0 0 0 rgba(234, 212, 77, 0);
+  }
+  35% {
+    background-color: rgba(234, 212, 77, 0.13);
+    border-color: #fff4a8;
+    box-shadow: 0 0 18px rgba(234, 212, 77, 0.38);
+  }
+  100% {
+    background-color: transparent;
+    border-color: #21b4ba;
+    box-shadow: 0 0 0 rgba(234, 212, 77, 0);
+  }
 }
 .mctf-gameboard aside[data-module][data-module=under-attack] .activity-stream li {
   margin: 8px 0;

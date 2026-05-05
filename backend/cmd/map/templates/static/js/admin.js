@@ -2011,6 +2011,7 @@ function initAdminAddActivityModal() {
     }
 
     MAP_CTF.modal.loadPopup("add-activity", function () {
+      var defaultSubject = addActivityBtn.getAttribute("data-default-subject") || "";
       var modal = document.getElementById("mctf-modal");
       if (!modal) {
         return;
@@ -2023,6 +2024,9 @@ function initAdminAddActivityModal() {
 
       var subjectInput = form.querySelector('input[name="subject"]');
       if (subjectInput) {
+        if (!subjectInput.value && defaultSubject) {
+          subjectInput.value = defaultSubject;
+        }
         subjectInput.focus();
       }
 
