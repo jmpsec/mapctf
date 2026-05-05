@@ -331,3 +331,12 @@ func TestGameboardTemplateHandlerRendersAllCountriesAndMarksChallengeBackedOnesA
 	require.Contains(t, body, `id="FR" title="France" class="land"`)
 	require.Contains(t, body, `id="DE" title="Germany" class="land active"`)
 }
+
+func TestGameboardInactiveCountryStylesAreBlack(t *testing.T) {
+	css, err := os.ReadFile(filepath.Join("..", "templates", "static", "css", "mapctf.css"))
+	require.NoError(t, err)
+
+	require.Contains(t, string(css), ".mctf-map svg .countries g.inactive .land,\n.mctf-map svg .countries g.country-disabled .land {\n  fill: #000;\n}")
+	require.Contains(t, string(css), ".mctf-map svg .countries g.inactive,\n.mctf-map svg .countries g.country-disabled {\n  opacity: 1;\n}")
+	require.NotContains(t, string(css), ".mctf-map svg .countries g.country-disabled {\n  opacity: 0.2;\n}")
+}

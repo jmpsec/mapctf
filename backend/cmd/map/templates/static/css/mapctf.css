@@ -5095,6 +5095,10 @@ body[data-section=gameboard] .mctf-page {
   stroke: #36687c;
   stroke-width: 1;
 }
+.mctf-map svg .countries g.inactive .land,
+.mctf-map svg .countries g.country-disabled .land {
+  fill: #000;
+}
 .mctf-map svg .countries g.country-just-activated .land {
   animation: country-activation-pulse 1.2s ease-out 1;
 }
@@ -5122,11 +5126,9 @@ body[data-section=gameboard] .mctf-page {
 .mctf-map svg .countries g[data-captured] .map-indicator {
   opacity: 1;
 }
-.mctf-map svg .countries g.inactive {
-  opacity: 0.2;
-}
+.mctf-map svg .countries g.inactive,
 .mctf-map svg .countries g.country-disabled {
-  opacity: 0.2;
+  opacity: 1;
 }
 .mctf-map svg .countries g.highlighted .land {
   stroke-width: 2;
