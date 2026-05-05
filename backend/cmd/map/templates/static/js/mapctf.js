@@ -1796,35 +1796,31 @@
     function loadModules() {
       var $modules = $("aside[data-module]", $gameboard),
         df = $.Deferred(),
-        deferredArray = [];
+        missingModules = [];
 
       $modules.each(function () {
-        var $self = $(this),
-          module = $self.data("module"),
-          modulePath = "/static/inc/gameboard/modules/" + module + ".html";
+        var $self = $(this);
 
-        var get = $.get(modulePath, function (data, status, jqxhr) {
-          $self.html(data);
-        }).fail(function () {
-          console.error("There was a problem retrieving the module.");
-          console.log(modulePath);
-          console.error("/error");
-        });
-
-        deferredArray.push(get);
-      });
-
-      $.when.apply($, deferredArray).done(function () {
-        console.log("modules loaded");
-
-        if (VIEW_ONLY) {
-          autoScrollModules();
+        if ($.trim($self.html()) === "") {
+          missingModules.push($self.data("module"));
         }
-
-        df.resolve();
       });
 
-      return df;
+      if (missingModules.length > 0) {
+        console.error("Gameboard module markup is missing.");
+        console.log(missingModules.join(", "));
+        console.error("/error");
+        return df.reject().promise();
+      }
+
+      console.log("modules loaded");
+
+      if (VIEW_ONLY) {
+        autoScrollModules();
+      }
+
+      df.resolve();
+      return df.promise();
     }
 
     /**
@@ -1896,29 +1892,12 @@
       var df = $.Deferred();
       var uuid = getCurrentUUID();
       var serverPath = uuid ? "/" + encodeURIComponent(uuid) + "/json/teams" : "";
-      var fallbackPath = "/static/data/teams.json";
-
-      function loadFallbackData() {
-        return $.get(
-          fallbackPath,
-          function (data) {
-            TEAM_DATA = mapServerTeamsToTeamData(data);
-            df.resolve(TEAM_DATA);
-          },
-          "json",
-        ).fail(function (jqhxr, status, error) {
-          console.error("There was a problem retrieving the team data.");
-          console.log(fallbackPath);
-          console.log(status);
-          console.log(error);
-          console.error("/error");
-          df.reject(jqhxr, status, error);
-        });
-      }
 
       if (!serverPath) {
-        loadFallbackData();
-        return df.promise();
+        console.error("There was a problem retrieving the team data.");
+        console.log("missing game UUID");
+        console.error("/error");
+        return df.reject().promise();
       }
 
       $.get(
@@ -1928,8 +1907,13 @@
           df.resolve(TEAM_DATA);
         },
         "json",
-      ).fail(function () {
-        loadFallbackData();
+      ).fail(function (jqxhr, status, error) {
+        console.error("There was a problem retrieving the team data.");
+        console.log(serverPath);
+        console.log(status);
+        console.log(error);
+        console.error("/error");
+        df.reject(jqxhr, status, error);
       });
 
       return df.promise();
@@ -2970,6 +2954,10 @@
       }
 
       if (modalName === "action-logout" && $body && $body.attr("data-section") === "gameboard") {
+        return "Gameboard";
+      }
+
+      if (modalName === "team" && $body && $body.attr("data-section") === "gameboard") {
         return "Gameboard";
       }
 

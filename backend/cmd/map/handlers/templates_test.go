@@ -260,6 +260,75 @@ func TestGameboardCaptureModalUsesClassicStackedLayout(t *testing.T) {
 	require.NotContains(t, jsBody, `has-assist-panel`)
 }
 
+func TestGameboardUsesInlineModuleMarkup(t *testing.T) {
+	gameboard, err := os.ReadFile(filepath.Join("..", "templates", "gameboard.html"))
+	require.NoError(t, err)
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+
+	gameboardBody := string(gameboard)
+	require.Contains(t, gameboardBody, `<aside data-name="World Chat" class="module--inner" data-module="world-chat">`)
+	require.Contains(t, gameboardBody, `data-chat-list`)
+	require.NotContains(t, string(js), `/static/inc/gameboard/modules/`)
+}
+
+func TestGameboardTeamDataDoesNotUseStaticFallback(t *testing.T) {
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+
+	jsBody := string(js)
+	require.Contains(t, jsBody, `"/json/teams"`)
+	require.NotContains(t, jsBody, "/static/data/teams.json")
+	require.NotContains(t, jsBody, "loadFallbackData")
+}
+
+func TestGameboardTeamModalUsesGameboardKicker(t *testing.T) {
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+
+	jsBody := string(js)
+	require.Contains(t, jsBody, `modalName === "team" && $body && $body.attr("data-section") === "gameboard"`)
+	require.Contains(t, jsBody, `return "Gameboard";`)
+}
+
+func TestStaticIncHTMLOnlyKeepsRuntimeModals(t *testing.T) {
+	legacyDirs := []string{
+		filepath.Join("..", "templates", "static", "inc", "admin"),
+		filepath.Join("..", "templates", "static", "inc", "components"),
+		filepath.Join("..", "templates", "static", "inc", "gameboard"),
+		filepath.Join("..", "templates", "static", "inc", "pages"),
+		filepath.Join("..", "templates", "static", "inc", "viewer-mode"),
+	}
+
+	for _, dir := range legacyDirs {
+		err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+			require.NoError(t, err)
+			if d.IsDir() || filepath.Ext(path) != ".html" {
+				return nil
+			}
+			t.Fatalf("unexpected legacy static include HTML file: %s", path)
+			return nil
+		})
+		if os.IsNotExist(err) {
+			continue
+		}
+		require.NoError(t, err)
+	}
+
+	removedModals := []string{
+		"action-error.html",
+		"action-save.html",
+		"command-line.html",
+		"forgot-login-password.html",
+		"login.html",
+		"scoreboard-final.html",
+	}
+	for _, name := range removedModals {
+		_, err := os.Stat(filepath.Join("..", "templates", "static", "inc", "modals", name))
+		require.True(t, os.IsNotExist(err), "expected unused modal partial %s to be removed", name)
+	}
+}
+
 func TestGameboardTemplateHandlerFallsBackToDefaultChatMaxLen(t *testing.T) {
 	handler, sessions, _, _, _ := newGameboardTemplateHandler(t)
 
