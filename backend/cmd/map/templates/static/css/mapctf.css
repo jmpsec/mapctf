@@ -5460,6 +5460,24 @@ body[data-section=gameboard] .mctf-page {
   display: grid;
   gap: 0;
 }
+.country-capture-form .capture-box {
+  border: 1px solid rgba(33, 180, 186, 0.35);
+  border-radius: 4px;
+  background: rgba(8, 24, 30, 0.74);
+  padding: 14px 16px;
+}
+.country-capture-form .capture-challenge-box {
+  margin-bottom: 14px;
+}
+.country-capture-form .capture-challenge-box .capture-text {
+  color: rgba(231, 249, 255, 0.86);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.country-capture-form .capture-challenge-box + .country-capture-feedback {
+  margin-top: 0;
+}
 .capture-hint-card {
   border: 1px solid rgba(92, 240, 246, 0.18);
   background: linear-gradient(180deg, rgba(8, 24, 30, 0.96) 0%, rgba(12, 32, 39, 0.9) 100%);
@@ -5535,6 +5553,11 @@ body[data-section=gameboard] .mctf-page {
 .help-enabled .country-capture-form .actions--right .mctf-cta, .help-enabled .country-capture-form .actions--right .cta-toggle input[type=checkbox] + label, .cta-toggle .help-enabled .country-capture-form .actions--right input[type=checkbox] + label {
   display: none;
 }
+.country-capture-form textarea {
+  min-height: 34px;
+  max-height: 34px;
+  resize: none;
+}
 .capture-resource {
   margin: 12px 0 0;
 }
@@ -5569,6 +5592,9 @@ body[data-section=gameboard] .mctf-page {
 }
 .country-capture-feedback.is-error {
   color: #ead44d;
+}
+.capture-completed-readonly .country-capture-feedback {
+  text-align: center;
 }
 .country-capture-form.capture-locked textarea {
   opacity: 0.5;

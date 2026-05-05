@@ -892,16 +892,37 @@
     function updateCaptureFormAvailability($container, country) {
       var data = COUNTRY_DATA && COUNTRY_DATA[country] ? COUNTRY_DATA[country] : null;
       var alreadySolved = !!(data && data.solved_by_current);
-      var $form = $(".country-capture-form", $container);
-      var $textarea = $("textarea", $form);
-      var $submitButton = $('button[type="submit"]', $form);
 
-      $form.toggleClass("capture-locked", alreadySolved);
-      $textarea.prop("disabled", alreadySolved);
-      $submitButton.prop("disabled", alreadySolved).toggleClass("disabled", alreadySolved);
+      applyCompletedCaptureModalState($container, alreadySolved);
 
       if (alreadySolved) {
         updateCaptureModalFeedback($container, "Your team already captured this country", true);
+      }
+    }
+
+    function applyCompletedCaptureModalState($container, isReadOnly) {
+      var $form = $(".country-capture-form", $container);
+      var $flagInput = $("textarea", $form);
+      var $submitButton = $('button[type="submit"]', $form);
+      var $hintTrigger = $(".js-trigger-hint", $container);
+      var $helpTrigger = $(".js-trigger-help", $container);
+      var $hintHelpSection = $(".capture-hints-and-help", $container);
+      var $hintPanel = $(".capture-hint", $container);
+      var $helpPanel = $(".capture-help", $container);
+
+      $container.toggleClass("capture-completed-readonly", isReadOnly);
+      $form.toggleClass("capture-locked", isReadOnly);
+      $flagInput.closest("fieldset").toggle(!isReadOnly);
+      $flagInput.prop("disabled", isReadOnly);
+      $submitButton.toggle(!isReadOnly).prop("disabled", isReadOnly).toggleClass("disabled", isReadOnly);
+
+      if (isReadOnly) {
+        $hintTrigger.hide().removeClass("active");
+        $helpTrigger.hide().removeClass("active");
+        $hintHelpSection.hide();
+        $hintPanel.hide();
+        $helpPanel.hide();
+        $container.removeClass("hint-enabled help-enabled has-hint-panel");
       }
     }
 
@@ -1304,10 +1325,6 @@
         return;
       }
 
-      if (data.solved_by_current) {
-        return;
-      }
-
       if ($countryHover.has("g").length === 0) {
         var $hoveredCountry = $('.countries .land[title="' + country + '"]', $mapSvg)
           .closest("g")
@@ -1432,7 +1449,8 @@
           challengeURL = data ? data.url : "",
           points = data ? data.points : "",
           category = data ? data.category : "",
-          completed = data ? data.completed : "";
+          completed = data ? data.completed : "",
+          isReadOnly = !!(data && data.solved_by_current);
 
         ensureHintCardStructure($container);
 
@@ -1452,7 +1470,6 @@
         $(".country-owner", $container).html(capturedBy);
         $(".completed-list", $container).empty();
         updateCaptureModalFeedback($container, "", false);
-        updateCaptureFormAvailability($container, country);
 
         var hintsEnabled = isScoringHintsEnabled();
         var helpEnabled = isScoringHelpEnabled();
@@ -1473,20 +1490,24 @@
 
         $container.removeClass("hint-enabled help-enabled");
         $container.toggleClass("has-hint-panel", hintsEnabled);
-        $hintTrigger.toggle(hintsEnabled);
+        $hintTrigger.toggle(hintsEnabled && !isReadOnly);
         $helpTrigger.toggle(helpEnabled);
         $hintPanel.toggle(hintsEnabled);
         $helpPanel.toggle(helpEnabled);
         $hintHelpSection.toggle(hintsEnabled || helpEnabled);
 
-        getUnlockedCountryHint(country)
-          .done(function (response) {
-            if (!response || !response.hint) {
-              return;
-            }
-            revealUnlockedHint($container, response.hint);
-          })
-          .fail(function () {});
+        updateCaptureFormAvailability($container, country);
+
+        if (!isReadOnly) {
+          getUnlockedCountryHint(country)
+            .done(function (response) {
+              if (!response || !response.hint) {
+                return;
+              }
+              revealUnlockedHint($container, response.hint);
+            })
+            .fail(function () {});
+        }
 
         if (completed instanceof Array) {
           $.each(completed, function () {
@@ -1609,7 +1630,11 @@
               updateCaptureModalFeedback($container, response.message || response.error || "Unable to submit flag", false);
             })
             .always(function () {
-              $submitButton.prop("disabled", false).removeClass("disabled");
+              if (COUNTRY_DATA && COUNTRY_DATA[country] && COUNTRY_DATA[country].solved_by_current) {
+                updateCaptureFormAvailability($container, country);
+              } else {
+                $submitButton.prop("disabled", false).removeClass("disabled");
+              }
             });
         });
 
@@ -2653,9 +2678,9 @@
         //
         // try to capture the country if:
         //   - the country is not using help
-        //   - the country is NOT captured
+        //   - the country is active
         //
-        if (!$tr.hasClass("help-enabled") && !$tr.hasClass("country-disabled") && !$tr.hasClass("captured--you")) {
+        if (!$tr.hasClass("help-enabled") && !$tr.hasClass("country-disabled")) {
           captureCountry(country);
         }
       });

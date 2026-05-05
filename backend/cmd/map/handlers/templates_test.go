@@ -201,6 +201,65 @@ func TestGameboardCaptureModalSupportsChallengeURL(t *testing.T) {
 	require.Contains(t, string(css), ".capture-resource")
 }
 
+func TestGameboardCompletedChallengeModalIsReadOnly(t *testing.T) {
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+
+	jsBody := string(js)
+	require.NotContains(t, jsBody, "if (data.solved_by_current) {\n        return;\n      }")
+	require.Contains(t, jsBody, "function applyCompletedCaptureModalState")
+	require.Contains(t, jsBody, "capture-completed-readonly")
+	require.Contains(t, jsBody, `$flagInput.closest("fieldset").toggle(!isReadOnly)`)
+	require.Contains(t, jsBody, "$submitButton.toggle(!isReadOnly)")
+	require.Contains(t, jsBody, "$hintTrigger.toggle(hintsEnabled && !isReadOnly)")
+	require.NotContains(t, jsBody, `&& !$tr.hasClass("captured--you")`)
+}
+
+func TestGameboardCaptureFlagInputIsCompact(t *testing.T) {
+	modal, err := os.ReadFile(filepath.Join("..", "templates", "static", "inc", "modals", "country-capture.html"))
+	require.NoError(t, err)
+	css, err := os.ReadFile(filepath.Join("..", "templates", "static", "css", "mapctf.css"))
+	require.NoError(t, err)
+
+	require.Contains(t, string(modal), `<textarea placeholder="Enter your flag" rows="1"></textarea>`)
+	require.Contains(t, string(css), ".country-capture-form textarea {\n  min-height: 34px;\n  max-height: 34px;\n  resize: none;\n}")
+}
+
+func TestGameboardCaptureModalUsesClassicStackedLayout(t *testing.T) {
+	modal, err := os.ReadFile(filepath.Join("..", "templates", "static", "inc", "modals", "country-capture.html"))
+	require.NoError(t, err)
+	css, err := os.ReadFile(filepath.Join("..", "templates", "static", "css", "mapctf.css"))
+	require.NoError(t, err)
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+
+	modalBody := string(modal)
+	require.Contains(t, modalBody, `<form class="mctf-form country-capture-form">`)
+	require.Contains(t, modalBody, `<div class="capture-box capture-challenge-box">`)
+	require.Contains(t, modalBody, `<div class="capture-hints-and-help">`)
+	require.Contains(t, modalBody, `<div class="form-el--multiple-actions mctf-column-container">`)
+	require.Contains(t, modalBody, `<div class="country-capture-feedback" aria-live="polite"></div>`)
+	require.NotContains(t, modalBody, `capture-modal-body`)
+	require.NotContains(t, modalBody, `capture-panel`)
+	require.NotContains(t, modalBody, `capture-flag-box`)
+	require.NotContains(t, modalBody, `capture-assist-panel`)
+
+	cssBody := string(css)
+	require.Contains(t, cssBody, ".country-capture-form .capture-box {")
+	require.Contains(t, cssBody, ".country-capture-form .capture-challenge-box {")
+	require.Contains(t, cssBody, ".capture-completed-readonly .country-capture-feedback {")
+	require.Contains(t, cssBody, ".capture-hints-and-help > div {\n  display: none;\n  padding: 0 40px 40px 40px;\n}")
+	require.Contains(t, cssBody, ".capture-hints-and-help {\n  display: grid;\n  gap: 0;\n}")
+	require.NotContains(t, cssBody, ".capture-modal-body")
+	require.NotContains(t, cssBody, ".capture-panel")
+	require.NotContains(t, cssBody, ".capture-submit-row")
+	require.NotContains(t, cssBody, ".capture-flag-box")
+	require.NotContains(t, cssBody, ".capture-assist-panel")
+
+	jsBody := string(js)
+	require.NotContains(t, jsBody, `has-assist-panel`)
+}
+
 func TestGameboardTemplateHandlerFallsBackToDefaultChatMaxLen(t *testing.T) {
 	handler, sessions, _, _, _ := newGameboardTemplateHandler(t)
 
