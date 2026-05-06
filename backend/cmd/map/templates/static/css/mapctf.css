@@ -2236,12 +2236,19 @@ body {
 .mctf-viewport.admin-viewport {
   flex-direction: row;
 }
-.mctf-viewport .admin-nav-bar {
+.mctf-viewport.admin-viewport > #mctf-admin-nav {
   -webkit-box-flex: 0 0 300px;
   -moz-box-flex: 0 0 300px;
   -webkit-flex: 0 0 300px;
   -ms-flex: 0 0 300px;
   flex: 0 0 300px;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+  min-height: 100vh;
+}
+.mctf-viewport .admin-nav-bar {
+  width: 100%;
   min-height: 100vh;
 }
 .mctf-viewport .mctf-page {

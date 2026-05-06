@@ -1368,6 +1368,22 @@ func TestAdminChallengesEditorGroupsTaxonomyAndScoringRows(t *testing.T) {
 	require.Contains(t, css, `grid-template-columns: repeat(5, minmax(0, 1fr));`)
 }
 
+func TestAdminNavWrapperHasFixedSidebarWidth(t *testing.T) {
+	css := string(mustReadFile(t, filepath.Join("..", "templates", "static", "css", "mapctf.css")))
+
+	require.Contains(t, css, `.mctf-viewport.admin-viewport > #mctf-admin-nav {
+  -webkit-box-flex: 0 0 300px;
+  -moz-box-flex: 0 0 300px;
+  -webkit-flex: 0 0 300px;
+  -ms-flex: 0 0 300px;
+  flex: 0 0 300px;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+  min-height: 100vh;
+}`)
+}
+
 func TestAdminChallengesBulkStateChangeHandlersLogActivity(t *testing.T) {
 	handler, sessions, _, challengesManager, logManager := newAdminChallengeActivityHandler(t)
 
