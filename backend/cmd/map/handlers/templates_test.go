@@ -272,6 +272,18 @@ func TestGameboardUsesInlineModuleMarkup(t *testing.T) {
 	require.NotContains(t, string(js), `/static/inc/gameboard/modules/`)
 }
 
+func TestGameboardLoadsSpriteFromSharedStaticAsset(t *testing.T) {
+	gameboard, err := os.ReadFile(filepath.Join("..", "templates", "gameboard.html"))
+	require.NoError(t, err)
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+
+	gameboardBody := string(gameboard)
+	require.Contains(t, gameboardBody, `<div class="mctf-sprite" id="mctf-svg-sprite"></div>`)
+	require.NotContains(t, gameboardBody, `<symbol id="icon--`)
+	require.Contains(t, string(js), `MAP_CTF.loadComponent("#mctf-svg-sprite", "/static/svg/icons/icons.svg");`)
+}
+
 func TestGameboardTeamDataDoesNotUseStaticFallback(t *testing.T) {
 	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
 	require.NoError(t, err)
