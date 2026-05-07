@@ -18,7 +18,7 @@ OUTPUT = bin
 STATIC_ARGS = -ldflags "-linkmode external -extldflags -static"
 BUILD_ARGS = -ldflags "-s -w -X main.buildCommit=$(shell git rev-parse HEAD) -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-.PHONY: build static clean api map run_api run_map
+.PHONY: build static clean api map run_api run_map icons-sprite
 
 # Build code according to caller OS and architecture
 build:
@@ -62,6 +62,9 @@ run_api:
 # Run map server locally
 run_map:
 	go run $(MAP_CODE)
+
+icons-sprite:
+	go run ./cmd/map/tools/generate-icons-sprite
 
 # Remove all unused dependencies
 tidy:

@@ -8,7 +8,7 @@ BACKEND_DIR = backend
 API_NAME = mapctf-api
 MAP_NAME = mapctf-map
 
-.PHONY: build static clean api run_api map run_map
+.PHONY: build static clean api run_api map run_map icons-sprite
 
 # Build code according to caller OS and architecture
 build:
@@ -33,6 +33,9 @@ clean-api:
 # Run map server locally
 run_map:
 	$(MAKE) -C $(BACKEND_DIR) run
+
+icons-sprite:
+	$(MAKE) -C $(BACKEND_DIR) icons-sprite
 
 # Clean map
 clean-map:
