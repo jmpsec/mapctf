@@ -135,6 +135,22 @@ func newJSONWorldDominationHandler(t *testing.T) (*HandlersMap, *scs.SessionMana
 	return handler, sessionManager, teamManager, userManager, challengeManager
 }
 
+func newJSONGameClockHandler(t *testing.T) (*HandlersMap, *settings.SettingsManager) {
+	t.Helper()
+
+	db := newJSONTestDB(t)
+
+	settingsManager, err := settings.CreateSettingsManager(db, "test-service")
+	require.NoError(t, err)
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID}}),
+		WithSettings(settingsManager),
+	)
+
+	return handler, settingsManager
+}
+
 func newRequestWithUUID(method, target, uuid string) *http.Request {
 	req := httptest.NewRequest(method, target, nil)
 	routeCtx := chi.NewRouteContext()
@@ -197,6 +213,37 @@ func TestJSONActivityHandlerExcludesHiddenEntries(t *testing.T) {
 	require.Len(t, resp, 1)
 	require.Equal(t, "Shown", resp[0].Message)
 	require.True(t, resp[0].Visible)
+}
+
+func TestJSONGameClockHandlerReturnsServerClockSettings(t *testing.T) {
+	handler, settingsManager := newJSONGameClockHandler(t)
+	startTime := time.Date(2030, 1, 2, 9, 0, 0, 0, time.FixedZone("UTC+2", 2*60*60))
+	endTime := startTime.Add(3*time.Hour + 30*time.Minute)
+
+	require.NoError(t, settingsManager.SetGameStarted(true, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetGamePaused(true, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetGameStartTime(startTime, jsonSettingsAuthor, jsonTestUUID))
+	require.NoError(t, settingsManager.SetGameEndTime(endTime, jsonSettingsAuthor, jsonTestUUID))
+
+	req := newRequestWithUUID(http.MethodGet, "/json/game-clock", jsonTestUUID)
+	rr := httptest.NewRecorder()
+
+	handler.JSONGameClockHandler(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	require.Equal(t, JSONApplicationUTF8, rr.Header().Get(ContentType))
+
+	var resp JSONGameClockResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.True(t, resp.GameStarted)
+	require.True(t, resp.GamePaused)
+	require.NotZero(t, resp.ServerTime)
+	require.NotNil(t, resp.GameStartTime)
+	require.NotNil(t, resp.GameEndTime)
+	require.Equal(t, startTime.Format(time.RFC3339), resp.GameStartTime.Format(time.RFC3339))
+	require.Equal(t, endTime.Format(time.RFC3339), resp.GameEndTime.Format(time.RFC3339))
+	require.Greater(t, resp.DurationMS, int64(0))
+	require.GreaterOrEqual(t, resp.RemainingMS, int64(0))
 }
 
 func TestJSONTeamsHandlerRequiresUUID(t *testing.T) {

@@ -101,6 +101,8 @@ const (
 	activityPath = "/activity"
 	// Chat path
 	chatPath = "/chat"
+	// Game clock path
+	gameClockPath = "/game-clock"
 	// Score path
 	scorePath = "/score"
 	// Hint path
@@ -341,6 +343,7 @@ func mapCTFService() {
 				r.Get(countriesPath, handlersMap.JSONCountriesHandler)
 				r.Get(teamsPath, handlersMap.JSONTeamsHandler)
 				r.Get(chatPath, handlersMap.JSONChatHandler)
+				r.Get(gameClockPath, handlersMap.JSONGameClockHandler)
 				r.Get(dominationPath, handlersMap.JSONWorldDominationHandler)
 			})
 			// Protected admin routes

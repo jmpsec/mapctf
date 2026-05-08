@@ -70,6 +70,7 @@ type GameboardTemplateData struct {
 	Admin                    bool
 	CurrentUsername          string
 	CurrentTeam              string
+	GamePaused               bool
 	GameStarted              bool
 	GameStartSet             bool
 	GameStartTime            time.Time

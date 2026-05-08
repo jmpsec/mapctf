@@ -380,6 +380,12 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Warn().Err(err).Msg("error loading game_started")
 	}
+	gamePaused, err := h.Settings.GetGamePaused(uuid)
+	if err == nil {
+		templateData.GamePaused = gamePaused
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Warn().Err(err).Msg("error loading game_paused")
+	}
 	gameStartTime, err := h.Settings.GetGameStartTime(uuid)
 	if err == nil {
 		templateData.GameStartTime = gameStartTime

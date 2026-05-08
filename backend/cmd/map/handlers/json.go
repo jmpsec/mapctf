@@ -54,6 +54,16 @@ type JSONWorldDominationResponse struct {
 	LoseRatePct         int    `json:"lose_rate_pct"`
 }
 
+type JSONGameClockResponse struct {
+	GameStarted   bool       `json:"game_started"`
+	GamePaused    bool       `json:"game_paused"`
+	ServerTime    time.Time  `json:"server_time"`
+	GameStartTime *time.Time `json:"game_start_time,omitempty"`
+	GameEndTime   *time.Time `json:"game_end_time,omitempty"`
+	RemainingMS   int64      `json:"remaining_ms"`
+	DurationMS    int64      `json:"duration_ms"`
+}
+
 func (h *HandlersMap) validatedJSONUUID(w http.ResponseWriter, r *http.Request) (string, bool) {
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" {
@@ -94,6 +104,74 @@ func (h *HandlersMap) JSONActivityHandler(w http.ResponseWriter, r *http.Request
 	}
 	// Send response
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, visibleActivityLogs)
+}
+
+// JSONGameClockHandler returns server-authoritative game clock state.
+func (h *HandlersMap) JSONGameClockHandler(w http.ResponseWriter, r *http.Request) {
+	if h.Config.DebugHTTP.Enabled {
+		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
+	}
+	uuid, ok := h.validatedJSONUUID(w, r)
+	if !ok {
+		return
+	}
+	if h.Settings == nil {
+		log.Err(errors.New("settings manager not initialized")).Msg("error retrieving game clock data")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving game clock data"})
+		return
+	}
+
+	now := time.Now()
+	response := JSONGameClockResponse{
+		ServerTime: now,
+	}
+
+	gameStarted, err := h.Settings.GetGameStarted(uuid)
+	if err == nil {
+		response.GameStarted = gameStarted
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Err(err).Msg("error retrieving game_started for game clock data")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving game clock data"})
+		return
+	}
+
+	gamePaused, err := h.Settings.GetGamePaused(uuid)
+	if err == nil {
+		response.GamePaused = gamePaused
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Err(err).Msg("error retrieving game_paused for game clock data")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving game clock data"})
+		return
+	}
+
+	gameStartTime, err := h.Settings.GetGameStartTime(uuid)
+	if err == nil && !gameStartTime.IsZero() {
+		response.GameStartTime = &gameStartTime
+	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Err(err).Msg("error retrieving game_start_time for game clock data")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving game clock data"})
+		return
+	}
+
+	gameEndTime, err := h.Settings.GetGameEndTime(uuid)
+	if err == nil && !gameEndTime.IsZero() {
+		response.GameEndTime = &gameEndTime
+		remaining := gameEndTime.Sub(now)
+		if remaining < 0 {
+			remaining = 0
+		}
+		response.RemainingMS = remaining.Milliseconds()
+	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Err(err).Msg("error retrieving game_end_time for game clock data")
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving game clock data"})
+		return
+	}
+
+	if response.GameStartTime != nil && response.GameEndTime != nil && response.GameEndTime.After(*response.GameStartTime) {
+		response.DurationMS = response.GameEndTime.Sub(*response.GameStartTime).Milliseconds()
+	}
+
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, response)
 }
 
 // JSONTeamsHandler to return all teams for a given UUID in JSON format

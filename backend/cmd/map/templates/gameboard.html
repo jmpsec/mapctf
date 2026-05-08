@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/static/css/mapctf.css?v=20260505k" />
   </head>
 
-  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-scoring-hints="{{ if .ScoringHints }}true{{ else }}false{{ end }}" data-scoring-help="{{ if .ScoringHelp }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ htmlAttr .CurrentUsername }}" data-current-team="{{ htmlAttr .CurrentTeam }}" data-game-started="{{ if .GameStarted }}true{{ else }}false{{ end }}" data-profile-url="/{{ .UUID }}/profile" data-profile-password-url="/{{ .UUID }}/profile/password"{{ if .GameStartSet }} data-game-start-time="{{ .GameStartTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}{{ if .GameEndSet }} data-game-end-time="{{ .GameEndTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}>
+  <body data-section="gameboard" data-show-team-members="{{ if .GameboardShowTeamMembers }}true{{ else }}false{{ end }}" data-scoring-hints="{{ if .ScoringHints }}true{{ else }}false{{ end }}" data-scoring-help="{{ if .ScoringHelp }}true{{ else }}false{{ end }}" data-chat-max-len="{{ .GameboardChatMaxLen }}" data-current-username="{{ htmlAttr .CurrentUsername }}" data-current-team="{{ htmlAttr .CurrentTeam }}" data-game-started="{{ if .GameStarted }}true{{ else }}false{{ end }}" data-game-paused="{{ if .GamePaused }}true{{ else }}false{{ end }}" data-profile-url="/{{ .UUID }}/profile" data-profile-password-url="/{{ .UUID }}/profile/password"{{ if .GameStartSet }} data-game-start-time="{{ .GameStartTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}{{ if .GameEndSet }} data-game-end-time="{{ .GameEndTime.Format "2006-01-02T15:04:05Z07:00" }}"{{ end }}>
     <div class="mctf-sprite" id="mctf-svg-sprite"></div>
 
     <!--
@@ -317,15 +317,15 @@
             </header>
             <div class="module-content module-scrollable">
               <div class="game-clock mctf-numbers">
-                <span class="clock-days is-empty">--</span>
-                :
-                <span class="clock-hours is-empty">--</span>
-                :
-                <span class="clock-minutes is-empty">--</span>
-                :
-                <span class="clock-seconds is-empty">--</span>
-                :
-                <span class="clock-milliseconds three-digit is-empty">---</span>
+                <span class="clock-days clock-value is-empty">--</span>
+                <span class="clock-separator" aria-hidden="true">:</span>
+                <span class="clock-hours clock-value is-empty">--</span>
+                <span class="clock-separator" aria-hidden="true">:</span>
+                <span class="clock-minutes clock-value is-empty">--</span>
+                <span class="clock-separator" aria-hidden="true">:</span>
+                <span class="clock-seconds clock-value is-empty">--</span>
+                <span class="clock-separator" aria-hidden="true">:</span>
+                <span class="clock-milliseconds clock-value three-digit is-empty">---</span>
               </div>
 
               <div class="game-progress mctf-progress-bar">
@@ -344,6 +344,21 @@
                   <span class="indicator-cell"></span>
                   <span class="indicator-cell"></span>
                 </div>
+              </div>
+
+              <div class="game-clock-context mctf-numbers">
+                <span>
+                  <span class="clock-context-label">Started</span>
+                  <span data-game-clock-start>--- -- --:-- UTC--:--</span>
+                </span>
+                <span>
+                  <span class="clock-context-label">Remaining</span>
+                  <span data-game-clock-remaining>--</span>
+                </span>
+                <span>
+                  <span class="clock-context-label">Ends</span>
+                  <span data-game-clock-end>--- -- --:-- UTC--:--</span>
+                </span>
               </div>
             </div>
           </aside>
@@ -582,18 +597,29 @@
           return;
         }
 
+        var GAME_CLOCK_POLL_INTERVAL_MS = 15000;
+        var gameClockPollTimer = null;
+        var gameClockFetchInFlight = false;
         var gameStarted = body.getAttribute("data-game-started") === "true";
+        var gamePaused = body.getAttribute("data-game-paused") === "true";
         var gameStartTimeValue = body.getAttribute("data-game-start-time");
         var gameEndTimeValue = body.getAttribute("data-game-end-time");
-        if (!gameStarted || !gameEndTimeValue) {
-          return;
+        var serverTimeOffsetMs = 0;
+        var serverRemainingMs = null;
+        var serverClockReceivedAt = Date.now();
+
+        function parseClockDate(value) {
+          if (!value) {
+            return null;
+          }
+
+          var date = new Date(value);
+          return Number.isNaN(date.getTime()) ? null : date;
         }
 
-        var gameStartTime = gameStartTimeValue ? new Date(gameStartTimeValue) : null;
-        var gameEndTime = new Date(gameEndTimeValue);
-        if ((gameStartTime && Number.isNaN(gameStartTime.getTime())) || Number.isNaN(gameEndTime.getTime())) {
-          return;
-        }
+        var gameStartTime = parseClockDate(gameStartTimeValue);
+        var gameEndTime = parseClockDate(gameEndTimeValue);
+        var durationMs = gameStartTime && gameEndTime && gameEndTime.getTime() > gameStartTime.getTime() ? gameEndTime.getTime() - gameStartTime.getTime() : 0;
 
         function pad(value) {
           return String(value).padStart(2, "0");
@@ -603,10 +629,204 @@
           return String(value).padStart(3, "0");
         }
 
+        function formatClockDatestamp(date) {
+          if (!date || Number.isNaN(date.getTime())) {
+            return "--- -- --:-- UTC--:--";
+          }
+
+          var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          var datestamp = monthNames[date.getMonth()] + " " + pad(date.getDate());
+          var timestamp = pad(date.getHours()) + ":" + pad(date.getMinutes());
+
+          return datestamp + " " + timestamp + " " + formatClockTimezone(date);
+        }
+
+        function formatClockTimezone(date) {
+          if (!date || Number.isNaN(date.getTime())) {
+            return "UTC--:--";
+          }
+
+          var offsetMinutes = -date.getTimezoneOffset();
+          var sign = offsetMinutes >= 0 ? "+" : "-";
+          var absoluteOffset = Math.abs(offsetMinutes);
+          var hours = Math.floor(absoluteOffset / 60);
+          var minutes = absoluteOffset % 60;
+
+          return "UTC" + sign + pad(hours) + ":" + pad(minutes);
+        }
+
+        function formatRemainingPercent(remainingMs, durationMs) {
+          if (!durationMs || durationMs <= 0) {
+            return "";
+          }
+
+          var percentLeft = Math.round((remainingMs / durationMs) * 100);
+          percentLeft = Math.max(0, Math.min(100, percentLeft));
+          if (remainingMs > 0 && percentLeft === 0) {
+            percentLeft = 1;
+          }
+
+          return percentLeft + "% left";
+        }
+
+        function formatRemainingSummary(days, hours, minutes, seconds, remainingMs, durationMs) {
+          var remainingText;
+          var remainingPercent = formatRemainingPercent(remainingMs, durationMs);
+
+          if (days > 0) {
+            remainingText = days + "d " + pad(hours) + "h " + pad(minutes) + "m";
+          } else if (hours > 0) {
+            remainingText = hours + "h " + pad(minutes) + "m";
+          } else if (minutes > 0) {
+            remainingText = minutes + "m " + pad(seconds) + "s";
+          } else {
+            remainingText = seconds + "s";
+          }
+
+          return remainingPercent ? remainingText + " - " + remainingPercent : remainingText;
+        }
+
         var animationFrameId = null;
 
+        function getServerNow() {
+          return Date.now() + serverTimeOffsetMs;
+        }
+
+        function getGameClockURL() {
+          var pathParts = window.location.pathname.split("/").filter(function (part) {
+            return part.length > 0;
+          });
+          if (!pathParts.length) {
+            return "";
+          }
+
+          return "/" + encodeURIComponent(pathParts[0]) + "/json/game-clock";
+        }
+
+        function applyServerClockData(data) {
+          if (!data) {
+            return;
+          }
+
+          var wasPaused = gamePaused;
+          var serverTime = parseClockDate(data.server_time);
+          if (serverTime) {
+            serverTimeOffsetMs = serverTime.getTime() - Date.now();
+          }
+          gameStarted = !!data.game_started;
+          gamePaused = !!data.game_paused;
+          if (!gameStarted) {
+            serverRemainingMs = null;
+          } else if (typeof data.remaining_ms === "number" && (!gamePaused || !wasPaused || serverRemainingMs === null)) {
+            serverRemainingMs = Math.max(0, data.remaining_ms);
+            serverClockReceivedAt = Date.now();
+          }
+          gameStartTime = parseClockDate(data.game_start_time);
+          gameEndTime = parseClockDate(data.game_end_time);
+          if (typeof data.duration_ms === "number") {
+            durationMs = Math.max(0, data.duration_ms);
+          } else if (gameStartTime && gameEndTime && gameEndTime.getTime() > gameStartTime.getTime()) {
+            durationMs = gameEndTime.getTime() - gameStartTime.getTime();
+          }
+
+          render();
+        }
+
+        function loadGameClockData() {
+          var gameClockURL = getGameClockURL();
+          if (!gameClockURL || gameClockFetchInFlight) {
+            return;
+          }
+
+          gameClockFetchInFlight = true;
+          fetch(gameClockURL, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            credentials: "same-origin",
+          })
+            .then(function (response) {
+              if (!response.ok) {
+                throw new Error("failed to load game clock");
+              }
+              return response.json();
+            })
+            .then(applyServerClockData)
+            .catch(function () {})
+            .finally(function () {
+              gameClockFetchInFlight = false;
+            });
+        }
+
+        function renderStoppedGameClock() {
+          Array.prototype.slice.call(document.querySelectorAll(".status--timer")).forEach(function (timer) {
+            timer.textContent = "--:--:--:--";
+            timer.classList.remove("timer--expired");
+          });
+
+          Array.prototype.slice.call(document.querySelectorAll(".game-clock")).forEach(function (clock) {
+            var daysEl = clock.querySelector(".clock-days");
+            var hoursEl = clock.querySelector(".clock-hours");
+            var minutesEl = clock.querySelector(".clock-minutes");
+            var secondsEl = clock.querySelector(".clock-seconds");
+            var millisecondsEl = clock.querySelector(".clock-milliseconds");
+            var moduleContent = clock.closest(".module-content");
+            var indicatorCells = moduleContent
+              ? Array.prototype.slice.call(moduleContent.querySelectorAll(".game-progress-indicator .indicator-cell"))
+              : [];
+            var startContextEl = moduleContent ? moduleContent.querySelector("[data-game-clock-start]") : null;
+            var remainingContextEl = moduleContent ? moduleContent.querySelector("[data-game-clock-remaining]") : null;
+            var endContextEl = moduleContent ? moduleContent.querySelector("[data-game-clock-end]") : null;
+
+            if (daysEl) {
+              daysEl.textContent = "--";
+              daysEl.classList.add("is-empty");
+            }
+            if (hoursEl) {
+              hoursEl.textContent = "--";
+              hoursEl.classList.add("is-empty");
+            }
+            if (minutesEl) {
+              minutesEl.textContent = "--";
+              minutesEl.classList.add("is-empty");
+            }
+            if (secondsEl) {
+              secondsEl.textContent = "--";
+              secondsEl.classList.add("is-empty");
+            }
+            if (millisecondsEl) {
+              millisecondsEl.textContent = "---";
+              millisecondsEl.classList.add("is-empty");
+            }
+            indicatorCells.forEach(function (cell) {
+              cell.classList.remove("active", "current-spot");
+            });
+            if (startContextEl) {
+              startContextEl.textContent = "--";
+            }
+            if (remainingContextEl) {
+              remainingContextEl.textContent = "--";
+            }
+            if (endContextEl) {
+              endContextEl.textContent = "--";
+            }
+          });
+        }
+
         function render() {
-          var remainingMs = Math.max(0, gameEndTime.getTime() - Date.now());
+          if (!gameStarted || !gameEndTime) {
+            renderStoppedGameClock();
+            if (animationFrameId !== null) {
+              window.cancelAnimationFrame(animationFrameId);
+              animationFrameId = null;
+            }
+            return;
+          }
+
+          var serverNow = getServerNow();
+          var remainingMs =
+            serverRemainingMs === null
+              ? Math.max(0, gameEndTime.getTime() - serverNow)
+              : Math.max(0, serverRemainingMs - (Date.now() - serverClockReceivedAt));
           var totalSeconds = Math.floor(remainingMs / 1000);
           var days = Math.floor(totalSeconds / 86400);
           var hours = Math.floor((totalSeconds % 86400) / 3600);
@@ -634,6 +854,9 @@
             var indicatorCells = moduleContent
               ? Array.prototype.slice.call(moduleContent.querySelectorAll(".game-progress-indicator .indicator-cell"))
               : [];
+            var startContextEl = moduleContent ? moduleContent.querySelector("[data-game-clock-start]") : null;
+            var remainingContextEl = moduleContent ? moduleContent.querySelector("[data-game-clock-remaining]") : null;
+            var endContextEl = moduleContent ? moduleContent.querySelector("[data-game-clock-end]") : null;
 
             if (daysEl) {
               daysEl.classList.remove("is-empty");
@@ -655,8 +878,17 @@
               millisecondsEl.classList.remove("is-empty");
               millisecondsEl.textContent = padMilliseconds(milliseconds);
             }
+            if (startContextEl) {
+              startContextEl.textContent = formatClockDatestamp(gameStartTime);
+            }
+            if (remainingContextEl) {
+              remainingContextEl.textContent = formatRemainingSummary(days, hours, minutes, seconds, remainingMs, durationMs);
+            }
+            if (endContextEl) {
+              endContextEl.textContent = formatClockDatestamp(gameEndTime);
+            }
             if (indicatorCells.length && gameStartTime && gameEndTime.getTime() > gameStartTime.getTime()) {
-              var progress = (Date.now() - gameStartTime.getTime()) / (gameEndTime.getTime() - gameStartTime.getTime());
+              var progress = (serverNow - gameStartTime.getTime()) / (gameEndTime.getTime() - gameStartTime.getTime());
               var clampedProgress = Math.max(0, Math.min(1, progress));
               var activeCells = Math.floor(clampedProgress * indicatorCells.length);
               if (clampedProgress > 0 && activeCells === 0) {
@@ -674,6 +906,14 @@
             }
           });
 
+          if (gamePaused) {
+            if (animationFrameId !== null) {
+              window.cancelAnimationFrame(animationFrameId);
+              animationFrameId = null;
+            }
+            return;
+          }
+
           if (remainingMs <= 0) {
             if (animationFrameId !== null) {
               window.cancelAnimationFrame(animationFrameId);
@@ -690,7 +930,12 @@
             window.cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
           }
+          if (gameClockPollTimer !== null) {
+            window.clearInterval(gameClockPollTimer);
+          }
+          loadGameClockData();
           render();
+          gameClockPollTimer = window.setInterval(loadGameClockData, GAME_CLOCK_POLL_INTERVAL_MS);
         }
 
         if (window.jQuery) {

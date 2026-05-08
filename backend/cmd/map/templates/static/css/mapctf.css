@@ -4940,25 +4940,59 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
   }
 }
 .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: center;
+  -moz-box-pack: center;
+  -ms-flex-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-flex-wrap: wrap;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 6px;
   margin-bottom: 10px;
   border-bottom: 1px solid #21b4ba;
-  font-size: 2.5em;
+  font-size: 3em;
+  line-height: 1;
+  max-width: 100%;
+  overflow-x: hidden;
   text-align: center;
   padding-bottom: 20px;
-  white-space: nowrap;
 }
-.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span {
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock .clock-value {
+  -webkit-box-flex: 0 1 2ch;
+  -moz-box-flex: 0 1 2ch;
+  -webkit-flex: 0 1 2ch;
+  -ms-flex: 0 1 2ch;
+  flex: 0 1 2ch;
+  min-width: 0;
   padding-bottom: 10px;
   position: relative;
   display: inline-block;
-  width: 50px;
-  letter-spacing: 0.1em;
+  width: auto;
+  letter-spacing: 0.04em;
 }
-.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span.three-digit {
-  width: 80px;
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock .clock-value.three-digit {
+  -webkit-flex-basis: 3ch;
+  -ms-flex-preferred-size: 3ch;
+  flex-basis: 3ch;
   letter-spacing: 0;
 }
-.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span:before {
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock .clock-separator {
+  -webkit-box-flex: 0 0 auto;
+  -moz-box-flex: 0 0 auto;
+  -webkit-flex: 0 0 auto;
+  -ms-flex: 0 0 auto;
+  flex: 0 0 auto;
+  padding-bottom: 10px;
+  opacity: 0.85;
+}
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock .clock-value:before {
   content: "00";
   position: absolute;
   opacity: 0.2;
@@ -4966,16 +5000,16 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
   right: 0;
   top: 0;
 }
-.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span.three-digit:before {
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock .clock-value.three-digit:before {
   content: "000";
 }
-.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span.is-empty:before {
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock .clock-value.is-empty:before {
   content: "--";
 }
-.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span.three-digit.is-empty:before {
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock .clock-value.three-digit.is-empty:before {
   content: "---";
 }
-.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span:after {
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock .clock-value:after {
   font-family: "puristabold", Courier, monospace;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -5004,30 +5038,92 @@ body[data-section=viewer-mode] .mctf-gameboard aside[data-module] .module-header
   content: "sec";
 }
 .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock .clock-milliseconds {
+  -webkit-flex-basis: 3ch;
+  -ms-flex-preferred-size: 3ch;
+  flex-basis: 3ch;
   color: rgb(25.3150684932, 138.0821917808, 142.6849315068);
 }
 .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock .clock-milliseconds:after {
   content: "m.sec";
 }
-@media (min-width: 1074px) {
-  .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock {
-    font-size: 3em;
-  }
-  .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span {
-    width: 60px;
-  }
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock-context {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -moz-box-pack: justify;
+  -ms-flex-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-flex-wrap: wrap;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 14px;
+  margin-top: 10px;
+  color: rgba(207, 248, 250, 0.88);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  text-transform: uppercase;
 }
-@media (min-width: 1180px) {
-  .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock {
-    font-size: 4em;
-  }
-  .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span {
-    width: 66px;
-  }
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock-context > span {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-flex: 1;
+  -moz-box-flex: 1;
+  -webkit-flex: 1 1 8.25rem;
+  -ms-flex: 1 1 8.25rem;
+  flex: 1 1 8.25rem;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -moz-box-orient: vertical;
+  -moz-box-direction: normal;
+  -webkit-flex-direction: column;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  white-space: nowrap;
 }
-@media (min-width: 1386px) {
-  .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock span {
-    width: 80px;
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock-context > span:nth-child(2) {
+  -webkit-flex-basis: 6.25rem;
+  -ms-flex-preferred-size: 6.25rem;
+  flex-basis: 6.25rem;
+  text-align: center;
+}
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock-context > span:last-child {
+  text-align: right;
+}
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock-context .clock-context-label {
+  color: rgba(92, 240, 246, 0.68);
+  font-family: "puristabold", Courier, monospace;
+  font-size: 0.72em;
+  letter-spacing: 0.12em;
+}
+.mctf-gameboard aside[data-module][data-module=game-clock] .game-clock-context [data-game-clock-remaining] {
+  color: #ead44d;
+}
+@media screen and (max-width: 700px) {
+  .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock-context {
+    -webkit-box-pack: center;
+    -moz-box-pack: center;
+    -ms-flex-pack: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+  }
+  .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock-context > span,
+  .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock-context > span:nth-child(2),
+  .mctf-gameboard aside[data-module][data-module=game-clock] .game-clock-context > span:last-child {
+    -webkit-flex-basis: 6.5rem;
+    -ms-flex-preferred-size: 6.5rem;
+    flex-basis: 6.5rem;
+    text-align: center;
   }
 }
 
