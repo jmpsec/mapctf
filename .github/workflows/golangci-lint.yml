@@ -5,8 +5,8 @@ on:
     branches: [main, master, develop]
     paths:
       - "**/*.go"
-      - "go.mod"
-      - "go.sum"
+      - "backend/go.mod"
+      - "backend/go.sum"
       - ".golangci.yml"
       - ".github/workflows/golangci-lint.yml"
 
@@ -31,12 +31,13 @@ jobs:
         with:
           go-version: "${{ env.GOLANG_VERSION }}"
           cache: true
+          cache-dependency-path: backend/go.sum
 
       ########################### Run golangci-lint #######################
       - name: golangci-lint
         uses: golangci/golangci-lint-action@e7fa5ac41e1cf5b7d48e45e42232ce7ada589601 # v9.1.0
         with:
           version: latest
-          working-directory: ./
-          args: --timeout=5m
+          working-directory: backend
+          args: --config=../.golangci.yml --timeout=5m
           only-new-issues: true
