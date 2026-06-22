@@ -132,6 +132,25 @@ func configFileFromCommand(cmd *cli.Command) string {
 	return defaultConfigPath
 }
 
+func loadCheckConfiguration(file string) (string, error) {
+	if file == "" {
+		source := ""
+		if flagParams.ConfigFileFlag {
+			source = flagParams.ConfigFile
+		}
+		return source, cliAction()
+	}
+	cfg, err := loadConfigurationYAML(file)
+	if err != nil {
+		return file, fmt.Errorf("failed to load %s: %w", file, err)
+	}
+	flagParams.ConfigValues = cfg
+	if err := config.ValidateConfigValues(flagParams.ConfigValues); err != nil {
+		return file, fmt.Errorf("configuration %s is invalid: %w", file, err)
+	}
+	return file, nil
+}
+
 // Initialization code
 func init() {
 	// Initialize CLI flags using the config package
@@ -382,12 +401,12 @@ func main() {
 		{
 			Name:     "config-validate",
 			Category: "configuration",
-			Usage:    "Validate a MapCTF configuration file",
+			Usage:    "Validate the format of a MapCTF configuration file",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:    "file",
 					Aliases: []string{"f"},
-					Usage:   "Path to the configuration file to validate",
+					Usage:   "Path to the configuration file to validate format",
 				},
 			},
 			Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -400,6 +419,44 @@ func main() {
 					return fmt.Errorf("configuration %s is invalid: %w", path, err)
 				}
 				fmt.Printf("Configuration %s is valid.\n", path)
+				return nil
+			},
+		},
+		{
+			Name:     "config-check",
+			Category: "configuration",
+			Usage:    "Check if configuration values are valid by connecting to backend and cache",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "file",
+					Aliases: []string{"f"},
+					Usage:   "Path to the configuration file to validate format and values",
+				},
+			},
+			Action: func(ctx context.Context, cmd *cli.Command) error {
+				source, err := loadCheckConfiguration(cmd.String("file"))
+				if err != nil {
+					return err
+				}
+				if source != "" {
+					fmt.Printf("Configuration %s is valid.\n", source)
+				} else {
+					fmt.Println("Configuration values are valid.")
+				}
+				db, err = backend.CreateDBManager(flagParams.ConfigValues.DB)
+				if err != nil {
+					return fmt.Errorf("backend connection failed: %w", err)
+				}
+				if db != nil {
+					log.Info().Msg("Connection to backend successful!")
+				}
+				redis, err = cache.CreateRedisManager(flagParams.ConfigValues.Redis)
+				if err != nil {
+					return fmt.Errorf("cache connection failed: %w", err)
+				}
+				if redis != nil {
+					log.Info().Msg("Connection to cache successful!")
+				}
 				return nil
 			},
 		},
@@ -453,7 +510,7 @@ func main() {
 				},
 				&cli.StringFlag{
 					Name:    "uuid",
-					Aliases: []string{"u"},
+					Aliases: []string{"U"},
 					Usage:   "UUID for the admin user",
 					Value:   users.NoUUID,
 				},

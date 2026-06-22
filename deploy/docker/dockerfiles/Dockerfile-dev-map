@@ -33,7 +33,7 @@ RUN mkdir -p \
 #COPY backend/pkg/countries/map-countries-seed.json /opt/mapctf/config/
 #COPY backend/pkg/teams/team-logos-seed.json /opt/mapctf/config/
 
-# Build API server
+# Build map server
 RUN go build -o /opt/mapctf/bin/mapctf-map cmd/map/*.go
 
 # Set password for MapCTF user
