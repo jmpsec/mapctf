@@ -96,6 +96,49 @@ services:
       - mapctf-postgres
       - mapctf-redis
 
+  ########################################## mapctf-cli ############################################
+  mapctf-cli:
+    container_name: 'mapctf-cli-dev'
+    image: 'mapctf-cli-dev:${MAPCTF_VERSION}'
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: deploy/docker/dockerfiles/Dockerfile-dev-cli
+      args:
+        GOLANG_VERSION: ${GOLANG_VERSION}
+    environment:
+      # mapctf-cli configuration settings
+      - SERVICE_LOG_FORMAT=console
+      # Database settings
+      - DB_HOST=mapctf-postgres
+      - DB_NAME=${POSTGRES_DB_NAME}
+      - DB_PORT=${POSTGRES_DB_PORT}
+      - DB_USER=${POSTGRES_DB_USERNAME}
+      - DB_PASS=${POSTGRES_DB_PASSWORD}
+      #### Redis settings ####
+      - REDIS_HOST=mapctf-redis
+      - REDIS_PORT=${REDIS_PORT}
+      # MapCTF settings
+      - MAPCTF_USERNAME=${MAPCTF_USERNAME}
+      - MAPCTF_PASSWORD=${MAPCTF_PASSWORD}
+      - MAP_UUID=${MAP_UUID}
+      - MAP_COUNTRIES=/usr/src/app/backend/pkg/countries/map-countries-seed.json
+      - MAP_LOGOS=/usr/src/app/backend/pkg/teams/team-logos-seed.json
+    networks:
+      - mapctf-dev-backend
+    volumes:
+      - .:/usr/src/app:rw,delegated
+    develop:
+      watch:
+        - path: ./deploy/docker/dockerfiles/Dockerfile-dev-cli
+          action: rebuild
+        - path: ./backend/go.mod
+          action: rebuild
+        - path: ./backend/go.sum
+          action: rebuild
+    depends_on:
+      - mapctf-postgres
+      - mapctf-redis
    ########################################## mapctf-ui #############################################
   # mapctf-ui:
   #   container_name: 'mapctf-ui-dev'
