@@ -201,6 +201,20 @@ func TestGameboardCaptureModalSupportsChallengeURL(t *testing.T) {
 	require.Contains(t, string(css), ".capture-resource")
 }
 
+func TestGameboardCountryOwnershipRenderingEscapesTeamNames(t *testing.T) {
+	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
+	require.NoError(t, err)
+
+	jsBody := string(js)
+	require.Contains(t, jsBody, "function escapeHTML")
+	require.Contains(t, jsBody, `return $("<div>").text(String(value)).html();`)
+	require.Contains(t, jsBody, `return '<span class="' + capturedClass + '">' + escapeHTML(capturedBy) + "</span>";`)
+	require.NotContains(t, jsBody, `return '<span class="' + capturedClass + '">' + capturedBy + "</span>";`)
+	require.Contains(t, jsBody, `function appendCompletedTeamNames($container, completed)`)
+	require.Contains(t, jsBody, `$("<li>").text(String(this)).appendTo($completedList);`)
+	require.NotContains(t, jsBody, `$(".completed-list", $container).append("<li>" + this + "</li>");`)
+}
+
 func TestGameboardCompletedChallengeModalIsReadOnly(t *testing.T) {
 	js, err := os.ReadFile(filepath.Join("..", "templates", "static", "js", "mapctf.js"))
 	require.NoError(t, err)
