@@ -40,6 +40,8 @@ type PlatformUser struct {
 // TokenClaims to hold user claims when using JWT
 type TokenClaims struct {
 	Username string `json:"username"`
+	UUID     string `json:"uuid"`
+	Admin    bool   `json:"admin"`
 	jwt.RegisteredClaims
 }
 
@@ -187,14 +189,21 @@ func (m *UserManager) CheckLoginCredentials(username, password string, uuid stri
 
 // CreateToken to create a new JWT token for a given user
 func (m *UserManager) CreateToken(username, issuer string, expHours int) (string, time.Time, error) {
+	return m.CreateTokenForUser(username, "", false, issuer, expHours)
+}
+
+// CreateTokenForUser creates a JWT token scoped to one user identity and entity.
+func (m *UserManager) CreateTokenForUser(username, uuid string, admin bool, issuer string, expHours int) (string, time.Time, error) {
 	tDuration := time.Duration(expHours)
 	if expHours == 0 {
 		tDuration = time.Duration(m.JWTConfig.HoursToExpire)
 	}
 	expirationTime := time.Now().Add(time.Hour * tDuration)
-	// Create the JWT claims, which includes the username, level and expiry time
+	// Create the JWT claims with the minimum data needed to bind API access to one entity and role.
 	claims := &TokenClaims{
 		Username: username,
+		UUID:     uuid,
+		Admin:    admin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			Issuer:    issuer,

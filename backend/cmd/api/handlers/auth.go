@@ -18,6 +18,8 @@ const (
 	ContextKeyUser ContextKey = "user"
 	// ContextKeyClaims is the key for storing full token claims in request context
 	ContextKeyClaims ContextKey = "claims"
+	// ContextKeyAdmin is the key for storing admin status in request context
+	ContextKeyAdmin ContextKey = "admin"
 )
 
 // LoginHandler - Handle login requests
@@ -60,7 +62,7 @@ func (h *HandlersAPI) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, ApiErrorResponse{Error: "invalid credentials"})
 		return
 	}
-	token, expTime, err := h.Users.CreateToken(user.Username, h.ServiceName, h.Config.JWT.HoursToExpire)
+	token, expTime, err := h.Users.CreateTokenForUser(user.Username, uuid, user.Admin, h.ServiceName, h.Config.JWT.HoursToExpire)
 	if err != nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, ApiErrorResponse{Error: "error creating token"})
 		return
@@ -129,12 +131,31 @@ func (h *HandlersAPI) AuthMiddleware(next http.Handler) http.Handler {
 				ApiErrorResponse{Error: "Invalid or expired token"})
 			return
 		}
+		uuid := chi.URLParam(r, "uuid")
+		if uuid == "" || claims.UUID != uuid {
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized,
+				ApiErrorResponse{Error: "Invalid or expired token"})
+			return
+		}
 
 		// Store user info in context for use in handlers
 		ctx := context.WithValue(r.Context(), ContextKeyUser, claims.Username)
 		ctx = context.WithValue(ctx, ContextKeyClaims, claims)
+		ctx = context.WithValue(ctx, ContextKeyAdmin, claims.Admin)
 
 		// Continue to next handler
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (h *HandlersAPI) RequireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		admin, _ := r.Context().Value(ContextKeyAdmin).(bool)
+		if !admin {
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusForbidden,
+				ApiErrorResponse{Error: "Admin access required"})
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }

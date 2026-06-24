@@ -278,6 +278,7 @@ func mapCTFService() {
 
 			// Protected admin routes
 			r.Route(apiAdminPath, func(r chi.Router) {
+				r.Use(handlersCTF.RequireAdmin)
 				r.Get(apiTeamsPath, handlersCTF.AdminTeamsHandler)  // GET /api/v1/admin/{uuid}/teams
 				r.Post(apiTeamsPath, handlersCTF.CreateTeamHandler) // POST /api/v1/admin/{uuid}/teams
 				//r.Delete(apiTeamsPath+"/{entID}/{id}", handlersCTF.DeleteTeamHandler) // DELETE /api/v1/admin/teams/{entID}/{id}

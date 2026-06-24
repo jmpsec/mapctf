@@ -1223,6 +1223,36 @@ func TestCheckToken(t *testing.T) {
 	}
 }
 
+func TestCreateTokenForUserCarriesUUIDAndAdminClaims(t *testing.T) {
+	db := setupTestDB(t)
+	jwtSecret := "test-secret-key-12345"
+	jwtConfig := &config.ConfigurationJWT{
+		Secret:        jwtSecret,
+		HoursToExpire: 24,
+	}
+	manager, err := CreateUserManager(db, jwtConfig)
+	if err != nil {
+		t.Fatalf("Failed to create UserManager: %v", err)
+	}
+
+	token, _, err := manager.CreateTokenForUser("testuser", testUUID1, true, "mapctf", 1)
+	if err != nil {
+		t.Fatalf("Failed to create token: %v", err)
+	}
+
+	claims, err := manager.CheckToken(jwtSecret, token)
+	if err != nil {
+		t.Fatalf("Failed to verify token: %v", err)
+	}
+
+	if claims.UUID != testUUID1 {
+		t.Fatalf("Expected UUID %q, got %q", testUUID1, claims.UUID)
+	}
+	if !claims.Admin {
+		t.Fatal("Expected admin claim to round-trip")
+	}
+}
+
 // TestCheckTokenInvalidSecret tests token validation with wrong secret
 func TestCheckTokenInvalidSecret(t *testing.T) {
 	db := setupTestDB(t)
