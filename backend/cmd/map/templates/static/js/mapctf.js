@@ -866,6 +866,10 @@
      * @param capturedBy (string)
      *   - the capturing team
      */
+    function escapeHTML(value) {
+      return $("<div>").text(String(value)).html();
+    }
+
     function getCapturedByMarkup(capturedBy) {
       if (capturedBy === undefined || capturedBy === null || $.trim(String(capturedBy)) === "") {
         return "Uncaptured";
@@ -873,7 +877,19 @@
 
       var capturedClass = capturedBy === getCurrentTeamName() ? "your-name" : "opponent-name";
 
-      return '<span class="' + capturedClass + '">' + capturedBy + "</span>";
+      return '<span class="' + capturedClass + '">' + escapeHTML(capturedBy) + "</span>";
+    }
+
+    function appendCompletedTeamNames($container, completed) {
+      var $completedList = $(".completed-list", $container).empty();
+
+      if (!(completed instanceof Array)) {
+        return;
+      }
+
+      $.each(completed, function () {
+        $("<li>").text(String(this)).appendTo($completedList);
+      });
     }
 
     function updateCaptureModalFeedback($container, message, isSuccess) {
@@ -1468,7 +1484,7 @@
         $(".points-number", $container).text(points);
         $(".country-category", $container).text(category);
         $(".country-owner", $container).html(capturedBy);
-        $(".completed-list", $container).empty();
+        appendCompletedTeamNames($container, []);
         updateCaptureModalFeedback($container, "", false);
 
         var hintsEnabled = isScoringHintsEnabled();
@@ -1509,11 +1525,7 @@
             .fail(function () {});
         }
 
-        if (completed instanceof Array) {
-          $.each(completed, function () {
-            $(".completed-list", $container).append("<li>" + this + "</li>");
-          });
-        }
+        appendCompletedTeamNames($container, completed);
 
         //
         // event listeners
@@ -1616,12 +1628,7 @@
 
                 data = COUNTRY_DATA ? COUNTRY_DATA[country] : data;
                 $(".country-owner", $container).html(getCapturedByMarkup(data && data.owner ? data.owner : undefined));
-                $(".completed-list", $container).empty();
-                if (data && data.completed instanceof Array) {
-                  $.each(data.completed, function () {
-                    $(".completed-list", $container).append("<li>" + this + "</li>");
-                  });
-                }
+                appendCompletedTeamNames($container, data ? data.completed : undefined);
                 updateCaptureFormAvailability($container, country);
               });
             })
