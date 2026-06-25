@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -16,11 +16,11 @@
         <nav class="mctf-main-nav mctf-navigation">
           <ul class="nav-left">
             <li>
-              <a href="/{{ .UUID }}/countdown" data-active="countdown">Play CTF</a>
+              <a href="/{{ .UUID }}/countdown" data-active="countdown">{{ T "nav.play_ctf" }}</a>
             </li>
             <li></li>
             <li>
-              <a href="/{{ .UUID }}/rules" data-active="rules">Rules</a>
+              <a href="/{{ .UUID }}/rules" data-active="rules">{{ T "nav.rules" }}</a>
             </li>
           </ul>
           <div class="branding">
@@ -33,16 +33,16 @@
           </div>
           <ul class="nav-right">
             <li>
-              <a href="/{{ .UUID }}/registration" data-active="registration">Registration</a>
+              <a href="/{{ .UUID }}/registration" data-active="registration">{{ T "nav.registration" }}</a>
             </li>
             <li></li>
             {{ if .Authenticated }}
             <li>
-              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">Gameboard</a>
+              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">{{ T "nav.gameboard" }}</a>
             </li>
             {{ else }}
             <li>
-              <a href="/{{ .UUID }}/login" data-active="login">Login</a>
+              <a href="/{{ .UUID }}/login" data-active="login">{{ T "nav.login" }}</a>
             </li>
             {{ end }} {{ if .Admin }}
             <li>
@@ -56,15 +56,15 @@
         <div class="mctf-column-container full-height">
           <main role="main" class="mctf-main page--rules mctf-scroll">
             <header class="mctf-section-header mctf-container">
-              <h1 class="mctf-glitch" data-text="Official CTF Rules">Official CTF Rules</h1>
-              <p class="inner-container typed-text typing-initialized">Following actions are prohibited, unless explicitly told otherwise by event Admins.</p>
+              <h1 class="mctf-glitch" data-text="{{ T "rules.heading" }}">{{ T "rules.heading" }}</h1>
+              <p class="inner-container typed-text typing-initialized">{{ T "rules.intro" }}</p>
             </header>
 
             <div class="mctf-rules">
               <section>
                 <header class="rule-section-header">
-                  <h3>Rule 1</h3>
-                  <h6>Cooperation</h6>
+                  <h3>{{ T "rules.rule_label" }} 1</h3>
+                  <h6>{{ T "rules.title_cooperation" }}</h6>
                 </header>
 
                 <div class="rule-main">
@@ -74,8 +74,8 @@
 
               <section>
                 <header class="rule-section-header">
-                  <h3>Rule 2</h3>
-                  <h6>Attacking Scoreboard</h6>
+                  <h3>{{ T "rules.rule_label" }} 2</h3>
+                  <h6>{{ T "rules.title_attacking" }}</h6>
                 </header>
 
                 <div class="rule-main">
@@ -84,8 +84,8 @@
               </section>
               <section>
                 <header class="rule-section-header">
-                  <h3>Rule 3</h3>
-                  <h6>Sabotage</h6>
+                  <h3>{{ T "rules.rule_label" }} 3</h3>
+                  <h6>{{ T "rules.title_sabotage" }}</h6>
                 </header>
 
                 <div class="rule-main">
@@ -95,8 +95,8 @@
 
               <section>
                 <header class="rule-section-header">
-                  <h3>Rule 4</h3>
-                  <h6>Bruteforcing</h6>
+                  <h3>{{ T "rules.rule_label" }} 4</h3>
+                  <h6>{{ T "rules.title_bruteforcing" }}</h6>
                 </header>
 
                 <div class="rule-main">
@@ -105,8 +105,8 @@
               </section>
               <section>
                 <header class="rule-section-header">
-                  <h3>Rule 5</h3>
-                  <h6>Denial Of Service</h6>
+                  <h3>{{ T "rules.rule_label" }} 5</h3>
+                  <h6>{{ T "rules.title_dos" }}</h6>
                 </header>
 
                 <div class="rule-main">
@@ -120,22 +120,22 @@
           <aside class="mctf-secondary mctf-row-container">
             <div class="row-fixed">
               <div class="mctf-search">
-                <input type="search" placeholder="Type to search" />
+                <input type="search" placeholder="{{ T "rules.search_placeholder" }}" />
               </div>
             </div>
             <!-- .row-fixed / the blog search -->
 
             <div class="blog--top-posts row-fluid mctf-row-container">
               <header class="row-fixed aside-section-header">
-                <h5>Table of Contents</h5>
+                <h5>{{ T "rules.toc_title" }}</h5>
               </header>
 
               <ul class="rules--table-of-contents row-fluid">
-                <li><a href="#">Rule 1 - Cooperation</a></li>
-                <li><a href="#">Rule 2 - Attacking Scoreboard</a></li>
-                <li><a href="#">Rule 3 - Sabotage</a></li>
-                <li><a href="#">Rule 4 - Bruteforcing</a></li>
-                <li><a href="#">Rule 5 - Denial Of Service</a></li>
+                <li><a href="#">{{ T "rules.rule_label" }} 1 - {{ T "rules.title_cooperation" }}</a></li>
+                <li><a href="#">{{ T "rules.rule_label" }} 2 - {{ T "rules.title_attacking" }}</a></li>
+                <li><a href="#">{{ T "rules.rule_label" }} 3 - {{ T "rules.title_sabotage" }}</a></li>
+                <li><a href="#">{{ T "rules.rule_label" }} 4 - {{ T "rules.title_bruteforcing" }}</a></li>
+                <li><a href="#">{{ T "rules.rule_label" }} 5 - {{ T "rules.title_dos" }}</a></li>
               </ul>
             </div>
             <!-- .row-fluid / top posts -->
@@ -145,6 +145,7 @@
         <!-- .mctf-column-container -->
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>

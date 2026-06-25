@@ -1,6 +1,45 @@
 //
 // MAPCTF javascript
 //
+// t returns the localized message for key when the page injected a locale
+// bundle (window.MCTF_I18N), otherwise it falls back to the provided English
+// string so unconverted UI keeps working unchanged.
+if (typeof window.t !== "function") {
+  window.t = function (key, fallback) {
+    if (window.MCTF_I18N && Object.prototype.hasOwnProperty.call(window.MCTF_I18N, key)) {
+      return window.MCTF_I18N[key];
+    }
+    return fallback;
+  };
+}
+
+// localize translates any [data-i18n] elements within $root using the active
+// locale bundle, falling back to the element's existing text when no catalog
+// or key is available. Used for JS-loaded modal partials which are not rendered
+// server-side.
+if (typeof window.localize !== "function") {
+  window.localize = function ($root) {
+    if (!$root || !$root.length) {
+      return;
+    }
+    $root.find("[data-i18n]").addBack("[data-i18n]").each(function () {
+      var $el = $(this);
+      var key = $el.attr("data-i18n");
+      if (!key) {
+        return;
+      }
+      $el.text(t(key, $el.text()));
+    });
+    $root.find("[data-i18n-placeholder]").each(function () {
+      var $el = $(this);
+      var key = $el.attr("data-i18n-placeholder");
+      if (key) {
+        $el.attr("placeholder", t(key, $el.attr("placeholder")));
+      }
+    });
+  };
+}
+
 (function (MAP_CTF, $, undefined) {
   var $body;
 
@@ -373,7 +412,7 @@
 
         $points.append('<span class="team-card-points-value mctf-numbers"></span>');
         $(".team-card-points-value", $points).text(teamData.points);
-        $points.append('<span class="team-card-points-label">Points</span>');
+        $points.append('<span class="team-card-points-label">' + t("gb.points", "Points") + '</span>');
 
         $text.append($name);
         if (showTeamMembers && members.length) {
@@ -385,7 +424,7 @@
 
         $identity.append($badge, $text);
         $header.append($identity, $points);
-        $footer.append($('<span class="team-card-last-score-label">Last score</span>'));
+        $footer.append($('<span class="team-card-last-score-label">' + t("gb.last_score", "Last score") + '</span>'));
         $footer.append($('<span class="team-card-last-score-value"></span>').text(teamData.last_score_label));
 
         $link.append($header, $footer);
@@ -476,13 +515,13 @@
         $(".module-top .player-rank .stat-value", $leaderboard).text(currentTeamData.rank);
         $(".module-top .player-score .stat-value", $leaderboard).text(currentTeamData.points);
       } else {
-        $(".player-name", $leaderboard).text("No Team");
+        $(".player-name", $leaderboard).text(t("gb.no_team", "No Team"));
         $(".module-top .player-rank .stat-value", $leaderboard).text("--");
         $(".module-top .player-score .stat-value", $leaderboard).text("0");
       }
 
       if (!sortedTeams.length) {
-        $leaderboardList.append('<li class="leaderboard-empty">No teams yet</li>');
+        $leaderboardList.append('<li class="leaderboard-empty">' + t("gb.no_teams_yet", "No teams yet") + '</li>');
         return;
       }
 
@@ -498,10 +537,10 @@
           "<h6>" +
           teamName +
           "</h6>" +
-          '<span class="player-rank"><span class="stat-label">Rank</span><span class="stat-value">' +
+          '<span class="player-rank"><span class="stat-label">' + t("gb.rank", "Rank") + '</span><span class="stat-value">' +
           teamData.rank +
           "</span></span>" +
-          '<span class="player-score"><span class="stat-label">Points</span><span class="stat-value">' +
+          '<span class="player-score"><span class="stat-label">' + t("gb.points", "Points") + '</span><span class="stat-value">' +
           teamData.points +
           "</span></span>" +
           "</div>" +
@@ -532,7 +571,7 @@
       var newEntryType = "";
 
       $activityStream.empty();
-      $activityStream.append('<li class="activity-empty" style="display: none">No activity yet</li>');
+      $activityStream.append('<li class="activity-empty" style="display: none">' + t("gb.no_activity_yet", "No activity yet") + '</li>');
 
       if ($.isArray(ACTIVITY_DATA) && ACTIVITY_DATA.length) {
         $.each(ACTIVITY_DATA, function (_, entry) {
@@ -581,7 +620,7 @@
           }
 
           if (isAnnouncement) {
-            $item.append($("<span></span>").addClass("activity-announcement-label").attr("aria-label", "Announcement").text("📢"));
+            $item.append($("<span></span>").addClass("activity-announcement-label").attr("aria-label", t("gb.announcement", "Announcement")).text("📢"));
           }
 
           if (isAnnouncement) {
@@ -1019,7 +1058,7 @@
       var $hintValue = $(".capture-hint-value", $container);
 
       $hintCard.removeClass("capture-hint-card--unlocked").addClass("capture-hint-card--locked");
-      $hintStatus.text("Locked");
+      $hintStatus.text(t("gb.hint_locked", "Locked"));
       $hintCopy.text("Spend points to unlock extra challenge intel for this country.");
       $hintEmpty.show();
       $hintValue.hide().text("");
@@ -1056,7 +1095,7 @@
       var $hintValue = $(".capture-hint-value", $container);
 
       $hintCard.removeClass("capture-hint-card--locked").addClass("capture-hint-card--unlocked");
-      $hintStatus.text("Unlocked");
+      $hintStatus.text(t("gb.hint_unlocked", "Unlocked"));
       $hintCopy.text("Unlocked challenge intel:");
       $hintEmpty.hide();
       $hintValue.show().text(hintText || "");
@@ -1390,7 +1429,7 @@
      */
     function captureViewOnly(country, capturedBy, capturingTeam) {
       if (capturingTeam === undefined) {
-        capturingTeam = getCurrentTeamName() || "No Team";
+        capturingTeam = getCurrentTeamName() || t("gb.no_team", "No Team");
       }
 
       MAP_CTF.modal.viewmodePopup(function () {
@@ -1475,7 +1514,7 @@
         var $resource = $(".capture-resource", $container),
           $resourceLink = $(".capture-resource-link", $container);
         if (challengeURL && $resource.length && $resourceLink.length) {
-          $resourceLink.attr("href", challengeURL).attr("title", challengeURL).text("Open challenge");
+          $resourceLink.attr("href", challengeURL).attr("title", challengeURL).text(t("gb.open_challenge", "Open challenge"));
           $resource.removeAttr("hidden").show();
         } else if ($resource.length && $resourceLink.length) {
           $resourceLink.attr("href", "#").removeAttr("title");
@@ -2186,11 +2225,11 @@
           $row.toggleClass("captured--opponent", hasOwner && !solvedByCurrent);
 
           if (solvedByCurrent) {
-            $status.append('<span class="mctf-status status--open">Captured</span>');
+            $status.append('<span class="mctf-status status--open">' + t("gb.captured", "Captured") + '</span>');
           } else if (isActive) {
-            $status.append('<span class="mctf-status status--open">Open</span>');
+            $status.append('<span class="mctf-status status--open">' + t("gb.open_status", "Open") + '</span>');
           } else {
-            $status.text("Unavailable");
+            $status.text(t("gb.unavailable", "Unavailable"));
           }
 
           $row.append($name, $points, $category, $status);
@@ -2415,7 +2454,7 @@
       }
 
       var data = DOMINATION_DATA || {};
-      var currentTeam = data.current_team || "No Team";
+      var currentTeam = data.current_team || t("gb.no_team", "No Team");
       var completedChallenges = parseInt(data.completed_challenges, 10);
       var totalChallenges = parseInt(data.total_challenges, 10);
       var completionPct = parseInt(data.completion_pct, 10);
@@ -2961,15 +3000,15 @@
       }
 
       if (modalName === "action-logout" && $body && $body.attr("data-section") === "gameboard") {
-        return "Gameboard";
+        return t("gb.gameboard_kicker", "Gameboard");
       }
 
       if (modalName === "team" && $body && $body.attr("data-section") === "gameboard") {
-        return "Gameboard";
+        return t("gb.gameboard_kicker", "Gameboard");
       }
 
       var adminKickerMap = [
-        { pattern: /^country-(capture|help|help-opponent)$/, kicker: "Gameboard" },
+        { pattern: /^country-(capture|help|help-opponent)$/, kicker: t("gb.gameboard_kicker", "Gameboard") },
         { pattern: /challenge|category/, kicker: "Admin Challenges" },
         { pattern: /(^|-)logos?($|-)/, kicker: "Admin Logos" },
         { pattern: /team/, kicker: "Admin Teams" },
@@ -3285,7 +3324,7 @@
             .attr("dy", "1em")
             .attr("stroke", "#fff")
             .style("text-anchor", "middle")
-            .text("Score");
+            .text(t("gb.score_axis", "Score"));
 
           var lineFunc = d3
             .line()
@@ -4301,6 +4340,9 @@
         console.log("component: " + component);
         console.error("/end error");
       } else {
+        // Translate any [data-i18n] labels in the freshly loaded markup.
+        localize($target);
+
         //
         // fire the "content-loaded" event to initialize any
         //  dynamic content that is in the loaded content

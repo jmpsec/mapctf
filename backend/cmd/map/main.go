@@ -304,7 +304,6 @@ func mapCTFService() {
 	muxMap.Use(middleware.Recoverer)
 	muxMap.Use(middleware.Timeout(30 * time.Second))
 	muxMap.Use(sessionManager.LoadAndSave)
-	muxMap.Use(handlersMap.LocaleMiddleware)
 	// Root
 	muxMap.Get(rootPath, handlersMap.RootHandler)
 	// Health
@@ -319,6 +318,7 @@ func mapCTFService() {
 	muxMap.Handle("/static/*", http.StripPrefix("/static/", ContentTypeByExtension(http.FileServer(http.Dir(flagParams.ConfigValues.Map.StaticDir)))))
 	// HTTP map routes
 	muxMap.Route("/{uuid}", func(r chi.Router) {
+		r.Use(handlersMap.LocaleMiddleware)
 		// Public routes (no authentication required)
 		r.Get(rootPath, handlersMap.IndexTemplateHandler)
 		r.Get(errorPath, handlersMap.ErrorHandler)

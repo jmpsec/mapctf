@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -16,11 +16,11 @@
         <nav class="mctf-main-nav mctf-navigation">
           <ul class="nav-left">
             <li>
-              <a href="/{{ .UUID }}/countdown" data-active="countdown">Play CTF</a>
+              <a href="/{{ .UUID }}/countdown" data-active="countdown">{{ T "nav.play_ctf" }}</a>
             </li>
             <li></li>
             <li>
-              <a href="/{{ .UUID }}/rules" data-active="rules">Rules</a>
+              <a href="/{{ .UUID }}/rules" data-active="rules">{{ T "nav.rules" }}</a>
             </li>
           </ul>
           <div class="branding">
@@ -33,16 +33,16 @@
           </div>
           <ul class="nav-right">
             <li>
-              <a href="/{{ .UUID }}/registration" data-active="registration" class="active">Registration</a>
+              <a href="/{{ .UUID }}/registration" data-active="registration" class="active">{{ T "nav.registration" }}</a>
             </li>
             <li></li>
             {{ if .Authenticated }}
             <li>
-              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">Gameboard</a>
+              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">{{ T "nav.gameboard" }}</a>
             </li>
             {{ else }}
             <li>
-              <a href="/{{ .UUID }}/login" data-active="login">Login</a>
+              <a href="/{{ .UUID }}/login" data-active="login">{{ T "nav.login" }}</a>
             </li>
             {{ end }} {{ if .Admin }}
             <li>
@@ -66,35 +66,35 @@
                   {{ if .RegistrationEnabled }}
                   <fieldset class="form-set mctf-container container--small">
                     <div class="form-el el--text ajax-message-row">
-                      <label class="ajax-message-label" aria-hidden="true">Message</label>
+                      <label class="ajax-message-label" aria-hidden="true">{{ T "login.message_label" }}</label>
                       <div id="ajax-message-box" class="ajax-message" role="alert" aria-live="assertive"></div>
                     </div>
                     <div class="form-el el--text">
-                      <label for="register_username">Username</label>
+                      <label for="register_username">{{ T "login.username_label" }}</label>
                       <input type="text" id="register_username" name="register_username" />
                     </div>
                     {{ if .RegistrationNames }}
                     <div class="form-el el--text">
-                      <label for="register_name">Full Name</label>
+                      <label for="register_name">{{ T "registration.name_label" }}</label>
                       <input type="text" id="register_name" name="register_name" />
                     </div>
                     {{ end }} {{ if .RegistrationEmails }}
                     <div class="form-el el--text">
-                      <label for="register_email">Email</label>
+                      <label for="register_email">{{ T "registration.email_label" }}</label>
                       <input type="email" id="register_email" name="register_email" />
                     </div>
                     {{ end }}
                     <div class="form-el el--text">
-                      <label for="register_team_name">Team Name</label>
+                      <label for="register_team_name">{{ T "registration.team_name_label" }}</label>
                       <input type="text" id="register_team_name" name="register_team_name" />
                     </div>
                     <div class="form-el el--text">
-                      <label for="register_password">Password</label>
+                      <label for="register_password">{{ T "login.password_label" }}</label>
                       <input type="password" id="register_password" name="register_password" />
                     </div>
                     {{ if eq .RegistrationType 1 }}
                     <div class="form-el el--text">
-                      <label for="register_token">Registration Token</label>
+                      <label for="register_token">{{ T "registration.token_label" }}</label>
                       <input type="text" id="register_token" name="register_token" />
                     </div>
                     {{ end }}
@@ -102,21 +102,21 @@
                   </fieldset>
 
                   <div class="mctf-choose-emblem">
-                    <h6>Choose an Emblem</h6>
+                    <h6>{{ T "registration.emblem_title" }}</h6>
 
                     <div class="emblem-carousel mctf-container">
                       <input type="hidden" id="register_logo" name="register_logo" value="" />
-                      <ul id="register_emblem_list" class="emblem-grid" aria-label="Emblem options"></ul>
+                      <ul id="register_emblem_list" class="emblem-grid" aria-label="{{ T "registration.emblem_aria" }}"></ul>
                     </div>
                     <!-- .emblem-carousel -->
                   </div>
 
                   <div class="form-el--actions mctf-container container--small">
-                    <p><button class="mctf-cta cta--yellow" type="button" id="register_button" onclick="sendRegistration()">Sign Up</button></p>
+                    <p><button class="mctf-cta cta--yellow" type="button" id="register_button" onclick="sendRegistration()">{{ T "registration.button" }}</button></p>
                   </div>
                   {{ else }}
                   <div class="form-el--actions mctf-container container--small">
-                    <p><a class="mctf-cta cta--yellow" href="/{{ .UUID }}/registration">Try Again</a></p>
+                    <p><a class="mctf-cta cta--yellow" href="/{{ .UUID }}/registration">{{ T "registration.try_again" }}</a></p>
                   </div>
                   {{ end }}
                 </form>
@@ -127,6 +127,7 @@
         </div>
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>

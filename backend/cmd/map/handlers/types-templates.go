@@ -31,6 +31,8 @@ type LoginTemplateData struct {
 type IndexTemplateData struct {
 	Title         string
 	UUID          string
+	Lang          string
+	I18NJSON      template.JS
 	Authenticated bool
 	Admin         bool
 }
@@ -39,6 +41,8 @@ type IndexTemplateData struct {
 type CountdownTemplateData struct {
 	Title          string
 	UUID           string
+	Lang           string
+	I18NJSON       template.JS
 	StartSet       bool
 	EndSet         bool
 	AlreadyStarted bool
@@ -61,6 +65,8 @@ type CountdownUnits struct {
 type RulesTemplateData struct {
 	Title         string
 	UUID          string
+	Lang          string
+	I18NJSON      template.JS
 	Authenticated bool
 	Admin         bool
 }
@@ -69,6 +75,8 @@ type RulesTemplateData struct {
 type GameboardTemplateData struct {
 	Title                    string
 	UUID                     string
+	Lang                     string
+	I18NJSON                 template.JS
 	Authenticated            bool
 	Admin                    bool
 	CurrentUsername          string
@@ -92,6 +100,8 @@ type RegistrationTemplateData struct {
 	RegistrationMsg     string
 	RegisterURL         string
 	UUID                string
+	Lang                string
+	I18NJSON            template.JS
 	RegistrationEnabled bool
 	RegistrationNames   bool
 	RegistrationEmails  bool

@@ -132,7 +132,7 @@ func TestModalKickerClassifiesGameboardLogoutAsGameboard(t *testing.T) {
 
 	js := string(data)
 	require.Contains(t, js, `if (modalName === "action-logout" && $body && $body.attr("data-section") === "gameboard") {
-        return "Gameboard";
+        return t("gb.gameboard_kicker", "Gameboard");
       }`)
 }
 

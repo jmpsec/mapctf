@@ -32,9 +32,9 @@ func (h *HandlersMap) IndexTemplateHandler(w http.ResponseWriter, r *http.Reques
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/index.html")
+	// Prepare template with i18n translation func bound to the resolved locale
+	tr := h.T(r.Context())
+	t, err := template.New("index.html").Funcs(h.i18nFuncMap(r)).ParseFiles(h.Config.Map.TemplatesDir + "/index.html")
 	if err != nil {
 		log.Err(err).Msg("error getting index template")
 		return
@@ -42,9 +42,12 @@ func (h *HandlersMap) IndexTemplateHandler(w http.ResponseWriter, r *http.Reques
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := IndexTemplateData{
-		Title:         "MapCTF: Welcome to the platform",
+		Title:         tr("page.index.title"),
 		UUID:          uuid,
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		Authenticated: authenticated,
 		Admin:         isAdmin,
 	}
@@ -154,9 +157,9 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/registration.html")
+	// Prepare template with i18n translation func bound to the resolved locale
+	tr := h.T(r.Context())
+	t, err := template.New("registration.html").Funcs(h.i18nFuncMap(r)).ParseFiles(h.Config.Map.TemplatesDir + "/registration.html")
 	if err != nil {
 		log.Err(err).Msg("error getting registration template")
 		return
@@ -164,14 +167,14 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
-	rMsg := "Register to play Capture The Flag here. Once you have registered, simply login for future site visits."
+	rMsg := tr("registration.msg_enabled")
 	regEnabled, err := h.Settings.GetRegistrationEnabled(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting registration enabled setting")
 		regEnabled = false
 	}
 	if !regEnabled {
-		rMsg = "Team Registration will be open soon, stay tuned!"
+		rMsg = tr("registration.msg_disabled")
 	}
 	regNames, err := h.Settings.GetRegistrationNames(uuid)
 	if err != nil {
@@ -188,15 +191,18 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 		log.Err(err).Msg("error getting registration type setting")
 		regType = settings.OpenRegistration
 	}
-	rTypeStr := "Open Registration"
+	rTypeStr := tr("registration.type_open")
 	if regType == settings.TokenRegistration {
-		rTypeStr = "Registration with Token"
+		rTypeStr = tr("registration.type_token")
 	}
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := RegistrationTemplateData{
-		Title:               "MapCTF: Register to platform",
+		Title:               tr("page.registration.title"),
 		RegistrationMsg:     rMsg,
 		RegisterURL:         "/" + uuid + "/registration",
 		UUID:                uuid,
+		Lang:                h.Locale(r.Context()).String(),
+		I18NJSON:            htmltemplate.JS(i18nJSON),
 		RegistrationEnabled: regEnabled,
 		RegistrationNames:   regNames,
 		RegistrationEmails:  regEmails,
@@ -223,9 +229,9 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/countdown.html")
+	// Prepare template with i18n translation func bound to the resolved locale
+	tr := h.T(r.Context())
+	t, err := template.New("countdown.html").Funcs(h.i18nFuncMap(r)).ParseFiles(h.Config.Map.TemplatesDir + "/countdown.html")
 	if err != nil {
 		log.Err(err).Msg("error getting countdown template")
 		return
@@ -272,9 +278,12 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 	if !alreadyStarted && !startTime.IsZero() && startTime.Before(time.Now()) {
 		startTime = time.Time{}
 	}
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := CountdownTemplateData{
-		Title:          "MapCTF: Countdown to event",
+		Title:          tr("page.countdown.title"),
 		UUID:           uuid,
+		Lang:           h.Locale(r.Context()).String(),
+		I18NJSON:       htmltemplate.JS(i18nJSON),
 		StartTime:      startTime,
 		EndTime:        endTime,
 		EndSet:         !endTime.IsZero(),
@@ -302,9 +311,9 @@ func (h *HandlersMap) RulesTemplateHandler(w http.ResponseWriter, r *http.Reques
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/rules.html")
+	// Prepare template with i18n translation func bound to the resolved locale
+	tr := h.T(r.Context())
+	t, err := template.New("rules.html").Funcs(h.i18nFuncMap(r)).ParseFiles(h.Config.Map.TemplatesDir + "/rules.html")
 	if err != nil {
 		log.Err(err).Msg("error getting rules template")
 		return
@@ -312,9 +321,12 @@ func (h *HandlersMap) RulesTemplateHandler(w http.ResponseWriter, r *http.Reques
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := RulesTemplateData{
-		Title:         "MapCTF: Rules of the game",
+		Title:         tr("page.rules.title"),
 		UUID:          uuid,
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		Authenticated: authenticated,
 		Admin:         isAdmin,
 	}
@@ -339,6 +351,7 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	// Prepare template
 	t, err := template.New("gameboard.html").Funcs(template.FuncMap{
 		"htmlAttr": html.EscapeString,
+		"T":        h.T(r.Context()),
 	}).ParseFiles(h.Config.Map.TemplatesDir + "/gameboard.html")
 	if err != nil {
 		log.Err(err).Msg("error getting gameboard template")
@@ -347,10 +360,14 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	isAdmin := h.IsAdmin(r.Context())
+	tr := h.T(r.Context())
 	currentUsername := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := GameboardTemplateData{
-		Title:               "MapCTF: Gameboard",
+		Title:               tr("page.gameboard.title"),
 		UUID:                uuid,
+		Lang:                h.Locale(r.Context()).String(),
+		I18NJSON:            htmltemplate.JS(i18nJSON),
 		Authenticated:       authenticated,
 		Admin:               isAdmin,
 		CurrentUsername:     currentUsername,

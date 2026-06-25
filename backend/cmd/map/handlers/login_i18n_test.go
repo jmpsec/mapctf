@@ -105,3 +105,57 @@ func TestLoginHandlerFallsBackToEnglishForUnknownLanguage(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 	require.Contains(t, rr.Body.String(), "Play CTF")
 }
+
+func TestRegistrationHandlerRendersConfiguredLocale(t *testing.T) {
+	if _, err := os.Stat(filepath.Join("..", "templates", "registration.html")); err != nil {
+		t.Skipf("registration template not available: %v", err)
+	}
+
+	handler, sessions := newLoginI18nHandler(t, "es")
+
+	req := newTemplateRequestWithUUID(http.MethodGet, "/"+jsonTestUUID+"/registration", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.RegistrationTemplateHandler)).ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
+	body := rr.Body.String()
+	for _, want := range []string{`<html lang="es">`, "Jugar CTF", "Nombre completo", "Nombre del equipo", "Registrarse"} {
+		require.Contains(t, body, want)
+	}
+}
+
+func TestGameboardHandlerRendersConfiguredLocale(t *testing.T) {
+	if _, err := os.Stat(filepath.Join("..", "templates", "gameboard.html")); err != nil {
+		t.Skipf("gameboard template not available: %v", err)
+	}
+
+	handler, sessions, settingsManager, _, _ := newGameboardTemplateHandler(t)
+	require.NoError(t, settingsManager.SetLanguage("es", jsonSettingsAuthor, jsonTestUUID))
+
+	req := newTemplateRequestWithUUID(http.MethodGet, "/"+jsonTestUUID+"/gameboard", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.GameboardTemplateHandler)).ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
+	body := rr.Body.String()
+	for _, want := range []string{
+		`<html lang="es">`,
+		"Clasificación",
+		"Actividad",
+		"Sin equipo",
+		"Posición",
+		"Puntos",
+		"Reloj de juego",
+	} {
+		require.Contains(t, body, want)
+	}
+	require.Contains(t, body, `window.MCTF_LANG = "es"`)
+}

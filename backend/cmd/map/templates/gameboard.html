@@ -1,4 +1,4 @@
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -19,20 +19,20 @@
           <nav class="mctf-navigation mctf-gameboard-nav">
             <ul class="nav-left">
               <li>
-                <a href="#">Navigation</a>
+                <a href="#">{{ T "gb.nav_label" }}</a>
                 <ul class="subnav">
                   <li>
-                    <a href="/{{ .UUID }}/rules">Rules</a>
+                    <a href="/{{ .UUID }}/rules">{{ T "nav.rules" }}</a>
                   </li>
                   <li>
-                    <a href="/{{ .UUID }}/profile" id="gameboard-profile-link" data-profile-url="/{{ .UUID }}/profile" data-profile-password-url="/{{ .UUID }}/profile/password">Profile</a>
+                    <a href="/{{ .UUID }}/profile" id="gameboard-profile-link" data-profile-url="/{{ .UUID }}/profile" data-profile-password-url="/{{ .UUID }}/profile/password">{{ T "gb.profile" }}</a>
                   </li>
                   {{ if .Admin }}
                   <li>
-                    <a href="/{{ .UUID }}/admin">🔐 Admin</a>
+                    <a href="/{{ .UUID }}/admin">{{ T "gb.admin" }}</a>
                   </li>
                   {{ end }}
-                  <li><a href="/{{ .UUID }}/logout" id="gameboard-logout-link" data-logout-url="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a></li>
+                  <li><a href="/{{ .UUID }}/logout" id="gameboard-logout-link" data-logout-url="/{{ .UUID }}/logout" class="js-prompt-logout">{{ T "gb.logout" }}</a></li>
                 </ul>
               </li>
             </ul>
@@ -48,7 +48,7 @@
 
             <ul class="nav-right">
               <li>
-                <a href="#" class="js-launch-modal" data-modal="scoreboard">Scoreboard</a>
+                <a href="#" class="js-launch-modal" data-modal="scoreboard">{{ T "gb.scoreboard" }}</a>
               </li>
             </ul>
           </nav>
@@ -60,7 +60,7 @@
                 <svg class="icon icon--team-indicator your-team">
                   <use xlink:href="#icon--team-indicator"></use>
                 </svg>
-                You
+                {{ T "gb.tab_you" }}
               </span>
             </label>
 
@@ -70,22 +70,22 @@
                 <svg class="icon icon--team-indicator opponent-team">
                   <use xlink:href="#icon--team-indicator"></use>
                 </svg>
-                Others
+                {{ T "gb.tab_others" }}
               </span>
             </label>
 
             <input type="radio" name="mctf--map-select" id="mctf--map-select--need-help" value="need-help" />
             <label for="mctf--map-select--need-help" class="click-effect listview-only">
-              <span><span class="mctf-status status--incoming-help">Help</span></span>
+              <span><span class="mctf-status status--incoming-help">{{ T "gb.tab_help" }}</span></span>
             </label>
 
             <input type="radio" name="mctf--map-select" id="mctf--map-select--give-help" value="give-help" />
             <label for="mctf--map-select--give-help" class="click-effect listview-only">
-              <span><span class="mctf-status status--give-help">Help</span></span>
+              <span><span class="mctf-status status--give-help">{{ T "gb.tab_help" }}</span></span>
             </label>
 
             <input type="radio" name="mctf--map-select" id="mctf--map-select--all" value="all" checked="" />
-            <label for="mctf--map-select--all" class="click-effect"><span>All</span></label>
+            <label for="mctf--map-select--all" class="click-effect"><span>{{ T "gb.tab_all" }}</span></label>
           </div>
         </div>
         <!-- .gameboard-header -->
@@ -126,15 +126,15 @@
         <div class="mctf-module-container container--column column-left">
           <aside data-name="Leaderboard" data-module="leaderboard">
             <header class="module-header">
-              <h6>Leaderboard</h6>
+              <h6>{{ T "gb.leaderboard" }}</h6>
             </header>
             <div class="module-content">
               <div class="mctf-section-border">
                 <div class="module-top player-info">
-                  <span class="player-kicker">Your team</span>
-                  <h5 class="player-name">No Team</h5>
-                  <span class="player-rank"><span class="stat-label">Rank</span><span class="stat-value">--</span></span>
-                  <span class="player-score"><span class="stat-label">Points</span><span class="stat-value">0</span></span>
+                  <span class="player-kicker">{{ T "gb.your_team" }}</span>
+                  <h5 class="player-name">{{ T "gb.no_team" }}</h5>
+                  <span class="player-rank"><span class="stat-label">{{ T "gb.rank" }}</span><span class="stat-value">--</span></span>
+                  <span class="player-score"><span class="stat-label">{{ T "gb.points" }}</span><span class="stat-value">0</span></span>
                 </div>
                 <div class="module-scrollable">
                   <ul class="leaderboard-list"></ul>
@@ -144,7 +144,7 @@
           </aside>
           <aside data-name="Activity" data-module="activity">
             <header class="module-header">
-              <h6>Activity</h6>
+              <h6>{{ T "gb.activity" }}</h6>
             </header>
             <div class="module-content">
               <div class="mctf-section-border">
@@ -158,14 +158,14 @@
         <div class="mctf-module-container container--column column-right">
           <aside data-name="Teams" data-module="teams">
             <header class="module-header">
-              <h6>Teams</h6>
+              <h6>{{ T "gb.teams" }}</h6>
             </header>
             <div class="module-content">
               <div class="mctf-section-border">
                 <div class="module-top">
                   <div class="radio-tabs">
                     <input type="radio" name="mctf--module--teams" id="mctf--module--teams--all" checked="" />
-                    <label for="mctf--module--teams--all" class="click-effect"><span>All Teams</span></label>
+                    <label for="mctf--module--teams--all" class="click-effect"><span>{{ T "gb.all_teams" }}</span></label>
                   </div>
                 </div>
                 <div class="module-scrollable">
@@ -176,17 +176,17 @@
           </aside>
           <aside data-name="Filter" data-module="filter">
             <header class="module-header">
-              <h6>Filter</h6>
+              <h6>{{ T "gb.filter" }}</h6>
             </header>
             <div class="module-content">
               <div class="mctf-section-border">
                 <div class="module-top">
                   <div class="radio-tabs">
                     <input type="radio" name="mctf--module--filter" id="mctf--module--filter--category" value="category" checked="" />
-                    <label for="mctf--module--filter--category" class="click-effect"><span>Category</span></label>
+                    <label for="mctf--module--filter--category" class="click-effect"><span>{{ T "gb.category" }}</span></label>
 
                     <input type="radio" name="mctf--module--filter" id="mctf--module--filter--point-value" value="point-value" />
-                    <label for="mctf--module--filter--point-value" class="click-effect"><span>Point Value</span></label>
+                    <label for="mctf--module--filter--point-value" class="click-effect"><span>{{ T "gb.point_value" }}</span></label>
                   </div>
                 </div>
                 <div class="module-scrollable">
@@ -202,7 +202,7 @@
         <div class="mctf-module-container container--row">
           <aside data-name="World Domination" class="module--outer-left" data-module="world-domination">
             <header class="module-header">
-              <h6>World Domination</h6>
+              <h6>{{ T "gb.world_domination" }}</h6>
             </header>
             <div class="module-content module-scrollable">
               <div class="domination-status">
@@ -211,9 +211,9 @@
                     <use xlink:href="#icon--globe"></use>
                   </svg>
                   <div class="captured-info">
-                    <span class="country" data-domination-current-team>Team: No Team</span>
-                    <span class="status" data-domination-completed-text>0 / 0 Challenges Completed</span>
-                    <span class="time">Completion State</span>
+                    <span class="country" data-domination-current-team>{{ T "gb.team_prefix" }} {{ T "gb.no_team" }}</span>
+                    <span class="status" data-domination-completed-text>{{ T "gb.domination_completed_zero" }}</span>
+                    <span class="time">{{ T "gb.completion_state" }}</span>
                   </div>
                 </div>
                 <!-- .recently-captured -->
@@ -272,14 +272,14 @@
 
               <div class="game-statuses">
                 <div class="win-rate mctf-progress-bar">
-                  <span class="label label--left">Win Rate</span>
+                  <span class="label label--left">{{ T "gb.win_rate" }}</span>
                   <span class="label label--right pct-display mctf-numbers" data-domination-win-rate>0%</span>
                   <div class="indicator indicator--ratio">
                     <span class="gauge" data-domination-win-gauge style="left: 0%"></span>
                   </div>
                 </div>
                 <div class="lose-rate mctf-progress-bar">
-                  <span class="label label--left">Lose Rate</span>
+                  <span class="label label--left">{{ T "gb.lose_rate" }}</span>
                   <span class="label label--right pct-display mctf-numbers" data-domination-lose-rate>0%</span>
                   <div class="indicator indicator--ratio">
                     <span class="gauge" data-domination-lose-gauge style="left: 0%"></span>
@@ -291,21 +291,21 @@
           <aside data-name="World Chat" class="module--inner" data-module="world-chat">
             <div class="world-chat-box">
               <header class="module-header">
-                <h6>World Chat</h6>
+                <h6>{{ T "gb.world_chat" }}</h6>
               </header>
               <div class="module-content mctf-row-container">
                 <div class="chat-box row-fluid">
                   <ul class="chat-list" data-chat-list>
-                    <li data-chat-placeholder>Loading chat...</li>
+                    <li data-chat-placeholder>{{ T "gb.loading_chat" }}</li>
                   </ul>
                 </div>
                 <div class="row-fixed">
                   <form class="chat-input" data-chat-form>
                     <div class="chat-input-shell">
-                      <div class="input-container"><input type="text" placeholder="Type to chat" autocomplete="off" data-chat-input /></div>
+                      <div class="input-container"><input type="text" placeholder="{{ T "gb.type_to_chat" }}" autocomplete="off" data-chat-input /></div>
                       <span class="mctf-numbers" data-chat-counter></span>
                     </div>
-                    <button class="mctf-cta cta--light-blue" type="submit">Send</button>
+                    <button class="mctf-cta cta--light-blue" type="submit">{{ T "gb.send" }}</button>
                   </form>
                 </div>
               </div>
@@ -313,7 +313,7 @@
           </aside>
           <aside data-name="Game Clock" class="module--outer-right" data-module="game-clock">
             <header class="module-header">
-              <h6>Game Clock</h6>
+              <h6>{{ T "gb.game_clock" }}</h6>
             </header>
             <div class="module-content module-scrollable">
               <div class="game-clock mctf-numbers">
@@ -329,8 +329,8 @@
               </div>
 
               <div class="game-progress mctf-progress-bar">
-                <span class="label label--left">[Start]</span>
-                <span class="label label--right">[End]</span>
+                <span class="label label--left">{{ T "gb.clock_start" }}</span>
+                <span class="label label--right">{{ T "gb.clock_end" }}</span>
 
                 <div class="indicator game-progress-indicator">
                   <span class="indicator-cell"></span>
@@ -403,6 +403,7 @@
     </div>
     <!-- #mctf-initkit -->
 
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>
