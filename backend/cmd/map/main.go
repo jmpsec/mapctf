@@ -23,6 +23,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/config"
 	"github.com/jmpsec/mapctf/pkg/countries"
+	"github.com/jmpsec/mapctf/pkg/i18n"
 	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
@@ -268,6 +269,12 @@ func mapCTFService() {
 	sessionManager.Cookie.Path = "/"
 	sessionManager.Cookie.Persist = true
 	sessionManager.Store = goredisstore.New(redis.Client)
+	// Internationalization catalog (embedded locale messages)
+	i18nCatalog, err := i18n.New()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize i18n catalog")
+	}
+	log.Info().Int("locales", len(i18nCatalog.Supported())).Msg("i18n catalog loaded")
 	// Handlers
 	log.Info().Msg("Initializing handlers")
 	handlersMap := handlers.CreateHandlersMap(
@@ -284,6 +291,7 @@ func mapCTFService() {
 		handlers.WithCountries(countriesMgr),
 		handlers.WithSessions(sessionManager),
 		handlers.WithDebugHTTP(&flagParams.ConfigValues.DebugHTTP),
+		handlers.WithI18N(i18nCatalog),
 	)
 	// Router
 	log.Info().Msg("Initializing router")
@@ -296,6 +304,7 @@ func mapCTFService() {
 	muxMap.Use(middleware.Recoverer)
 	muxMap.Use(middleware.Timeout(30 * time.Second))
 	muxMap.Use(sessionManager.LoadAndSave)
+	muxMap.Use(handlersMap.LocaleMiddleware)
 	// Root
 	muxMap.Get(rootPath, handlersMap.RootHandler)
 	// Health

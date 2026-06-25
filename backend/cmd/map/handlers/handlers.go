@@ -7,6 +7,7 @@ import (
 	"github.com/jmpsec/mapctf/pkg/chat"
 	"github.com/jmpsec/mapctf/pkg/config"
 	"github.com/jmpsec/mapctf/pkg/countries"
+	"github.com/jmpsec/mapctf/pkg/i18n"
 	"github.com/jmpsec/mapctf/pkg/logs"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
@@ -43,6 +44,7 @@ type HandlersMap struct {
 	Chat        *chat.ChatManager
 	Config      config.MapCTFConfiguration
 	Sessions    *scs.SessionManager
+	I18N        *i18n.Catalog
 	DebugHTTP   *zerolog.Logger
 }
 
@@ -123,6 +125,12 @@ func WithChat(chat *chat.ChatManager) HandlersOption {
 func WithCountries(countries *countries.CountriesManager) HandlersOption {
 	return func(h *HandlersMap) {
 		h.Countries = countries
+	}
+}
+
+func WithI18N(catalog *i18n.Catalog) HandlersOption {
+	return func(h *HandlersMap) {
+		h.I18N = catalog
 	}
 }
 

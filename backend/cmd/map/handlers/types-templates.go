@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"html/template"
 	"time"
 
 	"github.com/jmpsec/mapctf/pkg/challenges"
@@ -18,6 +19,8 @@ type LoginTemplateData struct {
 	LoginMsg             string
 	LoginURL             string
 	UUID                 string
+	Lang                 string
+	I18NJSON             template.JS
 	LoginEnabled         bool
 	LoginStrongPasswords bool
 	Authenticated        bool

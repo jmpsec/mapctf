@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -16,11 +16,11 @@
         <nav class="mctf-main-nav mctf-navigation">
           <ul class="nav-left">
             <li>
-              <a href="/{{ .UUID }}/countdown" data-active="countdown">Play CTF</a>
+              <a href="/{{ .UUID }}/countdown" data-active="countdown">{{ T "nav.play_ctf" }}</a>
             </li>
             <li></li>
             <li>
-              <a href="/{{ .UUID }}/rules" data-active="rules">Rules</a>
+              <a href="/{{ .UUID }}/rules" data-active="rules">{{ T "nav.rules" }}</a>
             </li>
           </ul>
           <div class="branding">
@@ -33,16 +33,16 @@
           </div>
           <ul class="nav-right">
             <li>
-              <a href="/{{ .UUID }}/registration" data-active="registration">Registration</a>
+              <a href="/{{ .UUID }}/registration" data-active="registration">{{ T "nav.registration" }}</a>
             </li>
             <li></li>
             {{ if .Authenticated }}
             <li>
-              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">Gameboard</a>
+              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">{{ T "nav.gameboard" }}</a>
             </li>
             {{ else }}
             <li>
-              <a href="/{{ .UUID }}/login" data-active="login" class="active">Login</a>
+              <a href="/{{ .UUID }}/login" data-active="login" class="active">{{ T "nav.login" }}</a>
             </li>
             {{ end }}
             {{ if .Admin }}
@@ -65,21 +65,21 @@
                 <form class="mctf-form">
                   <fieldset class="form-set mctf-container container--small">
                     <div class="form-el el--text ajax-message-row">
-                      <label class="ajax-message-label" aria-hidden="true">Message</label>
+                      <label class="ajax-message-label" aria-hidden="true">{{ T "login.message_label" }}</label>
                       <div id="ajax-message-box" class="ajax-message" role="alert" aria-live="assertive"></div>
                     </div>
                     <div class="form-el el--text">
-                      <label for="login_username">Username</label>
+                      <label for="login_username">{{ T "login.username_label" }}</label>
                       <input autocomplete="off" id="login_username" name="username" type="text" maxlength="20" />
                     </div>
                     <div class="form-el el--text">
-                      <label for="login_password">Password</label>
+                      <label for="login_password">{{ T "login.password_label" }}</label>
                       <input autocomplete="off" id="login_password" name="password" type="password" />
                     </div>
                     <input type="hidden" id="login_url" name="login_url" value="{{ .LoginURL }}" />
                   </fieldset>
                   <div class="form-el--actions">
-                    <button id="login_button" class="mctf-cta cta--yellow" type="button" onclick="sendLogin()">Login</button>
+                    <button id="login_button" class="mctf-cta cta--yellow" type="button" onclick="sendLogin()">{{ T "login.button" }}</button>
                   </div>
                 </form>
               </div>
@@ -88,6 +88,7 @@
         </div>
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>
