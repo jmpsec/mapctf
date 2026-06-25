@@ -11,6 +11,8 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/i18n"
+	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/teams"
 	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/stretchr/testify/require"
@@ -329,4 +331,48 @@ func TestGameboardProfileNavigationAndModalAssets(t *testing.T) {
 	require.Contains(t, profileContentCSS, `max-width: 920px;`)
 	require.Contains(t, profileContentCSS, `max-height: calc(100vh - 28px);`)
 	require.Contains(t, profileContentCSS, `overflow-y: auto;`)
+}
+
+func TestProfileGETHandlerTranslatesRoleAndStatus(t *testing.T) {
+	db := newJSONTestDB(t)
+
+	teamManager, err := teams.CreateTeams(db)
+	require.NoError(t, err)
+	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{Secret: "test-secret", HoursToExpire: 24})
+	require.NoError(t, err)
+	settingsManager, err := settings.CreateSettingsManager(db, "test-service")
+	require.NoError(t, err)
+	require.NoError(t, settingsManager.Initialization(jsonTestUUID))
+	require.NoError(t, settingsManager.SetLanguage("es", jsonSettingsAuthor, jsonTestUUID))
+
+	catalog, err := i18n.New()
+	require.NoError(t, err)
+	sessions := scs.New()
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID, TemplatesDir: filepath.Join("..", "templates")}}),
+		WithTeams(teamManager),
+		WithUsers(userManager),
+		WithSettings(settingsManager),
+		WithSessions(sessions),
+		WithI18N(catalog),
+	)
+
+	user, err := userManager.New("alice", "password123", "alice@example.com", "Alice Doe", false, false, jsonTestUUID, 0)
+	require.NoError(t, err)
+	require.NoError(t, userManager.Create(user))
+
+	req := newRequestWithUUID(http.MethodGet, "/profile", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "alice")
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.ProfileGETHandler)).ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	var resp MapProfileResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, "Jugador", resp.Account.Role)
+	require.Equal(t, "Activo", resp.Account.Status)
 }

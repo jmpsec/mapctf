@@ -235,7 +235,7 @@ func TestGameboardCaptureFlagInputIsCompact(t *testing.T) {
 	css, err := os.ReadFile(filepath.Join("..", "templates", "static", "css", "mapctf.css"))
 	require.NoError(t, err)
 
-	require.Contains(t, string(modal), `<textarea placeholder="Enter your flag" rows="1"></textarea>`)
+	require.Contains(t, string(modal), `<textarea data-i18n-placeholder="modal.enter_flag" placeholder="Enter your flag" rows="1"></textarea>`)
 	require.Contains(t, string(css), ".country-capture-form textarea {\n  min-height: 34px;\n  max-height: 34px;\n  resize: none;\n}")
 }
 
@@ -314,7 +314,7 @@ func TestGameboardTeamModalUsesGameboardKicker(t *testing.T) {
 
 	jsBody := string(js)
 	require.Contains(t, jsBody, `modalName === "team" && $body && $body.attr("data-section") === "gameboard"`)
-	require.Contains(t, jsBody, `return "Gameboard";`)
+	require.Contains(t, jsBody, `return t("gb.gameboard_kicker", "Gameboard");`)
 }
 
 func TestStaticIncHTMLOnlyKeepsRuntimeModals(t *testing.T) {

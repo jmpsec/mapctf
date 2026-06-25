@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -96,11 +96,11 @@
         <nav class="mctf-main-nav mctf-navigation">
           <ul class="nav-left">
             <li>
-              <a href="/{{ .UUID }}/countdown" data-active="countdown" class="active">Play CTF</a>
+              <a href="/{{ .UUID }}/countdown" data-active="countdown" class="active">{{ T "nav.play_ctf" }}</a>
             </li>
             <li></li>
             <li>
-              <a href="/{{ .UUID }}/rules" data-active="rules">Rules</a>
+              <a href="/{{ .UUID }}/rules" data-active="rules">{{ T "nav.rules" }}</a>
             </li>
           </ul>
           <div class="branding">
@@ -113,16 +113,16 @@
           </div>
           <ul class="nav-right">
             <li>
-              <a href="/{{ .UUID }}/registration" data-active="registration">Registration</a>
+              <a href="/{{ .UUID }}/registration" data-active="registration">{{ T "nav.registration" }}</a>
             </li>
             <li></li>
             {{ if .Authenticated }}
             <li>
-              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">Gameboard</a>
+              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">{{ T "nav.gameboard" }}</a>
             </li>
             {{ else }}
             <li>
-              <a href="/{{ .UUID }}/login" data-active="login">Login</a>
+              <a href="/{{ .UUID }}/login" data-active="login">{{ T "nav.login" }}</a>
             </li>
             {{ end }}
             {{ if .Admin }}
@@ -136,18 +136,18 @@
       <div id="mctf-main-content" class="mctf-page">
         <main role="main" class="mctf-main countdown-page page--game-status row-fluid no-shrink center-vertically mctf-img-glitch full-height">
           <div class="mctf-container mctf-centered-main">
-            <h1 class="mctf-glitch" data-text="{{ if .AlreadyStarted }}Game In Progress{{ else }}To Be Announced{{ end }}">{{ if .AlreadyStarted }}Game In Progress{{ else }}To Be Announced{{ end }}</h1>
+            <h1 class="mctf-glitch" data-text="{{ if .AlreadyStarted }}{{ T "countdown.status_in_progress" }}{{ else }}{{ T "countdown.status_tba" }}{{ end }}">{{ if .AlreadyStarted }}{{ T "countdown.status_in_progress" }}{{ else }}{{ T "countdown.status_tba" }}{{ end }}</h1>
             {{ if and .AlreadyStarted .EndSet }}
             <p class="inner-container countdown-start-message">Ends {{ .EndTime.Format "January 2, 2006" }} at {{ .EndTime.Format "15:04 MST" }}.</p>
             {{ else if .AlreadyStarted }}
-            <p class="inner-container countdown-start-message">The game is live. End time not set yet.</p>
+            <p class="inner-container countdown-start-message">{{ T "countdown.msg_game_live" }}</p>
             {{ else if .StartSet }}
             <p class="inner-container countdown-start-message">Starts {{ .StartTime.Format "January 2, 2006" }} at {{ .StartTime.Format "15:04 MST" }}.</p>
             {{ else }}
-            <p class="inner-container countdown-start-message">Start time not set yet.</p>
+            <p class="inner-container countdown-start-message">{{ T "countdown.msg_start_not_set" }}</p>
             {{ end }}
             <p class="inner-container countdown-status-message" data-countdown-status>
-              {{ if and .AlreadyStarted .EndSet }}Countdown to game end{{ else if .AlreadyStarted }}Game already started{{ else }}Game on Standby{{ end }}
+              {{ if and .AlreadyStarted .EndSet }}{{ T "countdown.status_countdown_end" }}{{ else if .AlreadyStarted }}{{ T "countdown.status_game_started" }}{{ else }}{{ T "countdown.status_standby" }}{{ end }}
             </p>
 
             {{ if or (and .AlreadyStarted .EndSet) .StartSet }}
@@ -157,34 +157,36 @@
               {{ end }}>
               <li>
                 <span class="count-number" data-count-unit="days">{{ if or .StartSet .EndSet }}00{{ else }}--{{ end }}</span>
-                <span class="count-unit-label">Days</span>
+                <span class="count-unit-label">{{ T "countdown.unit_days" }}</span>
               </li>
               <li>
                 <span class="count-number" data-count-unit="hours">{{ if or .StartSet .EndSet }}00{{ else }}--{{ end }}</span>
-                <span class="count-unit-label">Hours</span>
+                <span class="count-unit-label">{{ T "countdown.unit_hours" }}</span>
               </li>
               <li>
                 <span class="count-number" data-count-unit="minutes">{{ if or .StartSet .EndSet }}00{{ else }}--{{ end }}</span>
-                <span class="count-unit-label">Minutes</span>
+                <span class="count-unit-label">{{ T "countdown.unit_minutes" }}</span>
               </li>
               <li>
                 <span class="count-number" data-count-unit="seconds">{{ if or .StartSet .EndSet }}00{{ else }}--{{ end }}</span>
-                <span class="count-unit-label">Seconds</span>
+                <span class="count-unit-label">{{ T "countdown.unit_seconds" }}</span>
               </li>
             </ul>
             {{ end }}
             <div class="mctf-actionable">
-              <a href="/{{ .UUID }}/registration" class="mctf-cta cta--yellow">Sign Up</a>
-              <a href="/{{ .UUID }}/login" class="mctf-cta">Login</a>
+              <a href="/{{ .UUID }}/registration" class="mctf-cta cta--yellow">{{ T "registration.button" }}</a>
+              <a href="/{{ .UUID }}/login" class="mctf-cta">{{ T "nav.login" }}</a>
             </div>
           </div>
         </main>
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>
     <script type="text/javascript" src="/static/js/mapctf.js"></script>
+    <script type="text/javascript" src="/static/js/functions.js"></script>
     <script>
       (function () {
         var countdown = document.querySelector(".upcoming-game-countdown");
@@ -236,9 +238,9 @@
 
           if (statusMessage) {
             if (remainingMs <= 0) {
-              statusMessage.textContent = countdownMode === "end" ? "The game has ended" : "The game has already started";
+              statusMessage.textContent = countdownMode === "end" ? t("countdown.js_game_ended", "The game has ended") : t("countdown.js_game_started", "The game has already started");
             } else {
-              statusMessage.textContent = countdownMode === "end" ? "Countdown to game end" : "Game on Standby";
+              statusMessage.textContent = countdownMode === "end" ? t("countdown.js_countdown_end", "Countdown to game end") : t("countdown.js_standby", "Game on Standby");
             }
           }
 

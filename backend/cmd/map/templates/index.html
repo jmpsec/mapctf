@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -79,11 +79,11 @@
         <nav class="mctf-main-nav mctf-navigation">
           <ul class="nav-left">
             <li>
-              <a href="/{{ .UUID }}/countdown" data-active="countdown">Play CTF</a>
+              <a href="/{{ .UUID }}/countdown" data-active="countdown">{{ T "nav.play_ctf" }}</a>
             </li>
             <li></li>
             <li>
-              <a href="/{{ .UUID }}/rules" data-active="rules">Rules</a>
+              <a href="/{{ .UUID }}/rules" data-active="rules">{{ T "nav.rules" }}</a>
             </li>
           </ul>
           <div class="branding">
@@ -96,16 +96,16 @@
           </div>
           <ul class="nav-right">
             <li>
-              <a href="/{{ .UUID }}/registration" data-active="registration">Registration</a>
+              <a href="/{{ .UUID }}/registration" data-active="registration">{{ T "nav.registration" }}</a>
             </li>
             <li></li>
             {{ if .Authenticated }}
             <li>
-              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">Gameboard</a>
+              <a href="/{{ .UUID }}/gameboard" data-active="gameboard">{{ T "nav.gameboard" }}</a>
             </li>
             {{ else }}
             <li>
-              <a href="/{{ .UUID }}/login" data-active="login">Login</a>
+              <a href="/{{ .UUID }}/login" data-active="login">{{ T "nav.login" }}</a>
             </li>
             {{ end }}
             {{ if .Admin }}
@@ -120,21 +120,22 @@
         <div class="mctf-row-container full-height mctf-scroll">
           <main role="main" class="mctf-main landing-page page--landing row-fluid no-shrink center-vertically mctf-img-glitch">
             <div class="mctf-container mctf-centered-main">
-              <h3 class="title-lead">Global Capture The Flag</h3>
-              <h1 class="mctf-glitch" data-text="Conquer the world">Conquer the world</h1>
+              <h3 class="title-lead">{{ T "index.eyebrow" }}</h3>
+              <h1 class="mctf-glitch" data-text="{{ T "index.headline" }}">{{ T "index.headline" }}</h1>
               <div class="landing-copy">
-                <p class="typed-text">Build your team, enter the map, and turn challenge solves into territory. MAPCTF keeps the experience simple: register, deploy, and take control before time runs out.</p>
+                <p class="typed-text">{{ T "index.copy" }}</p>
               </div>
               <div class="landing-actions">
-                <a href="/{{ .UUID }}/countdown" class="mctf-cta cta--yellow">Enter</a>
-                <a href="/{{ .UUID }}/rules" class="mctf-cta">Rules</a>
+                <a href="/{{ .UUID }}/countdown" class="mctf-cta cta--yellow">{{ T "index.cta_enter" }}</a>
+                <a href="/{{ .UUID }}/rules" class="mctf-cta">{{ T "nav.rules" }}</a>
               </div>
-              <p class="landing-note"><strong>Mission brief:</strong> review the event status, assemble your team, and be ready to move when the map goes live.</p>
+              <p class="landing-note"><strong>{{ T "index.note_label" }}</strong> {{ T "index.note_body" }}</p>
             </div>
           </main>
         </div>
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>

@@ -48,7 +48,7 @@ func (h *HandlersMap) ProfileGETHandler(w http.ResponseWriter, r *http.Request) 
 
 	resp := MapProfileResponse{
 		Success: true,
-		Account: profileAccountResponse(user),
+		Account: profileAccountResponse(user, h.T(r.Context())),
 	}
 
 	team, found, err := h.currentProfileTeam(user.TeamID, uuid)
@@ -136,8 +136,8 @@ func (h *HandlersMap) ProfilePOSTHandler(w http.ResponseWriter, r *http.Request)
 
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapProfileAccountUpdateResponse{
 		Success: true,
-		Message: "Profile updated",
-		Account: profileAccountResponse(user),
+		Message: h.T(r.Context())("profile.updated_msg"),
+		Account: profileAccountResponse(user, h.T(r.Context())),
 	})
 }
 
@@ -201,7 +201,7 @@ func (h *HandlersMap) ProfilePasswordPOSTHandler(w http.ResponseWriter, r *http.
 
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapProfilePasswordResponse{
 		Success: true,
-		Message: "Password updated",
+		Message: h.T(r.Context())("profile.password_updated_msg"),
 	})
 }
 
@@ -261,31 +261,31 @@ func (h *HandlersMap) profileTeamRank(teamID uint, uuid string) int {
 	return 0
 }
 
-func profileRole(admin, service bool) string {
+func profileRole(admin, service bool, tr func(string, ...any) string) string {
 	if admin {
-		return "Admin"
+		return tr("profile.role_admin")
 	}
 	if service {
-		return "Service"
+		return tr("profile.role_service")
 	}
-	return "Player"
+	return tr("profile.role_player")
 }
 
-func profileAccountResponse(user users.PlatformUser) MapProfileAccountResponse {
+func profileAccountResponse(user users.PlatformUser, tr func(string, ...any) string) MapProfileAccountResponse {
 	return MapProfileAccountResponse{
 		Username: user.Username,
 		Name:     user.Name,
 		Email:    user.Email,
-		Role:     profileRole(user.Admin, user.Service),
-		Status:   profileStatus(user.Active),
+		Role:     profileRole(user.Admin, user.Service, tr),
+		Status:   profileStatus(user.Active, tr),
 	}
 }
 
-func profileStatus(active bool) string {
+func profileStatus(active bool, tr func(string, ...any) string) string {
 	if active {
-		return "Active"
+		return tr("profile.status_active")
 	}
-	return "Inactive"
+	return tr("profile.status_inactive")
 }
 
 func profileTime(value time.Time) string {

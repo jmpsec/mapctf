@@ -1,7 +1,7 @@
 <div class="mctf-modal-content">
   <div class="modal-title">
     <h4>
-      capture_
+      <span data-i18n="modal.capture_label">capture_</span>
       <span class="country-name highlighted"></span>
     </h4>
     <a href="#" class="js-close-modal">
@@ -13,14 +13,14 @@
     <div class="capture-box capture-challenge-box">
       <div class="capture-text"></div>
       <div class="capture-resource" hidden>
-        <a class="capture-resource-link" href="#" target="_blank" rel="noopener noreferrer">Open challenge</a>
+        <a class="capture-resource-link" href="#" target="_blank" rel="noopener noreferrer" data-i18n="gb.open_challenge">Open challenge</a>
       </div>
     </div>
 
     <div class="country-capture-feedback" aria-live="polite"></div>
     <fieldset class="form-set">
       <div class="form-el el--text">
-        <textarea placeholder="Enter your flag" rows="1"></textarea>
+        <textarea data-i18n-placeholder="modal.enter_flag" placeholder="Enter your flag" rows="1"></textarea>
       </div>
     </fieldset>
 
@@ -34,11 +34,11 @@
                 *  text in a span. On hover, the browser will hide the default
                 *  text and show the value of the data-hover attribute
                 -->
-        <a class="mctf-cta cta--blue js-trigger-hint" data-hover="-10 Pts"><span>Hint</span></a>
-        <a class="mctf-cta cta--red js-trigger-help" data-hover="-30 Pts"><span>Help</span></a>
+        <a class="mctf-cta cta--blue js-trigger-hint" data-hover="-10 Pts"><span data-i18n="modal.hint_button">Hint</span></a>
+        <a class="mctf-cta cta--red js-trigger-help" data-hover="-30 Pts"><span data-i18n="modal.help_button">Help</span></a>
       </div>
       <div class="col col-1-2 actions--right">
-        <button class="mctf-cta cta--yellow" type="submit">Submit</button>
+        <button class="mctf-cta cta--yellow" type="submit" data-i18n="modal.submit">Submit</button>
         <span class="mctf-numbers help--time-left">00:00:25:47</span>
       </div>
     </div>
@@ -46,22 +46,22 @@
 
   <div class="capture-hints-and-help">
     <div class="capture-help">
-      <h4>help_</h4>
+      <h4 data-i18n="modal.help_label">help_</h4>
       <div>
-        You have requested help from another team. You will ba able to capture_
+        <span data-i18n="modal.help_request_lead">You have requested help from another team. You will be able to capture</span>
         <span class="country-name"></span>
-        in 10 minutes. You may close this window and continue playing CTF.
+        <span data-i18n="modal.help_request_trail">in 10 minutes. You may close this window and continue playing CTF.</span>
       </div>
     </div>
     <div class="capture-hint">
       <div class="capture-hint-card capture-hint-card--locked">
         <div class="capture-hint-head">
-          <h4>hint_</h4>
-          <span class="capture-hint-status">Locked</span>
+          <h4 data-i18n="modal.hint_label">hint_</h4>
+          <span class="capture-hint-status" data-i18n="gb.hint_locked">Locked</span>
         </div>
-        <p class="capture-hint-copy">Spend points to unlock extra challenge intel for this country.</p>
+        <p class="capture-hint-copy" data-i18n="modal.hint_copy">Spend points to unlock extra challenge intel for this country.</p>
         <div class="capture-hint-body">
-          <div class="capture-hint-empty">No hint revealed yet.</div>
+          <div class="capture-hint-empty" data-i18n="modal.hint_empty">No hint revealed yet.</div>
           <div class="capture-hint-value"></div>
         </div>
       </div>
@@ -72,20 +72,20 @@
     <div class="col col-1-2 country-capture-stats mctf-column-container">
       <div class="points-display">
         <span class="points-number mctf-numbers"></span>
-        <span class="points-label">PTS</span>
+        <span class="points-label" data-i18n="modal.pts">PTS</span>
       </div>
       <div class="country-stats">
         <dl>
-          <dt>category</dt>
+          <dt data-i18n="modal.category">category</dt>
           <dd class="country-category"></dd>
 
-          <dt>flag_owner</dt>
+          <dt data-i18n="modal.flag_owner">flag_owner</dt>
           <dd class="opponent-name country-owner"></dd>
         </dl>
       </div>
     </div>
     <div class="col col-1-2 country-capture-completed mctf-column-container">
-      <span>completed_by &gt;</span>
+      <span data-i18n="modal.completed_by">completed_by &gt;</span>
       <ul class="completed-list"></ul>
     </div>
   </footer>
