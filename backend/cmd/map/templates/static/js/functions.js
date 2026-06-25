@@ -1,5 +1,15 @@
 var ajaxRedirectTimeout = null;
 
+// t returns the localized message for key when the page injected a locale
+// bundle (window.MCTF_I18N), otherwise it falls back to the provided English
+// string so unconverted pages keep working unchanged.
+function t(key, fallback) {
+  if (window.MCTF_I18N && Object.prototype.hasOwnProperty.call(window.MCTF_I18N, key)) {
+    return window.MCTF_I18N[key];
+  }
+  return fallback;
+}
+
 function getAjaxMessageBox() {
   return $("#ajax-message-box");
 }
@@ -45,7 +55,7 @@ function sendGetRequest(req_url, _modal, _callback) {
       }
     },
     error: function (jqXhr, textStatus, errorThrown) {
-      var _serverMessage = "Request failed. Please try again.";
+      var _serverMessage = t("ajax.request_failed", "Request failed. Please try again.");
       if (jqXhr.responseJSON && (jqXhr.responseJSON.error || jqXhr.responseJSON.message)) {
         _serverMessage = jqXhr.responseJSON.error || jqXhr.responseJSON.message;
       } else if (jqXhr.responseText) {
@@ -89,13 +99,13 @@ function sendPostRequest(req_data, req_url, _redir, _modal, _callback) {
         if (_isAdminRedirect) {
           var _adminRedirectDelayMs = 1000;
 
-          showAjaxMessage(data.message || "Login successful. Redirecting...", "success");
+          showAjaxMessage(data.message || t("login.success_redirect_admin", "Login successful. Redirecting..."), "success");
           ajaxRedirectTimeout = setTimeout(function () {
             ajaxRedirectTimeout = null;
             window.location.replace(_redirectUrl);
           }, _adminRedirectDelayMs);
         } else {
-          showAjaxMessage(data.message || "Success. Redirecting...", "success");
+          showAjaxMessage(data.message || t("login.success_redirect", "Success. Redirecting..."), "success");
           ajaxRedirectTimeout = setTimeout(function () {
             ajaxRedirectTimeout = null;
             window.location.replace(_redirectUrl);
@@ -107,7 +117,7 @@ function sendPostRequest(req_data, req_url, _redir, _modal, _callback) {
       }
     },
     error: function (jqXhr, textStatus, errorThrown) {
-      var _serverMessage = "Request failed. Please try again.";
+      var _serverMessage = t("ajax.request_failed", "Request failed. Please try again.");
       if (jqXhr.responseJSON && (jqXhr.responseJSON.error || jqXhr.responseJSON.message)) {
         _serverMessage = jqXhr.responseJSON.error || jqXhr.responseJSON.message;
       } else if (jqXhr.responseText) {

@@ -1,0 +1,107 @@
+package handlers
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/alexedwards/scs/v2"
+	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/i18n"
+	"github.com/jmpsec/mapctf/pkg/settings"
+	"github.com/stretchr/testify/require"
+)
+
+func newLoginI18nHandler(t *testing.T, lang string) (*HandlersMap, *scs.SessionManager) {
+	t.Helper()
+
+	db := newJSONTestDB(t)
+	settingsManager, err := settings.CreateSettingsManager(db, "test-service")
+	require.NoError(t, err)
+	require.NoError(t, settingsManager.Initialization(jsonTestUUID))
+	if lang != "" {
+		require.NoError(t, settingsManager.SetLanguage(lang, jsonSettingsAuthor, jsonTestUUID))
+	}
+
+	catalog, err := i18n.New()
+	require.NoError(t, err)
+
+	sessions := scs.New()
+	return CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{
+			Map: config.ConfigurationMap{
+				UUID:         jsonTestUUID,
+				TemplatesDir: filepath.Join("..", "templates"),
+			},
+		}),
+		WithSettings(settingsManager),
+		WithSessions(sessions),
+		WithI18N(catalog),
+	), sessions
+}
+
+func TestLoginHandlerRendersConfiguredLocale(t *testing.T) {
+	if _, err := os.Stat(filepath.Join("..", "templates", "login.html")); err != nil {
+		t.Skipf("login template not available: %v", err)
+	}
+
+	cases := []struct {
+		name string
+		lang string
+		want []string
+	}{
+		{
+			name: "spanish",
+			lang: "es",
+			want: []string{`<html lang="es">`, "Jugar CTF", "Usuario", "Contraseña", "Acceder"},
+		},
+		{
+			name: "english default",
+			lang: "en",
+			want: []string{`<html lang="en">`, "Play CTF", "Username", "Password", "Login"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			handler, sessions := newLoginI18nHandler(t, tc.lang)
+
+			req := newTemplateRequestWithUUID(http.MethodGet, "/"+jsonTestUUID+"/login", jsonTestUUID)
+			ctx, err := sessions.Load(req.Context(), "")
+			require.NoError(t, err)
+			req = req.WithContext(ctx)
+
+			rr := httptest.NewRecorder()
+			handler.LocaleMiddleware(http.HandlerFunc(handler.LoginHandler)).ServeHTTP(rr, req)
+
+			require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
+			body := rr.Body.String()
+			for _, want := range tc.want {
+				require.Contains(t, body, want)
+			}
+			// The client-side bundle must be injected and carry the locale messages.
+			require.Contains(t, body, "window.MCTF_I18N")
+			require.Contains(t, body, `"nav.login"`)
+		})
+	}
+}
+
+func TestLoginHandlerFallsBackToEnglishForUnknownLanguage(t *testing.T) {
+	if _, err := os.Stat(filepath.Join("..", "templates", "login.html")); err != nil {
+		t.Skipf("login template not available: %v", err)
+	}
+
+	handler, sessions := newLoginI18nHandler(t, "xx") // unsupported code
+	req := newTemplateRequestWithUUID(http.MethodGet, "/"+jsonTestUUID+"/login", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.LoginHandler)).ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	require.Contains(t, rr.Body.String(), "Play CTF")
+}

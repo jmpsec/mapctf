@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html"
+	htmltemplate "html/template"
 	"net/http"
 	"strings"
 	"text/template"
@@ -92,9 +94,11 @@ func (h *HandlersMap) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/login.html")
+	// Prepare template with i18n translation func bound to the resolved locale
+	tr := h.T(r.Context())
+	t, err := template.New("login.html").Funcs(template.FuncMap{
+		"T": tr,
+	}).ParseFiles(h.Config.Map.TemplatesDir + "/login.html")
 	if err != nil {
 		log.Err(err).Msg("error getting login template")
 		return
@@ -112,18 +116,21 @@ func (h *HandlersMap) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		log.Err(err).Msg("error getting login strong passwords setting")
 		loginStrongPasswords = false
 	}
-	loginMsg := "Login to play Capture The Flag here."
-	loginType := "Team Login"
+	loginMsg := tr("page.login.msg_enabled")
+	loginType := tr("page.login.type_team")
 	if !loginEnabled {
-		loginMsg = "Team login is currently disabled. Only admins can login at this time."
-		loginType = "Admin Login"
+		loginMsg = tr("page.login.msg_disabled")
+		loginType = tr("page.login.type_admin")
 	}
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := LoginTemplateData{
-		Title:                "MapCTF: Login to platform",
+		Title:                tr("page.login.title"),
 		LoginType:            loginType,
 		LoginMsg:             loginMsg,
 		LoginURL:             "/" + uuid + "/login",
 		UUID:                 uuid,
+		Lang:                 h.Locale(r.Context()).String(),
+		I18NJSON:             htmltemplate.JS(i18nJSON),
 		LoginEnabled:         loginEnabled,
 		LoginStrongPasswords: loginStrongPasswords,
 		Authenticated:        authenticated,
