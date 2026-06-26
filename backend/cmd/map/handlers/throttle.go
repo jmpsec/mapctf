@@ -127,7 +127,7 @@ func (h *HandlersMap) teamThrottleKey(r *http.Request) (string, error) {
 	uuid := h.Config.Map.UUID
 	username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
 	if username == "" {
-		return "", errors.New("user not authenticated")
+		return "", errors.New(h.T(r.Context())("chat.not_authenticated"))
 	}
 
 	user, err := h.Users.Get(username, uuid)

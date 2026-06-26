@@ -33,62 +33,62 @@ func (h *HandlersMap) RegistrationPOSTHandler(w http.ResponseWriter, r *http.Req
 	var req MapRegistrationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing request body")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid request body"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("reg.invalid_body")})
 		return
 	}
 	regType, err := h.Settings.GetRegistrationType(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting registration type setting")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get registration type setting"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("reg.failed_type_setting")})
 		return
 	}
 	if req.Token == "" && regType == settings.TokenRegistration {
-		log.Err(errors.New("registration token is required")).Msg("registration token is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "registration token is required"})
+		log.Err(errors.New(h.T(r.Context())("reg.token_required"))).Msg(h.T(r.Context())("reg.token_required"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("reg.token_required")})
 		return
 	}
 	if regType == settings.TokenRegistration {
 		regToken, err := h.Settings.GetRegistrationToken(uuid)
 		if err != nil {
 			log.Err(err).Msg("error getting registration token setting")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get registration token setting"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("reg.failed_token_setting")})
 			return
 		}
 		if req.Token != regToken {
-			log.Err(errors.New("invalid registration token")).Msg("invalid registration token")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid registration token"})
+			log.Err(errors.New(h.T(r.Context())("reg.invalid_token"))).Msg(h.T(r.Context())("reg.invalid_token"))
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("reg.invalid_token")})
 			return
 		}
 	}
 	if req.Username == "" || req.Password == "" {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "username and password are required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("auth.user_pass_required")})
 		return
 	}
 	if req.Email == "" {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "email is required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("reg.email_required")})
 		return
 	}
 	if req.Team == "" {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "team is required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("reg.team_required")})
 		return
 	}
 	// Register team
 	nTeam, err := h.Teams.Register(req.Team, req.Logo, uuid)
 	if err != nil {
 		log.Err(err).Msg("error registering team")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to register team"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("reg.failed_register_team")})
 		return
 	}
 	// Register user
 	err = h.Users.Register(req.Username, req.Password, req.Name, req.Email, nTeam.ID, uuid)
 	if err != nil {
 		log.Err(err).Msg("error registering user")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to register user"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("reg.failed_register_user")})
 		return
 	}
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapRegistrationResponse{
 		Success:  true,
-		Message:  "Registration successful",
+		Message:  h.T(r.Context())("reg.success"),
 		Redirect: "/" + uuid + "/login",
 	})
 }
@@ -109,32 +109,32 @@ func (h *HandlersMap) ChatPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	var req ChatEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing request body")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid request body"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("reg.invalid_body")})
 		return
 	}
 	chatMaxLen, err := h.Settings.GetGameboardChatMaxLen(uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting gameboard chat max length setting")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get gameboard chat max length	 setting"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("chat.failed_maxlen_setting")})
 		return
 	}
 	// Get user from session
 	username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
 	if username == "" {
-		log.Err(errors.New("user not authenticated")).Msg("user not authenticated")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "user not authenticated"})
+		log.Err(errors.New(h.T(r.Context())("chat.not_authenticated"))).Msg(h.T(r.Context())("chat.not_authenticated"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("chat.not_authenticated")})
 		return
 	}
 	// Get user team
 	teamID, err := h.Users.Get(username, uuid)
 	if err != nil {
 		log.Err(err).Msg("error getting user for chat message")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to get user for chat message"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("chat.failed_get_user")})
 		return
 	}
 	if err := h.Chat.CreateNew(username, req.Message, teamID.TeamID, chatMaxLen); err != nil {
 		log.Err(err).Msg("error creating chat message")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to create chat message"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("chat.failed_create")})
 		return
 	}
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapChatResponse{
@@ -156,68 +156,68 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 
 	if h.Settings == nil || h.Users == nil || h.Teams == nil || h.Challenges == nil || h.Logs == nil || h.Sessions == nil {
 		log.Err(errors.New("score handler dependencies not initialized")).Msg("error scoring challenge")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "scoring is unavailable"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.unavailable")})
 		return
 	}
 
 	var req MapScoreRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing score request body")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid request body"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("reg.invalid_body")})
 		return
 	}
 
 	countryCode := strings.ToUpper(strings.TrimSpace(req.CountryCode))
 	submittedFlag := strings.TrimSpace(req.Flag)
 	if countryCode == "" || submittedFlag == "" {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "country_code and flag are required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("score.country_flag_required")})
 		return
 	}
 
 	scoringEnabled, err := h.Settings.GetScoringEnabled(uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving scoring setting")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve scoring setting"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_setting")})
 		return
 	}
 	if !scoringEnabled {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusForbidden, MapErrorResponse{Error: "scoring is disabled"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusForbidden, MapErrorResponse{Error: h.T(r.Context())("score.disabled")})
 		return
 	}
 
 	username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
 	if username == "" {
-		log.Err(errors.New("user not authenticated")).Msg("user not authenticated")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "user not authenticated"})
+		log.Err(errors.New(h.T(r.Context())("chat.not_authenticated"))).Msg(h.T(r.Context())("chat.not_authenticated"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("chat.not_authenticated")})
 		return
 	}
 
 	user, err := h.Users.Get(username, uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving user for score request")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve user"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_user")})
 		return
 	}
 	if user.TeamID == 0 {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "user is not assigned to a team"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("score.no_team")})
 		return
 	}
 
 	var team teams.PlatformTeam
 	if err := h.Teams.DB.Where("id = ? AND uuid = ?", user.TeamID, uuid).First(&team).Error; err != nil {
 		log.Err(err).Msg("error retrieving team for score request")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve team"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_team")})
 		return
 	}
 
 	var challenge challenges.Challenge
 	if err := h.Challenges.DB.Where("uuid = ? AND active = ? AND country = ?", uuid, true, countryCode).First(&challenge).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: "no active challenge found for country"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: h.T(r.Context())("score.no_active_challenge")})
 			return
 		}
 		log.Err(err).Msg("error retrieving challenge for score request")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve challenge"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_challenge")})
 		return
 	}
 
@@ -225,7 +225,7 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 	if err := h.Teams.DB.Where("uuid = ? AND team_id = ? AND challenge_id = ?", uuid, user.TeamID, challenge.ID).First(&existingScore).Error; err == nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusConflict, MapScoreResponse{
 			Success:     false,
-			Message:     "Your team already completed this challenge",
+			Message:     h.T(r.Context())("score.already_completed"),
 			CountryCode: countryCode,
 			ChallengeID: challenge.ID,
 			TotalPoints: team.Points,
@@ -233,7 +233,7 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Err(err).Msg("error checking existing team score")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to evaluate current score"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_evaluate")})
 		return
 	}
 
@@ -241,18 +241,18 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 		failureLog, err := h.Logs.NewFailuresLog(challenge.ID, user.TeamID, submittedFlag, uuid)
 		if err != nil {
 			log.Err(err).Msg("error building failure log")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to record scoring attempt"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_record")})
 			return
 		}
 		if err := h.Logs.CreateFailuresLog(failureLog); err != nil {
 			log.Err(err).Msg("error creating failure log")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to record scoring attempt"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_record")})
 			return
 		}
 
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapScoreResponse{
 			Success:     false,
-			Message:     "Incorrect flag",
+			Message:     h.T(r.Context())("score.incorrect_flag"),
 			CountryCode: countryCode,
 			ChallengeID: challenge.ID,
 			TotalPoints: team.Points,
@@ -268,7 +268,7 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 		category, err := h.Challenges.GetCategoryByID(challenge.CategoryID, uuid)
 		if err != nil {
 			log.Err(err).Msg("error retrieving challenge category for score activity")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve challenge category"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_category")})
 			return
 		}
 		categoryName = category.Name
@@ -314,13 +314,13 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 		return nil
 	}); err != nil {
 		log.Err(err).Msg("error storing successful score")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to score challenge"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_score")})
 		return
 	}
 
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapScoreResponse{
 		Success:       true,
-		Message:       "Challenge completed",
+		Message:       h.T(r.Context())("score.completed"),
 		CountryCode:   countryCode,
 		ChallengeID:   challenge.ID,
 		PointsAwarded: awardedPoints,
@@ -342,65 +342,65 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 
 	if h.Settings == nil || h.Users == nil || h.Teams == nil || h.Challenges == nil || h.Logs == nil || h.Sessions == nil {
 		log.Err(errors.New("hint handler dependencies not initialized")).Msg("error requesting hint")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "hint requests are unavailable"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("hint.requests_unavailable")})
 		return
 	}
 
 	var req MapHintRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing hint request body")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid request body"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("reg.invalid_body")})
 		return
 	}
 
 	countryCode := strings.ToUpper(strings.TrimSpace(req.CountryCode))
 	if countryCode == "" {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "country_code is required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("hint.country_required")})
 		return
 	}
 
 	scoringHintsEnabled, err := h.Settings.GetScoringHints(uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving scoring_hints setting")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve hint setting"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("hint.failed_setting")})
 		return
 	}
 	if !scoringHintsEnabled {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusForbidden, MapErrorResponse{Error: "hint requests are disabled"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusForbidden, MapErrorResponse{Error: h.T(r.Context())("hint.requests_disabled")})
 		return
 	}
 
 	username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
 	if username == "" {
-		log.Err(errors.New("user not authenticated")).Msg("user not authenticated")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "user not authenticated"})
+		log.Err(errors.New(h.T(r.Context())("chat.not_authenticated"))).Msg(h.T(r.Context())("chat.not_authenticated"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("chat.not_authenticated")})
 		return
 	}
 
 	user, err := h.Users.Get(username, uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving user for hint request")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve user"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_user")})
 		return
 	}
 	if user.TeamID == 0 {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "user is not assigned to a team"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("score.no_team")})
 		return
 	}
 
 	var challenge challenges.Challenge
 	if err := h.Challenges.DB.Where("uuid = ? AND active = ? AND country = ?", uuid, true, countryCode).First(&challenge).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: "no active challenge found for country"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: h.T(r.Context())("score.no_active_challenge")})
 			return
 		}
 		log.Err(err).Msg("error retrieving challenge for hint request")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve challenge"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_challenge")})
 		return
 	}
 
 	if strings.TrimSpace(challenge.Hint) == "" {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: "no hint is available for this challenge"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: h.T(r.Context())("hint.not_available")})
 		return
 	}
 
@@ -412,7 +412,7 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	var team teams.PlatformTeam
 	if err := h.Teams.DB.Where("id = ? AND uuid = ?", user.TeamID, uuid).First(&team).Error; err != nil {
 		log.Err(err).Msg("error retrieving team for hint request")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve team"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_team")})
 		return
 	}
 
@@ -420,7 +420,7 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	if err := h.Logs.DB.Where("uuid = ? AND team_id = ? AND challenge_id = ?", uuid, user.TeamID, challenge.ID).First(&existingHint).Error; err == nil {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapHintResponse{
 			Success:         true,
-			Message:         "Hint already unlocked",
+			Message:         h.T(r.Context())("hint.already_unlocked"),
 			CountryCode:     countryCode,
 			ChallengeID:     challenge.ID,
 			Hint:            challenge.Hint,
@@ -431,14 +431,14 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Err(err).Msg("error checking existing hint log")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to evaluate hint state"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("hint.failed_evaluate")})
 		return
 	}
 
 	if team.Points < penalty {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusConflict, MapHintResponse{
 			Success:     false,
-			Message:     "Your team does not have enough points for this hint",
+			Message:     h.T(r.Context())("hint.not_enough_points"),
 			CountryCode: countryCode,
 			ChallengeID: challenge.ID,
 			Penalty:     penalty,
@@ -453,7 +453,7 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		category, err := h.Challenges.GetCategoryByID(challenge.CategoryID, uuid)
 		if err != nil {
 			log.Err(err).Msg("error retrieving challenge category for hint activity")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve challenge category"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_category")})
 			return
 		}
 		categoryName = category.Name
@@ -510,7 +510,7 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		if err.Error() == "insufficient points" {
 			HTTPResponse(w, JSONApplicationUTF8, http.StatusConflict, MapHintResponse{
 				Success:     false,
-				Message:     "Your team does not have enough points for this hint",
+				Message:     h.T(r.Context())("hint.not_enough_points"),
 				CountryCode: countryCode,
 				ChallengeID: challenge.ID,
 				Penalty:     penalty,
@@ -519,13 +519,13 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Err(err).Msg("error storing successful hint request")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to unlock hint"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("hint.failed_unlock")})
 		return
 	}
 
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapHintResponse{
 		Success:         true,
-		Message:         "Hint unlocked",
+		Message:         h.T(r.Context())("hint.unlocked"),
 		CountryCode:     countryCode,
 		ChallengeID:     challenge.ID,
 		Hint:            challenge.Hint,
@@ -549,71 +549,71 @@ func (h *HandlersMap) HintGETHandler(w http.ResponseWriter, r *http.Request) {
 
 	if h.Users == nil || h.Teams == nil || h.Challenges == nil || h.Logs == nil || h.Sessions == nil {
 		log.Err(errors.New("hint get handler dependencies not initialized")).Msg("error retrieving unlocked hint")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "hint retrieval is unavailable"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("hint.retrieval_unavailable")})
 		return
 	}
 
 	countryCode := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("country_code")))
 	if countryCode == "" {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "country_code is required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("hint.country_required")})
 		return
 	}
 
 	username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
 	if username == "" {
-		log.Err(errors.New("user not authenticated")).Msg("user not authenticated")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "user not authenticated"})
+		log.Err(errors.New(h.T(r.Context())("chat.not_authenticated"))).Msg(h.T(r.Context())("chat.not_authenticated"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("chat.not_authenticated")})
 		return
 	}
 
 	user, err := h.Users.Get(username, uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving user for hint retrieval")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve user"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_user")})
 		return
 	}
 	if user.TeamID == 0 {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "user is not assigned to a team"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("score.no_team")})
 		return
 	}
 
 	var challenge challenges.Challenge
 	if err := h.Challenges.DB.Where("uuid = ? AND active = ? AND country = ?", uuid, true, countryCode).First(&challenge).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: "no active challenge found for country"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: h.T(r.Context())("score.no_active_challenge")})
 			return
 		}
 		log.Err(err).Msg("error retrieving challenge for hint retrieval")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve challenge"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_challenge")})
 		return
 	}
 
 	if strings.TrimSpace(challenge.Hint) == "" {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: "no hint is available for this challenge"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: h.T(r.Context())("hint.not_available")})
 		return
 	}
 
 	var existingHint logs.HintsLog
 	if err := h.Logs.DB.Where("uuid = ? AND team_id = ? AND challenge_id = ?", uuid, user.TeamID, challenge.ID).First(&existingHint).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: "hint not unlocked"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusNotFound, MapErrorResponse{Error: h.T(r.Context())("hint.not_unlocked")})
 			return
 		}
 		log.Err(err).Msg("error checking unlocked hint state")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to evaluate hint state"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("hint.failed_evaluate")})
 		return
 	}
 
 	var team teams.PlatformTeam
 	if err := h.Teams.DB.Where("id = ? AND uuid = ?", user.TeamID, uuid).First(&team).Error; err != nil {
 		log.Err(err).Msg("error retrieving team for hint retrieval")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "failed to retrieve team"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("score.failed_retrieve_team")})
 		return
 	}
 
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapHintResponse{
 		Success:         true,
-		Message:         "Hint already unlocked",
+		Message:         h.T(r.Context())("hint.already_unlocked"),
 		CountryCode:     countryCode,
 		ChallengeID:     challenge.ID,
 		Hint:            challenge.Hint,

@@ -67,13 +67,13 @@ type JSONGameClockResponse struct {
 func (h *HandlersMap) validatedJSONUUID(w http.ResponseWriter, r *http.Request) (string, bool) {
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" {
-		log.Err(errors.New("UUID is required")).Msg("UUID is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+		log.Err(errors.New(h.T(r.Context())("auth.uuid_required"))).Msg(h.T(r.Context())("auth.uuid_required"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("auth.uuid_required")})
 		return "", false
 	}
 	if uuid != h.Config.Map.UUID {
 		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid UUID"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("feed.invalid_uuid")})
 		return "", false
 	}
 	return uuid, true
@@ -92,8 +92,8 @@ func (h *HandlersMap) JSONActivityHandler(w http.ResponseWriter, r *http.Request
 	// Get all activity logs for the given UUID
 	activityLogs, err := h.Logs.AllActivity(uuid)
 	if err != nil {
-		log.Err(err).Msg("error retrieving activity logs")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving activity logs"})
+		log.Err(err).Msg(h.T(r.Context())("feed.error_activity"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_activity")})
 		return
 	}
 	visibleActivityLogs := make([]logs.ActivityLog, 0, len(activityLogs))
@@ -116,8 +116,8 @@ func (h *HandlersMap) JSONGameClockHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if h.Settings == nil {
-		log.Err(errors.New("settings manager not initialized")).Msg("error retrieving game clock data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving game clock data"})
+		log.Err(errors.New("settings manager not initialized")).Msg(h.T(r.Context())("feed.error_game_clock"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_game_clock")})
 		return
 	}
 
@@ -131,7 +131,7 @@ func (h *HandlersMap) JSONGameClockHandler(w http.ResponseWriter, r *http.Reques
 		response.GameStarted = gameStarted
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Err(err).Msg("error retrieving game_started for game clock data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving game clock data"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_game_clock")})
 		return
 	}
 
@@ -140,7 +140,7 @@ func (h *HandlersMap) JSONGameClockHandler(w http.ResponseWriter, r *http.Reques
 		response.GamePaused = gamePaused
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Err(err).Msg("error retrieving game_paused for game clock data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving game clock data"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_game_clock")})
 		return
 	}
 
@@ -149,7 +149,7 @@ func (h *HandlersMap) JSONGameClockHandler(w http.ResponseWriter, r *http.Reques
 		response.GameStartTime = &gameStartTime
 	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Err(err).Msg("error retrieving game_start_time for game clock data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving game clock data"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_game_clock")})
 		return
 	}
 
@@ -163,7 +163,7 @@ func (h *HandlersMap) JSONGameClockHandler(w http.ResponseWriter, r *http.Reques
 		response.RemainingMS = remaining.Milliseconds()
 	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Err(err).Msg("error retrieving game_end_time for game clock data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving game clock data"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_game_clock")})
 		return
 	}
 
@@ -187,15 +187,15 @@ func (h *HandlersMap) JSONTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	// Get all teams for the given UUID
 	allTeams, err := h.Teams.GetAll(uuid)
 	if err != nil {
-		log.Err(err).Msg("error retrieving teams")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving teams"})
+		log.Err(err).Msg(h.T(r.Context())("feed.error_teams"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_teams")})
 		return
 	}
 
 	showTeamMembers, err := h.Settings.GetGameboardShowTeamMembers(uuid)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		log.Err(err).Msg("error retrieving gameboard_show_team_members setting")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving team settings"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_team_settings")})
 		return
 	}
 
@@ -204,7 +204,7 @@ func (h *HandlersMap) JSONTeamsHandler(w http.ResponseWriter, r *http.Request) {
 		allUsers, err := h.Users.GetAll(uuid)
 		if err != nil {
 			log.Err(err).Msg("error retrieving users for teams JSON")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving team members"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_team_members")})
 			return
 		}
 		for _, user := range allUsers {
@@ -252,8 +252,8 @@ func (h *HandlersMap) JSONChallengesHandler(w http.ResponseWriter, r *http.Reque
 	// Get all active challenges for the given UUID
 	challenges, err := h.Challenges.GetActive(uuid)
 	if err != nil {
-		log.Err(err).Msg("error retrieving challenges")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving challenges"})
+		log.Err(err).Msg(h.T(r.Context())("feed.error_challenges"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_challenges")})
 		return
 	}
 	// Send response
@@ -273,22 +273,22 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	if h.Countries == nil || h.Challenges == nil {
-		log.Err(errors.New("countries or challenges manager not initialized")).Msg("error retrieving country data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving country data"})
+		log.Err(errors.New("countries or challenges manager not initialized")).Msg(h.T(r.Context())("feed.error_country"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
 		return
 	}
 
 	allCountries, err := h.Countries.GetAll()
 	if err != nil {
 		log.Err(err).Msg("error retrieving countries")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving country data"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
 		return
 	}
 
 	activeChallenges, err := h.Challenges.GetActive(uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving active challenges for country data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving country data"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
 		return
 	}
 
@@ -296,7 +296,7 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 	allCategories, err := h.Challenges.GetAllCategories(uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving categories for country data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving country data"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
 		return
 	}
 	for _, category := range allCategories {
@@ -328,7 +328,7 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 				user, err := h.Users.Get(username, uuid)
 				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 					log.Err(err).Msg("error retrieving current user for country data")
-					HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving country data"})
+					HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
 					return
 				}
 				currentTeamID = user.TeamID
@@ -338,7 +338,7 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 		var allTeams []teams.PlatformTeam
 		if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&allTeams).Error; err != nil {
 			log.Err(err).Msg("error retrieving teams for country data")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving country data"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
 			return
 		}
 
@@ -350,7 +350,7 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 		var teamScores []teams.TeamScore
 		if err := h.Teams.DB.Where("uuid = ?", uuid).Order("created_at ASC").Find(&teamScores).Error; err != nil {
 			log.Err(err).Msg("error retrieving team scores for country data")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving country data"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
 			return
 		}
 
@@ -442,29 +442,29 @@ func (h *HandlersMap) JSONWorldDominationHandler(w http.ResponseWriter, r *http.
 	}
 
 	if h.Challenges == nil || h.Teams == nil || h.Users == nil || h.Sessions == nil {
-		log.Err(errors.New("world domination dependencies not initialized")).Msg("error retrieving world domination data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving world domination data"})
+		log.Err(errors.New("world domination dependencies not initialized")).Msg(h.T(r.Context())("feed.error_domination"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_domination")})
 		return
 	}
 
 	username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
 	if username == "" {
-		log.Err(errors.New("user not authenticated")).Msg("user not authenticated")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "user not authenticated"})
+		log.Err(errors.New(h.T(r.Context())("chat.not_authenticated"))).Msg(h.T(r.Context())("chat.not_authenticated"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("chat.not_authenticated")})
 		return
 	}
 
 	user, err := h.Users.Get(username, uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving user for world domination data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving world domination data"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_domination")})
 		return
 	}
 
 	activeChallenges, err := h.Challenges.GetActive(uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving active challenges for world domination data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving world domination data"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_domination")})
 		return
 	}
 
@@ -499,7 +499,7 @@ func (h *HandlersMap) JSONWorldDominationHandler(w http.ResponseWriter, r *http.
 	var scores []teams.TeamScore
 	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&scores).Error; err != nil {
 		log.Err(err).Msg("error retrieving team scores for world domination data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving world domination data"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_domination")})
 		return
 	}
 
@@ -552,8 +552,8 @@ func (h *HandlersMap) JSONChatHandler(w http.ResponseWriter, r *http.Request) {
 	// Get all chat entries for the given UUID
 	chatEntries, err := h.Chat.GetVisible()
 	if err != nil {
-		log.Err(err).Msg("error retrieving chat entries")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error retrieving chat entries"})
+		log.Err(err).Msg(h.T(r.Context())("feed.error_chat"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_chat")})
 		return
 	}
 	// Send response
