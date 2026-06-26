@@ -1,8 +1,8 @@
 <div class="mctf-modal-content">
   <header class="modal-title">
     <h4>
-      admin_
-      <span class="highlighted">Add Team</span>
+      <span data-i18n="modal.admin_kicker">admin_</span>
+      <span class="highlighted" data-i18n="admin.teams.add">Add Team</span>
     </h4>
     <a href="#" class="js-close-modal">
       <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
@@ -12,14 +12,14 @@
   <div class="action-main">
     <form id="admin-add-team-form" class="validate-form">
       <div class="form-el el--block-label el--full-text">
-        <label for="admin-add-team-name">Team Name</label>
+        <label for="admin-add-team-name" data-i18n="admin.teams.team_name">Team Name</label>
         <input id="admin-add-team-name" name="name" type="text" style="width: 100%" required />
       </div>
       <div class="form-el el--block-label el--full-text">
-        <label for="admin-add-team-logo">Logo</label>
+        <label for="admin-add-team-logo" data-i18n="admin.teams.logo">Logo</label>
         <div class="admin-add-team-logo-select">
           <select id="admin-add-team-logo" name="logo" style="width: 100%">
-            <option value="random">Random (auto)</option>
+            <option value="random" data-i18n="admin.teams.random_auto">Random (auto)</option>
           </select>
           <div class="admin-add-team-logo-preview-wrap" aria-hidden="true">
             <svg id="admin-add-team-logo-preview" class="icon icon--badge">
@@ -30,8 +30,8 @@
       </div>
 
       <div class="action-actionable">
-        <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>
-        <button class="mctf-cta cta--yellow js-create-team" type="submit">Create Team</button>
+        <a href="#" class="mctf-cta cta--red js-close-modal" data-i18n="admin.modal.cancel">Cancel</a>
+        <button class="mctf-cta cta--yellow js-create-team" type="submit" data-i18n="admin.modal.create_team">Create Team</button>
       </div>
     </form>
   </div>

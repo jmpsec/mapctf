@@ -1,8 +1,8 @@
 <div class="mctf-modal-content">
   <header class="modal-title">
     <h4>
-      admin_
-      <span class="highlighted">Add Category</span>
+      <span data-i18n="modal.admin_kicker">admin_</span>
+      <span class="highlighted" data-i18n="admin.challenges.add_category">Add Category</span>
     </h4>
     <a href="#" class="js-close-modal">
       <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
@@ -12,15 +12,15 @@
   <div class="action-main">
     <form id="admin-add-category-form" class="validate-form">
       <div class="form-el el--block-label el--full-text">
-        <label for="admin-add-category-name">Name</label>
+        <label for="admin-add-category-name" data-i18n="admin.category.name">Name</label>
         <input id="admin-add-category-name" name="name" type="text" style="width: 100%" required />
       </div>
       <div class="form-el el--block-label el--full-text">
-        <label for="admin-add-category-description">Description</label>
+        <label for="admin-add-category-description" data-i18n="admin.category.description">Description</label>
         <input id="admin-add-category-description" name="description" type="text" style="width: 100%" />
       </div>
       <div class="form-el el--block-label el--full-text">
-        <label for="admin-add-category-logo">Logo</label>
+        <label for="admin-add-category-logo" data-i18n="admin.category.logo">Logo</label>
         <div style="display: flex; align-items: center; gap: 12px">
           <select id="admin-add-category-logo" name="logo" style="width: 100%">
             <option value="fa-solid fa-globe">Web - Globe</option>
@@ -42,8 +42,8 @@
       </div>
 
       <div class="action-actionable">
-        <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>
-        <button class="mctf-cta cta--yellow js-create-category" type="submit">Create Category</button>
+        <a href="#" class="mctf-cta cta--red js-close-modal" data-i18n="admin.modal.cancel">Cancel</a>
+        <button class="mctf-cta cta--yellow js-create-category" type="submit" data-i18n="admin.modal.create_category">Create Category</button>
       </div>
     </form>
   </div>

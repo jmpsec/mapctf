@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -54,29 +54,29 @@
                 </div>
               </a>
             </div>
-            <h2>Game Admin</h2>
+            <h2>{{ T "admin.nav.game_admin" }}</h2>
           </header>
           <nav class="admin-nav-links row-fluid">
             <ul>
-              <li><a href="/{{ .UUID }}/admin">Dashboard</a></li>
-              <li><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
-              <li><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
-              <li class="active"><a href="/{{ .UUID }}/admin/users">Users</a></li>
-              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
-              <li><a href="/{{ .UUID }}/admin/team-logos">Team logos</a></li>
-              <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
-              <li><a href="/{{ .UUID }}/admin/countries">Countries</a></li>
-              <li><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
-              <li><a href="/{{ .UUID }}/admin/chat">Chat</a></li>
+              <li><a href="/{{ .UUID }}/admin">{{ T "admin.nav.dashboard" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/settings">{{ T "admin.nav.settings" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/controls">{{ T "admin.nav.controls" }}</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/users">{{ T "admin.nav.users" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">{{ T "admin.nav.teams" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/team-logos">{{ T "admin.nav.team_logos" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/challenges">{{ T "admin.nav.challenges" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/countries">{{ T "admin.nav.countries" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/activity">{{ T "admin.nav.activity" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/chat">{{ T "admin.nav.chat" }}</a></li>
             </ul>
           </nav>
           <div class="admin-nav-controls row-fixed">
-            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
-            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+            <a href="#" class="mctf-cta cta--red js-end-game">{{ T "admin.nav.end_game" }}</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">{{ T "admin.nav.pause_game" }}</a>
           </div>
           <div class="admin-nav--footer row-fixed">
-            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
-            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+            <a href="/{{ .UUID }}/gameboard">{{ T "nav.gameboard" }}</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">{{ T "gb.logout" }}</a>
           </div>
         </div>
       </div>
@@ -84,21 +84,21 @@
         <div class="admin-sections">
           <header class="admin-page-header admin-page-header--with-action">
             <div class="admin-page-header-top">
-              <h3>User Management</h3>
+              <h3>{{ T "admin.users.page_header" }}</h3>
               <div class="admin-page-header-actions">
-                <input id="admin-users-search" class="admin-management-search" type="search" placeholder="Search users..." autocomplete="off" />
-                <button class="mctf-cta" data-action="add-new-user" data-create-url="/{{ .UUID }}/admin/users" type="button">Add User</button>
+                <input id="admin-users-search" class="admin-management-search" type="search" placeholder="{{ T "admin.users.search" }}" autocomplete="off" />
+                <button class="mctf-cta" data-action="add-new-user" data-create-url="/{{ .UUID }}/admin/users" type="button">{{ T "admin.users.add" }}</button>
               </div>
             </div>
             <span class="admin-section--status" data-ready-status="ready">
-              status_
-              <span class="highlighted">ready</span>
+              {{ T "admin.status_label" }}
+              <span class="highlighted">{{ T "admin.status_ready" }}</span>
               <span class="admin-section--status-message"></span>
             </span>
           </header>
 
           <template id="admin-users-team-options-template">
-            <option value="0">None</option>
+            <option value="0">{{ T "admin.none" }}</option>
             {{ range .Teams }}
             <option value="{{ .ID }}">{{ .Name }}</option>
             {{ end }}
@@ -112,10 +112,10 @@
                 <h3>{{ .Username }}</h3>
                 <div class="admin-section-toggle radio-inline">
                   <input type="radio" name="user-active-{{ .ID }}" id="user-{{ .ID }}-on" value="true" data-user-field="active" {{ if .Active }}checked{{ end }} />
-                  <label for="user-{{ .ID }}-on">On</label>
+                  <label for="user-{{ .ID }}-on">{{ T "admin.on" }}</label>
 
                   <input type="radio" name="user-active-{{ .ID }}" id="user-{{ .ID }}-off" value="false" data-user-field="active" {{ if not .Active }}checked{{ end }} />
-                  <label for="user-{{ .ID }}-off">Off</label>
+                  <label for="user-{{ .ID }}-off">{{ T "admin.off" }}</label>
                 </div>
               </header>
 
@@ -123,28 +123,28 @@
                 <div class="admin-user-field-grid admin-user-account-grid">
                   <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Username</label>
+                      <label class="admin-label">{{ T "admin.users.username" }}</label>
                       <input type="text" value="{{ .Username }}" disabled />
                     </div>
                   </div>
                   <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Name</label>
+                      <label class="admin-label">{{ T "admin.users.name" }}</label>
                       <input type="text" value="{{ .Name }}" data-user-field="name" autocomplete="name" />
                     </div>
                   </div>
                   <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Email</label>
+                      <label class="admin-label">{{ T "admin.users.email" }}</label>
                       <input type="email" value="{{ .Email }}" data-user-field="email" autocomplete="email" />
                     </div>
                   </div>
                   <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Team</label>
+                      <label class="admin-label">{{ T "admin.users.team" }}</label>
                       {{ $userTeamID := .TeamID }}
                       <select data-user-field="team_id">
-                        <option value="0" {{ if eq $userTeamID 0 }}selected{{ end }}>None</option>
+                        <option value="0" {{ if eq $userTeamID 0 }}selected{{ end }}>{{ T "admin.none" }}</option>
                         {{ range $.Teams }}
                         <option value="{{ .ID }}" {{ if eq .ID $userTeamID }}selected{{ end }}>{{ .Name }}</option>
                         {{ end }}
@@ -153,11 +153,11 @@
                   </div>
                   <div class="admin-user-grid-field admin-user-toggle-field">
                     <div class="form-el el--block-label el--full-text admin-section-toggle radio-inline">
-                      <label class="admin-label">Admin</label>
+                      <label class="admin-label">{{ T "admin.users.admin" }}</label>
                       <input type="radio" name="user-admin-{{ .ID }}" id="user-admin-{{ .ID }}-on" value="true" data-user-field="admin" {{ if .Admin }}checked{{ end }} />
-                      <label for="user-admin-{{ .ID }}-on">On</label>
+                      <label for="user-admin-{{ .ID }}-on">{{ T "admin.on" }}</label>
                       <input type="radio" name="user-admin-{{ .ID }}" id="user-admin-{{ .ID }}-off" value="false" data-user-field="admin" {{ if not .Admin }}checked{{ end }} />
-                      <label for="user-admin-{{ .ID }}-off">Off</label>
+                      <label for="user-admin-{{ .ID }}-off">{{ T "admin.off" }}</label>
                     </div>
                   </div>
                 </div>
@@ -167,29 +167,29 @@
                 <div class="admin-user-field-grid admin-user-session-grid">
                   <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Last IP</label>
+                      <label class="admin-label">{{ T "admin.users.last_ip" }}</label>
                       <input type="text" value="{{ if .LastIPAddress }}{{ .LastIPAddress }}{{ else }}--{{ end }}" disabled />
                     </div>
                   </div>
                   <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Last User Agent</label>
+                      <label class="admin-label">{{ T "admin.users.last_ua" }}</label>
                       <textarea readonly>{{ if .LastUserAgent }}{{ .LastUserAgent }}{{ else }}--{{ end }}</textarea>
                     </div>
                   </div>
                   <div class="admin-user-grid-field">
                     <div class="form-el el--block-label el--full-text">
-                      <label class="admin-label">Last Access</label>
-                      <input type="text" value="{{ if .LastAccess.IsZero }}never{{ else }}{{ .LastAccess.Format "2006-01-02 15:04" }}{{ end }}" disabled />
+                      <label class="admin-label">{{ T "admin.users.last_access" }}</label>
+                      <input type="text" value="{{ if .LastAccess.IsZero }}{{ T "admin.never" }}{{ else }}{{ .LastAccess.Format "2006-01-02 15:04" }}{{ end }}" disabled />
                     </div>
                   </div>
                   <div class="admin-user-grid-field admin-user-toggle-field">
                     <div class="form-el el--block-label el--full-text admin-section-toggle radio-inline">
-                      <label class="admin-label">Service</label>
+                      <label class="admin-label">{{ T "admin.users.service" }}</label>
                       <input type="radio" name="user-service-{{ .ID }}" id="user-service-{{ .ID }}-on" value="true" data-user-field="service" {{ if .Service }}checked{{ end }} />
-                      <label for="user-service-{{ .ID }}-on">On</label>
+                      <label for="user-service-{{ .ID }}-on">{{ T "admin.on" }}</label>
                       <input type="radio" name="user-service-{{ .ID }}" id="user-service-{{ .ID }}-off" value="false" data-user-field="service" {{ if not .Service }}checked{{ end }} />
-                      <label for="user-service-{{ .ID }}-off">Off</label>
+                      <label for="user-service-{{ .ID }}-off">{{ T "admin.off" }}</label>
                     </div>
                   </div>
                 </div>
@@ -197,10 +197,10 @@
 
               <div class="admin-row">
                 <div class="admin-buttons">
-                  <a href="#" class="admin--edit" data-action="edit">EDIT</a>
-                  <button class="mctf-cta cta--red" data-action="delete" type="button">Delete</button>
-                  <button class="mctf-cta" data-action="set-password" data-user-password-url="/{{ $.UUID }}/admin/users/{{ .ID }}/password" data-user-username="{{ .Username }}" type="button">Set Password</button>
-                  <button class="mctf-cta cta--yellow" data-action="save" type="button">Save</button>
+                  <a href="#" class="admin--edit" data-action="edit">{{ T "admin.edit" }}</a>
+                  <button class="mctf-cta cta--red" data-action="delete" type="button">{{ T "admin.delete" }}</button>
+                  <button class="mctf-cta" data-action="set-password" data-user-password-url="/{{ $.UUID }}/admin/users/{{ .ID }}/password" data-user-username="{{ .Username }}" type="button">{{ T "admin.users.set_password" }}</button>
+                  <button class="mctf-cta cta--yellow" data-action="save" type="button">{{ T "admin.save" }}</button>
                 </div>
               </div>
             </section>
@@ -208,10 +208,10 @@
             {{ else }}
             <section class="admin-box validate-form">
               <header class="admin-box-header">
-                <h3>No Users Found</h3>
+                <h3>{{ T "admin.users.no_found_title" }}</h3>
               </header>
               <div class="admin-row">
-                <p>No users found.</p>
+                <p>{{ T "admin.users.no_found" }}</p>
               </div>
             </section>
             {{ end }}
@@ -220,31 +220,31 @@
 
           <section id="user-actions" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>User Actions</h3>
+              <h3>{{ T "admin.users.actions" }}</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
                 <div class="admin-setting-row">
-                  <label>Import / Export</label>
+                  <label>{{ T "admin.import_export" }}</label>
                   <div class="admin-buttons" style="margin-top: 0">
-                    <button class="mctf-cta cta--yellow" data-action="import-all-users" data-import-url="/{{ .UUID }}/admin/users/import" type="button">Import Users</button>
-                    <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/users/export">Export Users</a>
+                    <button class="mctf-cta cta--yellow" data-action="import-all-users" data-import-url="/{{ .UUID }}/admin/users/import" type="button">{{ T "admin.users.import" }}</button>
+                    <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/users/export">{{ T "admin.users.export" }}</a>
                   </div>
                   <input id="admin-users-import-file" type="file" accept=".json,application/json" style="display: none" />
                 </div>
 
                 <div class="admin-setting-row">
-                  <label>Bulk user state</label>
+                  <label>{{ T "admin.users.bulk_state" }}</label>
                   <div class="admin-buttons" style="margin-top: 0">
-                    <button class="mctf-cta" data-action="enable-all-users" data-enable-all-users-url="/{{ .UUID }}/admin/users/enable-all" type="button">Enable All Users</button>
-                    <button class="mctf-cta cta--red" data-action="disable-all-users" data-disable-all-users-url="/{{ .UUID }}/admin/users/disable-all" type="button">Disable All Users</button>
+                    <button class="mctf-cta" data-action="enable-all-users" data-enable-all-users-url="/{{ .UUID }}/admin/users/enable-all" type="button">{{ T "admin.users.enable_all" }}</button>
+                    <button class="mctf-cta cta--red" data-action="disable-all-users" data-disable-all-users-url="/{{ .UUID }}/admin/users/disable-all" type="button">{{ T "admin.users.disable_all" }}</button>
                   </div>
                 </div>
 
                 <div class="admin-setting-row">
-                  <label>Bulk delete</label>
+                  <label>{{ T "admin.bulk_delete" }}</label>
                   <div class="admin-buttons" style="margin-top: 0">
-                    <button class="mctf-cta cta--red" data-action="delete-all-users" data-delete-all-users-url="/{{ .UUID }}/admin/users/delete-all" type="button">Delete All Users</button>
+                    <button class="mctf-cta cta--red" data-action="delete-all-users" data-delete-all-users-url="/{{ .UUID }}/admin/users/delete-all" type="button">{{ T "admin.users.delete_all" }}</button>
                   </div>
                 </div>
               </div>
@@ -253,6 +253,7 @@
         </div>
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>

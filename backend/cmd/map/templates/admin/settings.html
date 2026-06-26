@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -54,55 +54,55 @@
                 </div>
               </a>
             </div>
-            <h2>Game Admin</h2>
+            <h2>{{ T "admin.nav.game_admin" }}</h2>
           </header>
           <nav class="admin-nav-links row-fluid">
             <ul>
-              <li><a href="/{{ .UUID }}/admin">Dashboard</a></li>
-              <li class="active"><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
-              <li><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
-              <li><a href="/{{ .UUID }}/admin/users">Users</a></li>
-              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
-              <li><a href="/{{ .UUID }}/admin/team-logos">Team logos</a></li>
-              <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
-              <li><a href="/{{ .UUID }}/admin/countries">Countries</a></li>
-              <li><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
-              <li><a href="/{{ .UUID }}/admin/chat">Chat</a></li>
+              <li><a href="/{{ .UUID }}/admin">{{ T "admin.nav.dashboard" }}</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/settings">{{ T "admin.nav.settings" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/controls">{{ T "admin.nav.controls" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/users">{{ T "admin.nav.users" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">{{ T "admin.nav.teams" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/team-logos">{{ T "admin.nav.team_logos" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/challenges">{{ T "admin.nav.challenges" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/countries">{{ T "admin.nav.countries" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/activity">{{ T "admin.nav.activity" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/chat">{{ T "admin.nav.chat" }}</a></li>
             </ul>
           </nav>
           <div class="admin-nav-controls row-fixed">
-            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
-            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+            <a href="#" class="mctf-cta cta--red js-end-game">{{ T "admin.nav.end_game" }}</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">{{ T "admin.nav.pause_game" }}</a>
           </div>
           <div class="admin-nav--footer row-fixed">
-            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
-            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+            <a href="/{{ .UUID }}/gameboard">{{ T "nav.gameboard" }}</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">{{ T "gb.logout" }}</a>
           </div>
         </div>
       </div>
       <div id="mctf-main-content" class="mctf-page mctf-admin-main">
         <div class="admin-sections">
           <header class="admin-page-header">
-            <h3>Settings</h3>
+            <h3>{{ T "admin.settings.page_header" }}</h3>
             <span class="admin-section--status" data-ready-status="ready">
-              status_
-              <span class="highlighted">ready</span>
+              {{ T "admin.status_label" }}
+              <span class="highlighted">{{ T "admin.status_ready" }}</span>
               <span class="admin-section--status-message"></span>
             </span>
           </header>
 
           <section id="settings-actions" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Settings Actions</h3>
+              <h3>{{ T "admin.settings.actions" }}</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
                 <div class="admin-setting-row">
-                  <label>Import / Export</label>
+                  <label>{{ T "admin.import_export" }}</label>
                   <div class="admin-buttons" style="margin-top: 0">
-                    <button class="mctf-cta cta--yellow" data-action="import-all-settings" data-import-url="/{{ .UUID }}/admin/settings/import" type="button">Import Settings</button>
-                    <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/settings/export">Export Settings</a>
-                    <button class="mctf-cta cta--red" data-action="reset-settings-defaults" data-reset-defaults-url="/{{ .UUID }}/admin/settings/reset-defaults" type="button">Reset to Defaults</button>
+                    <button class="mctf-cta cta--yellow" data-action="import-all-settings" data-import-url="/{{ .UUID }}/admin/settings/import" type="button">{{ T "admin.settings.import" }}</button>
+                    <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/settings/export">{{ T "admin.settings.export" }}</a>
+                    <button class="mctf-cta cta--red" data-action="reset-settings-defaults" data-reset-defaults-url="/{{ .UUID }}/admin/settings/reset-defaults" type="button">{{ T "admin.settings.reset_defaults" }}</button>
                   </div>
                   <input id="admin-settings-import-file" type="file" accept=".json,application/json" style="display: none" />
                 </div>
@@ -112,7 +112,7 @@
 
           <section id="settings-login" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Login Settings</h3>
+              <h3>{{ T "admin.settings.login" }}</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
@@ -122,9 +122,9 @@
                     <input type="hidden" name="setting_name" value="login_enabled" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="login_enabled_on" value="true" {{ if .LoginEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="login_enabled_on">On</label>
+                      <label for="login_enabled_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="login_enabled_off" value="false" {{ if not .LoginEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="login_enabled_off">Off</label>
+                      <label for="login_enabled_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -134,9 +134,9 @@
                     <input type="hidden" name="setting_name" value="login_strong_passwords" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="login_strong_passwords_on" value="true" {{ if .LoginStrongPasswords }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="login_strong_passwords_on">On</label>
+                      <label for="login_strong_passwords_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="login_strong_passwords_off" value="false" {{ if not .LoginStrongPasswords }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="login_strong_passwords_off">Off</label>
+                      <label for="login_strong_passwords_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -146,7 +146,7 @@
 
           <section id="settings-registration" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Registration Settings</h3>
+              <h3>{{ T "admin.settings.registration" }}</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
@@ -156,9 +156,9 @@
                     <input type="hidden" name="setting_name" value="registration_enabled" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="registration_enabled_on" value="true" {{ if .RegistrationEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="registration_enabled_on">On</label>
+                      <label for="registration_enabled_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="registration_enabled_off" value="false" {{ if not .RegistrationEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="registration_enabled_off">Off</label>
+                      <label for="registration_enabled_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -168,9 +168,9 @@
                     <input type="hidden" name="setting_name" value="registration_names" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="registration_names_on" value="true" {{ if .RegistrationNames }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="registration_names_on">On</label>
+                      <label for="registration_names_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="registration_names_off" value="false" {{ if not .RegistrationNames }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="registration_names_off">Off</label>
+                      <label for="registration_names_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -180,9 +180,9 @@
                     <input type="hidden" name="setting_name" value="registration_emails" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="registration_emails_on" value="true" {{ if .RegistrationEmails }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="registration_emails_on">On</label>
+                      <label for="registration_emails_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="registration_emails_off" value="false" {{ if not .RegistrationEmails }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="registration_emails_off">Off</label>
+                      <label for="registration_emails_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -210,7 +210,7 @@
 
           <section id="settings-scoring" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Scoring Settings</h3>
+              <h3>{{ T "admin.settings.scoring" }}</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
@@ -220,9 +220,9 @@
                     <input type="hidden" name="setting_name" value="scoring_enabled" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="scoring_enabled_on" value="true" {{ if .ScoringEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="scoring_enabled_on">On</label>
+                      <label for="scoring_enabled_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="scoring_enabled_off" value="false" {{ if not .ScoringEnabled }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="scoring_enabled_off">Off</label>
+                      <label for="scoring_enabled_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -232,9 +232,9 @@
                     <input type="hidden" name="setting_name" value="scoring_hints" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="scoring_hints_on" value="true" {{ if .ScoringHints }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="scoring_hints_on">On</label>
+                      <label for="scoring_hints_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="scoring_hints_off" value="false" {{ if not .ScoringHints }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="scoring_hints_off">Off</label>
+                      <label for="scoring_hints_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -244,9 +244,9 @@
                     <input type="hidden" name="setting_name" value="scoring_help" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="scoring_help_on" value="true" {{ if .ScoringHelp }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="scoring_help_on">On</label>
+                      <label for="scoring_help_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="scoring_help_off" value="false" {{ if not .ScoringHelp }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="scoring_help_off">Off</label>
+                      <label for="scoring_help_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -256,7 +256,7 @@
 
           <section id="settings-game" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Game Settings</h3>
+              <h3>{{ T "admin.settings.game" }}</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
@@ -266,9 +266,9 @@
                     <input type="hidden" name="setting_name" value="game_started" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="game_started_on" value="true" {{ if .GameStarted }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="game_started_on">On</label>
+                      <label for="game_started_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="game_started_off" value="false" {{ if not .GameStarted }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="game_started_off">Off</label>
+                      <label for="game_started_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -278,9 +278,9 @@
                     <input type="hidden" name="setting_name" value="game_paused" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="game_paused_on" value="true" {{ if .GamePaused }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="game_paused_on">On</label>
+                      <label for="game_paused_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="game_paused_off" value="false" {{ if not .GamePaused }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="game_paused_off">Off</label>
+                      <label for="game_paused_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -304,7 +304,7 @@
 
           <section id="settings-branding" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Branding Settings</h3>
+              <h3>{{ T "admin.settings.branding" }}</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
@@ -328,7 +328,7 @@
 
           <section id="settings-localization" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Localization Settings</h3>
+              <h3>{{ T "admin.settings.localization" }}</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
@@ -352,7 +352,7 @@
 
           <section id="settings-gameboard" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Gameboard Settings</h3>
+              <h3>{{ T "admin.settings.gameboard" }}</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
@@ -362,9 +362,9 @@
                     <input type="hidden" name="setting_name" value="gameboard_show_team_members" />
                     <div class="admin-section-toggle radio-inline">
                       <input type="radio" name="setting_value" id="gameboard_show_team_members_on" value="true" {{ if .GameboardShowTeamMembers }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="gameboard_show_team_members_on">On</label>
+                      <label for="gameboard_show_team_members_on">{{ T "admin.on" }}</label>
                       <input type="radio" name="setting_value" id="gameboard_show_team_members_off" value="false" {{ if not .GameboardShowTeamMembers }}checked{{ end }} onchange="saveSettingValue(this)" />
-                      <label for="gameboard_show_team_members_off">Off</label>
+                      <label for="gameboard_show_team_members_off">{{ T "admin.off" }}</label>
                     </div>
                   </form>
                 </div>
@@ -381,6 +381,7 @@
         </div>
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>

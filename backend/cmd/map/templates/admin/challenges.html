@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -126,29 +126,29 @@
                 </div>
               </a>
             </div>
-            <h2>Game Admin</h2>
+            <h2>{{ T "admin.nav.game_admin" }}</h2>
           </header>
           <nav class="admin-nav-links row-fluid">
             <ul>
-              <li><a href="/{{ .UUID }}/admin">Dashboard</a></li>
-              <li><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
-              <li><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
-              <li><a href="/{{ .UUID }}/admin/users">Users</a></li>
-              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
-              <li><a href="/{{ .UUID }}/admin/team-logos">Team logos</a></li>
-              <li class="active"><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
-              <li><a href="/{{ .UUID }}/admin/countries">Countries</a></li>
-              <li><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
-              <li><a href="/{{ .UUID }}/admin/chat">Chat</a></li>
+              <li><a href="/{{ .UUID }}/admin">{{ T "admin.nav.dashboard" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/settings">{{ T "admin.nav.settings" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/controls">{{ T "admin.nav.controls" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/users">{{ T "admin.nav.users" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">{{ T "admin.nav.teams" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/team-logos">{{ T "admin.nav.team_logos" }}</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/challenges">{{ T "admin.nav.challenges" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/countries">{{ T "admin.nav.countries" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/activity">{{ T "admin.nav.activity" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/chat">{{ T "admin.nav.chat" }}</a></li>
             </ul>
           </nav>
           <div class="admin-nav-controls row-fixed">
-            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
-            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+            <a href="#" class="mctf-cta cta--red js-end-game">{{ T "admin.nav.end_game" }}</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">{{ T "admin.nav.pause_game" }}</a>
           </div>
           <div class="admin-nav--footer row-fixed">
-            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
-            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+            <a href="/{{ .UUID }}/gameboard">{{ T "nav.gameboard" }}</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">{{ T "gb.logout" }}</a>
           </div>
         </div>
       </div>
@@ -156,20 +156,20 @@
         <div class="admin-sections">
           <header class="admin-page-header admin-page-header--with-action">
             <div class="admin-page-header-top">
-              <h3>Challenges</h3>
+              <h3>{{ T "admin.nav.challenges" }}</h3>
             </div>
             <span class="admin-section--status" data-ready-status="ready">
-              status_
-              <span class="highlighted">ready</span>
+              {{ T "admin.status_label" }}
+              <span class="highlighted">{{ T "admin.status_ready" }}</span>
               <span class="admin-section--status-message"></span>
             </span>
           </header>
 
           <section id="challenges" class="admin-box">
             <header class="admin-box-header mctf-cf" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap">
-              <h3>Challenge Management</h3>
+              <h3>{{ T "admin.challenges.page_header" }}</h3>
               <div class="admin-section-toggle" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto">
-                <button class="mctf-cta" data-action="add-new-challenge" data-create-url="/{{ .UUID }}/admin/challenges" type="button">Add Challenge</button>
+                <button class="mctf-cta" data-action="add-new-challenge" data-create-url="/{{ .UUID }}/admin/challenges" type="button">{{ T "admin.challenges.add" }}</button>
               </div>
             </header>
 
@@ -208,23 +208,23 @@
                       <form class="admin-challenge-form" autocomplete="off">
                         <div class="admin-challenge-grid">
                           <div class="admin-form-field">
-                            <label class="admin-field-label" for="challenge-title-{{ .ID }}">Title</label>
+                            <label class="admin-field-label" for="challenge-title-{{ .ID }}">{{ T "admin.challenges.title" }}</label>
                             <input id="challenge-title-{{ .ID }}" name="title" type="text" value="{{ .Title }}" />
                           </div>
 
                           <div class="admin-form-field">
-                            <label class="admin-field-label" for="challenge-description-{{ .ID }}">Description</label>
+                            <label class="admin-field-label" for="challenge-description-{{ .ID }}">{{ T "admin.challenges.description" }}</label>
                             <textarea id="challenge-description-{{ .ID }}" name="description" rows="3">{{ .Description }}</textarea>
                           </div>
 
                           <div class="admin-form-field">
-                            <label class="admin-field-label" for="challenge-url-{{ .ID }}">Resource URL</label>
+                            <label class="admin-field-label" for="challenge-url-{{ .ID }}">{{ T "admin.challenges.resource_url" }}</label>
                             <input id="challenge-url-{{ .ID }}" name="url" type="text" inputmode="url" value="{{ .URL }}" />
                           </div>
 
                           <div class="admin-challenge-grid-row admin-challenge-grid-row--taxonomy">
                             <div class="admin-form-field">
-                              <label class="admin-field-label" for="challenge-category-{{ .ID }}">Category</label>
+                              <label class="admin-field-label" for="challenge-category-{{ .ID }}">{{ T "admin.challenges.category" }}</label>
                               <select id="challenge-category-{{ .ID }}" name="category_id">
                                 {{ range $.Categories }}
                                 <option value="{{ .ID }}" {{ if eq .ID $challenge.CategoryID }}selected{{ end }}>{{ .Name }}</option>
@@ -233,7 +233,7 @@
                             </div>
 
                             <div class="admin-form-field">
-                              <label class="admin-field-label" for="challenge-country-{{ .ID }}">Country</label>
+                              <label class="admin-field-label" for="challenge-country-{{ .ID }}">{{ T "admin.challenges.country" }}</label>
                               <select id="challenge-country-{{ .ID }}" name="country" class="admin-country-select">
                                 <option value="" {{ if not .Country }}selected{{ end }}>Select country</option>
                                 {{ if $challengeCountryOptions }}
@@ -250,41 +250,41 @@
                           <div class="admin-form-field">
                             <div class="admin-score-group">
                               <div class="admin-score-item">
-                                <label class="admin-field-label" for="challenge-points-{{ .ID }}">Points</label>
+                                <label class="admin-field-label" for="challenge-points-{{ .ID }}">{{ T "admin.challenges.points" }}</label>
                                 <input id="challenge-points-{{ .ID }}" name="points" type="number" value="{{ .Points }}" />
                               </div>
                               <div class="admin-score-item">
-                                <label class="admin-field-label" for="challenge-bonus-{{ .ID }}">Bonus</label>
+                                <label class="admin-field-label" for="challenge-bonus-{{ .ID }}">{{ T "admin.challenges.bonus" }}</label>
                                 <input id="challenge-bonus-{{ .ID }}" name="bonus" type="number" value="{{ .Bonus }}" />
                               </div>
                               <div class="admin-score-item">
-                                <label class="admin-field-label" for="challenge-bonus-decay-{{ .ID }}">Bonus Decay</label>
+                                <label class="admin-field-label" for="challenge-bonus-decay-{{ .ID }}">{{ T "admin.challenges.bonus_decay" }}</label>
                                 <input id="challenge-bonus-decay-{{ .ID }}" name="bonus_decay" type="number" value="{{ .BonusDecay }}" />
                               </div>
                               <div class="admin-score-item">
-                                <label class="admin-field-label" for="challenge-hint-penalty-{{ .ID }}">Hint Penalty</label>
+                                <label class="admin-field-label" for="challenge-hint-penalty-{{ .ID }}">{{ T "admin.challenges.hint_penalty" }}</label>
                                 <input id="challenge-hint-penalty-{{ .ID }}" name="hint_penalty" type="number" value="{{ .HintPenalty }}" />
                               </div>
                               <div class="admin-score-item">
-                                <label class="admin-field-label" for="challenge-help-penalty-{{ .ID }}">Help Penalty</label>
+                                <label class="admin-field-label" for="challenge-help-penalty-{{ .ID }}">{{ T "admin.challenges.help_penalty" }}</label>
                                 <input id="challenge-help-penalty-{{ .ID }}" name="help_penalty" type="number" value="{{ .HelpPenalty }}" />
                               </div>
                             </div>
                           </div>
 
                           <div class="admin-form-field">
-                            <label class="admin-field-label" for="challenge-flag-{{ .ID }}">Flag</label>
+                            <label class="admin-field-label" for="challenge-flag-{{ .ID }}">{{ T "admin.challenges.flag" }}</label>
                             <input id="challenge-flag-{{ .ID }}" name="flag" type="text" value="{{ .Flag }}" />
                           </div>
 
                           <div class="admin-form-field">
-                            <label class="admin-field-label" for="challenge-hint-{{ .ID }}">Hint</label>
+                            <label class="admin-field-label" for="challenge-hint-{{ .ID }}">{{ T "admin.challenges.hint" }}</label>
                             <textarea id="challenge-hint-{{ .ID }}" name="hint" rows="2">{{ .Hint }}</textarea>
                           </div>
                         </div>
                         <div class="admin-buttons">
-                          <button type="button" class="mctf-cta" data-action="save-challenge" data-update-url="/{{ $.UUID }}/admin/challenges/{{ .ID }}">Save</button>
-                          <button type="button" class="mctf-cta cta--red" data-action="delete-challenge" data-delete-url="/{{ $.UUID }}/admin/challenges/{{ .ID }}/delete">Delete</button>
+                          <button type="button" class="mctf-cta" data-action="save-challenge" data-update-url="/{{ $.UUID }}/admin/challenges/{{ .ID }}">{{ T "admin.save" }}</button>
+                          <button type="button" class="mctf-cta cta--red" data-action="delete-challenge" data-delete-url="/{{ $.UUID }}/admin/challenges/{{ .ID }}/delete">{{ T "admin.delete" }}</button>
                         </div>
                       </form>
                     </div>
@@ -299,7 +299,7 @@
                             value="true"
                             {{ if .Active }}checked{{ end }}
                           />
-                          <label for="challenge-status-active-{{ .ID }}">Active</label>
+                          <label for="challenge-status-active-{{ .ID }}">{{ T "admin.challenges.active" }}</label>
                           <input
                             type="radio"
                             id="challenge-status-inactive-{{ .ID }}"
@@ -307,7 +307,7 @@
                             value="false"
                             {{ if not .Active }}checked{{ end }}
                           />
-                          <label for="challenge-status-inactive-{{ .ID }}">Inactive</label>
+                          <label for="challenge-status-inactive-{{ .ID }}">{{ T "admin.challenges.inactive" }}</label>
                         </div>
                       </div>
                       <aside class="admin-challenge-activity">
@@ -318,29 +318,29 @@
                           <div class="admin-challenge-activity-row">
                             <div class="admin-challenge-activity-meta">
                               <span class="admin-challenge-activity-type">{{ .Label }}</span>
-                              <span class="admin-challenge-activity-subject">{{ if .Subject }}{{ .Subject }}{{ else }}System{{ end }}</span>
+                              <span class="admin-challenge-activity-subject">{{ if .Subject }}{{ .Subject }}{{ else }}{{ T "admin.challenges.system" }}{{ end }}</span>
                               <span class="admin-challenge-activity-at">{{ .At.Format "2006-01-02 15:04" }}</span>
                             </div>
                             {{ if .Action }}
                             <div class="admin-challenge-activity-detail">
-                              <span class="admin-challenge-activity-field">action</span>{{ .Action }}
+                              <span class="admin-challenge-activity-field">{{ T "admin.challenges.act_action" }}</span>{{ .Action }}
                             </div>
                             {{ end }}
                             {{ if .Message }}
                             <div class="admin-challenge-activity-detail">
-                              <span class="admin-challenge-activity-field">message</span>{{ .Message }}
+                              <span class="admin-challenge-activity-field">{{ T "admin.challenges.act_message" }}</span>{{ .Message }}
                             </div>
                             {{ end }}
                             {{ if .Arguments }}
                             <div class="admin-challenge-activity-detail admin-challenge-activity-detail--args">
-                              <span class="admin-challenge-activity-field">args</span>{{ .Arguments }}
+                              <span class="admin-challenge-activity-field">{{ T "admin.challenges.act_args" }}</span>{{ .Arguments }}
                             </div>
                             {{ end }}
                           </div>
                           {{ end }}
                         </div>
                         {{ else }}
-                          <span class="admin-activity-empty">No activity for this challenge yet.</span>
+                          <span class="admin-activity-empty">{{ T "admin.challenges.no_activity" }}</span>
                         {{ end }}
                       </aside>
                     </div>
@@ -349,7 +349,7 @@
                 {{ end }}
                 {{ else }}
                 <div class="admin-setting-row">
-                  <label>No challenges found</label>
+                  <label>{{ T "admin.challenges.no_found" }}</label>
                 </div>
                 {{ end }}
               </div>
@@ -358,29 +358,29 @@
 
           <section id="challenge-actions" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Challenge Actions</h3>
+              <h3>{{ T "admin.challenges.actions" }}</h3>
             </header>
             <div class="admin-row">
               <div class="admin-settings-list">
                 <div class="admin-setting-row">
-                  <label>Import / Export</label>
+                  <label>{{ T "admin.import_export" }}</label>
                   <div class="admin-buttons" style="margin-top: 0">
-                    <button class="mctf-cta" data-action="import-all-challenges" data-import-url="/{{ .UUID }}/admin/challenges/import" type="button">Import All</button>
-                    <a class="mctf-cta" href="/{{ .UUID }}/admin/challenges/export">Export All</a>
+                    <button class="mctf-cta" data-action="import-all-challenges" data-import-url="/{{ .UUID }}/admin/challenges/import" type="button">{{ T "admin.challenges.import_all" }}</button>
+                    <a class="mctf-cta" href="/{{ .UUID }}/admin/challenges/export">{{ T "admin.challenges.export_all" }}</a>
                   </div>
                 </div>
                 <div class="admin-setting-row">
-                  <label>Bulk challenge state</label>
+                  <label>{{ T "admin.controls.bulk_challenge_state" }}</label>
                   <div class="admin-buttons" style="margin-top: 0">
-                    <button class="mctf-cta cta--yellow" data-action="enable-all-challenges" data-enable-all-url="/{{ .UUID }}/admin/challenges/enable-all" type="button">Enable All Challenges</button>
-                    <button class="mctf-cta cta--yellow" data-action="disable-all-challenges" data-disable-all-url="/{{ .UUID }}/admin/challenges/disable-all" type="button">Disable All Challenges</button>
+                    <button class="mctf-cta cta--yellow" data-action="enable-all-challenges" data-enable-all-url="/{{ .UUID }}/admin/challenges/enable-all" type="button">{{ T "admin.challenges.enable_all" }}</button>
+                    <button class="mctf-cta cta--yellow" data-action="disable-all-challenges" data-disable-all-url="/{{ .UUID }}/admin/challenges/disable-all" type="button">{{ T "admin.challenges.disable_all" }}</button>
                   </div>
                 </div>
                 <div class="admin-setting-row">
-                  <label>Bulk delete</label>
+                  <label>{{ T "admin.bulk_delete" }}</label>
                   <div class="admin-buttons" style="margin-top: 0">
-                    <button class="mctf-cta cta--red" data-action="delete-all-challenges" data-delete-all-url="/{{ .UUID }}/admin/challenges/delete-all" type="button">Delete All Challenges</button>
-                    <button class="mctf-cta cta--red" data-action="delete-all-categories" data-delete-all-categories-url="/{{ .UUID }}/admin/challenges/categories/delete-all" type="button">Delete All Categories</button>
+                    <button class="mctf-cta cta--red" data-action="delete-all-challenges" data-delete-all-url="/{{ .UUID }}/admin/challenges/delete-all" type="button">{{ T "admin.challenges.delete_all" }}</button>
+                    <button class="mctf-cta cta--red" data-action="delete-all-categories" data-delete-all-categories-url="/{{ .UUID }}/admin/challenges/categories/delete-all" type="button">{{ T "admin.challenges.delete_all_categories" }}</button>
                   </div>
                 </div>
                 <input id="admin-challenges-import-file" type="file" accept=".json,application/json" hidden />
@@ -390,9 +390,9 @@
 
           <section id="categories" class="admin-box">
             <header class="admin-box-header mctf-cf">
-              <h3>Challenge Categories</h3>
+              <h3>{{ T "admin.challenges.categories" }}</h3>
               <div class="admin-section-toggle">
-                <button class="mctf-cta" data-action="add-new-category" data-create-url="/{{ .UUID }}/admin/challenges/categories" type="button">Add Category</button>
+                <button class="mctf-cta" data-action="add-new-category" data-create-url="/{{ .UUID }}/admin/challenges/categories" type="button">{{ T "admin.challenges.add_category" }}</button>
               </div>
             </header>
 
@@ -432,7 +432,7 @@
                 {{ end }}
                 {{ else }}
                 <div class="admin-setting-row">
-                  <label>No categories found</label>
+                  <label>{{ T "admin.challenges.no_categories" }}</label>
                 </div>
                 {{ end }}
               </div>
@@ -442,6 +442,7 @@
         </div>
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>

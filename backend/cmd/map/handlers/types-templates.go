@@ -114,6 +114,8 @@ type RegistrationTemplateData struct {
 // AdminSettingsTemplateData for passing data to the admin settings template
 type AdminSettingsTemplateData struct {
 	Title                    string
+	Lang                     string
+	I18NJSON                 template.JS
 	UUID                     string
 	Authenticated            bool
 	Admin                    bool
@@ -143,6 +145,8 @@ type AdminSettingsTemplateData struct {
 // AdminTemplateData for passing data to the admin template
 type AdminTemplateData struct {
 	Title         string
+	Lang          string
+	I18NJSON      template.JS
 	UUID          string
 	Authenticated bool
 	Admin         bool
@@ -153,6 +157,8 @@ type AdminTemplateData struct {
 // AdminControlsTemplateData for passing data to the admin controls template
 type AdminControlsTemplateData struct {
 	Title         string
+	Lang          string
+	I18NJSON      template.JS
 	UUID          string
 	Authenticated bool
 	Admin         bool
@@ -163,6 +169,8 @@ type AdminControlsTemplateData struct {
 // AdminUsersTemplateData for passing data to the admin users template
 type AdminUsersTemplateData struct {
 	Title         string
+	Lang          string
+	I18NJSON      template.JS
 	UUID          string
 	Authenticated bool
 	Admin         bool
@@ -176,6 +184,8 @@ type AdminUsersTemplateData struct {
 // AdminTeamsTemplateData for passing data to the admin teams template
 type AdminTeamsTemplateData struct {
 	Title         string
+	Lang          string
+	I18NJSON      template.JS
 	UUID          string
 	Authenticated bool
 	Admin         bool
@@ -190,6 +200,8 @@ type AdminTeamsTemplateData struct {
 // AdminTeamLogosTemplateData for passing data to the admin team-logos template
 type AdminTeamLogosTemplateData struct {
 	Title         string
+	Lang          string
+	I18NJSON      template.JS
 	UUID          string
 	Authenticated bool
 	Admin         bool
@@ -203,6 +215,8 @@ type AdminTeamLogosTemplateData struct {
 // AdminChallengesTemplateData for passing data to the admin challenges template
 type AdminChallengesTemplateData struct {
 	Title                   string
+	Lang                    string
+	I18NJSON                template.JS
 	UUID                    string
 	Authenticated           bool
 	Admin                   bool
@@ -229,6 +243,8 @@ type AdminChallengeActivityEntry struct {
 // AdminActivityTemplateData for passing data to the admin activity template
 type AdminActivityTemplateData struct {
 	Title           string
+	Lang            string
+	I18NJSON        template.JS
 	UUID            string
 	Authenticated   bool
 	Admin           bool
@@ -241,6 +257,8 @@ type AdminActivityTemplateData struct {
 // AdminChatTemplateData for passing data to the admin chat template
 type AdminChatTemplateData struct {
 	Title         string
+	Lang          string
+	I18NJSON      template.JS
 	UUID          string
 	Authenticated bool
 	Admin         bool
@@ -253,6 +271,8 @@ type AdminChatTemplateData struct {
 // AdminCountriesTemplateData for passing data to the admin countries template
 type AdminCountriesTemplateData struct {
 	Title         string
+	Lang          string
+	I18NJSON      template.JS
 	UUID          string
 	Authenticated bool
 	Admin         bool

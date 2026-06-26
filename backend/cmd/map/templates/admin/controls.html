@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -64,39 +64,39 @@
                 </div>
               </a>
             </div>
-            <h2>Game Admin</h2>
+            <h2>{{ T "admin.nav.game_admin" }}</h2>
           </header>
           <nav class="admin-nav-links row-fluid">
             <ul>
-              <li><a href="/{{ .UUID }}/admin">Dashboard</a></li>
-              <li><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
-              <li class="active"><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
-              <li><a href="/{{ .UUID }}/admin/users">Users</a></li>
-              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
-              <li><a href="/{{ .UUID }}/admin/team-logos">Team logos</a></li>
-              <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
-              <li><a href="/{{ .UUID }}/admin/countries">Countries</a></li>
-              <li><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
-              <li><a href="/{{ .UUID }}/admin/chat">Chat</a></li>
+              <li><a href="/{{ .UUID }}/admin">{{ T "admin.nav.dashboard" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/settings">{{ T "admin.nav.settings" }}</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/controls">{{ T "admin.nav.controls" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/users">{{ T "admin.nav.users" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">{{ T "admin.nav.teams" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/team-logos">{{ T "admin.nav.team_logos" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/challenges">{{ T "admin.nav.challenges" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/countries">{{ T "admin.nav.countries" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/activity">{{ T "admin.nav.activity" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/chat">{{ T "admin.nav.chat" }}</a></li>
             </ul>
           </nav>
           <div class="admin-nav-controls row-fixed">
-            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
-            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+            <a href="#" class="mctf-cta cta--red js-end-game">{{ T "admin.nav.end_game" }}</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">{{ T "admin.nav.pause_game" }}</a>
           </div>
           <div class="admin-nav--footer row-fixed">
-            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
-            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+            <a href="/{{ .UUID }}/gameboard">{{ T "nav.gameboard" }}</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">{{ T "gb.logout" }}</a>
           </div>
         </div>
       </div>
       <div id="mctf-main-content" class="mctf-page mctf-admin-main">
         <div class="admin-sections">
           <header class="admin-page-header">
-            <h3>Game Controls</h3>
+            <h3>{{ T "admin.controls.page_header" }}</h3>
             <span class="admin-section--status" data-ready-status="ready">
-              status_
-              <span class="highlighted">ready</span>
+              {{ T "admin.status_label" }}
+              <span class="highlighted">{{ T "admin.status_ready" }}</span>
               <span class="admin-section--status-message"></span>
             </span>
           </header>
@@ -104,15 +104,15 @@
           <div class="controls-rows">
             <section id="controls-game" class="admin-box">
               <header class="admin-box-header mctf-cf">
-                <h3>Game Actions</h3>
+                <h3>{{ T "admin.controls.game_actions" }}</h3>
               </header>
               <div class="admin-row">
                 <div class="admin-settings-list">
                   <div class="admin-setting-row">
-                    <label>Import / Export Full Game</label>
+                    <label>{{ T "admin.controls.import_export_full" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--yellow" data-action="import-full-game" data-import-url="/{{ .UUID }}/admin/game/import" type="button">Import Full Game</button>
-                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/game/export">Export Full Game</a>
+                      <button class="mctf-cta cta--yellow" data-action="import-full-game" data-import-url="/{{ .UUID }}/admin/game/import" type="button">{{ T "admin.game.import_full" }}</button>
+                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/game/export">{{ T "admin.game.export_full" }}</a>
                     </div>
                     <input id="admin-game-import-file" type="file" accept=".json,application/json" style="display: none" />
                   </div>
@@ -122,29 +122,29 @@
 
             <section id="controls-users" class="admin-box">
               <header class="admin-box-header mctf-cf">
-                <h3>Users Actions</h3>
+                <h3>{{ T "admin.controls.users_actions" }}</h3>
               </header>
               <div class="admin-row">
                 <div class="admin-settings-list">
                   <div class="admin-setting-row">
-                    <label>Import / Export</label>
+                    <label>{{ T "admin.import_export" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--yellow" data-action="import-all-users" data-import-url="/{{ .UUID }}/admin/users/import" type="button">Import Users</button>
-                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/users/export">Export Users</a>
+                      <button class="mctf-cta cta--yellow" data-action="import-all-users" data-import-url="/{{ .UUID }}/admin/users/import" type="button">{{ T "admin.users.import" }}</button>
+                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/users/export">{{ T "admin.users.export" }}</a>
                     </div>
                     <input id="admin-users-import-file" type="file" accept=".json,application/json" style="display: none" />
                   </div>
                   <div class="admin-setting-row">
-                    <label>Bulk user state</label>
+                    <label>{{ T "admin.users.bulk_state" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta" data-action="enable-all-users" data-enable-all-users-url="/{{ .UUID }}/admin/users/enable-all" type="button">Enable All Users</button>
-                      <button class="mctf-cta cta--red" data-action="disable-all-users" data-disable-all-users-url="/{{ .UUID }}/admin/users/disable-all" type="button">Disable All Users</button>
+                      <button class="mctf-cta" data-action="enable-all-users" data-enable-all-users-url="/{{ .UUID }}/admin/users/enable-all" type="button">{{ T "admin.users.enable_all" }}</button>
+                      <button class="mctf-cta cta--red" data-action="disable-all-users" data-disable-all-users-url="/{{ .UUID }}/admin/users/disable-all" type="button">{{ T "admin.users.disable_all" }}</button>
                     </div>
                   </div>
                   <div class="admin-setting-row">
-                    <label>Bulk delete</label>
+                    <label>{{ T "admin.bulk_delete" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--red" data-action="delete-all-users" data-delete-all-users-url="/{{ .UUID }}/admin/users/delete-all" type="button">Delete All Users</button>
+                      <button class="mctf-cta cta--red" data-action="delete-all-users" data-delete-all-users-url="/{{ .UUID }}/admin/users/delete-all" type="button">{{ T "admin.users.delete_all" }}</button>
                     </div>
                   </div>
                 </div>
@@ -153,53 +153,53 @@
 
             <section id="controls-teams" class="admin-box">
               <header class="admin-box-header mctf-cf">
-                <h3>Teams Actions</h3>
+                <h3>{{ T "admin.controls.teams_actions" }}</h3>
               </header>
               <div class="admin-row">
                 <div class="admin-settings-list">
                   <div class="admin-setting-row">
-                    <label>Import / Export teams</label>
+                    <label>{{ T "admin.controls.import_export_teams" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--yellow" data-action="import-all-teams" data-import-url="/{{ .UUID }}/admin/teams/import" type="button">Import teams</button>
-                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/teams/export">Export teams</a>
-                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/teams/export/full">Export teams + logos</a>
+                      <button class="mctf-cta cta--yellow" data-action="import-all-teams" data-import-url="/{{ .UUID }}/admin/teams/import" type="button">{{ T "admin.teams.import" }}</button>
+                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/teams/export">{{ T "admin.teams.export" }}</a>
+                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/teams/export/full">{{ T "admin.teams.export_full" }}</a>
                     </div>
                     <input id="admin-teams-import-file" type="file" accept=".json,application/json" style="display: none" />
                   </div>
                   <div class="admin-setting-row">
-                    <label>Import / Export logos</label>
+                    <label>{{ T "admin.controls.import_export_logos" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--yellow" data-action="import-all-team-logos" data-import-url="/{{ .UUID }}/admin/team-logos/import" type="button">Import logos</button>
-                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/team-logos/export">Export logos</a>
+                      <button class="mctf-cta cta--yellow" data-action="import-all-team-logos" data-import-url="/{{ .UUID }}/admin/team-logos/import" type="button">{{ T "admin.logos.import" }}</button>
+                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/team-logos/export">{{ T "admin.logos.export" }}</a>
                     </div>
                     <input id="admin-team-logos-import-file" type="file" accept=".json,application/json" style="display: none" />
                   </div>
                   <div class="admin-setting-row">
-                    <label>Bulk team state</label>
+                    <label>{{ T "admin.teams.bulk_state" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta" data-action="enable-all-teams" data-enable-all-teams-url="/{{ .UUID }}/admin/teams/enable-all" type="button">Enable All Teams</button>
-                      <button class="mctf-cta cta--red" data-action="disable-all-teams" data-disable-all-teams-url="/{{ .UUID }}/admin/teams/disable-all" type="button">Disable All Teams</button>
+                      <button class="mctf-cta" data-action="enable-all-teams" data-enable-all-teams-url="/{{ .UUID }}/admin/teams/enable-all" type="button">{{ T "admin.teams.enable_all" }}</button>
+                      <button class="mctf-cta cta--red" data-action="disable-all-teams" data-disable-all-teams-url="/{{ .UUID }}/admin/teams/disable-all" type="button">{{ T "admin.teams.disable_all" }}</button>
                     </div>
                   </div>
                   <div class="admin-setting-row">
-                    <label>Bulk team visibility</label>
+                    <label>{{ T "admin.teams.bulk_visibility" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta" data-action="visible-all-teams" data-visible-all-teams-url="/{{ .UUID }}/admin/teams/visible-all" type="button">Make All Visible</button>
-                      <button class="mctf-cta cta--red" data-action="invisible-all-teams" data-invisible-all-teams-url="/{{ .UUID }}/admin/teams/invisible-all" type="button">Make All Invisible</button>
+                      <button class="mctf-cta" data-action="visible-all-teams" data-visible-all-teams-url="/{{ .UUID }}/admin/teams/visible-all" type="button">{{ T "admin.teams.make_visible" }}</button>
+                      <button class="mctf-cta cta--red" data-action="invisible-all-teams" data-invisible-all-teams-url="/{{ .UUID }}/admin/teams/invisible-all" type="button">{{ T "admin.teams.make_invisible" }}</button>
                     </div>
                   </div>
                   <div class="admin-setting-row">
-                    <label>Bulk logo state</label>
+                    <label>{{ T "admin.logos.bulk_state" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta" data-action="enable-all-logos" data-enable-all-logos-url="/{{ .UUID }}/admin/team-logos/logos/enable-all" type="button">Enable All Logos</button>
-                      <button class="mctf-cta cta--red" data-action="disable-all-logos" data-disable-all-logos-url="/{{ .UUID }}/admin/team-logos/logos/disable-all" type="button">Disable All Logos</button>
+                      <button class="mctf-cta" data-action="enable-all-logos" data-enable-all-logos-url="/{{ .UUID }}/admin/team-logos/logos/enable-all" type="button">{{ T "admin.logos.enable_all" }}</button>
+                      <button class="mctf-cta cta--red" data-action="disable-all-logos" data-disable-all-logos-url="/{{ .UUID }}/admin/team-logos/logos/disable-all" type="button">{{ T "admin.logos.disable_all" }}</button>
                     </div>
                   </div>
                   <div class="admin-setting-row">
-                    <label>Bulk delete</label>
+                    <label>{{ T "admin.bulk_delete" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--red" data-action="delete-all-logos" data-delete-all-logos-url="/{{ .UUID }}/admin/team-logos/logos/delete-all" type="button">Delete all custom logos</button>
-                      <button class="mctf-cta cta--red" data-action="delete-all-teams" data-delete-all-teams-url="/{{ .UUID }}/admin/teams/delete-all" type="button">Delete All Teams</button>
+                      <button class="mctf-cta cta--red" data-action="delete-all-logos" data-delete-all-logos-url="/{{ .UUID }}/admin/team-logos/logos/delete-all" type="button">{{ T "admin.logos.delete_all_custom" }}</button>
+                      <button class="mctf-cta cta--red" data-action="delete-all-teams" data-delete-all-teams-url="/{{ .UUID }}/admin/teams/delete-all" type="button">{{ T "admin.teams.delete_all" }}</button>
                     </div>
                   </div>
                 </div>
@@ -208,30 +208,30 @@
 
             <section id="controls-challenges" class="admin-box">
               <header class="admin-box-header mctf-cf">
-                <h3>Challenges Actions</h3>
+                <h3>{{ T "admin.controls.challenges_actions" }}</h3>
               </header>
               <div class="admin-row">
                 <div class="admin-settings-list">
                   <div class="admin-setting-row">
-                    <label>Import / Export</label>
+                    <label>{{ T "admin.import_export" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--yellow" data-action="import-all-challenges" data-import-url="/{{ .UUID }}/admin/challenges/import" type="button">Import Challenges</button>
-                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/challenges/export">Export Challenges</a>
+                      <button class="mctf-cta cta--yellow" data-action="import-all-challenges" data-import-url="/{{ .UUID }}/admin/challenges/import" type="button">{{ T "admin.challenges.import_all" }}</button>
+                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/challenges/export">{{ T "admin.challenges.export_all" }}</a>
                     </div>
                     <input id="admin-challenges-import-file" type="file" accept=".json,application/json" style="display: none" />
                   </div>
                   <div class="admin-setting-row">
-                    <label>Bulk challenge state</label>
+                    <label>{{ T "admin.controls.bulk_challenge_state" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta" data-action="enable-all-challenges" data-enable-all-url="/{{ .UUID }}/admin/challenges/enable-all" type="button">Enable All Challenges</button>
-                      <button class="mctf-cta cta--red" data-action="disable-all-challenges" data-disable-all-url="/{{ .UUID }}/admin/challenges/disable-all" type="button">Disable All Challenges</button>
+                      <button class="mctf-cta" data-action="enable-all-challenges" data-enable-all-url="/{{ .UUID }}/admin/challenges/enable-all" type="button">{{ T "admin.challenges.enable_all" }}</button>
+                      <button class="mctf-cta cta--red" data-action="disable-all-challenges" data-disable-all-url="/{{ .UUID }}/admin/challenges/disable-all" type="button">{{ T "admin.challenges.disable_all" }}</button>
                     </div>
                   </div>
                   <div class="admin-setting-row">
-                    <label>Bulk delete</label>
+                    <label>{{ T "admin.bulk_delete" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--red" data-action="delete-all-challenges" data-delete-all-url="/{{ .UUID }}/admin/challenges/delete-all" type="button">Delete All Challenges</button>
-                      <button class="mctf-cta cta--red" data-action="delete-all-categories" data-delete-all-categories-url="/{{ .UUID }}/admin/challenges/categories/delete-all" type="button">Delete All Categories</button>
+                      <button class="mctf-cta cta--red" data-action="delete-all-challenges" data-delete-all-url="/{{ .UUID }}/admin/challenges/delete-all" type="button">{{ T "admin.challenges.delete_all" }}</button>
+                      <button class="mctf-cta cta--red" data-action="delete-all-categories" data-delete-all-categories-url="/{{ .UUID }}/admin/challenges/categories/delete-all" type="button">{{ T "admin.challenges.delete_all_categories" }}</button>
                     </div>
                   </div>
                 </div>
@@ -240,22 +240,22 @@
 
             <section id="controls-settings" class="admin-box">
               <header class="admin-box-header mctf-cf">
-                <h3>Settings Actions</h3>
+                <h3>{{ T "admin.controls.settings_actions" }}</h3>
               </header>
               <div class="admin-row">
                 <div class="admin-settings-list">
                   <div class="admin-setting-row">
-                    <label>Import / Export</label>
+                    <label>{{ T "admin.import_export" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--yellow" data-action="import-all-settings" data-import-url="/{{ .UUID }}/admin/settings/import" type="button">Import Settings</button>
-                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/settings/export">Export Settings</a>
+                      <button class="mctf-cta cta--yellow" data-action="import-all-settings" data-import-url="/{{ .UUID }}/admin/settings/import" type="button">{{ T "admin.settings.import" }}</button>
+                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/settings/export">{{ T "admin.settings.export" }}</a>
                     </div>
                     <input id="admin-settings-import-file" type="file" accept=".json,application/json" style="display: none" />
                   </div>
                   <div class="admin-setting-row">
-                    <label>Reset</label>
+                    <label>{{ T "admin.controls.reset" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--red" data-action="reset-settings-defaults" data-reset-defaults-url="/{{ .UUID }}/admin/settings/reset-defaults" type="button">Reset to Defaults</button>
+                      <button class="mctf-cta cta--red" data-action="reset-settings-defaults" data-reset-defaults-url="/{{ .UUID }}/admin/settings/reset-defaults" type="button">{{ T "admin.settings.reset_defaults" }}</button>
                     </div>
                   </div>
                 </div>
@@ -264,20 +264,20 @@
 
             <section id="controls-countries" class="admin-box">
               <header class="admin-box-header mctf-cf">
-                <h3>Countries Actions</h3>
+                <h3>{{ T "admin.controls.countries_actions" }}</h3>
               </header>
               <div class="admin-row">
                 <div class="admin-settings-list">
                   <div class="admin-setting-row">
-                    <label>Management</label>
+                    <label>{{ T "admin.controls.management" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/countries">Open Countries Page</a>
+                      <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/countries">{{ T "admin.countries.open_page" }}</a>
                     </div>
                   </div>
                   <div class="admin-setting-row">
-                    <label>Bulk delete</label>
+                    <label>{{ T "admin.bulk_delete" }}</label>
                     <div class="admin-buttons" style="margin-top: 0">
-                      <button class="mctf-cta cta--red" data-action="delete-all-countries" data-delete-all-countries-url="/{{ .UUID }}/admin/countries/delete-all" type="button">Delete All Countries</button>
+                      <button class="mctf-cta cta--red" data-action="delete-all-countries" data-delete-all-countries-url="/{{ .UUID }}/admin/countries/delete-all" type="button">{{ T "admin.countries.delete_all" }}</button>
                     </div>
                   </div>
                 </div>
@@ -287,6 +287,7 @@
         </div>
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>

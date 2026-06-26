@@ -122,14 +122,14 @@ function ensureAdminLogoUploadFormats(form) {
   var uploadField = logoFileInput ? logoFileInput.parentNode : null;
   var uploadLabel = uploadField ? uploadField.querySelector('label[for="admin-add-logo-file"], label') : null;
   if (uploadLabel) {
-    uploadLabel.textContent = "Upload Logo File";
+    uploadLabel.textContent = t("admin.logos.upload_file", "Upload Logo File");
   }
 
   var formats = form.querySelector(".admin-logo-upload-formats");
   if (!formats) {
     formats = document.createElement("div");
     formats.className = "admin-logo-upload-formats";
-    formats.setAttribute("aria-label", "Accepted logo upload formats");
+    formats.setAttribute("aria-label", t("admin.js.upload_formats_aria", "Accepted logo upload formats"));
     if (uploadField && uploadField.parentNode) {
       uploadField.parentNode.insertBefore(formats, uploadField.nextSibling);
     } else {
@@ -146,27 +146,27 @@ function ensureAdminLogoUploadFormats(form) {
 
   var formatLabel = document.createElement("span");
   formatLabel.className = "admin-logo-upload-formats-label";
-  formatLabel.textContent = "Accepted formats";
+  formatLabel.textContent = t("admin.logos.accepted_formats", "Accepted formats");
   formatCopy.appendChild(formatLabel);
 
   var formatNote = document.createElement("span");
   formatNote.className = "admin-logo-upload-formats-note";
-  formatNote.textContent = "Upload an SVG, GIF, PNG, or JPG/JPEG file.";
+  formatNote.textContent = t("admin.logos.upload_note", "Upload an SVG, GIF, PNG, or JPG/JPEG file.");
   formatCopy.appendChild(formatNote);
   formats.appendChild(formatCopy);
 
   var limitChips = document.createElement("div");
   limitChips.className = "admin-logo-upload-limits";
-  limitChips.setAttribute("aria-label", "Logo upload size limits");
+  limitChips.setAttribute("aria-label", t("admin.js.upload_size_aria", "Logo upload size limits"));
 
   var maxChip = document.createElement("span");
   maxChip.className = "admin-logo-limit-chip";
-  maxChip.textContent = "Max file size: " + ADMIN_LOGO_UPLOAD_MAX_LABEL;
+  maxChip.textContent = t("admin.js.max_size_prefix", "Max file size: ") + ADMIN_LOGO_UPLOAD_MAX_LABEL;
   limitChips.appendChild(maxChip);
 
   var recommendedChip = document.createElement("span");
   recommendedChip.className = "admin-logo-limit-chip";
-  recommendedChip.textContent = "Recommended size: " + ADMIN_LOGO_UPLOAD_RECOMMENDED_SIZE;
+  recommendedChip.textContent = t("admin.js.recommended_size_prefix", "Recommended size: ") + ADMIN_LOGO_UPLOAD_RECOMMENDED_SIZE;
   limitChips.appendChild(recommendedChip);
   formats.appendChild(limitChips);
 
@@ -197,7 +197,7 @@ function ensureAdminLogoUploadFormats(form) {
       return;
     }
     var logoFile = logoFileInput && logoFileInput.files && logoFileInput.files.length ? logoFileInput.files[0] : null;
-    selectedFileSize.textContent = logoFile ? "Selected file: " + logoFile.name + " (" + formatAdminLogoFileSize(logoFile.size) + ")" : "No file selected";
+    selectedFileSize.textContent = logoFile ? t("admin.js.selected_file_prefix", "Selected file: ") + logoFile.name + " (" + formatAdminLogoFileSize(logoFile.size) + ")" : t("admin.logos.no_file", "No file selected");
     selectedFileSize.classList.toggle("is-over-limit", !!(logoFile && logoFile.size > ADMIN_LOGO_UPLOAD_MAX_BYTES));
   }
 
@@ -217,7 +217,7 @@ function ensureAdminLogoUploadFormats(form) {
       form.appendChild(helperCopy);
     }
   }
-  helperCopy.textContent = "Use the file slug to control the stored logo name.";
+  helperCopy.textContent = t("admin.logos.slug_note", "Use the file slug to control the stored logo name.");
 }
 
 function normalizeAdminLogoSymbol(logoValue) {
@@ -274,7 +274,7 @@ function showDiscardUnsavedAdminChangesModal(onConfirm) {
   }
 
   if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-    if (window.confirm("You have unsaved changes. Leave this page and discard them?")) {
+    if (window.confirm(t("admin.modal.unsaved_msg", "You have unsaved changes. Leave this page and discard them?"))) {
       allowAdminPageExit();
       onConfirm();
     }
@@ -308,7 +308,7 @@ function confirmDiscardUnsavedAdminChanges() {
     return true;
   }
 
-  return window.confirm("You have unsaved changes. Leave this page and discard them?");
+  return window.confirm(t("admin.modal.unsaved_msg", "You have unsaved changes. Leave this page and discard them?"));
 }
 
 function setAdminStatus(status, message) {
@@ -477,12 +477,12 @@ function submitAdminForm(form) {
         })
         .then(function (data) {
           if (!response.ok || data.success === false) {
-            throw new Error(data.message || "Request failed");
+            throw new Error(data.message || t("admin.js.request_failed", "Request failed"));
           }
           if (typeof form._syncInitialState === "function") {
             form._syncInitialState();
           }
-          showTransientAdminStatus(data.status || "ok", data.message || "Updated");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.updated", "Updated"));
           if (form.dataset.reloadOnSuccess === "true" || form.dataset.adminReloadOnSuccess === "true") {
             window.location.reload();
             return;
@@ -490,7 +490,7 @@ function submitAdminForm(form) {
         });
     })
     .catch(function (error) {
-      showTransientAdminStatus("error", error.message || "Request failed");
+      showTransientAdminStatus("error", error.message || t("admin.js.request_failed", "Request failed"));
     })
     .finally(function () {
       delete form.dataset.submitting;
@@ -607,7 +607,7 @@ function createAdminUser(createURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to create user");
+          throw new Error(data.message || t("admin.js.failed_create_user", "Failed to create user"));
         }
         return data;
       });
@@ -632,7 +632,7 @@ function createAdminTeam(createURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to create team");
+          throw new Error(data.message || t("admin.js.failed_create_team", "Failed to create team"));
         }
         return data;
       });
@@ -664,7 +664,7 @@ function createAdminLogo(createURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to create logo");
+          throw new Error(data.message || t("admin.js.failed_create_logo", "Failed to create logo"));
         }
         return data;
       });
@@ -689,7 +689,7 @@ function updateAdminLogo(updateURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to update logo");
+          throw new Error(data.message || t("admin.js.failed_update_logo", "Failed to update logo"));
         }
         return data;
       });
@@ -714,7 +714,7 @@ function updateAdminTeam(updateURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to update team");
+          throw new Error(data.message || t("admin.js.failed_update_team", "Failed to update team"));
         }
         return data;
       });
@@ -739,7 +739,7 @@ function updateAdminUser(updateURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to update user");
+          throw new Error(data.message || t("admin.js.failed_update_user", "Failed to update user"));
         }
         return data;
       });
@@ -764,7 +764,7 @@ function setAdminUserPassword(updateURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to update password");
+          throw new Error(data.message || t("admin.js.failed_update_password", "Failed to update password"));
         }
         return data;
       });
@@ -789,7 +789,7 @@ function createAdminChallenge(createURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to create challenge");
+          throw new Error(data.message || t("admin.js.failed_create_challenge", "Failed to create challenge"));
         }
         return data;
       });
@@ -814,7 +814,7 @@ function createAdminChallengeUpdate(updateURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to update challenge");
+          throw new Error(data.message || t("admin.js.failed_update_challenge", "Failed to update challenge"));
         }
         return data;
       });
@@ -839,7 +839,7 @@ function deleteAdminChallenge(deleteURL) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to delete challenge");
+          throw new Error(data.message || t("admin.js.failed_delete_challenge", "Failed to delete challenge"));
         }
         return data;
       });
@@ -864,7 +864,7 @@ function createAdminCategory(createURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to create category");
+          throw new Error(data.message || t("admin.js.failed_create_category", "Failed to create category"));
         }
         return data;
       });
@@ -889,7 +889,7 @@ function createAdminActivity(createURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to create activity entry");
+          throw new Error(data.message || t("admin.js.failed_create_activity_entry", "Failed to create activity entry"));
         }
         return data;
       });
@@ -914,7 +914,7 @@ function updateAdminCategory(updateURL, payload) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to update category");
+          throw new Error(data.message || t("admin.js.failed_update_category", "Failed to update category"));
         }
         return data;
       });
@@ -938,7 +938,7 @@ function importAdminChallenges(importURL, formData) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to import challenges");
+          throw new Error(data.message || t("admin.js.failed_import_challenges", "Failed to import challenges"));
         }
         return data;
       });
@@ -963,7 +963,7 @@ function postAdminActionJSON(actionURL) {
       })
       .then(function (data) {
         if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Request failed");
+          throw new Error(data.message || t("admin.js.request_failed", "Request failed"));
         }
         return data;
       });
@@ -978,7 +978,7 @@ function initAdminImportChallengesButton() {
 
   var fileInput = document.getElementById("admin-challenges-import-file");
   if (!fileInput) {
-    showTransientAdminStatus("error", "Import file input not found");
+    showTransientAdminStatus("error", t("admin.js.import_file_missing", "Import file input not found"));
     return;
   }
 
@@ -1013,11 +1013,11 @@ function initAdminImportChallengesButton() {
 
     importAdminChallenges(importURL, formData)
       .then(function (data) {
-        showTransientAdminStatus(data.status || "ok", data.message || "Challenges imported");
+        showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.challenges_imported", "Challenges imported"));
         window.location.reload();
       })
       .catch(function (error) {
-        showTransientAdminStatus("error", error.message || "Failed to import challenges");
+        showTransientAdminStatus("error", error.message || t("admin.js.failed_import_challenges", "Failed to import challenges"));
       })
       .finally(function () {
         delete importBtn.dataset.submitting;
@@ -1064,7 +1064,7 @@ function initAdminGameActionsButtons() {
 
     importAdminChallenges(importURL, formData)
       .then(function (data) {
-        showTransientAdminStatus(data.status || "ok", data.message || "Full game imported");
+        showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.full_game_imported", "Full game imported"));
         window.location.reload();
       })
       .catch(function (error) {
@@ -1088,7 +1088,7 @@ function initAdminSettingsActionsButtons() {
   if (importBtn) {
     var fileInput = document.getElementById("admin-settings-import-file");
     if (!fileInput) {
-      showTransientAdminStatus("error", "Settings import file input not found");
+      showTransientAdminStatus("error", t("admin.js.settings_import_missing", "Settings import file input not found"));
       return;
     }
 
@@ -1123,7 +1123,7 @@ function initAdminSettingsActionsButtons() {
 
       importAdminChallenges(importURL, formData)
         .then(function (data) {
-          showTransientAdminStatus(data.status || "ok", data.message || "Settings imported");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.settings_imported", "Settings imported"));
           window.location.reload();
         })
         .catch(function (error) {
@@ -1156,7 +1156,7 @@ function initAdminSettingsActionsButtons() {
 
         postAdminActionJSON(resetDefaultsURL)
           .then(function (data) {
-            showTransientAdminStatus(data.status || "ok", data.message || "Settings reset to defaults");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.settings_reset_defaults", "Settings reset to defaults"));
             window.location.reload();
           })
           .catch(function (error) {
@@ -1172,7 +1172,7 @@ function initAdminSettingsActionsButtons() {
       }
 
       if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-        if (window.confirm("Reset all settings to defaults?")) {
+        if (window.confirm(t("admin.js.reset_confirm", "Reset all settings to defaults?"))) {
           runResetDefaults();
         }
         return;
@@ -1217,7 +1217,7 @@ function initAdminChallengeActionsButtons() {
 
       postAdminActionJSON(enableAllURL)
         .then(function (data) {
-          showTransientAdminStatus(data.status || "ok", data.message || "All challenges enabled");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.all_challenges_enabled", "All challenges enabled"));
           window.location.reload();
         })
         .catch(function (error) {
@@ -1249,7 +1249,7 @@ function initAdminChallengeActionsButtons() {
 
       postAdminActionJSON(disableAllURL)
         .then(function (data) {
-          showTransientAdminStatus(data.status || "ok", data.message || "All challenges disabled");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.all_challenges_disabled", "All challenges disabled"));
           window.location.reload();
         })
         .catch(function (error) {
@@ -1282,7 +1282,7 @@ function initAdminChallengeActionsButtons() {
 
         postAdminActionJSON(deleteAllURL)
           .then(function (data) {
-            showTransientAdminStatus(data.status || "ok", data.message || "All challenges deleted");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.all_challenges_deleted", "All challenges deleted"));
             window.location.reload();
           })
           .catch(function (error) {
@@ -1298,7 +1298,7 @@ function initAdminChallengeActionsButtons() {
       }
 
       if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-        if (window.confirm("Delete all challenges? This cannot be undone.")) {
+        if (window.confirm(t("admin.js.delete_all_challenges_confirm", "Delete all challenges? This cannot be undone."))) {
           runDeleteAllChallenges();
         }
         return;
@@ -1345,7 +1345,7 @@ function initAdminChallengeActionsButtons() {
 
       postAdminActionJSON(deleteAllCategoriesURL)
         .then(function (data) {
-          showTransientAdminStatus(data.status || "ok", data.message || "All categories deleted");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.all_categories_deleted", "All categories deleted"));
           window.location.reload();
         })
         .catch(function (error) {
@@ -1361,7 +1361,7 @@ function initAdminChallengeActionsButtons() {
     }
 
     if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-      if (window.confirm("Delete all categories? Challenges must be deleted first.")) {
+      if (window.confirm(t("admin.js.delete_all_categories_confirm", "Delete all categories? Challenges must be deleted first."))) {
         runDeleteAllCategories();
       }
       return;
@@ -1436,12 +1436,12 @@ function initAdminTeamActionsButtons() {
     });
   }
 
-  bindImportAction('[data-action="import-all-teams"]', "admin-teams-import-file", "Missing teams import URL", "Teams imported", "Failed to import teams");
+  bindImportAction('[data-action="import-all-teams"]', "admin-teams-import-file", "Missing teams import URL", t("admin.js.teams_imported", "Teams imported"), "Failed to import teams");
   bindImportAction(
     '[data-action="import-all-team-logos"]',
     "admin-team-logos-import-file",
     "Missing logos import URL",
-    "Logos imported",
+    t("admin.js.logos_imported", "Logos imported"),
     "Failed to import logos"
   );
 
@@ -1480,12 +1480,12 @@ function initAdminTeamActionsButtons() {
     });
   }
 
-  bindSimpleAction('[data-action="enable-all-teams"]', "data-enable-all-teams-url", "All teams enabled", "Failed to enable all teams");
-  bindSimpleAction('[data-action="disable-all-teams"]', "data-disable-all-teams-url", "All teams disabled", "Failed to disable all teams");
-  bindSimpleAction('[data-action="visible-all-teams"]', "data-visible-all-teams-url", "All teams set visible", "Failed to set all teams visible");
-  bindSimpleAction('[data-action="invisible-all-teams"]', "data-invisible-all-teams-url", "All teams set invisible", "Failed to set all teams invisible");
-  bindSimpleAction('[data-action="enable-all-logos"]', "data-enable-all-logos-url", "All logos enabled", "Failed to enable all logos");
-  bindSimpleAction('[data-action="disable-all-logos"]', "data-disable-all-logos-url", "All logos disabled", "Failed to disable all logos");
+  bindSimpleAction('[data-action="enable-all-teams"]', "data-enable-all-teams-url", t("admin.js.all_teams_enabled", "All teams enabled"), "Failed to enable all teams");
+  bindSimpleAction('[data-action="disable-all-teams"]', "data-disable-all-teams-url", t("admin.js.all_teams_disabled", "All teams disabled"), "Failed to disable all teams");
+  bindSimpleAction('[data-action="visible-all-teams"]', "data-visible-all-teams-url", t("admin.js.all_teams_visible", "All teams set visible"), "Failed to set all teams visible");
+  bindSimpleAction('[data-action="invisible-all-teams"]', "data-invisible-all-teams-url", t("admin.js.all_teams_invisible", "All teams set invisible"), "Failed to set all teams invisible");
+  bindSimpleAction('[data-action="enable-all-logos"]', "data-enable-all-logos-url", t("admin.js.all_logos_enabled", "All logos enabled"), "Failed to enable all logos");
+  bindSimpleAction('[data-action="disable-all-logos"]', "data-disable-all-logos-url", t("admin.js.all_logos_disabled", "All logos disabled"), "Failed to disable all logos");
 
   var deleteAllLogosBtn = document.querySelector('[data-action="delete-all-logos"]');
   if (deleteAllLogosBtn) {
@@ -1507,7 +1507,7 @@ function initAdminTeamActionsButtons() {
 
         postAdminActionJSON(deleteAllLogosURL)
           .then(function (data) {
-            showTransientAdminStatus(data.status || "ok", data.message || "All logos deleted");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.all_logos_deleted", "All logos deleted"));
             window.location.reload();
           })
           .catch(function (error) {
@@ -1571,7 +1571,7 @@ function initAdminTeamActionsButtons() {
 
       postAdminActionJSON(deleteAllTeamsURL)
         .then(function (data) {
-          showTransientAdminStatus(data.status || "ok", data.message || "All teams deleted");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.all_teams_deleted", "All teams deleted"));
           window.location.reload();
         })
         .catch(function (error) {
@@ -1587,7 +1587,7 @@ function initAdminTeamActionsButtons() {
     }
 
     if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-      if (window.confirm("Delete all teams? This cannot be undone.")) {
+      if (window.confirm(t("admin.js.delete_all_teams_confirm", "Delete all teams? This cannot be undone."))) {
         runDeleteAllTeams();
       }
       return;
@@ -1645,7 +1645,7 @@ function initAdminUserActionsButtons() {
 
       importAdminChallenges(importURL, formData)
         .then(function (data) {
-          showTransientAdminStatus(data.status || "ok", data.message || "Users imported");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.users_imported", "Users imported"));
           window.location.reload();
         })
         .catch(function (error) {
@@ -1679,7 +1679,7 @@ function initAdminUserActionsButtons() {
 
       postAdminActionJSON(enableAllUsersURL)
         .then(function (data) {
-          showTransientAdminStatus(data.status || "ok", data.message || "All users enabled");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.all_users_enabled", "All users enabled"));
           window.location.reload();
         })
         .catch(function (error) {
@@ -1711,7 +1711,7 @@ function initAdminUserActionsButtons() {
 
         postAdminActionJSON(disableAllUsersURL)
           .then(function (data) {
-            showTransientAdminStatus(data.status || "ok", data.message || "All users disabled");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.all_users_disabled", "All users disabled"));
             window.location.reload();
           })
           .catch(function (error) {
@@ -1727,7 +1727,7 @@ function initAdminUserActionsButtons() {
       }
 
       if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-        if (window.confirm("Disable all users?")) {
+        if (window.confirm(t("admin.js.disable_all_users_confirm", "Disable all users?"))) {
           runDisableAllUsers();
         }
         return;
@@ -1774,7 +1774,7 @@ function initAdminUserActionsButtons() {
 
       postAdminActionJSON(deleteAllUsersURL)
         .then(function (data) {
-          showTransientAdminStatus(data.status || "ok", data.message || "All users deleted");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.all_users_deleted", "All users deleted"));
           window.location.reload();
         })
         .catch(function (error) {
@@ -1790,7 +1790,7 @@ function initAdminUserActionsButtons() {
     }
 
     if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-      if (window.confirm("Delete all users? This cannot be undone.")) {
+      if (window.confirm(t("admin.js.delete_all_users_confirm", "Delete all users? This cannot be undone."))) {
         runDeleteAllUsers();
       }
       return;
@@ -1838,7 +1838,7 @@ function initAdminCountryActionsButtons() {
 
       postAdminActionJSON(deleteAllCountriesURL)
         .then(function (data) {
-          showTransientAdminStatus(data.status || "ok", data.message || "All countries deleted");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.all_countries_deleted", "All countries deleted"));
           window.location.reload();
         })
         .catch(function (error) {
@@ -1894,7 +1894,7 @@ function initAdminAddChallengeModal() {
     }
 
     if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-      showTransientAdminStatus("error", "Modal system unavailable");
+      showTransientAdminStatus("error", t("admin.js.modal_unavailable", "Modal system unavailable"));
       return;
     }
 
@@ -1947,11 +1947,11 @@ function initAdminAddChallengeModal() {
         var helpPenalty = String(form.querySelector('input[name="help_penalty"]').value || "0").trim();
 
         if (!title || !flag) {
-          showTransientAdminStatus("error", "Title and flag are required");
+          showTransientAdminStatus("error", t("admin.js.title_flag_required", "Title and flag are required"));
           return;
         }
         if (!categoryID) {
-          showTransientAdminStatus("error", "Category is required");
+          showTransientAdminStatus("error", t("admin.js.category_required", "Category is required"));
           return;
         }
 
@@ -1973,14 +1973,14 @@ function initAdminAddChallengeModal() {
           hint: hint,
         })
           .then(function (data) {
-            showTransientAdminStatus(data.status || "ok", data.message || "Challenge created");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.challenge_created", "Challenge created"));
             if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
               MAP_CTF.modal.close();
             }
             window.location.reload();
           })
           .catch(function (error) {
-            showTransientAdminStatus("error", error.message || "Failed to create challenge");
+            showTransientAdminStatus("error", error.message || t("admin.js.failed_create_challenge", "Failed to create challenge"));
           })
           .finally(function () {
             delete form.dataset.submitting;
@@ -2006,7 +2006,7 @@ function initAdminAddActivityModal() {
     }
 
     if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-      showTransientAdminStatus("error", "Modal system unavailable");
+      showTransientAdminStatus("error", t("admin.js.modal_unavailable", "Modal system unavailable"));
       return;
     }
 
@@ -2042,7 +2042,7 @@ function initAdminAddActivityModal() {
         var visible = (form.querySelector('select[name="visible"]').value || "true").trim() !== "false";
         var message = (form.querySelector('input[name="message"]').value || "").trim();
         if (!subject && !message) {
-          showTransientAdminStatus("error", "Subject or message is required");
+          showTransientAdminStatus("error", t("admin.js.subject_message_required", "Subject or message is required"));
           return;
         }
 
@@ -2055,11 +2055,11 @@ function initAdminAddActivityModal() {
           message: message,
         })
           .then(function (data) {
-            showTransientAdminStatus(data.status || "ok", data.message || "Activity entry created");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.activity_created", "Activity entry created"));
             window.location.reload();
           })
           .catch(function (error) {
-            showTransientAdminStatus("error", error.message || "Failed to create activity entry");
+            showTransientAdminStatus("error", error.message || t("admin.js.failed_create_activity_entry", "Failed to create activity entry"));
           })
           .finally(function () {
             delete form.dataset.submitting;
@@ -2087,7 +2087,7 @@ function initAdminActivityDeleteButtons() {
 
       var item = deleteBtn.closest(".admin-activity-item");
       if (!item) {
-        showTransientAdminStatus("error", "Unable to locate activity entry");
+        showTransientAdminStatus("error", t("admin.js.unable_activity_entry", "Unable to locate activity entry"));
         return;
       }
 
@@ -2116,17 +2116,17 @@ function initAdminActivityDeleteButtons() {
               })
               .then(function (data) {
                 if (!response.ok || data.success === false) {
-                  throw new Error(data.message || "Failed to delete activity entry");
+                  throw new Error(data.message || t("admin.js.failed_delete_activity_entry", "Failed to delete activity entry"));
                 }
                 return data;
               });
           })
           .then(function (data) {
             item.remove();
-            showTransientAdminStatus(data.status || "ok", data.message || "Activity entry deleted");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.activity_deleted", "Activity entry deleted"));
           })
           .catch(function (error) {
-            showTransientAdminStatus("error", error.message || "Failed to delete activity entry");
+            showTransientAdminStatus("error", error.message || t("admin.js.failed_delete_activity_entry", "Failed to delete activity entry"));
           })
           .finally(function () {
             delete deleteBtn.dataset.submitting;
@@ -2138,7 +2138,7 @@ function initAdminActivityDeleteButtons() {
       }
 
       if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-        if (window.confirm("Delete this activity entry?")) {
+        if (window.confirm(t("admin.js.delete_activity_confirm", "Delete this activity entry?"))) {
           runDelete();
         }
         return;
@@ -2184,7 +2184,7 @@ function initAdminAddUserModal() {
     }
 
     if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-      showTransientAdminStatus("error", "Modal system unavailable");
+      showTransientAdminStatus("error", t("admin.js.modal_unavailable", "Modal system unavailable"));
       return;
     }
 
@@ -2225,7 +2225,7 @@ function initAdminAddUserModal() {
         var teamID = teamField && typeof teamField.value === "string" ? teamField.value.trim() : "";
 
         if (!username || !password) {
-          showTransientAdminStatus("error", "Username and password are required");
+          showTransientAdminStatus("error", t("admin.js.username_password_required", "Username and password are required"));
           return;
         }
 
@@ -2239,14 +2239,14 @@ function initAdminAddUserModal() {
           team_id: teamID,
         })
           .then(function (data) {
-            showTransientAdminStatus(data.status || "ok", data.message || "User created");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.user_created", "User created"));
             if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
               MAP_CTF.modal.close();
             }
             window.location.reload();
           })
           .catch(function (error) {
-            showTransientAdminStatus("error", error.message || "Failed to create user");
+            showTransientAdminStatus("error", error.message || t("admin.js.failed_create_user", "Failed to create user"));
           })
           .finally(function () {
             delete form.dataset.submitting;
@@ -2272,7 +2272,7 @@ function initAdminAddTeamModal() {
     }
 
     if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-      showTransientAdminStatus("error", "Modal system unavailable");
+      showTransientAdminStatus("error", t("admin.js.modal_unavailable", "Modal system unavailable"));
       return;
     }
 
@@ -2333,7 +2333,7 @@ function initAdminAddTeamModal() {
         var logo = logoField && typeof logoField.value === "string" ? logoField.value.trim() : "";
 
         if (!name) {
-          showTransientAdminStatus("error", "Team name is required");
+          showTransientAdminStatus("error", t("admin.js.team_name_required", "Team name is required"));
           return;
         }
 
@@ -2344,14 +2344,14 @@ function initAdminAddTeamModal() {
           logo: logo,
         })
           .then(function (data) {
-            showTransientAdminStatus(data.status || "ok", data.message || "Team created");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.team_created", "Team created"));
             if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
               MAP_CTF.modal.close();
             }
             window.location.reload();
           })
           .catch(function (error) {
-            showTransientAdminStatus("error", error.message || "Failed to create team");
+            showTransientAdminStatus("error", error.message || t("admin.js.failed_create_team", "Failed to create team"));
           })
           .finally(function () {
             delete form.dataset.submitting;
@@ -2389,7 +2389,7 @@ function initAdminUserSettingsEditors() {
           return;
         }
         if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-          showTransientAdminStatus("error", "Password modal is unavailable");
+          showTransientAdminStatus("error", t("admin.js.password_modal_unavailable", "Password modal is unavailable"));
           return;
         }
 
@@ -2421,14 +2421,14 @@ function initAdminUserSettingsEditors() {
 
             var newPassword = passwordInput.value || "";
             if (!newPassword.trim()) {
-              showTransientAdminStatus("error", "New password is required");
+              showTransientAdminStatus("error", t("admin.js.new_password_required", "New password is required"));
               return;
             }
             if (typeof passwordInput.checkValidity === "function" && !passwordInput.checkValidity()) {
               if (typeof passwordInput.reportValidity === "function") {
                 passwordInput.reportValidity();
               } else {
-                showTransientAdminStatus("error", "New password is required");
+                showTransientAdminStatus("error", t("admin.js.new_password_required", "New password is required"));
               }
               return;
             }
@@ -2441,13 +2441,13 @@ function initAdminUserSettingsEditors() {
               new_password: newPassword,
             })
               .then(function (data) {
-                showTransientAdminStatus(data.status || "ok", data.message || "Password updated");
+                showTransientAdminStatus(data.status || "ok", data.message || t("profile.password_updated_msg", "Password updated"));
                 if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
                   MAP_CTF.modal.close();
                 }
               })
               .catch(function (error) {
-                showTransientAdminStatus("error", error.message || "Failed to update password");
+                showTransientAdminStatus("error", error.message || t("admin.js.failed_update_password", "Failed to update password"));
               })
               .finally(function () {
                 delete form.dataset.submitting;
@@ -2478,7 +2478,7 @@ function initAdminUserSettingsEditors() {
       var nameValue = nameInput && typeof nameInput.value === "string" ? nameInput.value.trim() : "";
       var emailValue = emailInput && typeof emailInput.value === "string" ? emailInput.value.trim() : "";
       if (emailValue && emailInput && typeof emailInput.checkValidity === "function" && !emailInput.checkValidity()) {
-        showTransientAdminStatus("error", "Email is invalid");
+        showTransientAdminStatus("error", t("admin.js.email_invalid", "Email is invalid"));
         return;
       }
 
@@ -2494,7 +2494,7 @@ function initAdminUserSettingsEditors() {
       var activeValue = activeInput ? String(activeInput.value).trim() : "";
 
       if (!adminValue || !serviceValue || !activeValue) {
-        showTransientAdminStatus("error", "Admin, service and active values are required");
+        showTransientAdminStatus("error", t("admin.js.admin_service_active_required", "Admin, service and active values are required"));
         return;
       }
 
@@ -2525,10 +2525,10 @@ function initAdminUserSettingsEditors() {
           if (typeof syncInitialState === "function") {
             syncInitialState();
           }
-          showTransientAdminStatus(data.status || "ok", data.message || "User updated");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.user_updated", "User updated"));
         })
         .catch(function (error) {
-          showTransientAdminStatus("error", error.message || "Failed to update user");
+          showTransientAdminStatus("error", error.message || t("admin.js.failed_update_user", "Failed to update user"));
         })
         .finally(function () {
           delete saveBtn.dataset.submitting;
@@ -2553,7 +2553,7 @@ function initAdminAddLogoButton() {
       return;
     }
     if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-      showTransientAdminStatus("error", "Modal system unavailable");
+      showTransientAdminStatus("error", t("admin.js.modal_unavailable", "Modal system unavailable"));
       return;
     }
 
@@ -2587,15 +2587,15 @@ function initAdminAddLogoButton() {
         var logoFile = logoFileInput && logoFileInput.files && logoFileInput.files.length ? logoFileInput.files[0] : null;
 
         if (!logoName) {
-          showTransientAdminStatus("error", "Logo name is required");
+          showTransientAdminStatus("error", t("admin.js.logo_name_required", "Logo name is required"));
           return;
         }
         if (!logoFile) {
-          showTransientAdminStatus("error", "Upload a logo file before creating a custom logo");
+          showTransientAdminStatus("error", t("admin.js.upload_logo_first", "Upload a logo file before creating a custom logo"));
           return;
         }
         if (logoFile.size > ADMIN_LOGO_UPLOAD_MAX_BYTES) {
-          showTransientAdminStatus("error", "Maximum logo upload size is " + ADMIN_LOGO_UPLOAD_MAX_LABEL);
+          showTransientAdminStatus("error", t("admin.js.max_upload_prefix", "Maximum logo upload size is ") + ADMIN_LOGO_UPLOAD_MAX_LABEL);
           return;
         }
 
@@ -2609,14 +2609,14 @@ function initAdminAddLogoButton() {
 
         createAdminLogo(createURL, formData)
           .then(function (data) {
-            showTransientAdminStatus(data.status || "ok", data.message || "Logo created");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.logo_created", "Logo created"));
             if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
               MAP_CTF.modal.close();
             }
             window.location.reload();
           })
           .catch(function (error) {
-            showTransientAdminStatus("error", error.message || "Failed to create logo");
+            showTransientAdminStatus("error", error.message || t("admin.js.failed_create_logo", "Failed to create logo"));
           })
           .finally(function () {
             delete form.dataset.submitting;
@@ -2642,7 +2642,7 @@ function initAdminEditLogoGrid() {
         return;
       }
       if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-        showTransientAdminStatus("error", "Modal system unavailable");
+        showTransientAdminStatus("error", t("admin.js.modal_unavailable", "Modal system unavailable"));
         return;
       }
 
@@ -2675,7 +2675,7 @@ function initAdminEditLogoGrid() {
           nameInput.value = logoName;
           nameInput.readOnly = isPlatform;
           if (isPlatform) {
-            nameInput.setAttribute("title", "Platform logo name cannot be changed");
+            nameInput.setAttribute("title", t("admin.js.platform_logo_no_rename", "Platform logo name cannot be changed"));
           } else {
             nameInput.removeAttribute("title");
           }
@@ -2710,11 +2710,11 @@ function initAdminEditLogoGrid() {
           var protectedValue = protectedInput ? String(protectedInput.value).trim() : "";
 
           if (!nameValue) {
-            showTransientAdminStatus("error", "Logo name is required");
+            showTransientAdminStatus("error", t("admin.js.logo_name_required", "Logo name is required"));
             return;
           }
           if (!enabledValue || !protectedValue) {
-            showTransientAdminStatus("error", "Enabled and protected values are required");
+            showTransientAdminStatus("error", t("admin.js.enabled_protected_required", "Enabled and protected values are required"));
             return;
           }
 
@@ -2725,14 +2725,14 @@ function initAdminEditLogoGrid() {
             protected: protectedValue,
           })
             .then(function (data) {
-              showTransientAdminStatus(data.status || "ok", data.message || "Logo updated");
+              showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.logo_updated", "Logo updated"));
               if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
                 MAP_CTF.modal.close();
               }
               window.location.reload();
             })
             .catch(function (error) {
-              showTransientAdminStatus("error", error.message || "Failed to update logo");
+              showTransientAdminStatus("error", error.message || t("admin.js.failed_update_logo", "Failed to update logo"));
             })
             .finally(function () {
               delete form.dataset.submitting;
@@ -2815,7 +2815,7 @@ function initAdminTeamSettingsEditors() {
       var protectedValue = protectedInput ? String(protectedInput.value).trim() : "";
 
       if (!nameValue || !logoValue || !activeValue || !visibleValue || !protectedValue) {
-        showTransientAdminStatus("error", "Team name, logo, active, visible and protected values are required");
+        showTransientAdminStatus("error", t("admin.js.team_full_required", "Team name, logo, active, visible and protected values are required"));
         return;
       }
 
@@ -2839,10 +2839,10 @@ function initAdminTeamSettingsEditors() {
             syncInitialState();
           }
           setEditing(true);
-          showTransientAdminStatus(data.status || "ok", data.message || "Team updated");
+          showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.team_updated", "Team updated"));
         })
         .catch(function (error) {
-          showTransientAdminStatus("error", error.message || "Failed to update team");
+          showTransientAdminStatus("error", error.message || t("admin.js.failed_update_team", "Failed to update team"));
         })
         .finally(function () {
           delete saveBtn.dataset.submitting;
@@ -2883,7 +2883,7 @@ function initAdminTeamDeleteButtons() {
             if (teamCard) {
               teamCard.remove();
             }
-            showTransientAdminStatus(data.status || "ok", data.message || "Team deleted");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.team_deleted", "Team deleted"));
           })
           .catch(function (error) {
             showTransientAdminStatus("error", error.message || "Failed to delete team");
@@ -2898,7 +2898,7 @@ function initAdminTeamDeleteButtons() {
       }
 
       if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-        if (window.confirm("Delete team" + (teamName ? " '" + teamName + "'" : "") + "?")) {
+        if (window.confirm(t("admin.js.delete_team", "Delete team") + (teamName ? " '" + teamName + "'" : "") + "?")) {
           runDelete();
         }
         return;
@@ -2930,7 +2930,7 @@ function initAdminTeamDeleteButtons() {
 
 function openAdminCategoryModal(options) {
   if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-    showTransientAdminStatus("error", "Modal system unavailable");
+    showTransientAdminStatus("error", t("admin.js.modal_unavailable", "Modal system unavailable"));
     return;
   }
 
@@ -2954,12 +2954,12 @@ function openAdminCategoryModal(options) {
 
     var modalTitle = modal.querySelector(".modal-title .highlighted");
     if (modalTitle) {
-      modalTitle.textContent = mode === "edit" ? "Edit Category" : "Add Category";
+      modalTitle.textContent = mode === "edit" ? t("admin.js.edit_category", "Edit Category") : t("admin.challenges.add_category", "Add Category");
     }
 
     var submitBtn = form.querySelector('button[type="submit"]');
     if (submitBtn) {
-      submitBtn.textContent = mode === "edit" ? "Save Changes" : "Create Category";
+      submitBtn.textContent = mode === "edit" ? t("admin.modal.save_changes", "Save Changes") : t("admin.modal.create_category", "Create Category");
     }
 
     var initialName = (options && options.name) || "";
@@ -3005,7 +3005,7 @@ function openAdminCategoryModal(options) {
       var logo = (form.querySelector('select[name="logo"]').value || "").trim();
 
       if (!name) {
-        showTransientAdminStatus("error", "Category name is required");
+        showTransientAdminStatus("error", t("admin.js.category_name_required", "Category name is required"));
         return;
       }
 
@@ -3015,7 +3015,7 @@ function openAdminCategoryModal(options) {
 
       request
         .then(function (data) {
-          var fallbackMessage = mode === "edit" ? "Category updated" : "Category created";
+          var fallbackMessage = mode === "edit" ? t("admin.js.category_updated", "Category updated") : t("admin.js.category_created", "Category created");
           showTransientAdminStatus(data.status || "ok", data.message || fallbackMessage);
           if (MAP_CTF.modal && typeof MAP_CTF.modal.close === "function") {
             MAP_CTF.modal.close();
@@ -3023,7 +3023,7 @@ function openAdminCategoryModal(options) {
           window.location.reload();
         })
         .catch(function (error) {
-          var fallbackError = mode === "edit" ? "Failed to update category" : "Failed to create category";
+          var fallbackError = mode === "edit" ? t("admin.js.failed_update_category", "Failed to update category") : t("admin.js.failed_create_category", "Failed to create category");
           showTransientAdminStatus("error", error.message || fallbackError);
         })
         .finally(function () {
@@ -3115,7 +3115,7 @@ function initAdminDeleteCategoryButtons() {
             if (row) {
               row.remove();
             }
-            showTransientAdminStatus(data.status || "ok", data.message || "Category deleted");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.category_deleted", "Category deleted"));
           })
           .catch(function (error) {
             showTransientAdminStatus("error", error.message || "Failed to delete category");
@@ -3130,7 +3130,7 @@ function initAdminDeleteCategoryButtons() {
       }
 
       if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-        var promptMessage = "Delete category" + (categoryName ? " '" + categoryName + "'" : "") + "?";
+        var promptMessage = t("admin.js.delete_category", "Delete category") + (categoryName ? " '" + categoryName + "'" : "") + "?";
         if (window.confirm(promptMessage)) {
           runDelete();
         }
@@ -3183,7 +3183,7 @@ function initAdminChallengeSaveButtons() {
 function submitAdminChallengeRow(triggerEl) {
   var challengeRow = triggerEl && triggerEl.closest ? triggerEl.closest(".admin-challenge-row") : null;
   if (!challengeRow) {
-    showTransientAdminStatus("error", "Unable to locate challenge row");
+    showTransientAdminStatus("error", t("admin.js.unable_challenge_row", "Unable to locate challenge row"));
     return;
   }
 
@@ -3196,7 +3196,7 @@ function submitAdminChallengeRow(triggerEl) {
 
   var form = challengeRow.querySelector(".admin-challenge-form");
   if (!form) {
-    showTransientAdminStatus("error", "Unable to locate challenge form");
+    showTransientAdminStatus("error", t("admin.js.unable_challenge_form", "Unable to locate challenge form"));
     return;
   }
 
@@ -3220,11 +3220,11 @@ function submitAdminChallengeRow(triggerEl) {
   var active = activeRadio ? String(activeRadio.value || "true").trim() : "true";
 
   if (!title || !flag) {
-    showTransientAdminStatus("error", "Title and flag are required");
+    showTransientAdminStatus("error", t("admin.js.title_flag_required", "Title and flag are required"));
     return;
   }
   if (!categoryID) {
-    showTransientAdminStatus("error", "Category is required");
+    showTransientAdminStatus("error", t("admin.js.category_required", "Category is required"));
     return;
   }
 
@@ -3252,10 +3252,10 @@ function submitAdminChallengeRow(triggerEl) {
       if (challengeRow && typeof challengeRow._syncInitialState === "function") {
         challengeRow._syncInitialState();
       }
-      showTransientAdminStatus(data.status || "ok", data.message || "Challenge updated");
+      showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.challenge_updated", "Challenge updated"));
     })
     .catch(function (error) {
-      showTransientAdminStatus("error", error.message || "Failed to update challenge");
+      showTransientAdminStatus("error", error.message || t("admin.js.failed_update_challenge", "Failed to update challenge"));
     })
     .finally(function () {
       delete form.dataset.submitting;
@@ -3299,7 +3299,7 @@ function initAdminChallengeDeleteButtons() {
 
       var challengeRow = deleteBtn.closest(".admin-challenge-row");
       if (!challengeRow) {
-        showTransientAdminStatus("error", "Unable to locate challenge row");
+        showTransientAdminStatus("error", t("admin.js.unable_challenge_row", "Unable to locate challenge row"));
         return;
       }
 
@@ -3316,10 +3316,10 @@ function initAdminChallengeDeleteButtons() {
         deleteAdminChallenge(deleteURL)
           .then(function (data) {
             challengeRow.remove();
-            showTransientAdminStatus(data.status || "ok", data.message || "Challenge deleted");
+            showTransientAdminStatus(data.status || "ok", data.message || t("admin.js.challenge_deleted", "Challenge deleted"));
           })
           .catch(function (error) {
-            showTransientAdminStatus("error", error.message || "Failed to delete challenge");
+            showTransientAdminStatus("error", error.message || t("admin.js.failed_delete_challenge", "Failed to delete challenge"));
           })
           .finally(function () {
             delete deleteBtn.dataset.submitting;
@@ -3331,7 +3331,7 @@ function initAdminChallengeDeleteButtons() {
       }
 
       if (typeof MAP_CTF === "undefined" || !MAP_CTF.modal || typeof MAP_CTF.modal.loadPopup !== "function") {
-        if (window.confirm("Delete challenge" + (challengeTitle ? " '" + challengeTitle + "'" : "") + "?")) {
+        if (window.confirm(t("admin.js.delete_challenge", "Delete challenge") + (challengeTitle ? " '" + challengeTitle + "'" : "") + "?")) {
           runDelete();
         }
         return;

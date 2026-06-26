@@ -11,6 +11,8 @@ import (
 	"github.com/jmpsec/mapctf/pkg/config"
 	"github.com/jmpsec/mapctf/pkg/i18n"
 	"github.com/jmpsec/mapctf/pkg/settings"
+	"github.com/jmpsec/mapctf/pkg/teams"
+	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/stretchr/testify/require"
 )
 
@@ -158,4 +160,47 @@ func TestGameboardHandlerRendersConfiguredLocale(t *testing.T) {
 		require.Contains(t, body, want)
 	}
 	require.Contains(t, body, `window.MCTF_LANG = "es"`)
+}
+
+func TestAdminUsersHandlerRendersConfiguredLocale(t *testing.T) {
+	if _, err := os.Stat(filepath.Join("..", "templates", "admin", "users.html")); err != nil {
+		t.Skipf("admin users template not available: %v", err)
+	}
+
+	db := newJSONTestDB(t)
+	settingsManager, err := settings.CreateSettingsManager(db, "test-service")
+	require.NoError(t, err)
+	require.NoError(t, settingsManager.Initialization(jsonTestUUID))
+	require.NoError(t, settingsManager.SetLanguage("es", jsonSettingsAuthor, jsonTestUUID))
+	teamManager, err := teams.CreateTeams(db)
+	require.NoError(t, err)
+	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{Secret: "test-secret", HoursToExpire: 24})
+	require.NoError(t, err)
+	catalog, err := i18n.New()
+	require.NoError(t, err)
+	sessions := scs.New()
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID, TemplatesDir: filepath.Join("..", "templates")}}),
+		WithSettings(settingsManager),
+		WithTeams(teamManager),
+		WithUsers(userManager),
+		WithSessions(sessions),
+		WithI18N(catalog),
+	)
+
+	req := newTemplateRequestWithUUID(http.MethodGet, "/"+jsonTestUUID+"/admin/users", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	sessions.Put(ctx, string(ContextKeyUser), "admin")
+	sessions.Put(ctx, string(ContextKeyAdmin), true)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.AdminUsersTemplateHandler)).ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
+	body := rr.Body.String()
+	for _, want := range []string{`<html lang="es">`, "Administración del juego", "Gestión de usuarios", "Añadir usuario", `window.MCTF_LANG = "es"`} {
+		require.Contains(t, body, want)
+	}
 }
