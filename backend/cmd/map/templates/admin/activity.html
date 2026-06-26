@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -238,48 +238,48 @@
                 </div>
               </a>
             </div>
-            <h2>Game Admin</h2>
+            <h2>{{ T "admin.nav.game_admin" }}</h2>
           </header>
           <nav class="admin-nav-links row-fluid">
             <ul>
-              <li><a href="/{{ .UUID }}/admin">Dashboard</a></li>
-              <li><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
-              <li><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
-              <li><a href="/{{ .UUID }}/admin/users">Users</a></li>
-              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
-              <li><a href="/{{ .UUID }}/admin/team-logos">Team logos</a></li>
-              <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
-              <li><a href="/{{ .UUID }}/admin/countries">Countries</a></li>
-              <li class="active"><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
-              <li><a href="/{{ .UUID }}/admin/chat">Chat</a></li>
+              <li><a href="/{{ .UUID }}/admin">{{ T "admin.nav.dashboard" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/settings">{{ T "admin.nav.settings" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/controls">{{ T "admin.nav.controls" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/users">{{ T "admin.nav.users" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">{{ T "admin.nav.teams" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/team-logos">{{ T "admin.nav.team_logos" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/challenges">{{ T "admin.nav.challenges" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/countries">{{ T "admin.nav.countries" }}</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin/activity">{{ T "admin.nav.activity" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/chat">{{ T "admin.nav.chat" }}</a></li>
             </ul>
           </nav>
           <div class="admin-nav-controls row-fixed">
-            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
-            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+            <a href="#" class="mctf-cta cta--red js-end-game">{{ T "admin.nav.end_game" }}</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">{{ T "admin.nav.pause_game" }}</a>
           </div>
           <div class="admin-nav--footer row-fixed">
-            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
-            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+            <a href="/{{ .UUID }}/gameboard">{{ T "nav.gameboard" }}</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">{{ T "gb.logout" }}</a>
           </div>
         </div>
       </div>
       <div id="mctf-main-content" class="mctf-page mctf-admin-main">
         <div class="admin-sections">
           <header class="admin-page-header">
-            <h3>Activity</h3>
+            <h3>{{ T "admin.activity.page_header" }}</h3>
             <span class="admin-section--status" data-ready-status="ready">
-              status_
-              <span class="highlighted">ready</span>
+              {{ T "admin.status_label" }}
+              <span class="highlighted">{{ T "admin.status_ready" }}</span>
               <span class="admin-section--status-message"></span>
             </span>
           </header>
 
           <section id="activity" class="admin-box">
             <header class="admin-box-header mctf-cf" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap">
-              <h3>Activity Log</h3>
+              <h3>{{ T "admin.activity.log" }}</h3>
               <div class="admin-section-toggle" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto">
-                <button class="mctf-cta" data-action="add-custom-activity" data-create-url="/{{ .UUID }}/admin/activity" data-default-subject="{{ .CurrentUsername }}" type="button">Add Entry</button>
+                <button class="mctf-cta" data-action="add-custom-activity" data-create-url="/{{ .UUID }}/admin/activity" data-default-subject="{{ .CurrentUsername }}" type="button">{{ T "admin.activity.add_entry" }}</button>
               </div>
             </header>
 
@@ -329,6 +329,7 @@
         </div>
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>

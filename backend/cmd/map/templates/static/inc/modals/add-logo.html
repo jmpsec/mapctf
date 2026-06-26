@@ -1,8 +1,8 @@
 <div class="mctf-modal-content">
   <header class="modal-title">
     <h4>
-      admin_
-      <span class="highlighted">Add Logo</span>
+      <span data-i18n="modal.admin_kicker">admin_</span>
+      <span class="highlighted" data-i18n="admin.logos.add">Add Logo</span>
     </h4>
     <a href="#" class="js-close-modal">
       <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
@@ -12,7 +12,7 @@
   <div class="action-main">
     <form id="admin-add-logo-form" class="validate-form">
       <div class="form-el el--block-label el--full-text">
-        <label for="admin-add-logo-name">Logo Name</label>
+        <label for="admin-add-logo-name" data-i18n="admin.logos.logo_name">Logo Name</label>
         <input id="admin-add-logo-name" name="name" type="text" style="width: 100%" required />
       </div>
 
@@ -22,18 +22,18 @@
       </div>
 
       <div class="form-el el--block-label el--full-text">
-        <label for="admin-add-logo-file">Upload Logo File</label>
+        <label for="admin-add-logo-file" data-i18n="admin.logos.upload_file">Upload Logo File</label>
         <input id="admin-add-logo-file" name="logo_file" type="file" accept=".svg,.gif,.png,.jpg,.jpeg,image/svg+xml,image/gif,image/png,image/jpeg" style="width: 100%" required />
       </div>
 
       <div class="admin-logo-upload-formats" aria-label="Accepted logo upload formats">
         <div class="admin-logo-upload-formats-copy">
-          <span class="admin-logo-upload-formats-label">Accepted formats</span>
-          <span class="admin-logo-upload-formats-note">Upload an SVG, GIF, PNG, or JPG/JPEG file.</span>
+          <span class="admin-logo-upload-formats-label" data-i18n="admin.logos.accepted_formats">Accepted formats</span>
+          <span class="admin-logo-upload-formats-note" data-i18n="admin.logos.upload_note">Upload an SVG, GIF, PNG, or JPG/JPEG file.</span>
         </div>
         <div class="admin-logo-upload-limits" aria-label="Logo upload size limits">
-          <span class="admin-logo-limit-chip">Max file size: 512 KB</span>
-          <span class="admin-logo-limit-chip">Recommended size: 64 x 48 px</span>
+          <span class="admin-logo-limit-chip" data-i18n="admin.logos.max_size">Max file size: 512 KB</span>
+          <span class="admin-logo-limit-chip" data-i18n="admin.logos.recommended_size">Recommended size: 64 x 48 px</span>
         </div>
         <div class="admin-logo-format-chips">
           <span class="admin-logo-format-chip">SVG</span>
@@ -43,12 +43,12 @@
         </div>
       </div>
 
-      <p class="admin-logo-upload-file-size" aria-live="polite">No file selected</p>
-      <p class="admin-copy--small">Use the file slug to control the stored logo name.</p>
+      <p class="admin-logo-upload-file-size" aria-live="polite" data-i18n="admin.logos.no_file">No file selected</p>
+      <p class="admin-copy--small" data-i18n="admin.logos.slug_note">Use the file slug to control the stored logo name.</p>
 
       <div class="action-actionable">
-        <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>
-        <button class="mctf-cta cta--yellow js-create-logo" type="submit">Create Logo</button>
+        <a href="#" class="mctf-cta cta--red js-close-modal" data-i18n="admin.modal.cancel">Cancel</a>
+        <button class="mctf-cta cta--yellow js-create-logo" type="submit" data-i18n="admin.modal.create_logo">Create Logo</button>
       </div>
     </form>
   </div>

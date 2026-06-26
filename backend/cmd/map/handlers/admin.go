@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	htmltemplate "html/template"
 	"io"
 	"net/http"
 	"net/mail"
@@ -269,11 +270,12 @@ func logoFilePath(custom bool, logo string) string {
 	return "/static/svg/icons/badges/badge-" + slug + ".svg"
 }
 
-func adminTemplateFuncs() template.FuncMap {
+func (h *HandlersMap) adminTemplateFuncs(r *http.Request) template.FuncMap {
 	return template.FuncMap{
 		"logoFilePath": logoFilePath,
 		"logoIsImage":  isCustomLogoAssetPath,
 		"logoSymbol":   normalizeLogoSymbolName,
+		"T":            h.T(r.Context()),
 	}
 }
 
@@ -478,16 +480,19 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/index.html")
+	t, err := template.New("index.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/index.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
 		return
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	tr := h.T(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminTemplateData{
-		Title:         "MapCTF Admin: Dashboard",
+		Title:         tr("admin.title.dashboard"),
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -513,16 +518,19 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 		return
 	}
 	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/settings.html")
+	t, err := template.New("settings.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/settings.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
 		return
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	tr := h.T(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminSettingsTemplateData{
-		Title:         "MapCTF Admin: Settings",
+		Title:         tr("admin.title.settings"),
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -1700,16 +1708,19 @@ func (h *HandlersMap) AdminControlsTemplateHandler(w http.ResponseWriter, r *htt
 		return
 	}
 	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/controls.html")
+	t, err := template.New("controls.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/controls.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
 		return
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	tr := h.T(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminControlsTemplateData{
-		Title:         "MapCTF Admin: Controls",
+		Title:         tr("admin.title.controls"),
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -1735,16 +1746,19 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 	// Prepare template
-	t, err := template.New("teams.html").Funcs(adminTemplateFuncs()).ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/teams.html")
+	t, err := template.New("teams.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/teams.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
 		return
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	tr := h.T(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminTeamsTemplateData{
-		Title:         "MapCTF Admin: Teams",
+		Title:         tr("admin.title.teams"),
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -1797,15 +1811,18 @@ func (h *HandlersMap) AdminTeamLogosTemplateHandler(w http.ResponseWriter, r *ht
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-	t, err := template.New("team-logos.html").Funcs(adminTemplateFuncs()).ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/team-logos.html")
+	t, err := template.New("team-logos.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/team-logos.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin team-logos template")
 		return
 	}
 	authenticated := h.IsAuthenticated(r.Context())
+	tr := h.T(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminTeamLogosTemplateData{
-		Title:         "MapCTF Admin: Team Logos",
+		Title:         tr("admin.title.team_logos"),
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -3231,16 +3248,19 @@ func (h *HandlersMap) AdminUsersTemplateHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/users.html")
+	t, err := template.New("users.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/users.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
 		return
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	tr := h.T(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminUsersTemplateData{
-		Title:         "MapCTF Admin: Users",
+		Title:         tr("admin.title.users"),
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -4143,16 +4163,19 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 		return
 	}
 	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/challenges.html")
+	t, err := template.New("challenges.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/challenges.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
 		return
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	tr := h.T(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminChallengesTemplateData{
-		Title:         "MapCTF Admin: Challenges",
+		Title:         tr("admin.title.challenges"),
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),
@@ -4977,8 +5000,7 @@ func (h *HandlersMap) AdminActivityTemplateHandler(w http.ResponseWriter, r *htt
 		return
 	}
 	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/activity.html")
+	t, err := template.New("activity.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/activity.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
 		return
@@ -4986,8 +5008,12 @@ func (h *HandlersMap) AdminActivityTemplateHandler(w http.ResponseWriter, r *htt
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
 	currentUsername := strings.TrimSpace(h.Sessions.GetString(r.Context(), string(ContextKeyUser)))
+	tr := h.T(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminActivityTemplateData{
-		Title:           "MapCTF Admin: Activity",
+		Title:           tr("admin.title.activity"),
+		Lang:            h.Locale(r.Context()).String(),
+		I18NJSON:        htmltemplate.JS(i18nJSON),
 		UUID:            uuid,
 		Authenticated:   authenticated,
 		Admin:           h.IsAdmin(r.Context()),
@@ -5132,14 +5158,17 @@ func (h *HandlersMap) AdminChatTemplateHandler(w http.ResponseWriter, r *http.Re
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/chat.html")
+	t, err := template.New("chat.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/chat.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin chat template")
 		return
 	}
+	tr := h.T(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminChatTemplateData{
-		Title:         "MapCTF Admin: Chat",
+		Title:         tr("admin.title.chat"),
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		UUID:          uuid,
 		Authenticated: h.IsAuthenticated(r.Context()),
 		Admin:         h.IsAdmin(r.Context()),
@@ -5336,16 +5365,19 @@ func (h *HandlersMap) AdminCountriesTemplateHandler(w http.ResponseWriter, r *ht
 		return
 	}
 	// Prepare template
-	t, err := template.ParseFiles(
-		h.Config.Map.TemplatesDir + "/admin/countries.html")
+	t, err := template.New("countries.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/countries.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
 		return
 	}
 	// Prepare template data
 	authenticated := h.IsAuthenticated(r.Context())
+	tr := h.T(r.Context())
+	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminCountriesTemplateData{
-		Title:         "MapCTF Admin: Countries",
+		Title:         tr("admin.title.countries"),
+		Lang:          h.Locale(r.Context()).String(),
+		I18NJSON:      htmltemplate.JS(i18nJSON),
 		UUID:          uuid,
 		Authenticated: authenticated,
 		Admin:         h.IsAdmin(r.Context()),

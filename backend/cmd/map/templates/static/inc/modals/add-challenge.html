@@ -1,8 +1,8 @@
 <div class="mctf-modal-content admin-challenge-modal">
   <header class="modal-title">
     <h4>
-      admin_
-      <span class="highlighted">Add Challenge</span>
+      <span data-i18n="modal.admin_kicker">admin_</span>
+      <span class="highlighted" data-i18n="admin.challenges.add">Add Challenge</span>
     </h4>
     <a href="#" class="js-close-modal">
       <svg class="icon icon--close"><use xlink:href="#icon--close" /></svg>
@@ -13,23 +13,23 @@
     <form id="admin-add-challenge-form" class="validate-form admin-challenge-form">
       <section class="admin-challenge-section">
         <div class="form-el el--block-label el--full-text">
-          <label for="admin-add-challenge-title">Title</label>
+          <label for="admin-add-challenge-title" data-i18n="admin.challenges.title">Title</label>
           <input id="admin-add-challenge-title" name="title" type="text" required />
         </div>
         <div class="admin-challenge-grid">
           <div class="form-el el--block-label el--full-text">
-            <label for="admin-add-challenge-category-id">Category</label>
+            <label for="admin-add-challenge-category-id" data-i18n="admin.challenges.category">Category</label>
             <select id="admin-add-challenge-category-id" name="category_id"></select>
           </div>
           <div class="form-el el--block-label el--full-text">
-            <label for="admin-add-challenge-country">Country</label>
+            <label for="admin-add-challenge-country" data-i18n="admin.challenges.country">Country</label>
             <select id="admin-add-challenge-country" name="country" class="admin-country-select">
-              <option value="">Select country</option>
+              <option value="" data-i18n="admin.modal.select_country">Select country</option>
             </select>
           </div>
         </div>
         <div class="form-el el--block-label el--full-text">
-          <label for="admin-add-challenge-flag">Flag</label>
+          <label for="admin-add-challenge-flag" data-i18n="admin.challenges.flag">Flag</label>
           <input id="admin-add-challenge-flag" name="flag" type="text" required />
         </div>
       </section>
@@ -37,25 +37,25 @@
       <section class="admin-challenge-section">
         <div class="admin-challenge-grid admin-challenge-grid--three">
           <div class="form-el el--block-label el--full-text">
-            <label for="admin-add-challenge-points">Points</label>
+            <label for="admin-add-challenge-points" data-i18n="admin.challenges.points">Points</label>
             <input id="admin-add-challenge-points" name="points" type="number" min="0" value="100" required />
           </div>
           <div class="form-el el--block-label el--full-text">
-            <label for="admin-add-challenge-bonus">Bonus</label>
+            <label for="admin-add-challenge-bonus" data-i18n="admin.challenges.bonus">Bonus</label>
             <input id="admin-add-challenge-bonus" name="bonus" type="number" min="0" value="0" />
           </div>
           <div class="form-el el--block-label el--full-text">
-            <label for="admin-add-challenge-bonus-decay">Bonus Decay</label>
+            <label for="admin-add-challenge-bonus-decay" data-i18n="admin.challenges.bonus_decay">Bonus Decay</label>
             <input id="admin-add-challenge-bonus-decay" name="bonus_decay" type="number" min="0" value="0" />
           </div>
         </div>
         <div class="admin-challenge-grid">
           <div class="form-el el--block-label el--full-text">
-            <label for="admin-add-challenge-hint-penalty">Hint Penalty</label>
+            <label for="admin-add-challenge-hint-penalty" data-i18n="admin.challenges.hint_penalty">Hint Penalty</label>
             <input id="admin-add-challenge-hint-penalty" name="hint_penalty" type="number" min="0" value="0" />
           </div>
           <div class="form-el el--block-label el--full-text">
-            <label for="admin-add-challenge-help-penalty">Help Penalty</label>
+            <label for="admin-add-challenge-help-penalty" data-i18n="admin.challenges.help_penalty">Help Penalty</label>
             <input id="admin-add-challenge-help-penalty" name="help_penalty" type="number" min="0" value="0" />
           </div>
         </div>
@@ -63,22 +63,22 @@
 
       <section class="admin-challenge-section">
         <div class="form-el el--block-label el--full-text">
-          <label for="admin-add-challenge-description">Description</label>
+          <label for="admin-add-challenge-description" data-i18n="admin.challenges.description">Description</label>
           <textarea id="admin-add-challenge-description" name="description" rows="3"></textarea>
         </div>
         <div class="form-el el--block-label el--full-text">
-          <label for="admin-add-challenge-url">Resource URL</label>
+          <label for="admin-add-challenge-url" data-i18n="admin.challenges.resource_url">Resource URL</label>
           <input id="admin-add-challenge-url" name="url" type="text" inputmode="url" />
         </div>
         <div class="form-el el--block-label el--full-text">
-          <label for="admin-add-challenge-hint">Hint</label>
+          <label for="admin-add-challenge-hint" data-i18n="admin.challenges.hint">Hint</label>
           <textarea id="admin-add-challenge-hint" name="hint" rows="2"></textarea>
         </div>
       </section>
 
       <div class="action-actionable">
-        <a href="#" class="mctf-cta cta--red js-close-modal">Cancel</a>
-        <button class="mctf-cta cta--yellow js-create-challenge" type="submit">Create Challenge</button>
+        <a href="#" class="mctf-cta cta--red js-close-modal" data-i18n="admin.modal.cancel">Cancel</a>
+        <button class="mctf-cta cta--yellow js-create-challenge" type="submit" data-i18n="admin.modal.create_challenge">Create Challenge</button>
       </div>
     </form>
   </div>

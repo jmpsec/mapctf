@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Lang }}">
   <head>
     <meta http-equiv="Cache-control" content="no-cache" />
     <meta http-equiv="Expires" content="-1" />
@@ -23,29 +23,29 @@
                 </div>
               </a>
             </div>
-            <h2>Game Admin</h2>
+            <h2>{{ T "admin.nav.game_admin" }}</h2>
           </header>
           <nav class="admin-nav-links row-fluid">
             <ul>
-              <li class="active"><a href="/{{ .UUID }}/admin">Dashboard</a></li>
-              <li><a href="/{{ .UUID }}/admin/settings">Settings</a></li>
-              <li><a href="/{{ .UUID }}/admin/controls">Controls</a></li>
-              <li><a href="/{{ .UUID }}/admin/users">Users</a></li>
-              <li><a href="/{{ .UUID }}/admin/teams">Teams</a></li>
-              <li><a href="/{{ .UUID }}/admin/team-logos">Team logos</a></li>
-              <li><a href="/{{ .UUID }}/admin/challenges">Challenges</a></li>
-              <li><a href="/{{ .UUID }}/admin/countries">Countries</a></li>
-              <li><a href="/{{ .UUID }}/admin/activity">Activity</a></li>
-              <li><a href="/{{ .UUID }}/admin/chat">Chat</a></li>
+              <li class="active"><a href="/{{ .UUID }}/admin">{{ T "admin.nav.dashboard" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/settings">{{ T "admin.nav.settings" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/controls">{{ T "admin.nav.controls" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/users">{{ T "admin.nav.users" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/teams">{{ T "admin.nav.teams" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/team-logos">{{ T "admin.nav.team_logos" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/challenges">{{ T "admin.nav.challenges" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/countries">{{ T "admin.nav.countries" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/activity">{{ T "admin.nav.activity" }}</a></li>
+              <li><a href="/{{ .UUID }}/admin/chat">{{ T "admin.nav.chat" }}</a></li>
             </ul>
           </nav>
           <div class="admin-nav-controls row-fixed">
-            <a href="#" class="mctf-cta cta--red js-end-game">End Game</a>
-            <a href="#" class="mctf-cta cta--red js-pause-game">Pause Game</a>
+            <a href="#" class="mctf-cta cta--red js-end-game">{{ T "admin.nav.end_game" }}</a>
+            <a href="#" class="mctf-cta cta--red js-pause-game">{{ T "admin.nav.pause_game" }}</a>
           </div>
           <div class="admin-nav--footer row-fixed">
-            <a href="/{{ .UUID }}/gameboard">Gameboard</a>
-            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">Logout</a>
+            <a href="/{{ .UUID }}/gameboard">{{ T "nav.gameboard" }}</a>
+            <a href="/{{ .UUID }}/logout" class="js-prompt-logout">{{ T "gb.logout" }}</a>
           </div>
         </div>
       </div>
@@ -53,15 +53,15 @@
         <div class="admin-sections">
           <header class="admin-page-header admin-page-header--with-action">
             <div class="admin-page-header-top">
-              <h3>Operations dashboard</h3>
+              <h3>{{ T "admin.dashboard.header" }}</h3>
               <div class="admin-page-header-actions">
-                <a class="mctf-cta" href="/{{ .UUID }}/gameboard">Open Gameboard</a>
-                <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/controls">Game Controls</a>
+                <a class="mctf-cta" href="/{{ .UUID }}/gameboard">{{ T "admin.dashboard.open_gameboard" }}</a>
+                <a class="mctf-cta cta--yellow" href="/{{ .UUID }}/admin/controls">{{ T "admin.dashboard.game_controls" }}</a>
               </div>
             </div>
             <span class="admin-section--status" data-ready-status="ready">
-              status_
-              <span class="highlighted">ready</span>
+              {{ T "admin.status_label" }}
+              <span class="highlighted">{{ T "admin.status_ready" }}</span>
               <span class="admin-section--status-message"></span>
             </span>
           </header>
@@ -70,7 +70,7 @@
             <div class="dashboard-command-strip">
               <div class="dashboard-command-status">
                 <span class="dashboard-status-dot dashboard-status-dot--live"></span>
-                <span>Live game metrics</span>
+                <span>{{ T "admin.dashboard.live_metrics" }}</span>
               </div>
               <div class="dashboard-command-meta">
                 <span>Event window 14:00-18:30 UTC</span>
@@ -80,27 +80,27 @@
 
             <div class="dashboard-kpi-grid">
               <article class="dashboard-kpi dashboard-kpi--strong">
-                <span class="dashboard-kpi-label">Game state</span>
+                <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_game_state" }}</span>
                 <strong>Live</strong>
                 <span class="dashboard-kpi-detail">4h 17m remaining</span>
               </article>
               <article class="dashboard-kpi">
-                <span class="dashboard-kpi-label">Teams online</span>
+                <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_teams_online" }}</span>
                 <strong>18 / 24</strong>
                 <span class="dashboard-kpi-detail">75% active in last 5m</span>
               </article>
               <article class="dashboard-kpi">
-                <span class="dashboard-kpi-label">Flags per hour</span>
+                <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_flags_hour" }}</span>
                 <strong>142</strong>
                 <span class="dashboard-kpi-detail">+18% over baseline</span>
               </article>
               <article class="dashboard-kpi">
-                <span class="dashboard-kpi-label">Solve coverage</span>
+                <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_solve_coverage" }}</span>
                 <strong>73%</strong>
                 <span class="dashboard-kpi-detail">34 of 46 challenges touched</span>
               </article>
               <article class="dashboard-kpi">
-                <span class="dashboard-kpi-label">Platform pulse</span>
+                <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_platform_pulse" }}</span>
                 <strong>p95 118ms</strong>
                 <span class="dashboard-kpi-detail">API stable, DB nominal</span>
               </article>
@@ -111,10 +111,10 @@
                 <article class="dashboard-panel dashboard-panel--wide">
                   <header class="dashboard-panel-header">
                     <div>
-                      <span class="dashboard-panel-kicker">Competition</span>
-                      <h4>Leaderboard preview</h4>
+                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_competition" }}</span>
+                      <h4>{{ T "admin.dashboard.leaderboard_preview" }}</h4>
                     </div>
-                    <a href="/{{ .UUID }}/gameboard">View board</a>
+                    <a href="/{{ .UUID }}/gameboard">{{ T "admin.dashboard.view_board" }}</a>
                   </header>
                   <div class="dashboard-leaderboard">
                     <div class="dashboard-leader-row">
@@ -147,8 +147,8 @@
                 <article class="dashboard-panel">
                   <header class="dashboard-panel-header">
                     <div>
-                      <span class="dashboard-panel-kicker">Progress</span>
-                      <h4>Capture velocity</h4>
+                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_progress" }}</span>
+                      <h4>{{ T "admin.dashboard.capture_velocity" }}</h4>
                     </div>
                   </header>
                   <div class="dashboard-velocity-chart" aria-label="Capture velocity by hour">
@@ -164,7 +164,7 @@
                     <span style="height: 68%"></span>
                   </div>
                   <div class="dashboard-split-stat">
-                    <span>Last 10m</span>
+                    <span>{{ T "admin.dashboard.last_10m" }}</span>
                     <strong>27 solves</strong>
                   </div>
                 </article>
@@ -172,10 +172,10 @@
                 <article class="dashboard-panel">
                   <header class="dashboard-panel-header">
                     <div>
-                      <span class="dashboard-panel-kicker">Challenges</span>
-                      <h4>Challenge health</h4>
+                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_challenges" }}</span>
+                      <h4>{{ T "admin.dashboard.challenge_health" }}</h4>
                     </div>
-                    <a href="/{{ .UUID }}/admin/challenges">Manage</a>
+                    <a href="/{{ .UUID }}/admin/challenges">{{ T "admin.dashboard.manage" }}</a>
                   </header>
                   <div class="dashboard-health-list">
                     <div>
@@ -199,8 +199,8 @@
                 <article class="dashboard-panel">
                   <header class="dashboard-panel-header">
                     <div>
-                      <span class="dashboard-panel-kicker">Platform</span>
-                      <h4>Infrastructure status</h4>
+                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_platform" }}</span>
+                      <h4>{{ T "admin.dashboard.infrastructure_status" }}</h4>
                     </div>
                   </header>
                   <div class="dashboard-service-list">
@@ -214,8 +214,8 @@
                 <article class="dashboard-panel">
                   <header class="dashboard-panel-header">
                     <div>
-                      <span class="dashboard-panel-kicker">Operations</span>
-                      <h4>Incident queue</h4>
+                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_operations" }}</span>
+                      <h4>{{ T "admin.dashboard.incident_queue" }}</h4>
                     </div>
                   </header>
                   <div class="dashboard-incident-list">
@@ -230,8 +230,8 @@
                 <article class="dashboard-panel">
                   <header class="dashboard-panel-header">
                     <div>
-                      <span class="dashboard-panel-kicker">Timeline</span>
-                      <h4>Recent game activity</h4>
+                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_timeline" }}</span>
+                      <h4>{{ T "admin.dashboard.recent_activity" }}</h4>
                     </div>
                   </header>
                   <ol class="dashboard-activity-feed">
@@ -246,15 +246,15 @@
                 <article class="dashboard-panel">
                   <header class="dashboard-panel-header">
                     <div>
-                      <span class="dashboard-panel-kicker">Control plane</span>
-                      <h4>Quick actions</h4>
+                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_control" }}</span>
+                      <h4>{{ T "admin.dashboard.quick_actions" }}</h4>
                     </div>
                   </header>
                   <div class="dashboard-action-list">
-                    <a href="/{{ .UUID }}/admin/users">Review users</a>
-                    <a href="/{{ .UUID }}/admin/teams">Manage teams</a>
-                    <a href="/{{ .UUID }}/admin/activity">Audit activity</a>
-                    <a href="/{{ .UUID }}/admin/chat">Moderate chat</a>
+                    <a href="/{{ .UUID }}/admin/users">{{ T "admin.dashboard.review_users" }}</a>
+                    <a href="/{{ .UUID }}/admin/teams">{{ T "admin.dashboard.manage_teams" }}</a>
+                    <a href="/{{ .UUID }}/admin/activity">{{ T "admin.dashboard.audit_activity" }}</a>
+                    <a href="/{{ .UUID }}/admin/chat">{{ T "admin.dashboard.moderate_chat" }}</a>
                   </div>
                 </article>
               </aside>
@@ -264,6 +264,7 @@
         </div>
       </div>
     </div>
+    <script type="text/javascript">window.MCTF_I18N = {{ .I18NJSON }}; window.MCTF_LANG = "{{ .Lang }}";</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript" src="/static/js/plugins.js"></script>
