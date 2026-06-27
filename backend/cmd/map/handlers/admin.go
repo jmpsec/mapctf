@@ -475,7 +475,7 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -513,7 +513,7 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -685,7 +685,7 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1363,7 +1363,7 @@ func (h *HandlersMap) AdminGameExportHandler(w http.ResponseWriter, r *http.Requ
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1424,7 +1424,7 @@ func (h *HandlersMap) AdminGameImportHandler(w http.ResponseWriter, r *http.Requ
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1544,7 +1544,7 @@ func (h *HandlersMap) AdminSettingsExportHandler(w http.ResponseWriter, r *http.
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1573,7 +1573,7 @@ func (h *HandlersMap) AdminSettingsImportHandler(w http.ResponseWriter, r *http.
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1635,7 +1635,7 @@ func (h *HandlersMap) AdminSettingsResetDefaultsPOSTHandler(w http.ResponseWrite
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1703,7 +1703,7 @@ func (h *HandlersMap) AdminControlsTemplateHandler(w http.ResponseWriter, r *htt
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1741,7 +1741,7 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1807,7 +1807,7 @@ func (h *HandlersMap) AdminTeamLogosTemplateHandler(w http.ResponseWriter, r *ht
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1847,7 +1847,9 @@ func (h *HandlersMap) AdminTeamLogosTemplateHandler(w http.ResponseWriter, r *ht
 	templateData.AllLogos = allLogos
 	templateData.CustomLogos = customLogos
 	templateData.PlatformLogos = platformLogos
-	t.Execute(w, templateData)
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("error rendering admin logos template")
+	}
 }
 
 // AdminTeamsPOSTHandler for admin teams page for POST requests
@@ -1859,7 +1861,7 @@ func (h *HandlersMap) AdminTeamsPOSTHandler(w http.ResponseWriter, r *http.Reque
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2050,7 +2052,7 @@ func (h *HandlersMap) AdminTeamsExportHandler(w http.ResponseWriter, r *http.Req
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2092,7 +2094,7 @@ func (h *HandlersMap) AdminTeamsExportTeamsHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2152,7 +2154,7 @@ func (h *HandlersMap) AdminTeamsExportLogosHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2213,7 +2215,7 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2349,7 +2351,7 @@ func (h *HandlersMap) AdminTeamsImportTeamsHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2397,7 +2399,7 @@ func (h *HandlersMap) AdminTeamsImportLogosHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2449,7 +2451,7 @@ func (h *HandlersMap) AdminTeamsEnableAllPOSTHandler(w http.ResponseWriter, r *h
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2469,7 +2471,7 @@ func (h *HandlersMap) AdminTeamsDisableAllPOSTHandler(w http.ResponseWriter, r *
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2489,7 +2491,7 @@ func (h *HandlersMap) AdminTeamsVisibleAllPOSTHandler(w http.ResponseWriter, r *
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2509,7 +2511,7 @@ func (h *HandlersMap) AdminTeamsInvisibleAllPOSTHandler(w http.ResponseWriter, r
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2529,7 +2531,7 @@ func (h *HandlersMap) AdminTeamLogosEnableAllPOSTHandler(w http.ResponseWriter, 
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2549,7 +2551,7 @@ func (h *HandlersMap) AdminTeamLogosDisableAllPOSTHandler(w http.ResponseWriter,
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2569,7 +2571,7 @@ func (h *HandlersMap) AdminTeamLogosDeleteAllPOSTHandler(w http.ResponseWriter, 
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2629,7 +2631,7 @@ func (h *HandlersMap) AdminTeamsDeleteAllPOSTHandler(w http.ResponseWriter, r *h
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2709,7 +2711,7 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2843,7 +2845,7 @@ func (h *HandlersMap) AdminTeamDeletePOSTHandler(w http.ResponseWriter, r *http.
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2962,7 +2964,7 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3039,7 +3041,8 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 			uploadedLogoData = uploadData
 
 			ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
-			if rasterLogoContentTypeForExt(ext) != "" {
+			switch {
+			case rasterLogoContentTypeForExt(ext) != "":
 				if rasterErr := validateRasterLogoUpload(ext, uploadData); rasterErr != nil {
 					writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_raster_logo"))
 					return
@@ -3047,10 +3050,10 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 				uploadedLogoExt = ext
 				uploadedLogoAsset = true
 				rawLogo = customLogoAssetPath(slug, ext)
-			} else if ext != "" && ext != ".svg" {
+			case ext != "" && ext != ".svg":
 				writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_uploaded_logo_type"))
 				return
-			} else {
+			default:
 				if _, svgErr := buildUploadedLogoSymbol(slug, uploadData); svgErr != nil {
 					writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_svg"))
 					return
@@ -3131,7 +3134,7 @@ func (h *HandlersMap) AdminTeamLogoUpdatePOSTHandler(w http.ResponseWriter, r *h
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3243,7 +3246,7 @@ func (h *HandlersMap) AdminUsersTemplateHandler(w http.ResponseWriter, r *http.R
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3300,7 +3303,7 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3422,7 +3425,7 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3561,7 +3564,7 @@ func (h *HandlersMap) AdminUserPasswordPOSTHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3608,8 +3611,7 @@ func (h *HandlersMap) AdminUserPasswordPOSTHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	switch {
-	case strings.TrimSpace(req.NewPassword) == "":
+	if strings.TrimSpace(req.NewPassword) == "" {
 		writeError(http.StatusBadRequest, h.T(r.Context())("profile.new_required"))
 		return
 	}
@@ -3645,7 +3647,7 @@ func (h *HandlersMap) AdminUsersExportHandler(w http.ResponseWriter, r *http.Req
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3687,7 +3689,7 @@ func (h *HandlersMap) AdminUsersImportHandler(w http.ResponseWriter, r *http.Req
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3744,7 +3746,7 @@ func (h *HandlersMap) AdminUsersEnableAllPOSTHandler(w http.ResponseWriter, r *h
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3775,7 +3777,7 @@ func (h *HandlersMap) AdminUsersDisableAllPOSTHandler(w http.ResponseWriter, r *
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3818,7 +3820,7 @@ func (h *HandlersMap) AdminUsersDeleteAllPOSTHandler(w http.ResponseWriter, r *h
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3859,7 +3861,7 @@ func (h *HandlersMap) AdminChallengesExportHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3900,7 +3902,7 @@ func (h *HandlersMap) AdminChallengesImportHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3959,7 +3961,7 @@ func (h *HandlersMap) AdminChallengesDeleteAllPOSTHandler(w http.ResponseWriter,
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4025,7 +4027,7 @@ func (h *HandlersMap) AdminChallengesEnableAllPOSTHandler(w http.ResponseWriter,
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4067,7 +4069,7 @@ func (h *HandlersMap) AdminChallengesDisableAllPOSTHandler(w http.ResponseWriter
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4109,7 +4111,7 @@ func (h *HandlersMap) AdminChallengeCategoriesDeleteAllPOSTHandler(w http.Respon
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4158,7 +4160,7 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4352,7 +4354,7 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4518,7 +4520,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4729,7 +4731,7 @@ func (h *HandlersMap) AdminChallengeDeletePOSTHandler(w http.ResponseWriter, r *
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4795,7 +4797,7 @@ func (h *HandlersMap) AdminChallengeCategoriesPOSTHandler(w http.ResponseWriter,
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4859,7 +4861,7 @@ func (h *HandlersMap) AdminChallengeCategoryUpdatePOSTHandler(w http.ResponseWri
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4934,7 +4936,7 @@ func (h *HandlersMap) AdminChallengeCategoryDeletePOSTHandler(w http.ResponseWri
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4995,7 +4997,7 @@ func (h *HandlersMap) AdminActivityTemplateHandler(w http.ResponseWriter, r *htt
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5041,7 +5043,7 @@ func (h *HandlersMap) AdminActivityPOSTHandler(w http.ResponseWriter, r *http.Re
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5109,7 +5111,7 @@ func (h *HandlersMap) AdminActivityDeletePOSTHandler(w http.ResponseWriter, r *h
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5154,7 +5156,7 @@ func (h *HandlersMap) AdminChatTemplateHandler(w http.ResponseWriter, r *http.Re
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5215,7 +5217,7 @@ func (h *HandlersMap) AdminChatSetHiddenPOSTHandler(w http.ResponseWriter, r *ht
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5301,7 +5303,7 @@ func (h *HandlersMap) AdminChatDeletePOSTHandler(w http.ResponseWriter, r *http.
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5360,7 +5362,7 @@ func (h *HandlersMap) AdminCountriesTemplateHandler(w http.ResponseWriter, r *ht
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5422,7 +5424,7 @@ func (h *HandlersMap) AdminCountriesDeleteAllPOSTHandler(w http.ResponseWriter, 
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5496,7 +5498,7 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}

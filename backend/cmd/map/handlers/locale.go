@@ -11,11 +11,15 @@ import (
 	"golang.org/x/text/language"
 )
 
+// contextKey is a dedicated type for request context keys so they never
+// collide with keys defined elsewhere using the built-in string type.
+type contextKey string
+
 const (
 	// ContextKeyLocale stores the resolved language.Tag in the request context.
-	ContextKeyLocale string = "locale"
+	ContextKeyLocale contextKey = "locale"
 	// ContextKeyT stores the per-request translation func in the request context.
-	ContextKeyT string = "t"
+	ContextKeyT contextKey = "t"
 )
 
 var (

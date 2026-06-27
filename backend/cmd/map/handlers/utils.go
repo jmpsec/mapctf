@@ -90,3 +90,18 @@ func getRealIP(r *http.Request) string {
 	}
 	return ip
 }
+
+// RealIP is a middleware that overrides r.RemoteAddr with the originating
+// client IP resolved from the X-Real-Ip / X-Forwarded-For headers. It replaces
+// chi's deprecated middleware.RealIP, which is vulnerable to IP spoofing
+// because it trusts those headers unconditionally regardless of whether the
+// upstream infrastructure actually sets them. Use this only behind a trusted
+// reverse proxy that populates the headers.
+func RealIP(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if ip := getRealIP(r); ip != "" {
+			r.RemoteAddr = ip
+		}
+		next.ServeHTTP(w, r)
+	})
+}

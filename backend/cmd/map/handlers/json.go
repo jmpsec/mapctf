@@ -72,7 +72,7 @@ func (h *HandlersMap) validatedJSONUUID(w http.ResponseWriter, r *http.Request) 
 		return "", false
 	}
 	if uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("feed.invalid_uuid")})
 		return "", false
 	}

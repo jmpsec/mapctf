@@ -299,7 +299,7 @@ func mapCTFService() {
 	muxMap := chi.NewRouter()
 	// Middleware
 	muxMap.Use(middleware.RequestID)
-	muxMap.Use(middleware.RealIP)
+	muxMap.Use(handlers.RealIP)
 	muxMap.Use(middleware.Logger)
 	muxMap.Use(middleware.Recoverer)
 	muxMap.Use(middleware.Timeout(30 * time.Second))
@@ -674,7 +674,9 @@ func main() {
 				if usersMgr.Exists(username, uuid) {
 					// User exists, reset password
 					log.Info().Msgf("User '%s' already exists for UUID %s, resetting password...", username, uuid)
-					usersMgr.SetPassword(username, password, uuid)
+					if err := usersMgr.SetPassword(username, password, uuid); err != nil {
+						return fmt.Errorf("failed to reset password for admin user '%s': %w", username, err)
+					}
 					fmt.Printf("Password reset successfully for admin user '%s' (UUID %s).\n", username, uuid)
 				} else {
 					// User doesn't exist, create it

@@ -62,9 +62,9 @@ func TestGetScores(t *testing.T) {
 
 	// Create test scores
 	testScores := []TeamScore{
-		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 20, Points: 200, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 30, Points: 150, UUID: testUUID1, ScoredBy:    "6"},
+		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 20, Points: 200, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 30, Points: 150, UUID: testUUID1, ScoredBy: "6"},
 	}
 
 	for _, score := range testScores {
@@ -176,9 +176,9 @@ func TestGetScoresMultipleTeams(t *testing.T) {
 
 	// Create scores for different teams
 	testScores := []TeamScore{
-		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 2, ChallengeID: 10, Points: 200, UUID: testUUID1, ScoredBy:    "6"},
-		{TeamID: 1, ChallengeID: 20, Points: 150, UUID: testUUID1, ScoredBy:    "5"},
+		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 2, ChallengeID: 10, Points: 200, UUID: testUUID1, ScoredBy: "6"},
+		{TeamID: 1, ChallengeID: 20, Points: 150, UUID: testUUID1, ScoredBy: "5"},
 	}
 
 	for _, score := range testScores {
@@ -214,9 +214,9 @@ func TestGetScoresMultipleEntities(t *testing.T) {
 
 	// Create scores for different UUIDs
 	testScores := []TeamScore{
-		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 20, Points: 200, UUID: testUUID2, ScoredBy:    "6"},
-		{TeamID: 1, ChallengeID: 30, Points: 150, UUID: testUUID1, ScoredBy:    "5"},
+		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 20, Points: 200, UUID: testUUID2, ScoredBy: "6"},
+		{TeamID: 1, ChallengeID: 30, Points: 150, UUID: testUUID1, ScoredBy: "5"},
 	}
 
 	for _, score := range testScores {
@@ -402,9 +402,9 @@ func TestCreateScoreMultiple(t *testing.T) {
 	_, manager := setupTestDBForScores(t)
 
 	scores := []TeamScore{
-		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 20, Points: 200, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 2, ChallengeID: 10, Points: 150, UUID: testUUID1, ScoredBy:    "6"},
+		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 20, Points: 200, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 2, ChallengeID: 10, Points: 150, UUID: testUUID1, ScoredBy: "6"},
 	}
 
 	for _, score := range scores {
@@ -452,9 +452,9 @@ func TestGetScoreTotal(t *testing.T) {
 
 	// Create test scores
 	testScores := []TeamScore{
-		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 20, Points: 200, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 30, Points: 150, UUID: testUUID1, ScoredBy:    "6"},
+		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 20, Points: 200, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 30, Points: 150, UUID: testUUID1, ScoredBy: "6"},
 	}
 
 	for _, score := range testScores {
@@ -553,10 +553,10 @@ func TestGetScoreTotalMultipleTeams(t *testing.T) {
 
 	// Create scores for different teams
 	testScores := []TeamScore{
-		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 2, ChallengeID: 10, Points: 200, UUID: testUUID1, ScoredBy:    "6"},
-		{TeamID: 1, ChallengeID: 20, Points: 150, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 2, ChallengeID: 20, Points: 250, UUID: testUUID1, ScoredBy:    "6"},
+		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 2, ChallengeID: 10, Points: 200, UUID: testUUID1, ScoredBy: "6"},
+		{TeamID: 1, ChallengeID: 20, Points: 150, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 2, ChallengeID: 20, Points: 250, UUID: testUUID1, ScoredBy: "6"},
 	}
 
 	for _, score := range testScores {
@@ -592,9 +592,9 @@ func TestGetScoreTotalMultipleEntities(t *testing.T) {
 
 	// Create scores for different UUIDs
 	testScores := []TeamScore{
-		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 20, Points: 200, UUID: testUUID2, ScoredBy:    "6"},
-		{TeamID: 1, ChallengeID: 30, Points: 150, UUID: testUUID1, ScoredBy:    "5"},
+		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 20, Points: 200, UUID: testUUID2, ScoredBy: "6"},
+		{TeamID: 1, ChallengeID: 30, Points: 150, UUID: testUUID1, ScoredBy: "5"},
 	}
 
 	for _, score := range testScores {
@@ -630,9 +630,9 @@ func TestGetScoreTotalWithNegativePoints(t *testing.T) {
 
 	// Create scores with negative points (penalties)
 	testScores := []TeamScore{
-		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 20, Points: -50, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 30, Points: 200, UUID: testUUID1, ScoredBy:    "6"},
+		{TeamID: 1, ChallengeID: 10, Points: 100, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 20, Points: -50, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 30, Points: 200, UUID: testUUID1, ScoredBy: "6"},
 	}
 
 	for _, score := range testScores {
@@ -658,8 +658,8 @@ func TestGetScoreTotalZeroPoints(t *testing.T) {
 
 	// Create scores with zero points
 	testScores := []TeamScore{
-		{TeamID: 1, ChallengeID: 10, Points: 0, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 20, Points: 0, UUID: testUUID1, ScoredBy:    "5"},
+		{TeamID: 1, ChallengeID: 10, Points: 0, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 20, Points: 0, UUID: testUUID1, ScoredBy: "5"},
 	}
 
 	for _, score := range testScores {
@@ -685,9 +685,9 @@ func TestGetScoreTotalLargeNumbers(t *testing.T) {
 
 	// Create scores with large point values
 	testScores := []TeamScore{
-		{TeamID: 1, ChallengeID: 10, Points: 1000000, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 20, Points: 2000000, UUID: testUUID1, ScoredBy:    "5"},
-		{TeamID: 1, ChallengeID: 30, Points: 3000000, UUID: testUUID1, ScoredBy:    "6"},
+		{TeamID: 1, ChallengeID: 10, Points: 1000000, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 20, Points: 2000000, UUID: testUUID1, ScoredBy: "5"},
+		{TeamID: 1, ChallengeID: 30, Points: 3000000, UUID: testUUID1, ScoredBy: "6"},
 	}
 
 	for _, score := range testScores {
@@ -760,7 +760,7 @@ func TestGetScoresWithClosedDB(t *testing.T) {
 	}
 	sqlDB.Close()
 
-		_, err = manager.GetScores(1, testUUID1)
+	_, err = manager.GetScores(1, testUUID1)
 	if err == nil {
 		t.Error("Expected error when getting scores with closed database")
 	}
@@ -777,7 +777,7 @@ func TestGetScoreTotalWithClosedDB(t *testing.T) {
 	}
 	sqlDB.Close()
 
-		_, err = manager.GetScoreTotal(1, testUUID1)
+	_, err = manager.GetScoreTotal(1, testUUID1)
 	if err == nil {
 		t.Error("Expected error when getting score total with closed database")
 	}

@@ -46,7 +46,7 @@ func CreateChatManager(backend *gorm.DB, uuid string) (*ChatManager, error) {
 // Create new chat entry
 func (m *ChatManager) Create(entry ChatEntry) error {
 	if err := m.DB.Create(&entry).Error; err != nil {
-		return fmt.Errorf("Create ChatEntry %w", err)
+		return fmt.Errorf("create ChatEntry %w", err)
 	}
 	return nil
 }
@@ -105,7 +105,7 @@ func (m *ChatManager) New(username, body string, uuid string, teamID uint, maxLe
 func (m *ChatManager) CreateNew(username, body string, teamID uint, maxLen int) error {
 	entry, err := m.New(username, body, m.UUID, teamID, maxLen)
 	if err != nil {
-		return fmt.Errorf("CreateNew ChatEntry %w", err)
+		return fmt.Errorf("createNew ChatEntry %w", err)
 	}
 	return m.Create(entry)
 }
@@ -122,7 +122,7 @@ func (m *ChatManager) GetByID(id uint) (ChatEntry, error) {
 // Delete chat entry by ID
 func (m *ChatManager) Delete(id uint) error {
 	if err := m.DB.Where("id = ? AND uuid = ?", id, m.UUID).Delete(&ChatEntry{}).Error; err != nil {
-		return fmt.Errorf("Delete ChatEntry %w", err)
+		return fmt.Errorf("delete ChatEntry %w", err)
 	}
 	return nil
 }
@@ -130,7 +130,7 @@ func (m *ChatManager) Delete(id uint) error {
 // DeleteAll chat entries by UUID
 func (m *ChatManager) DeleteAll() error {
 	if err := m.DB.Where("uuid = ?", m.UUID).Delete(&ChatEntry{}).Error; err != nil {
-		return fmt.Errorf("DeleteAll ChatEntries %w", err)
+		return fmt.Errorf("deleteAll ChatEntries %w", err)
 	}
 	return nil
 }
@@ -138,7 +138,7 @@ func (m *ChatManager) DeleteAll() error {
 // DeleteAllByTeamID chat entries by team ID and UUID
 func (m *ChatManager) DeleteAllByTeamID(teamID uint) error {
 	if err := m.DB.Where("team_id = ? AND uuid = ?", teamID, m.UUID).Delete(&ChatEntry{}).Error; err != nil {
-		return fmt.Errorf("DeleteAllByTeamID ChatEntries %w", err)
+		return fmt.Errorf("deleteAllByTeamID ChatEntries %w", err)
 	}
 	return nil
 }
@@ -146,7 +146,7 @@ func (m *ChatManager) DeleteAllByTeamID(teamID uint) error {
 // DeleteAllByUsername chat entries by username and UUID
 func (m *ChatManager) DeleteAllByUsername(username string) error {
 	if err := m.DB.Where("username = ? AND uuid = ?", username, m.UUID).Delete(&ChatEntry{}).Error; err != nil {
-		return fmt.Errorf("DeleteAllByUsername ChatEntries %w", err)
+		return fmt.Errorf("deleteAllByUsername ChatEntries %w", err)
 	}
 	return nil
 }
@@ -154,7 +154,7 @@ func (m *ChatManager) DeleteAllByUsername(username string) error {
 // SetHiddenByID sets the Hidden field of a chat entry by ID
 func (m *ChatManager) SetHiddenByID(id uint, hidden bool) error {
 	if err := m.DB.Model(&ChatEntry{}).Where("id = ? AND uuid = ?", id, m.UUID).Update("hidden", hidden).Error; err != nil {
-		return fmt.Errorf("SetHiddenByID ChatEntry %w", err)
+		return fmt.Errorf("setHiddenByID ChatEntry %w", err)
 	}
 	return nil
 }

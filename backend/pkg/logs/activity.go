@@ -37,7 +37,7 @@ type ActivityLog struct {
 // CreateActivity logs a new activity
 func (l *LogManager) CreateActivity(activity ActivityLog) error {
 	if err := l.DB.Create(&activity).Error; err != nil {
-		return fmt.Errorf("Create ActivityLog %w", err)
+		return fmt.Errorf("create ActivityLog: %w", err)
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func (l *LogManager) NewAnnouncement(subject, message string, uuid string) (Acti
 func (l *LogManager) AllActivity(uuid string) ([]ActivityLog, error) {
 	var activities []ActivityLog
 	if err := l.DB.Where("uuid = ?", uuid).Find(&activities).Error; err != nil {
-		return activities, fmt.Errorf("Get All Activity Logs for UUID: %w", err)
+		return activities, fmt.Errorf("get all activity logs for UUID: %w", err)
 	}
 	return activities, nil
 }
@@ -104,7 +104,7 @@ func (l *LogManager) AllActivity(uuid string) ([]ActivityLog, error) {
 // DeleteActivity deletes a single activity log by ID scoped to the given UUID.
 func (l *LogManager) DeleteActivity(id uint, uuid string) error {
 	if err := l.DB.Where("id = ? AND uuid = ?", id, uuid).Delete(&ActivityLog{}).Error; err != nil {
-		return fmt.Errorf("Delete ActivityLog: %w", err)
+		return fmt.Errorf("delete ActivityLog: %w", err)
 	}
 	return nil
 }
@@ -113,7 +113,7 @@ func (l *LogManager) DeleteActivity(id uint, uuid string) error {
 func (l *LogManager) GetActivityByChallengeID(challengeID uint, uuid string) ([]ActivityLog, error) {
 	var activities []ActivityLog
 	if err := l.DB.Where("challenge_id = ? AND uuid = ?", challengeID, uuid).Find(&activities).Error; err != nil {
-		return activities, fmt.Errorf("Get Activity Logs by Challenge ID: %w", err)
+		return activities, fmt.Errorf("get Activity Logs by Challenge ID: %w", err)
 	}
 	return activities, nil
 }

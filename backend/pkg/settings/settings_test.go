@@ -345,7 +345,7 @@ func TestChangeSuccessAndLogFailure(t *testing.T) {
 
 		err := m.Change("with_value_column", TypeString, "tenant-a", "after2", "alice")
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "LogEvent PlatformSetting")
+		require.Contains(t, err.Error(), "logEvent PlatformSetting")
 	})
 }
 
@@ -355,11 +355,11 @@ func TestCreateAndLogEventFailWhenDBClosed(t *testing.T) {
 
 	err := m.Create(PlatformSetting{Name: "x", UUID: "tenant-a"})
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "Create PlatformSetting")
+	require.Contains(t, err.Error(), "create PlatformSetting")
 
 	err = m.LogEvent(1, EventUpdate, "alice", "tenant-a")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "Create SettingLog")
+	require.Contains(t, err.Error(), "create SettingLog")
 }
 
 func TestSaveFailsWhenDBClosed(t *testing.T) {
@@ -379,7 +379,7 @@ func TestSaveFailsWhenDBClosed(t *testing.T) {
 	require.NoError(t, sqlDB.Close())
 	err = m.Save(loaded, "alice")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "Save PlatformSetting")
+	require.Contains(t, err.Error(), "save PlatformSetting")
 }
 
 func TestTypedGettersAndSetters(t *testing.T) {
@@ -574,5 +574,5 @@ func TestSaveFailsWhenLogInsertFails(t *testing.T) {
 
 	err = m.Save(loaded, "alice")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "LogEvent PlatformSetting")
+	require.Contains(t, err.Error(), "logEvent PlatformSetting")
 }

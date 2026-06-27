@@ -50,7 +50,7 @@ func CreateChallengeManager(backend *gorm.DB) (*ChallengeManager, error) {
 		DB: backend,
 	}
 	if err := backend.AutoMigrate(&Challenge{}); err != nil {
-		return nil, fmt.Errorf("Failed to AutoMigrate table (challenges): %w", err)
+		return nil, fmt.Errorf("failed to AutoMigrate table (challenges): %w", err)
 	}
 	// Best-effort legacy migration: copy old penalty values into hint_penalty.
 	if backend.Migrator().HasColumn(&Challenge{}, "penalty") {
@@ -60,7 +60,7 @@ func CreateChallengeManager(backend *gorm.DB) (*ChallengeManager, error) {
 	}
 	// table categories
 	if err := backend.AutoMigrate(&Category{}); err != nil {
-		return nil, fmt.Errorf("Failed to AutoMigrate table (categories): %w", err)
+		return nil, fmt.Errorf("failed to AutoMigrate table (categories): %w", err)
 	}
 	return c, nil
 }
@@ -68,7 +68,7 @@ func CreateChallengeManager(backend *gorm.DB) (*ChallengeManager, error) {
 // Create challenge
 func (m *ChallengeManager) Create(challenge Challenge) error {
 	if err := m.DB.Create(&challenge).Error; err != nil {
-		return fmt.Errorf("Create Challenge %w", err)
+		return fmt.Errorf("create Challenge %w", err)
 	}
 	return nil
 }
@@ -76,7 +76,7 @@ func (m *ChallengeManager) Create(challenge Challenge) error {
 // CreateAndReturn challenge and populate its generated fields (ID, timestamps)
 func (m *ChallengeManager) CreateAndReturn(challenge *Challenge) error {
 	if err := m.DB.Create(challenge).Error; err != nil {
-		return fmt.Errorf("Create Challenge %w", err)
+		return fmt.Errorf("create Challenge %w", err)
 	}
 	return nil
 }
@@ -100,7 +100,7 @@ func (m *ChallengeManager) Update(challenge Challenge) error {
 			"hint_penalty": challenge.HintPenalty,
 			"help_penalty": challenge.HelpPenalty,
 		}).Error; err != nil {
-		return fmt.Errorf("Update Challenge %w", err)
+		return fmt.Errorf("update Challenge %w", err)
 	}
 	return nil
 }
@@ -133,7 +133,7 @@ func NormalizeChallengeURL(raw string) (string, error) {
 // Delete challenge
 func (m *ChallengeManager) Delete(id uint, uuid string) error {
 	if err := m.DB.Where("id = ? AND uuid = ?", id, uuid).Delete(&Challenge{}).Error; err != nil {
-		return fmt.Errorf("Delete Challenge %w", err)
+		return fmt.Errorf("delete Challenge %w", err)
 	}
 	return nil
 }
@@ -142,7 +142,7 @@ func (m *ChallengeManager) Delete(id uint, uuid string) error {
 func (m *ChallengeManager) DeleteAll(uuid string) (int64, error) {
 	result := m.DB.Where("uuid = ?", uuid).Delete(&Challenge{})
 	if result.Error != nil {
-		return 0, fmt.Errorf("Delete All Challenges %w", result.Error)
+		return 0, fmt.Errorf("delete All Challenges %w", result.Error)
 	}
 	return result.RowsAffected, nil
 }
@@ -151,7 +151,7 @@ func (m *ChallengeManager) DeleteAll(uuid string) (int64, error) {
 func (m *ChallengeManager) SetAllActive(uuid string, active bool) (int64, error) {
 	result := m.DB.Model(&Challenge{}).Where("uuid = ?", uuid).Update("active", active)
 	if result.Error != nil {
-		return 0, fmt.Errorf("Set All Challenge Active %w", result.Error)
+		return 0, fmt.Errorf("set all challenge active: %w", result.Error)
 	}
 	return result.RowsAffected, nil
 }
@@ -159,7 +159,7 @@ func (m *ChallengeManager) SetAllActive(uuid string, active bool) (int64, error)
 // Create category
 func (m *ChallengeManager) CreateCategory(category Category) error {
 	if err := m.DB.Create(&category).Error; err != nil {
-		return fmt.Errorf("Create Category: %w", err)
+		return fmt.Errorf("create Category: %w", err)
 	}
 	return nil
 }
@@ -173,7 +173,7 @@ func (m *ChallengeManager) UpdateCategory(category Category) error {
 			"description": category.Description,
 			"logo":        category.Logo,
 		}).Error; err != nil {
-		return fmt.Errorf("Update Category: %w", err)
+		return fmt.Errorf("update Category: %w", err)
 	}
 	return nil
 }
@@ -181,7 +181,7 @@ func (m *ChallengeManager) UpdateCategory(category Category) error {
 // DeleteCategory deletes a category by id and uuid
 func (m *ChallengeManager) DeleteCategory(id uint, uuid string) error {
 	if err := m.DB.Where("id = ? AND uuid = ?", id, uuid).Delete(&Category{}).Error; err != nil {
-		return fmt.Errorf("Delete Category: %w", err)
+		return fmt.Errorf("delete Category: %w", err)
 	}
 	return nil
 }
@@ -192,7 +192,7 @@ func (m *ChallengeManager) CategoryHasChallenges(categoryID uint, uuid string) (
 	if err := m.DB.Model(&Challenge{}).
 		Where("category_id = ? AND uuid = ?", categoryID, uuid).
 		Count(&count).Error; err != nil {
-		return false, fmt.Errorf("Category Has Challenges: %w", err)
+		return false, fmt.Errorf("category Has Challenges: %w", err)
 	}
 	return count > 0, nil
 }
@@ -201,7 +201,7 @@ func (m *ChallengeManager) CategoryHasChallenges(categoryID uint, uuid string) (
 func (m *ChallengeManager) GetByID(id uint, uuid string) (Challenge, error) {
 	var challenge Challenge
 	if err := m.DB.Where("id = ? AND uuid = ?", id, uuid).First(&challenge).Error; err != nil {
-		return Challenge{}, fmt.Errorf("Get Challenge by ID and Entity: %w", err)
+		return Challenge{}, fmt.Errorf("get challenge by ID and entity: %w", err)
 	}
 	return challenge, nil
 }
@@ -210,7 +210,7 @@ func (m *ChallengeManager) GetByID(id uint, uuid string) (Challenge, error) {
 func (m *ChallengeManager) GetAll(uuid string) ([]Challenge, error) {
 	var challenges []Challenge
 	if err := m.DB.Where("uuid = ?", uuid).Find(&challenges).Error; err != nil {
-		return challenges, fmt.Errorf("Get All Challenges by Entity: %w", err)
+		return challenges, fmt.Errorf("get All Challenges by Entity: %w", err)
 	}
 	return challenges, nil
 }
@@ -219,7 +219,7 @@ func (m *ChallengeManager) GetAll(uuid string) ([]Challenge, error) {
 func (m *ChallengeManager) GetActive(uuid string) ([]Challenge, error) {
 	var challenges []Challenge
 	if err := m.DB.Where("uuid = ? AND active = ?", uuid, true).Find(&challenges).Error; err != nil {
-		return challenges, fmt.Errorf("Get Active Challenges by Entity: %w", err)
+		return challenges, fmt.Errorf("get Active Challenges by Entity: %w", err)
 	}
 	return challenges, nil
 }
@@ -228,7 +228,7 @@ func (m *ChallengeManager) GetActive(uuid string) ([]Challenge, error) {
 func (m *ChallengeManager) GetAllCategories(uuid string) ([]Category, error) {
 	var categories []Category
 	if err := m.DB.Where("uuid = ?", uuid).Find(&categories).Error; err != nil {
-		return categories, fmt.Errorf("Get All Categories by Entity: %w", err)
+		return categories, fmt.Errorf("get All Categories by Entity: %w", err)
 	}
 	return categories, nil
 }
@@ -237,7 +237,7 @@ func (m *ChallengeManager) GetAllCategories(uuid string) ([]Category, error) {
 func (m *ChallengeManager) DeleteAllCategories(uuid string) (int64, error) {
 	result := m.DB.Where("uuid = ?", uuid).Delete(&Category{})
 	if result.Error != nil {
-		return 0, fmt.Errorf("Delete All Categories %w", result.Error)
+		return 0, fmt.Errorf("delete All Categories %w", result.Error)
 	}
 	return result.RowsAffected, nil
 }
@@ -246,7 +246,7 @@ func (m *ChallengeManager) DeleteAllCategories(uuid string) (int64, error) {
 func (m *ChallengeManager) GetCategoryByID(id uint, uuid string) (Category, error) {
 	var category Category
 	if err := m.DB.Where("id = ? AND uuid = ?", id, uuid).First(&category).Error; err != nil {
-		return Category{}, fmt.Errorf("Get Category by ID and Entity: %w", err)
+		return Category{}, fmt.Errorf("get Category by ID and Entity: %w", err)
 	}
 	return category, nil
 }
@@ -290,5 +290,5 @@ func (m *ChallengeManager) NewCategory(name, description, logo string, uuid stri
 			UUID:        uuid,
 		}, nil
 	}
-	return Category{}, fmt.Errorf("Category with name '%s' already exists", name)
+	return Category{}, fmt.Errorf("category with name '%s' already exists", name)
 }

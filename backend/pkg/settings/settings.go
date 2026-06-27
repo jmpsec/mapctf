@@ -83,8 +83,8 @@ var StringSettings = map[string]string{
 
 // DateSettings to be used as check for valid setting and to keep default value
 var DateSettings = map[string]time.Time{
-	GameStartTime: time.Time{},
-	GameEndTime:   time.Time{},
+	GameStartTime: {},
+	GameEndTime:   {},
 }
 
 // IntSettings to be used as check for valid setting and to keep default value
@@ -236,11 +236,11 @@ func (m *SettingsManager) Initialization(uuid string) error {
 // Create new setting
 func (m *SettingsManager) Create(setting PlatformSetting) error {
 	if err := m.DB.Create(&setting).Error; err != nil {
-		return fmt.Errorf("Create PlatformSetting %w", err)
+		return fmt.Errorf("create PlatformSetting %w", err)
 	}
 	// Log the creation event
 	if err := m.LogEvent(setting.ID, EventCreate, m.Service, setting.UUID); err != nil {
-		return fmt.Errorf("LogEvent PlatformSetting %w", err)
+		return fmt.Errorf("logEvent PlatformSetting %w", err)
 	}
 	return nil
 }
@@ -288,7 +288,7 @@ func (m *SettingsManager) LogEvent(settingID uint, event string, changedBy strin
 		UUID:      uuid,
 	}
 	if err := m.DB.Create(&log).Error; err != nil {
-		return fmt.Errorf("Create SettingLog %w", err)
+		return fmt.Errorf("create SettingLog %w", err)
 	}
 	return nil
 }
@@ -325,10 +325,10 @@ func (m *SettingsManager) New(name, valueType, description string, uuid string, 
 // Save new setting
 func (m *SettingsManager) Save(setting PlatformSetting, username string) error {
 	if err := m.DB.Save(&setting).Error; err != nil {
-		return fmt.Errorf("Save PlatformSetting %w", err)
+		return fmt.Errorf("save PlatformSetting %w", err)
 	}
 	if err := m.LogEvent(setting.ID, EventUpdate, username, setting.UUID); err != nil {
-		return fmt.Errorf("LogEvent PlatformSetting %w", err)
+		return fmt.Errorf("logEvent PlatformSetting %w", err)
 	}
 	return nil
 }
@@ -349,7 +349,7 @@ func (m *SettingsManager) Change(name, valueType string, uuid string, value any,
 		return fmt.Errorf("failed to update setting value: %w", err)
 	}
 	if err := m.LogEvent(setting.ID, EventUpdate, username, setting.UUID); err != nil {
-		return fmt.Errorf("LogEvent PlatformSetting %w", err)
+		return fmt.Errorf("logEvent PlatformSetting %w", err)
 	}
 	return nil
 }
