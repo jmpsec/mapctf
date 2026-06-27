@@ -200,7 +200,7 @@ func TestAdminUsersHandlerRendersConfiguredLocale(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
 	body := rr.Body.String()
-	for _, want := range []string{`<html lang="es">`, "Administración del juego", "Administrar usuarios", "Añadir usuario", `window.MCTF_LANG = "es"`} {
+	for _, want := range []string{`<html lang="es">`, "Administración del juego", "Administrar usuarios", "Añadir usuario", `window.MCTF_LANG = "es"`} { //nolint:misspell // "Administrar" is a valid Spanish word
 		require.Contains(t, body, want)
 	}
 }
