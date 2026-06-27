@@ -57,7 +57,7 @@ func TestLoginHandlerRendersConfiguredLocale(t *testing.T) {
 		{
 			name: "spanish",
 			lang: "es",
-			want: []string{`<html lang="es">`, "Jugar CTF", "Usuario", "Contraseña", "Acceder"},
+			want: []string{`<html lang="es">`, "Jugar CTF", "Nombre de usuario", "Contraseña", "Iniciar sesión"},
 		},
 		{
 			name: "english default",
@@ -125,7 +125,7 @@ func TestRegistrationHandlerRendersConfiguredLocale(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
 	body := rr.Body.String()
-	for _, want := range []string{`<html lang="es">`, "Jugar CTF", "Nombre completo", "Nombre del equipo", "Registrarse"} {
+	for _, want := range []string{`<html lang="es">`, "Jugar CTF", "Nombre completo", "Nombre de equipo", "Regístrate"} {
 		require.Contains(t, body, want)
 	}
 }
@@ -150,7 +150,7 @@ func TestGameboardHandlerRendersConfiguredLocale(t *testing.T) {
 	body := rr.Body.String()
 	for _, want := range []string{
 		`<html lang="es">`,
-		"Clasificación",
+		"Ranking",
 		"Actividad",
 		"Sin equipo",
 		"Posición",
@@ -200,7 +200,28 @@ func TestAdminUsersHandlerRendersConfiguredLocale(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
 	body := rr.Body.String()
-	for _, want := range []string{`<html lang="es">`, "Administración del juego", "Gestión de usuarios", "Añadir usuario", `window.MCTF_LANG = "es"`} {
+	for _, want := range []string{`<html lang="es">`, "Administración del juego", "Administrar usuarios", "Añadir usuario", `window.MCTF_LANG = "es"`} { //nolint:misspell // "Administrar" is a valid Spanish word
+		require.Contains(t, body, want)
+	}
+}
+
+func TestLoginHandlerRendersFrenchLocale(t *testing.T) {
+	if _, err := os.Stat(filepath.Join("..", "templates", "login.html")); err != nil {
+		t.Skipf("login template not available: %v", err)
+	}
+	handler, sessions := newLoginI18nHandler(t, "fr")
+
+	req := newTemplateRequestWithUUID(http.MethodGet, "/"+jsonTestUUID+"/login", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.LoginHandler)).ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
+	body := rr.Body.String()
+	for _, want := range []string{`<html lang="fr">`, "Jouer au CTF", "Nom d'utilisateur", "Mot de passe", "Connexion", `window.MCTF_LANG = "fr"`} {
 		require.Contains(t, body, want)
 	}
 }
