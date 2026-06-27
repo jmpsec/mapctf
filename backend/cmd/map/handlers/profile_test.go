@@ -376,3 +376,103 @@ func TestProfileGETHandlerTranslatesRoleAndStatus(t *testing.T) {
 	require.Equal(t, "Jugador", resp.Account.Role)
 	require.Equal(t, "Activo", resp.Account.Status)
 }
+
+func newProfileLanguageHandler(t *testing.T, gameLang string) *HandlersMap {
+	t.Helper()
+	db := newJSONTestDB(t)
+	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{Secret: "test-secret", HoursToExpire: 24})
+	require.NoError(t, err)
+	settingsManager, err := settings.CreateSettingsManager(db, "test-service")
+	require.NoError(t, err)
+	require.NoError(t, settingsManager.Initialization(jsonTestUUID))
+	if gameLang != "" {
+		require.NoError(t, settingsManager.SetLanguage(gameLang, jsonSettingsAuthor, jsonTestUUID))
+	}
+	catalog, err := i18n.New()
+	require.NoError(t, err)
+	return CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID, TemplatesDir: filepath.Join("..", "templates")}}),
+		WithUsers(userManager),
+		WithSettings(settingsManager),
+		WithSessions(scs.New()),
+		WithI18N(catalog),
+	)
+}
+
+// A user's session-cached language preference overrides the per-game setting.
+func TestProfileLanguagePreferenceOverridesGameSetting(t *testing.T) {
+	handler := newProfileLanguageHandler(t, "es") // game default Spanish
+
+	user, err := handler.Users.New("alice", "password123", "alice@example.com", "Alice", false, false, jsonTestUUID, 0)
+	require.NoError(t, err)
+	user.Language = "fr"
+	require.NoError(t, handler.Users.Create(user))
+
+	req := newRequestWithUUID(http.MethodGet, "/profile", jsonTestUUID)
+	ctx, err := handler.Sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	handler.Sessions.Put(ctx, string(ContextKeyUser), "alice")
+	handler.Sessions.Put(ctx, string(ContextKeyLanguage), "fr")
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.ProfileGETHandler)).ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code, "body: %s", rec.Body.String())
+	var resp MapProfileResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, "fr", resp.Account.Language)
+	// French role for a non-admin player, proving "fr" beat the game's "es".
+	require.Equal(t, "Joueur", resp.Account.Role)
+}
+
+// Saving a language from the profile updates the user record and the session.
+func TestProfilePOSTHandlerUpdatesUserLanguage(t *testing.T) {
+	handler := newProfileLanguageHandler(t, "es")
+
+	user, err := handler.Users.New("alice", "password123", "alice@example.com", "Alice", false, false, jsonTestUUID, 0)
+	require.NoError(t, err)
+	require.NoError(t, handler.Users.Create(user))
+
+	req := newJSONBodyRequestWithUUID(http.MethodPost, "/profile", jsonTestUUID, MapProfileAccountUpdateRequest{
+		FullName: "Alice",
+		Email:    "alice@example.com",
+		Language: "de",
+	})
+	ctx, err := handler.Sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	handler.Sessions.Put(ctx, string(ContextKeyUser), "alice")
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.ProfilePOSTHandler)).ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code, "body: %s", rec.Body.String())
+	var resp MapProfileAccountUpdateResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, "de", resp.Account.Language)
+	// The session was updated so subsequent requests resolve German.
+	require.Equal(t, "de", handler.Sessions.GetString(req.Context(), string(ContextKeyLanguage)))
+	// And the preference persisted to the user record.
+	reloaded, err := handler.Users.Get("alice", jsonTestUUID)
+	require.NoError(t, err)
+	require.Equal(t, "de", reloaded.Language)
+}
+
+// An unsupported language code is rejected.
+func TestProfilePOSTHandlerRejectsUnsupportedLanguage(t *testing.T) {
+	handler := newProfileLanguageHandler(t, "en")
+	user, err := handler.Users.New("alice", "password123", "alice@example.com", "Alice", false, false, jsonTestUUID, 0)
+	require.NoError(t, err)
+	require.NoError(t, handler.Users.Create(user))
+
+	req := newJSONBodyRequestWithUUID(http.MethodPost, "/profile", jsonTestUUID, MapProfileAccountUpdateRequest{Language: "xx"})
+	ctx, err := handler.Sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	handler.Sessions.Put(ctx, string(ContextKeyUser), "alice")
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.ProfilePOSTHandler(rec, req)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+}

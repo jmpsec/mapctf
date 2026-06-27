@@ -832,5 +832,7 @@
   "admin.msg.logo_name_required": "Le nom du logo est requis",
   "admin.msg.subject_message_required": "Le sujet ou le message est requis",
   "admin.msg.title_flag_required": "Le titre et le flag sont requis",
-  "admin.msg.user_pass_required": "Le nom d'utilisateur et le mot de passe sont requis"
+  "admin.msg.user_pass_required": "Le nom d'utilisateur et le mot de passe sont requis",
+  "profile.language": "Langue",
+  "profile.language_invalid": "Langue non prise en charge"
 }

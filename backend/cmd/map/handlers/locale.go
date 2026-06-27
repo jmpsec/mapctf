@@ -51,6 +51,21 @@ func (h *HandlersMap) catalog() *i18n.Catalog {
 	return defaultI18N()
 }
 
+// safeSessionString reads a string from the session, returning "" when the
+// session manager is absent or the SCS context has not been prepared (e.g. the
+// LoadAndSave middleware did not run). SCS panics in that case, so we guard it.
+func (h *HandlersMap) safeSessionString(ctx context.Context, key string) string {
+	if h.Sessions == nil {
+		return ""
+	}
+	var v string
+	func() {
+		defer func() { _ = recover() }()
+		v = h.Sessions.GetString(ctx, key)
+	}()
+	return v
+}
+
 // LocaleMiddleware resolves the active language for UUID-scoped requests and
 // stores the resolved language tag plus a translation func in the request
 // context. Resolution order is: the per-game `language` setting (when the
@@ -60,6 +75,12 @@ func (h *HandlersMap) LocaleMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c := h.catalog()
 		var preferred []string
+		// Per-user language takes precedence: it is cached in the session at
+		// login/profile-save, so this is an in-memory read with no DB cost.
+		if lang := h.safeSessionString(r.Context(), string(ContextKeyLanguage)); lang != "" {
+			preferred = append(preferred, lang)
+		}
+		// Fall back to the per-game (admin-set) language, then Accept-Language.
 		if uuid := chi.URLParam(r, "uuid"); uuid != "" && uuid == h.Config.Map.UUID && h.Settings != nil {
 			if lang, err := h.Settings.GetLanguage(uuid); err == nil && lang != "" {
 				preferred = append(preferred, lang)
