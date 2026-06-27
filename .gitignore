@@ -34,6 +34,7 @@ coverage.out
 *.json
 !map-countries-seed.json
 !team-logos-seed.json
+!backend/pkg/i18n/locales/*.json
 *.yaml
 !mapctf.example.yaml
 *.yml
