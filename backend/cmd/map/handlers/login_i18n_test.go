@@ -225,3 +225,24 @@ func TestLoginHandlerRendersFrenchLocale(t *testing.T) {
 		require.Contains(t, body, want)
 	}
 }
+
+func TestLoginHandlerRendersPortugueseLocale(t *testing.T) {
+	if _, err := os.Stat(filepath.Join("..", "templates", "login.html")); err != nil {
+		t.Skipf("login template not available: %v", err)
+	}
+	handler, sessions := newLoginI18nHandler(t, "pt")
+
+	req := newTemplateRequestWithUUID(http.MethodGet, "/"+jsonTestUUID+"/login", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.LoginHandler)).ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
+	body := rr.Body.String()
+	for _, want := range []string{`<html lang="pt">`, "Jogar CTF", "Nome de usuário", "Senha", "Entrar", `window.MCTF_LANG = "pt"`} {
+		require.Contains(t, body, want)
+	}
+}
