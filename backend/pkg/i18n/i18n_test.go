@@ -39,8 +39,8 @@ func TestTranslateFallsBackToEnglishThenKey(t *testing.T) {
 	fr := c.Resolve("fr")
 	require.Equal(t, "Jouer au CTF", c.Translate(fr, "nav.play_ctf"))
 	// Unsupported locale falls back to English.
-	de := c.Resolve("de")
-	require.Equal(t, "Play CTF", c.Translate(de, "nav.play_ctf"))
+	xx := c.Resolve("xx")
+	require.Equal(t, "Play CTF", c.Translate(xx, "nav.play_ctf"))
 	// Unknown key returns the key itself.
 	require.Equal(t, "no.such.key", c.Translate(es, "no.such.key"))
 	// Regional variant resolves to the base catalog tag so lookup succeeds.
