@@ -25,46 +25,46 @@ func (h *HandlersMap) LoginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
 	var l MapLoginRequest
 	// Parse request JSON body
 	if err := json.NewDecoder(r.Body).Decode(&l); err != nil {
-		log.Err(err).Msg("error parsing POST body")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "error parsing POST body"})
+		log.Err(err).Msg(h.T(r.Context())("auth.error_parse_body"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("auth.error_parse_body")})
 		return
 	}
 	if l.Username == "" || l.Password == "" {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "username and password are required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("auth.user_pass_required")})
 		return
 	}
 	valid, user := h.Users.CheckLoginCredentials(l.Username, l.Password, uuid)
 	if !valid {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "invalid credentials"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("auth.invalid_credentials")})
 		return
 	}
 	if !user.Admin {
 		if h.Settings == nil {
 			log.Err(errors.New("settings manager not initialized")).Msg("error checking login_enabled")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "login is unavailable"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("auth.login_unavailable")})
 			return
 		}
 		loginEnabled, err := h.Settings.GetLoginEnabled(uuid)
 		if err != nil {
 			log.Err(err).Msg("error getting login enabled setting")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "login is unavailable"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("auth.login_unavailable")})
 			return
 		}
 		if !loginEnabled {
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusForbidden, MapErrorResponse{Error: "login is disabled"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusForbidden, MapErrorResponse{Error: h.T(r.Context())("auth.login_disabled")})
 			return
 		}
 	}
 	err := h.Sessions.RenewToken(r.Context())
 	if err != nil {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error renewing session"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("auth.error_renew_session")})
 		return
 	}
 	h.Sessions.Put(r.Context(), string(ContextKeyUser), user.Username)
@@ -79,7 +79,7 @@ func (h *HandlersMap) LoginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapLoginResponse{
 		Success:  true,
-		Message:  "Login successful",
+		Message:  h.T(r.Context())("login.success_msg"),
 		Redirect: redirectTo,
 	})
 }
@@ -92,19 +92,19 @@ func (h *HandlersMap) LogoutPOSTHandler(w http.ResponseWriter, r *http.Request) 
 	// Get UUID from URL path
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" {
-		log.Err(errors.New("UUID is required")).Msg("UUID is required")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "UUID is required"})
+		log.Err(errors.New(h.T(r.Context())("auth.uuid_required"))).Msg(h.T(r.Context())("auth.uuid_required"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("auth.uuid_required")})
 		return
 	}
 	if err := h.Sessions.Destroy(r.Context()); err != nil {
-		log.Err(err).Msg("error destroying session")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "error destroying session"})
+		log.Err(err).Msg(h.T(r.Context())("auth.error_destroy_session"))
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("auth.error_destroy_session")})
 		return
 	}
 	// Send response
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapLogoutResponse{
 		Success:  true,
-		Message:  "Logout successful",
+		Message:  h.T(r.Context())("login.logout_msg"),
 		Redirect: "/" + uuid + "/login",
 	})
 }

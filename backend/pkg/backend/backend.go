@@ -44,7 +44,7 @@ func LoadConfiguration(file, key string) (config.ConfigurationDB, error) {
 	// Backend values
 	dbRaw := viper.Sub(key)
 	if dbRaw == nil {
-		return config, fmt.Errorf("YAML key %s not found in %s", key, file)
+		return config, fmt.Errorf("yAML key %s not found in %s", key, file)
 	}
 	if err := dbRaw.Unmarshal(&config); err != nil {
 		return config, err
@@ -121,7 +121,7 @@ func (db *DBManager) Check() error {
 func CreateDBManagerFile(file string) (*DBManager, error) {
 	dbConfig, err := LoadConfiguration(file, DBKey)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load DB configuration - %w", err)
+		return nil, fmt.Errorf("failed to load DB configuration - %w", err)
 	}
 	return CreateDBManager(dbConfig)
 }
@@ -133,7 +133,7 @@ func CreateDBManager(dbConfig config.ConfigurationDB) (*DBManager, error) {
 	db.DSN = PrepareDSN(dbConfig)
 	dbConn, err := db.GetDB()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get DB - %w", err)
+		return nil, fmt.Errorf("failed to get DB - %w", err)
 	}
 	db.Conn = dbConn
 	return db, nil

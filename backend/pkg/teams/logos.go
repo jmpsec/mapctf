@@ -115,7 +115,7 @@ func (m *TeamManager) NewLogo(name, logo string, enabled, custom bool, createdBy
 // CreateLogo to save a new team logo
 func (m *TeamManager) CreateLogo(logo TeamLogo) error {
 	if err := m.DB.Create(&logo).Error; err != nil {
-		return fmt.Errorf("Create Team Logo: %w", err)
+		return fmt.Errorf("create Team Logo: %w", err)
 	}
 	return nil
 }

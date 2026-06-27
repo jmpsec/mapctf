@@ -44,8 +44,8 @@ func (h *HandlersMap) ErrorHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	templateData := ErrorTemplateData{
-		Title: "MapCTF: Error",
-		Error: msg,
+		Title:  "MapCTF: Error",
+		Error:  msg,
 		Status: status,
 		Header: header,
 	}

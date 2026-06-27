@@ -28,7 +28,7 @@ func (h *HandlersMap) IndexTemplateHandler(w http.ResponseWriter, r *http.Reques
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -93,7 +93,7 @@ func (h *HandlersMap) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -153,7 +153,7 @@ func (h *HandlersMap) RegistrationTemplateHandler(w http.ResponseWriter, r *http
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -225,7 +225,7 @@ func (h *HandlersMap) CountdownTemplateHandler(w http.ResponseWriter, r *http.Re
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -307,7 +307,7 @@ func (h *HandlersMap) RulesTemplateHandler(w http.ResponseWriter, r *http.Reques
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -344,7 +344,7 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -426,9 +426,10 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 	}
 	if h.Countries != nil {
 		countriesList, err := h.Countries.GetAll()
-		if err != nil {
+		switch {
+		case err != nil:
 			log.Warn().Err(err).Msg("error loading countries for gameboard")
-		} else if h.Challenges != nil {
+		case h.Challenges != nil:
 			activeChallenges, challengeErr := h.Challenges.GetActive(uuid)
 			if challengeErr != nil {
 				log.Warn().Err(challengeErr).Msg("error loading active challenges for gameboard countries")
@@ -455,7 +456,7 @@ func (h *HandlersMap) GameboardTemplateHandler(w http.ResponseWriter, r *http.Re
 				}
 				templateData.Countries = renderCountries
 			}
-		} else {
+		default:
 			templateData.Countries = countriesList
 		}
 	}

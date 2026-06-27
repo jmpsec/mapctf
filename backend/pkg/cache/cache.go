@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	redis "github.com/redis/go-redis/v9"
 	"github.com/jmpsec/mapctf/pkg/config"
+	redis "github.com/redis/go-redis/v9"
 )
 
 const (

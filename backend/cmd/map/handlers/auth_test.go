@@ -10,6 +10,7 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/jmpsec/mapctf/pkg/config"
+	"github.com/jmpsec/mapctf/pkg/i18n"
 	"github.com/jmpsec/mapctf/pkg/settings"
 	"github.com/jmpsec/mapctf/pkg/users"
 	"github.com/stretchr/testify/require"
@@ -165,4 +166,43 @@ func TestLoginPOSTHandlerAllowsNonAdminWhenLoginEnabled(t *testing.T) {
 	require.Equal(t, "/"+jsonTestUUID+"/gameboard", resp.Redirect)
 	require.Equal(t, "alice", sessions.GetString(req.Context(), string(ContextKeyUser)))
 	require.False(t, sessions.GetBool(req.Context(), string(ContextKeyAdmin)))
+}
+
+func TestLoginPOSTHandlerReturnsLocalizedMessage(t *testing.T) {
+	db := newJSONTestDB(t)
+	userManager, err := users.CreateUserManager(db, &config.ConfigurationJWT{Secret: "test-secret", HoursToExpire: 24})
+	require.NoError(t, err)
+	settingsManager, err := settings.CreateSettingsManager(db, "test-service")
+	require.NoError(t, err)
+	require.NoError(t, settingsManager.Initialization(jsonTestUUID))
+	require.NoError(t, settingsManager.SetLanguage("es", jsonSettingsAuthor, jsonTestUUID))
+
+	catalog, err := i18n.New()
+	require.NoError(t, err)
+	sessions := scs.New()
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID}}),
+		WithUsers(userManager),
+		WithSettings(settingsManager),
+		WithSessions(sessions),
+		WithI18N(catalog),
+	)
+
+	admin, err := userManager.New("admin", "password123", "admin@example.com", "Admin", true, false, jsonTestUUID, 0)
+	require.NoError(t, err)
+	require.NoError(t, userManager.Create(admin))
+
+	req := newJSONBodyRequestWithUUID(http.MethodPost, "/login", jsonTestUUID, MapLoginRequest{Username: "admin", Password: "password123"})
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.LoginPOSTHandler)).ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	var resp MapLoginResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.True(t, resp.Success)
+	require.Equal(t, "Acceso correcto", resp.Message)
 }

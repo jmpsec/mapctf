@@ -67,7 +67,7 @@ func CreateUserManager(backend *gorm.DB, jwtConfig *config.ConfigurationJWT) (*U
 // Create new user
 func (m *UserManager) Create(user PlatformUser) error {
 	if err := m.DB.Create(&user).Error; err != nil {
-		return fmt.Errorf("Create PlatformUser %w", err)
+		return fmt.Errorf("create PlatformUser %w", err)
 	}
 	return nil
 }

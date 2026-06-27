@@ -50,19 +50,19 @@ func CreateTeams(backend *gorm.DB) (*TeamManager, error) {
 	}
 	// table platform_teams
 	if err := backend.AutoMigrate(&PlatformTeam{}); err != nil {
-		return nil, fmt.Errorf("Failed to AutoMigrate table (platform_teams): %w", err)
+		return nil, fmt.Errorf("failed to AutoMigrate table (platform_teams): %w", err)
 	}
 	// table team_memberships
 	if err := backend.AutoMigrate(&TeamMembership{}); err != nil {
-		return nil, fmt.Errorf("Failed to AutoMigrate table (team_memberships): %w", err)
+		return nil, fmt.Errorf("failed to AutoMigrate table (team_memberships): %w", err)
 	}
 	// table team_scores
 	if err := backend.AutoMigrate(&TeamScore{}); err != nil {
-		return nil, fmt.Errorf("Failed to AutoMigrate table (team_scores): %w", err)
+		return nil, fmt.Errorf("failed to AutoMigrate table (team_scores): %w", err)
 	}
 	// table team_logos
 	if err := backend.AutoMigrate(&TeamLogo{}); err != nil {
-		return nil, fmt.Errorf("Failed to AutoMigrate table (team_logos): %w", err)
+		return nil, fmt.Errorf("failed to AutoMigrate table (team_logos): %w", err)
 	}
 	return t, nil
 }
@@ -70,7 +70,7 @@ func CreateTeams(backend *gorm.DB) (*TeamManager, error) {
 // Create new team
 func (m *TeamManager) Create(team PlatformTeam) error {
 	if err := m.DB.Create(&team).Error; err != nil {
-		return fmt.Errorf("Create PlatformTeam %w", err)
+		return fmt.Errorf("create PlatformTeam %w", err)
 	}
 	return nil
 }

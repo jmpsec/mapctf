@@ -475,7 +475,7 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -513,7 +513,7 @@ func (h *HandlersMap) AdminSettingsTemplateHandler(w http.ResponseWriter, r *htt
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -685,7 +685,7 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -724,13 +724,13 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	if strings.Contains(r.Header.Get(ContentType), JSONApplication) {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			log.Err(err).Msg("error parsing admin settings JSON payload")
-			writeError(http.StatusBadRequest, "Invalid JSON payload")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 			return
 		}
 	} else {
 		if err := r.ParseForm(); err != nil {
 			log.Err(err).Msg("error parsing admin settings form")
-			writeError(http.StatusBadRequest, "Invalid form payload")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_form_payload"))
 			return
 		}
 		req.SettingName = r.FormValue("setting_name")
@@ -746,19 +746,19 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 		settingValue = strings.TrimSpace(req.Value)
 	}
 	if settingName == "" {
-		writeError(http.StatusBadRequest, "Missing setting_name")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.missing_setting_name"))
 		return
 	}
 
 	setBoolSetting := func(setter func(bool, string, string) error, setting string) bool {
 		parsed, err := strconv.ParseBool(strings.ToLower(settingValue))
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid boolean for "+setting)
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_boolean_for", setting))
 			return false
 		}
 		if err := setter(parsed, username, uuid); err != nil {
 			log.Err(err).Msgf("error updating %s", setting)
-			writeError(http.StatusInternalServerError, "Failed to update "+setting)
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_setting", setting))
 			return false
 		}
 		return true
@@ -766,12 +766,12 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	setIntSetting := func(setter func(int, string, string) error, setting string) bool {
 		parsed, err := strconv.Atoi(settingValue)
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid integer for "+setting)
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_integer_for", setting))
 			return false
 		}
 		if err := setter(parsed, username, uuid); err != nil {
 			log.Err(err).Msgf("error updating %s", setting)
-			writeError(http.StatusInternalServerError, "Failed to update "+setting)
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_setting", setting))
 			return false
 		}
 		return true
@@ -805,7 +805,7 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	case "registration_token":
 		if err := h.Settings.SetRegistrationToken(settingValue, username, uuid); err != nil {
 			log.Err(err).Msg("error updating registration_token")
-			writeError(http.StatusInternalServerError, "Failed to update registration_token")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_reg_token"))
 			return
 		}
 	case "scoring_enabled":
@@ -831,19 +831,19 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	case "custom_org":
 		if err := h.Settings.SetCustomOrg(settingValue, username, uuid); err != nil {
 			log.Err(err).Msg("error updating custom_org")
-			writeError(http.StatusInternalServerError, "Failed to update custom_org")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_custom_org"))
 			return
 		}
 	case "custom_logo":
 		if err := h.Settings.SetCustomLogo(settingValue, username, uuid); err != nil {
 			log.Err(err).Msg("error updating custom_logo")
-			writeError(http.StatusInternalServerError, "Failed to update custom_logo")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_custom_logo"))
 			return
 		}
 	case "language":
 		if err := h.Settings.SetLanguage(settingValue, username, uuid); err != nil {
 			log.Err(err).Msg("error updating language")
-			writeError(http.StatusInternalServerError, "Failed to update language")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_language"))
 			return
 		}
 	case "leaderboard_limit":
@@ -857,31 +857,31 @@ func (h *HandlersMap) AdminSettingsPOSTHandler(w http.ResponseWriter, r *http.Re
 	case "game_start_time":
 		gameStartTime, err := time.ParseInLocation("2006-01-02T15:04", settingValue, time.Local)
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid game_start_time format")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_game_start_format"))
 			return
 		}
 		if err := h.Settings.SetGameStartTime(gameStartTime, username, uuid); err != nil {
 			log.Err(err).Msg("error updating game_start_time")
-			writeError(http.StatusInternalServerError, "Failed to update game_start_time")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_game_start"))
 			return
 		}
 	case "game_end_time":
 		gameEndTime, err := time.ParseInLocation("2006-01-02T15:04", settingValue, time.Local)
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid game_end_time format")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_game_end_format"))
 			return
 		}
 		if err := h.Settings.SetGameEndTime(gameEndTime, username, uuid); err != nil {
 			log.Err(err).Msg("error updating game_end_time")
-			writeError(http.StatusInternalServerError, "Failed to update game_end_time")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_game_end"))
 			return
 		}
 	default:
-		writeError(http.StatusBadRequest, "Unsupported setting")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.unsupported_setting"))
 		return
 	}
 
-	writeSuccess("Updated " + settingName)
+	writeSuccess(h.T(r.Context())("admin.msg.updated_setting", settingName))
 }
 
 func (h *HandlersMap) buildAdminSettingsTransferPayload(uuid string) (adminSettingsTransferPayload, error) {
@@ -1363,7 +1363,7 @@ func (h *HandlersMap) AdminGameExportHandler(w http.ResponseWriter, r *http.Requ
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1371,25 +1371,25 @@ func (h *HandlersMap) AdminGameExportHandler(w http.ResponseWriter, r *http.Requ
 	settingsPayload, err := h.buildAdminSettingsTransferPayload(uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading settings for full-game export")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to load settings"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_load_settings")})
 		return
 	}
 	usersPayload, err := h.buildAdminUsersTransferPayload(uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading users for full-game export")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to load users"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_load_users")})
 		return
 	}
 	teamsPayload, err := h.buildAdminTeamsTransferPayload(uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading teams for full-game export")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to load teams/logos"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_load_teams_logos")})
 		return
 	}
 	challengesPayload, err := h.buildAdminChallengesTransferPayload(uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading challenges for full-game export")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to load challenges/categories"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_load_challenges")})
 		return
 	}
 
@@ -1405,7 +1405,7 @@ func (h *HandlersMap) AdminGameExportHandler(w http.ResponseWriter, r *http.Requ
 	output, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
 		log.Err(err).Msg("error marshaling full-game export JSON")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to generate export JSON"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_export_json")})
 		return
 	}
 
@@ -1424,7 +1424,7 @@ func (h *HandlersMap) AdminGameImportHandler(w http.ResponseWriter, r *http.Requ
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1448,14 +1448,14 @@ func (h *HandlersMap) AdminGameImportHandler(w http.ResponseWriter, r *http.Requ
 	isJSON := strings.Contains(contentType, JSONApplication)
 	isMultipart := strings.Contains(contentType, "multipart/form-data")
 	if !isJSON && !isMultipart {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json or multipart/form-data")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("admin.msg.content_type_form"))
 		return
 	}
 
 	var payload adminGameTransferPayload
 	if err := h.decodeGameImportPayload(r, &payload); err != nil {
 		log.Err(err).Msg("error parsing full-game import payload")
-		writeError(http.StatusBadRequest, "Invalid full-game import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_full_game_payload"))
 		return
 	}
 
@@ -1474,32 +1474,32 @@ func (h *HandlersMap) AdminGameImportHandler(w http.ResponseWriter, r *http.Requ
 	logosCreated, logosUpdated, logosSkipped, err := h.importAdminTeamLogosFromPayload(uuid, payload.Teams.Logos)
 	if err != nil {
 		log.Err(err).Msg("error importing full-game logos")
-		writeError(http.StatusInternalServerError, "Failed importing logos")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_importing_logos"))
 		return
 	}
 	teamsCreated, teamsUpdated, teamsSkipped, err := h.importAdminTeamsFromPayload(uuid, payload.Teams.Teams)
 	if err != nil {
 		log.Err(err).Msg("error importing full-game teams")
-		writeError(http.StatusInternalServerError, "Failed importing teams")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_importing_teams"))
 		return
 	}
 	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after full-game teams import")
-		writeError(http.StatusInternalServerError, "Import completed but failed to sync logo usage")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.import_sync_fail"))
 		return
 	}
 
 	usersCreated, usersUpdated, usersSkipped, err := h.importAdminUsersFromPayload(uuid, payload.Users.Users)
 	if err != nil {
 		log.Err(err).Msg("error importing full-game users")
-		writeError(http.StatusInternalServerError, "Failed importing users")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_importing_users"))
 		return
 	}
 
 	challengesImported, categoriesCreated, challengesSkipped, challengesNoCountry, err := h.importAdminChallengesFromPayload(uuid, payload.Challenges)
 	if err != nil {
 		log.Err(err).Msg("error importing full-game challenges")
-		writeError(http.StatusInternalServerError, "Failed importing challenges")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_importing_challenges"))
 		return
 	}
 
@@ -1507,10 +1507,10 @@ func (h *HandlersMap) AdminGameImportHandler(w http.ResponseWriter, r *http.Requ
 		"settings updated " + strconv.Itoa(settingsUpdated),
 		"logos created " + strconv.Itoa(logosCreated),
 		"logos updated " + strconv.Itoa(logosUpdated),
-		"teams created " + strconv.Itoa(teamsCreated),
-		"teams updated " + strconv.Itoa(teamsUpdated),
-		"users created " + strconv.Itoa(usersCreated),
-		"users updated " + strconv.Itoa(usersUpdated),
+		h.T(r.Context())("admin.msg.teams_created", teamsCreated),
+		h.T(r.Context())("admin.msg.teams_updated", teamsUpdated),
+		h.T(r.Context())("admin.msg.users_created", usersCreated),
+		h.T(r.Context())("admin.msg.users_updated", usersUpdated),
 		"challenges imported " + strconv.Itoa(challengesImported),
 		"categories created " + strconv.Itoa(categoriesCreated),
 	}
@@ -1518,10 +1518,10 @@ func (h *HandlersMap) AdminGameImportHandler(w http.ResponseWriter, r *http.Requ
 		messageParts = append(messageParts, "settings skipped "+strconv.Itoa(settingsSkipped))
 	}
 	if logosSkipped > 0 {
-		messageParts = append(messageParts, "logos skipped "+strconv.Itoa(logosSkipped))
+		messageParts = append(messageParts, h.T(r.Context())("admin.msg.logos_skipped", logosSkipped))
 	}
 	if teamsSkipped > 0 {
-		messageParts = append(messageParts, "teams skipped "+strconv.Itoa(teamsSkipped))
+		messageParts = append(messageParts, h.T(r.Context())("admin.msg.teams_skipped", teamsSkipped))
 	}
 	if usersSkipped > 0 {
 		messageParts = append(messageParts, "users skipped "+strconv.Itoa(usersSkipped))
@@ -1533,7 +1533,7 @@ func (h *HandlersMap) AdminGameImportHandler(w http.ResponseWriter, r *http.Requ
 		messageParts = append(messageParts, "challenges without country "+strconv.Itoa(challengesNoCountry))
 	}
 
-	writeSuccess("Full game import complete: " + strings.Join(messageParts, ", "))
+	writeSuccess(h.T(r.Context())("admin.msg.full_import_complete") + strings.Join(messageParts, ", "))
 }
 
 // AdminSettingsExportHandler exports settings as JSON
@@ -1544,7 +1544,7 @@ func (h *HandlersMap) AdminSettingsExportHandler(w http.ResponseWriter, r *http.
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1555,7 +1555,7 @@ func (h *HandlersMap) AdminSettingsExportHandler(w http.ResponseWriter, r *http.
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to load settings",
+			Message: h.T(r.Context())("admin.msg.failed_load_settings"),
 		})
 		return
 	}
@@ -1573,7 +1573,7 @@ func (h *HandlersMap) AdminSettingsImportHandler(w http.ResponseWriter, r *http.
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1597,14 +1597,14 @@ func (h *HandlersMap) AdminSettingsImportHandler(w http.ResponseWriter, r *http.
 	isJSON := strings.Contains(contentType, JSONApplication)
 	isMultipart := strings.Contains(contentType, "multipart/form-data")
 	if !isJSON && !isMultipart {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json or multipart/form-data")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("admin.msg.content_type_form"))
 		return
 	}
 
 	var payload adminSettingsTransferPayload
 	if err := h.decodeSettingsImportPayload(r, &payload); err != nil {
 		log.Err(err).Msg("error parsing settings import payload")
-		writeError(http.StatusBadRequest, "Invalid settings import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_settings_payload"))
 		return
 	}
 
@@ -1624,7 +1624,7 @@ func (h *HandlersMap) AdminSettingsImportHandler(w http.ResponseWriter, r *http.
 	if skippedSettings > 0 {
 		messageParts = append(messageParts, "settings skipped "+strconv.Itoa(skippedSettings))
 	}
-	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
+	writeSuccess(h.T(r.Context())("admin.msg.import_complete") + strings.Join(messageParts, ", "))
 }
 
 // AdminSettingsResetDefaultsPOSTHandler resets settings to default values
@@ -1635,7 +1635,7 @@ func (h *HandlersMap) AdminSettingsResetDefaultsPOSTHandler(w http.ResponseWrite
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1687,12 +1687,12 @@ func (h *HandlersMap) AdminSettingsResetDefaultsPOSTHandler(w http.ResponseWrite
 	for _, update := range updates {
 		if err := update(); err != nil {
 			log.Err(err).Msg("error resetting settings to defaults")
-			writeError(http.StatusInternalServerError, "Failed resetting settings to defaults")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_resetting_defaults"))
 			return
 		}
 	}
 
-	writeSuccess("Settings reset to defaults")
+	writeSuccess(h.T(r.Context())("admin.msg.settings_reset_defaults"))
 }
 
 // AdminControlsTemplateHandler for admin controls page for GET requests
@@ -1703,7 +1703,7 @@ func (h *HandlersMap) AdminControlsTemplateHandler(w http.ResponseWriter, r *htt
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1741,7 +1741,7 @@ func (h *HandlersMap) AdminTeamsTemplateHandler(w http.ResponseWriter, r *http.R
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1807,7 +1807,7 @@ func (h *HandlersMap) AdminTeamLogosTemplateHandler(w http.ResponseWriter, r *ht
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1847,7 +1847,9 @@ func (h *HandlersMap) AdminTeamLogosTemplateHandler(w http.ResponseWriter, r *ht
 	templateData.AllLogos = allLogos
 	templateData.CustomLogos = customLogos
 	templateData.PlatformLogos = platformLogos
-	t.Execute(w, templateData)
+	if err := t.Execute(w, templateData); err != nil {
+		log.Err(err).Msg("error rendering admin logos template")
+	}
 }
 
 // AdminTeamsPOSTHandler for admin teams page for POST requests
@@ -1859,7 +1861,7 @@ func (h *HandlersMap) AdminTeamsPOSTHandler(w http.ResponseWriter, r *http.Reque
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -1878,23 +1880,23 @@ func (h *HandlersMap) AdminTeamsPOSTHandler(w http.ResponseWriter, r *http.Reque
 		})
 	}
 	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
-		writeError(http.StatusBadRequest, "AJAX requests only")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.ajax_only"))
 		return
 	}
 	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 	var req AdminTeamCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin teams JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 	name := strings.TrimSpace(req.Name)
 	logo := strings.TrimSpace(req.Logo)
 	if name == "" {
-		writeError(http.StatusBadRequest, "Team name is required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.team_name_required"))
 		return
 	}
 	if _, err := h.Teams.Register(name, logo, uuid); err != nil {
@@ -1902,7 +1904,7 @@ func (h *HandlersMap) AdminTeamsPOSTHandler(w http.ResponseWriter, r *http.Reque
 		writeError(http.StatusBadRequest, err.Error())
 		return
 	}
-	writeSuccess("Team created")
+	writeSuccess(h.T(r.Context())("admin.msg.team_created"))
 }
 
 func (h *HandlersMap) importAdminTeamLogosFromPayload(uuid string, logos []adminTeamsTransferLogo) (int, int, int, error) {
@@ -2050,7 +2052,7 @@ func (h *HandlersMap) AdminTeamsExportHandler(w http.ResponseWriter, r *http.Req
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2061,7 +2063,7 @@ func (h *HandlersMap) AdminTeamsExportHandler(w http.ResponseWriter, r *http.Req
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to load teams/logos",
+			Message: h.T(r.Context())("admin.msg.failed_load_teams_logos"),
 		})
 		return
 	}
@@ -2072,7 +2074,7 @@ func (h *HandlersMap) AdminTeamsExportHandler(w http.ResponseWriter, r *http.Req
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to generate export JSON",
+			Message: h.T(r.Context())("admin.msg.failed_export_json"),
 		})
 		return
 	}
@@ -2092,7 +2094,7 @@ func (h *HandlersMap) AdminTeamsExportTeamsHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2103,7 +2105,7 @@ func (h *HandlersMap) AdminTeamsExportTeamsHandler(w http.ResponseWriter, r *htt
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to load teams",
+			Message: h.T(r.Context())("admin.msg.failed_load_teams"),
 		})
 		return
 	}
@@ -2132,7 +2134,7 @@ func (h *HandlersMap) AdminTeamsExportTeamsHandler(w http.ResponseWriter, r *htt
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to generate export JSON",
+			Message: h.T(r.Context())("admin.msg.failed_export_json"),
 		})
 		return
 	}
@@ -2152,7 +2154,7 @@ func (h *HandlersMap) AdminTeamsExportLogosHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2163,7 +2165,7 @@ func (h *HandlersMap) AdminTeamsExportLogosHandler(w http.ResponseWriter, r *htt
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to load logos",
+			Message: h.T(r.Context())("admin.msg.failed_load_logos"),
 		})
 		return
 	}
@@ -2193,7 +2195,7 @@ func (h *HandlersMap) AdminTeamsExportLogosHandler(w http.ResponseWriter, r *htt
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to generate export JSON",
+			Message: h.T(r.Context())("admin.msg.failed_export_json"),
 		})
 		return
 	}
@@ -2213,7 +2215,7 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2236,25 +2238,25 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 	var payload adminTeamsTransferPayload
 	if err := h.decodeTeamsImportPayload(r, &payload); err != nil {
 		log.Err(err).Msg("error parsing teams import payload")
-		writeError(http.StatusBadRequest, "Invalid import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_import_payload"))
 		return
 	}
 	if len(payload.Logos) == 0 && len(payload.Teams) == 0 {
-		writeError(http.StatusBadRequest, "No teams or logos found in import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.no_teams_or_logos_in_payload"))
 		return
 	}
 
 	createdLogos, updatedLogos, skippedLogos, err := h.importAdminTeamLogosFromPayload(uuid, payload.Logos)
 	if err != nil {
 		log.Err(err).Msg("error importing logos from combined import")
-		writeError(http.StatusInternalServerError, "Failed to import logos")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_import_logos"))
 		return
 	}
 
 	var existingTeams []teams.PlatformTeam
 	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&existingTeams).Error; err != nil {
 		log.Err(err).Msg("error loading existing teams for import")
-		writeError(http.StatusInternalServerError, "Failed to load teams")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_load_teams"))
 		return
 	}
 	teamsByName := make(map[string]teams.PlatformTeam, len(existingTeams))
@@ -2298,7 +2300,7 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 				})
 			if result.Error != nil {
 				log.Err(result.Error).Msg("error updating team from import")
-				writeError(http.StatusInternalServerError, "Failed to import teams")
+				writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_import_teams"))
 				return
 			}
 			updatedTeams++
@@ -2308,13 +2310,13 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 		newTeam, err := h.Teams.New(name, logo, inTeam.Protected, inTeam.Visible, uuid)
 		if err != nil {
 			log.Err(err).Msg("error creating team object from import")
-			writeError(http.StatusBadRequest, "Failed to import teams")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.failed_import_teams"))
 			return
 		}
 		newTeam.Active = inTeam.Active
 		if err := h.Teams.Create(newTeam); err != nil {
 			log.Err(err).Msg("error saving team from import")
-			writeError(http.StatusInternalServerError, "Failed to import teams")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_import_teams"))
 			return
 		}
 		createdTeams++
@@ -2323,22 +2325,22 @@ func (h *HandlersMap) AdminTeamsImportHandler(w http.ResponseWriter, r *http.Req
 	messageParts := []string{
 		"logos created " + strconv.Itoa(createdLogos),
 		"logos updated " + strconv.Itoa(updatedLogos),
-		"teams created " + strconv.Itoa(createdTeams),
-		"teams updated " + strconv.Itoa(updatedTeams),
+		h.T(r.Context())("admin.msg.teams_created", createdTeams),
+		h.T(r.Context())("admin.msg.teams_updated", updatedTeams),
 	}
 	if skippedLogos > 0 {
-		messageParts = append(messageParts, "logos skipped "+strconv.Itoa(skippedLogos))
+		messageParts = append(messageParts, h.T(r.Context())("admin.msg.logos_skipped", skippedLogos))
 	}
 	if skippedTeams > 0 {
-		messageParts = append(messageParts, "teams skipped "+strconv.Itoa(skippedTeams))
+		messageParts = append(messageParts, h.T(r.Context())("admin.msg.teams_skipped", skippedTeams))
 	}
 	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after teams import")
-		writeError(http.StatusInternalServerError, "Import completed but failed to sync logo usage")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.import_sync_fail"))
 		return
 	}
 
-	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
+	writeSuccess(h.T(r.Context())("admin.msg.import_complete") + strings.Join(messageParts, ", "))
 }
 
 // AdminTeamsImportTeamsHandler imports teams only from JSON payload/file
@@ -2349,7 +2351,7 @@ func (h *HandlersMap) AdminTeamsImportTeamsHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2364,29 +2366,29 @@ func (h *HandlersMap) AdminTeamsImportTeamsHandler(w http.ResponseWriter, r *htt
 	var payload adminTeamsTransferPayload
 	if err := h.decodeTeamsImportPayload(r, &payload); err != nil {
 		log.Err(err).Msg("error parsing teams-only import payload")
-		writeError(http.StatusBadRequest, "Invalid import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_import_payload"))
 		return
 	}
 	if len(payload.Teams) == 0 {
-		writeError(http.StatusBadRequest, "No teams found in import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.no_teams_in_payload"))
 		return
 	}
 
 	createdTeams, updatedTeams, skippedTeams, err := h.importAdminTeamsFromPayload(uuid, payload.Teams)
 	if err != nil {
 		log.Err(err).Msg("error importing teams")
-		writeError(http.StatusInternalServerError, "Failed to import teams")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_import_teams"))
 		return
 	}
 
 	messageParts := []string{
-		"teams created " + strconv.Itoa(createdTeams),
-		"teams updated " + strconv.Itoa(updatedTeams),
+		h.T(r.Context())("admin.msg.teams_created", createdTeams),
+		h.T(r.Context())("admin.msg.teams_updated", updatedTeams),
 	}
 	if skippedTeams > 0 {
-		messageParts = append(messageParts, "teams skipped "+strconv.Itoa(skippedTeams))
+		messageParts = append(messageParts, h.T(r.Context())("admin.msg.teams_skipped", skippedTeams))
 	}
-	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
+	writeSuccess(h.T(r.Context())("admin.msg.import_complete") + strings.Join(messageParts, ", "))
 }
 
 // AdminTeamsImportLogosHandler imports logos only from JSON payload/file
@@ -2397,7 +2399,7 @@ func (h *HandlersMap) AdminTeamsImportLogosHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2412,18 +2414,18 @@ func (h *HandlersMap) AdminTeamsImportLogosHandler(w http.ResponseWriter, r *htt
 	var payload adminTeamsTransferPayload
 	if err := h.decodeTeamsImportPayload(r, &payload); err != nil {
 		log.Err(err).Msg("error parsing logos-only import payload")
-		writeError(http.StatusBadRequest, "Invalid import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_import_payload"))
 		return
 	}
 	if len(payload.Logos) == 0 {
-		writeError(http.StatusBadRequest, "No logos found in import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.no_logos_in_payload"))
 		return
 	}
 
 	createdLogos, updatedLogos, skippedLogos, err := h.importAdminTeamLogosFromPayload(uuid, payload.Logos)
 	if err != nil {
 		log.Err(err).Msg("error importing logos")
-		writeError(http.StatusInternalServerError, "Failed to import logos")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_import_logos"))
 		return
 	}
 
@@ -2432,14 +2434,14 @@ func (h *HandlersMap) AdminTeamsImportLogosHandler(w http.ResponseWriter, r *htt
 		"logos updated " + strconv.Itoa(updatedLogos),
 	}
 	if skippedLogos > 0 {
-		messageParts = append(messageParts, "logos skipped "+strconv.Itoa(skippedLogos))
+		messageParts = append(messageParts, h.T(r.Context())("admin.msg.logos_skipped", skippedLogos))
 	}
 	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after logos import")
-		writeError(http.StatusInternalServerError, "Import completed but failed to sync logo usage")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.import_sync_fail"))
 		return
 	}
-	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
+	writeSuccess(h.T(r.Context())("admin.msg.import_complete") + strings.Join(messageParts, ", "))
 }
 
 // AdminTeamsEnableAllPOSTHandler enables all teams
@@ -2449,17 +2451,17 @@ func (h *HandlersMap) AdminTeamsEnableAllPOSTHandler(w http.ResponseWriter, r *h
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
 	result := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("uuid = ?", uuid).Update("active", true)
 	if result.Error != nil {
 		log.Err(result.Error).Msg("error enabling all teams")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to enable all teams"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_enable_teams")})
 		return
 	}
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Enabled " + strconv.FormatInt(result.RowsAffected, 10) + " team(s)"})
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: h.T(r.Context())("admin.msg.enabled_teams", result.RowsAffected)})
 }
 
 // AdminTeamsDisableAllPOSTHandler disables all teams
@@ -2469,17 +2471,17 @@ func (h *HandlersMap) AdminTeamsDisableAllPOSTHandler(w http.ResponseWriter, r *
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
 	result := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("uuid = ?", uuid).Update("active", false)
 	if result.Error != nil {
 		log.Err(result.Error).Msg("error disabling all teams")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to disable all teams"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_disable_teams")})
 		return
 	}
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Disabled " + strconv.FormatInt(result.RowsAffected, 10) + " team(s)"})
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: h.T(r.Context())("admin.msg.disabled_teams", result.RowsAffected)})
 }
 
 // AdminTeamsVisibleAllPOSTHandler sets all teams visible
@@ -2489,17 +2491,17 @@ func (h *HandlersMap) AdminTeamsVisibleAllPOSTHandler(w http.ResponseWriter, r *
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
 	result := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("uuid = ?", uuid).Update("visible", true)
 	if result.Error != nil {
 		log.Err(result.Error).Msg("error setting all teams visible")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to make all teams visible"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_visible_teams")})
 		return
 	}
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Set visible for " + strconv.FormatInt(result.RowsAffected, 10) + " team(s)"})
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: h.T(r.Context())("admin.msg.visible_teams", result.RowsAffected)})
 }
 
 // AdminTeamsInvisibleAllPOSTHandler sets all teams invisible
@@ -2509,17 +2511,17 @@ func (h *HandlersMap) AdminTeamsInvisibleAllPOSTHandler(w http.ResponseWriter, r
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
 	result := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("uuid = ?", uuid).Update("visible", false)
 	if result.Error != nil {
 		log.Err(result.Error).Msg("error setting all teams invisible")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to make all teams invisible"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_invisible_teams")})
 		return
 	}
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Set invisible for " + strconv.FormatInt(result.RowsAffected, 10) + " team(s)"})
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: h.T(r.Context())("admin.msg.invisible_teams", result.RowsAffected)})
 }
 
 // AdminTeamLogosEnableAllPOSTHandler enables all team logos
@@ -2529,17 +2531,17 @@ func (h *HandlersMap) AdminTeamLogosEnableAllPOSTHandler(w http.ResponseWriter, 
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
 	result := h.Teams.DB.Model(&teams.TeamLogo{}).Where("uuid = ?", uuid).Update("enabled", true)
 	if result.Error != nil {
 		log.Err(result.Error).Msg("error enabling all logos")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to enable all logos"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_enable_logos")})
 		return
 	}
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Enabled " + strconv.FormatInt(result.RowsAffected, 10) + " logo(s)"})
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: h.T(r.Context())("admin.msg.enabled_logos", result.RowsAffected)})
 }
 
 // AdminTeamLogosDisableAllPOSTHandler disables all team logos
@@ -2549,17 +2551,17 @@ func (h *HandlersMap) AdminTeamLogosDisableAllPOSTHandler(w http.ResponseWriter,
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
 	result := h.Teams.DB.Model(&teams.TeamLogo{}).Where("uuid = ?", uuid).Update("enabled", false)
 	if result.Error != nil {
 		log.Err(result.Error).Msg("error disabling all logos")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to disable all logos"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_disable_logos")})
 		return
 	}
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Disabled " + strconv.FormatInt(result.RowsAffected, 10) + " logo(s)"})
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: h.T(r.Context())("admin.msg.disabled_logos", result.RowsAffected)})
 }
 
 // AdminTeamLogosDeleteAllPOSTHandler deletes all custom team logos for the map UUID.
@@ -2569,14 +2571,14 @@ func (h *HandlersMap) AdminTeamLogosDeleteAllPOSTHandler(w http.ResponseWriter, 
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
 	var customs []teams.TeamLogo
 	if err := h.Teams.DB.Where("uuid = ? AND custom = ?", uuid, true).Find(&customs).Error; err != nil {
 		log.Err(err).Msg("error loading custom logos for delete-all")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to load custom logos"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_load_custom_logos")})
 		return
 	}
 	for _, row := range customs {
@@ -2585,15 +2587,15 @@ func (h *HandlersMap) AdminTeamLogosDeleteAllPOSTHandler(w http.ResponseWriter, 
 	result := h.Teams.DB.Where("uuid = ? AND custom = ?", uuid, true).Delete(&teams.TeamLogo{})
 	if result.Error != nil {
 		log.Err(result.Error).Msg("error deleting custom logos")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Failed to delete custom logos"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.failed_delete_logos")})
 		return
 	}
 	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after delete-all custom logos")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: "Custom logos deleted but failed to sync logo usage"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{Success: false, Status: "error", Message: h.T(r.Context())("admin.msg.logos_deleted_sync_fail")})
 		return
 	}
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: "Deleted " + strconv.FormatInt(result.RowsAffected, 10) + " custom logo(s); platform logos unchanged"})
+	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{Success: true, Status: "ok", Message: h.T(r.Context())("admin.msg.deleted_logos", result.RowsAffected)})
 }
 
 func (h *HandlersMap) removeCustomUploadedLogoFile(logoSymbol string) {
@@ -2629,7 +2631,7 @@ func (h *HandlersMap) AdminTeamsDeleteAllPOSTHandler(w http.ResponseWriter, r *h
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2652,7 +2654,7 @@ func (h *HandlersMap) AdminTeamsDeleteAllPOSTHandler(w http.ResponseWriter, r *h
 	tx := h.Teams.DB.Begin()
 	if tx.Error != nil {
 		log.Err(tx.Error).Msg("error starting delete-all-teams transaction")
-		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_teams"))
 		return
 	}
 	defer func() {
@@ -2665,40 +2667,40 @@ func (h *HandlersMap) AdminTeamsDeleteAllPOSTHandler(w http.ResponseWriter, r *h
 	if err := tx.Model(&users.PlatformUser{}).Where("uuid = ?", uuid).Update("team_id", users.NoTeamID).Error; err != nil {
 		tx.Rollback()
 		log.Err(err).Msg("error clearing user teams before bulk delete")
-		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_teams"))
 		return
 	}
 	if err := tx.Where("uuid = ?", uuid).Delete(&teams.TeamMembership{}).Error; err != nil {
 		tx.Rollback()
 		log.Err(err).Msg("error deleting memberships before bulk delete")
-		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_teams"))
 		return
 	}
 	if err := tx.Where("uuid = ?", uuid).Delete(&teams.TeamScore{}).Error; err != nil {
 		tx.Rollback()
 		log.Err(err).Msg("error deleting scores before bulk delete")
-		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_teams"))
 		return
 	}
 	deleteResult := tx.Where("uuid = ?", uuid).Delete(&teams.PlatformTeam{})
 	if deleteResult.Error != nil {
 		tx.Rollback()
 		log.Err(deleteResult.Error).Msg("error deleting all teams")
-		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_teams"))
 		return
 	}
 	if err := tx.Commit().Error; err != nil {
 		log.Err(err).Msg("error committing delete-all-teams transaction")
-		writeError(http.StatusInternalServerError, "Failed to delete all teams")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_teams"))
 		return
 	}
 	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after delete-all-teams")
-		writeError(http.StatusInternalServerError, "Deleted teams but failed to sync logo usage")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.deleted_team_sync_fail"))
 		return
 	}
 
-	writeSuccess("Deleted " + strconv.FormatInt(deleteResult.RowsAffected, 10) + " team(s)")
+	writeSuccess(h.T(r.Context())("admin.msg.deleted_team_count", deleteResult.RowsAffected))
 }
 
 // AdminTeamUpdatePOSTHandler updates editable team settings from admin view
@@ -2709,7 +2711,7 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2720,7 +2722,7 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Invalid team id",
+			Message: h.T(r.Context())("admin.msg.invalid_team_id"),
 		})
 		return
 	}
@@ -2741,24 +2743,24 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 	}
 
 	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
-		writeError(http.StatusBadRequest, "AJAX requests only")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.ajax_only"))
 		return
 	}
 	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 
 	var req AdminTeamUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin team update JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
-		writeError(http.StatusBadRequest, "Team name is required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.team_name_required"))
 		return
 	}
 	var duplicateCount int64
@@ -2766,25 +2768,25 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		Where("uuid = ? AND name = ? AND id <> ?", uuid, name, uint(teamID)).
 		Count(&duplicateCount).Error; err != nil {
 		log.Err(err).Msg("error validating team name uniqueness")
-		writeError(http.StatusInternalServerError, "Failed to validate team name")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_validate_team_name"))
 		return
 	}
 	if duplicateCount > 0 {
-		writeError(http.StatusBadRequest, "Team name already exists")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.team_name_already_exists"))
 		return
 	}
 
 	logoInput := strings.TrimSpace(req.Logo)
 	logo := normalizeLogoValue(logoInput)
 	if logoInput == "" {
-		writeError(http.StatusBadRequest, "Logo is required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.logo_is_required"))
 		return
 	}
 	if strings.EqualFold(logoInput, "random") {
 		randomLogo, err := h.Teams.RandomLogo(uuid)
 		if err != nil {
 			log.Err(err).Msg("error getting random logo for team update")
-			writeError(http.StatusInternalServerError, "Failed to resolve random logo")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_resolve_random_logo"))
 			return
 		}
 		logo = normalizeLogoValue(randomLogo.Logo)
@@ -2792,19 +2794,19 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 
 	active, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Active)))
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid active value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_active"))
 		return
 	}
 
 	visible, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Visible)))
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid visible value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_visible"))
 		return
 	}
 
 	protected, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Protected)))
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid protected value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_protected"))
 		return
 	}
 
@@ -2819,20 +2821,20 @@ func (h *HandlersMap) AdminTeamUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		})
 	if updateResult.Error != nil {
 		log.Err(updateResult.Error).Msg("error updating team")
-		writeError(http.StatusInternalServerError, "Failed to update team")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_team"))
 		return
 	}
 	if updateResult.RowsAffected == 0 {
-		writeError(http.StatusNotFound, "Team not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.team_not_found"))
 		return
 	}
 	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after team update")
-		writeError(http.StatusInternalServerError, "Team updated but failed to sync logo usage")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.team_updated_sync_fail"))
 		return
 	}
 
-	writeSuccess("Team updated")
+	writeSuccess(h.T(r.Context())("admin.msg.team_updated"))
 }
 
 // AdminTeamDeletePOSTHandler deletes a team from the admin view
@@ -2843,7 +2845,7 @@ func (h *HandlersMap) AdminTeamDeletePOSTHandler(w http.ResponseWriter, r *http.
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2854,7 +2856,7 @@ func (h *HandlersMap) AdminTeamDeletePOSTHandler(w http.ResponseWriter, r *http.
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Invalid team id",
+			Message: h.T(r.Context())("admin.msg.invalid_team_id"),
 		})
 		return
 	}
@@ -2876,25 +2878,25 @@ func (h *HandlersMap) AdminTeamDeletePOSTHandler(w http.ResponseWriter, r *http.
 	}
 
 	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
-		writeError(http.StatusBadRequest, "AJAX requests only")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.ajax_only"))
 		return
 	}
 
 	var team teams.PlatformTeam
 	if err := h.Teams.DB.Where("id = ? AND uuid = ?", teamID, uuid).First(&team).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			writeError(http.StatusNotFound, "Team not found")
+			writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.team_not_found"))
 			return
 		}
 		log.Err(err).Msg("error loading team to delete")
-		writeError(http.StatusInternalServerError, "Failed to load team")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_load_team"))
 		return
 	}
 
 	tx := h.Teams.DB.Begin()
 	if tx.Error != nil {
 		log.Err(tx.Error).Msg("error starting team delete transaction")
-		writeError(http.StatusInternalServerError, "Failed to delete team")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_team"))
 		return
 	}
 	defer func() {
@@ -2909,21 +2911,21 @@ func (h *HandlersMap) AdminTeamDeletePOSTHandler(w http.ResponseWriter, r *http.
 		Update("team_id", users.NoTeamID).Error; err != nil {
 		tx.Rollback()
 		log.Err(err).Msg("error clearing users team assignment before delete")
-		writeError(http.StatusInternalServerError, "Failed to delete team")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_team"))
 		return
 	}
 
 	if err := tx.Where("team_id = ? AND uuid = ?", teamID, uuid).Delete(&teams.TeamMembership{}).Error; err != nil {
 		tx.Rollback()
 		log.Err(err).Msg("error deleting team memberships before delete")
-		writeError(http.StatusInternalServerError, "Failed to delete team")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_team"))
 		return
 	}
 
 	if err := tx.Where("team_id = ? AND uuid = ?", teamID, uuid).Delete(&teams.TeamScore{}).Error; err != nil {
 		tx.Rollback()
 		log.Err(err).Msg("error deleting team scores before delete")
-		writeError(http.StatusInternalServerError, "Failed to delete team")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_team"))
 		return
 	}
 
@@ -2931,27 +2933,27 @@ func (h *HandlersMap) AdminTeamDeletePOSTHandler(w http.ResponseWriter, r *http.
 	if deleteResult.Error != nil {
 		tx.Rollback()
 		log.Err(deleteResult.Error).Msg("error deleting team")
-		writeError(http.StatusInternalServerError, "Failed to delete team")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_team"))
 		return
 	}
 	if deleteResult.RowsAffected == 0 {
 		tx.Rollback()
-		writeError(http.StatusNotFound, "Team not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.team_not_found"))
 		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		log.Err(err).Msg("error committing team delete transaction")
-		writeError(http.StatusInternalServerError, "Failed to delete team")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_team"))
 		return
 	}
 	if err := h.Teams.SyncLogoUsage(uuid); err != nil {
 		log.Err(err).Msg("error syncing logo usage after team delete")
-		writeError(http.StatusInternalServerError, "Team deleted but failed to sync logo usage")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.team_deleted_sync_fail"))
 		return
 	}
 
-	writeSuccess("Team deleted")
+	writeSuccess(h.T(r.Context())("admin.msg.team_deleted"))
 }
 
 // AdminTeamLogosPOSTHandler for admin team logos creation via POST requests
@@ -2962,7 +2964,7 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -2983,14 +2985,14 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 	}
 
 	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
-		writeError(http.StatusBadRequest, "AJAX requests only")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.ajax_only"))
 		return
 	}
 	contentType := strings.ToLower(r.Header.Get(ContentType))
 	isJSON := strings.Contains(contentType, JSONApplication)
 	isMultipart := strings.Contains(contentType, "multipart/form-data")
 	if !isJSON && !isMultipart {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json or multipart/form-data")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("admin.msg.content_type_form"))
 		return
 	}
 
@@ -3005,7 +3007,7 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 
 	if isMultipart {
 		if err := r.ParseMultipartForm(maxCustomLogoUploadBytes * 2); err != nil {
-			writeError(http.StatusBadRequest, "Invalid multipart form payload")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_multipart"))
 			return
 		}
 		name = strings.TrimSpace(r.FormValue("name"))
@@ -3017,11 +3019,11 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 
 			uploadData, readErr := io.ReadAll(io.LimitReader(file, maxCustomLogoUploadBytes+1))
 			if readErr != nil {
-				writeError(http.StatusBadRequest, "Failed to read uploaded logo file")
+				writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.failed_read_logo_file"))
 				return
 			}
 			if int64(len(uploadData)) > maxCustomLogoUploadBytes {
-				writeError(http.StatusBadRequest, "Uploaded logo file is too large")
+				writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.uploaded_logo_too_large"))
 				return
 			}
 
@@ -3031,7 +3033,7 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 			}
 			slug := sanitizeLogoSlug(slugInput)
 			if slug == "" {
-				writeError(http.StatusBadRequest, "Invalid logo slug")
+				writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_logo_slug"))
 				return
 			}
 
@@ -3039,20 +3041,21 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 			uploadedLogoData = uploadData
 
 			ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
-			if rasterLogoContentTypeForExt(ext) != "" {
+			switch {
+			case rasterLogoContentTypeForExt(ext) != "":
 				if rasterErr := validateRasterLogoUpload(ext, uploadData); rasterErr != nil {
-					writeError(http.StatusBadRequest, "Invalid raster logo file")
+					writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_raster_logo"))
 					return
 				}
 				uploadedLogoExt = ext
 				uploadedLogoAsset = true
 				rawLogo = customLogoAssetPath(slug, ext)
-			} else if ext != "" && ext != ".svg" {
-				writeError(http.StatusBadRequest, "Invalid uploaded logo file type")
+			case ext != "" && ext != ".svg":
+				writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_uploaded_logo_type"))
 				return
-			} else {
+			default:
 				if _, svgErr := buildUploadedLogoSymbol(slug, uploadData); svgErr != nil {
-					writeError(http.StatusBadRequest, "Invalid SVG file")
+					writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_svg"))
 					return
 				}
 				uploadedLogoData = []byte(svgScriptTagPattern.ReplaceAllString(string(uploadData), ""))
@@ -3062,17 +3065,17 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 			}
 		} else if err != nil {
 			if errors.Is(err, http.ErrMissingFile) {
-				writeError(http.StatusBadRequest, "Logo file is required")
+				writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.logo_file_required"))
 				return
 			}
-			writeError(http.StatusBadRequest, "Invalid uploaded logo file")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_uploaded_logo"))
 			return
 		}
 	} else {
 		var req AdminLogoCreateRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			log.Err(err).Msg("error parsing admin logos JSON payload")
-			writeError(http.StatusBadRequest, "Invalid JSON payload")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 			return
 		}
 		name = strings.TrimSpace(req.Name)
@@ -3080,30 +3083,30 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 	}
 
 	if name == "" {
-		writeError(http.StatusBadRequest, "Logo name is required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.logo_name_required"))
 		return
 	}
 	if strings.EqualFold(rawLogo, "random") {
-		writeError(http.StatusBadRequest, "Random is not a valid logo for logo creation")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.random_not_valid_logo"))
 		return
 	}
 	logo := normalizeLogoValue(rawLogo)
 	if rawLogo == "" || logo == "" {
-		writeError(http.StatusBadRequest, "Logo symbol is required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.logo_symbol_required"))
 		return
 	}
 	if h.Teams.ExistsLogo(name, uuid) {
-		writeError(http.StatusBadRequest, "Logo already exists")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.logo_already_exists"))
 		return
 	}
 	if uploadedLogoSlug != "" && uploadedLogoAsset {
 		if err := saveUploadedLogoAssetFile(h.Config.Map.StaticDir, uploadedLogoSlug, uploadedLogoExt, uploadedLogoData); err != nil {
 			if strings.Contains(strings.ToLower(err.Error()), "already exists") {
-				writeError(http.StatusBadRequest, "Logo file already exists")
+				writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.logo_file_already_exists"))
 				return
 			}
 			log.Err(err).Msg("error saving custom logo file")
-			writeError(http.StatusInternalServerError, "Failed to store custom logo file")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_store_logo_file"))
 			return
 		}
 	}
@@ -3111,16 +3114,16 @@ func (h *HandlersMap) AdminTeamLogosPOSTHandler(w http.ResponseWriter, r *http.R
 	newLogo, err := h.Teams.NewLogo(name, logo, true, true, 0, uuid)
 	if err != nil {
 		log.Err(err).Msg("error creating logo object")
-		writeError(http.StatusBadRequest, "Failed to create logo")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.failed_create_logo"))
 		return
 	}
 	if err := h.Teams.CreateLogo(newLogo); err != nil {
 		log.Err(err).Msg("error saving logo")
-		writeError(http.StatusInternalServerError, "Failed to create logo")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_create_logo"))
 		return
 	}
 
-	writeSuccess("Logo created")
+	writeSuccess(h.T(r.Context())("admin.msg.logo_created"))
 }
 
 // AdminTeamLogoUpdatePOSTHandler updates editable team logo settings from admin view
@@ -3131,7 +3134,7 @@ func (h *HandlersMap) AdminTeamLogoUpdatePOSTHandler(w http.ResponseWriter, r *h
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3142,7 +3145,7 @@ func (h *HandlersMap) AdminTeamLogoUpdatePOSTHandler(w http.ResponseWriter, r *h
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Invalid logo id",
+			Message: h.T(r.Context())("admin.msg.invalid_logo_id"),
 		})
 		return
 	}
@@ -3163,52 +3166,52 @@ func (h *HandlersMap) AdminTeamLogoUpdatePOSTHandler(w http.ResponseWriter, r *h
 	}
 
 	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
-		writeError(http.StatusBadRequest, "AJAX requests only")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.ajax_only"))
 		return
 	}
 	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 
 	var req AdminLogoUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin logo update JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
-		writeError(http.StatusBadRequest, "Logo name is required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.logo_name_required"))
 		return
 	}
 
 	enabled, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Enabled)))
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid enabled value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_enabled"))
 		return
 	}
 
 	protected, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(req.Protected)))
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid protected value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_protected"))
 		return
 	}
 
 	var existing teams.TeamLogo
 	if err := h.Teams.DB.Where("id = ? AND uuid = ?", uint(logoID), uuid).First(&existing).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			writeError(http.StatusNotFound, "Logo not found")
+			writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.logo_not_found"))
 			return
 		}
 		log.Err(err).Msg("error loading logo for update")
-		writeError(http.StatusInternalServerError, "Failed to load logo")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_load_logo"))
 		return
 	}
 
 	if !existing.Custom && name != strings.TrimSpace(existing.Name) {
-		writeError(http.StatusBadRequest, "Platform logo name cannot be changed")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.platform_logo_no_rename"))
 		return
 	}
 
@@ -3224,15 +3227,15 @@ func (h *HandlersMap) AdminTeamLogoUpdatePOSTHandler(w http.ResponseWriter, r *h
 		Updates(updates)
 	if updateResult.Error != nil {
 		log.Err(updateResult.Error).Msg("error updating logo")
-		writeError(http.StatusInternalServerError, "Failed to update logo")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_logo"))
 		return
 	}
 	if updateResult.RowsAffected == 0 {
-		writeError(http.StatusNotFound, "Logo not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.logo_not_found"))
 		return
 	}
 
-	writeSuccess("Logo updated")
+	writeSuccess(h.T(r.Context())("admin.msg.logo_updated"))
 }
 
 // AdminUsersTemplateHandler for admin users page for GET requests
@@ -3243,7 +3246,7 @@ func (h *HandlersMap) AdminUsersTemplateHandler(w http.ResponseWriter, r *http.R
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3300,7 +3303,7 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3321,18 +3324,18 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
-		writeError(http.StatusBadRequest, "AJAX requests only")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.ajax_only"))
 		return
 	}
 	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 
 	var req AdminUserCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin users JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 
@@ -3346,7 +3349,7 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 	activeStr := strings.TrimSpace(req.Active)
 
 	if username == "" || password == "" {
-		writeError(http.StatusBadRequest, "Username and password are required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.user_pass_required"))
 		return
 	}
 
@@ -3354,7 +3357,7 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 	if teamIDStr != "" {
 		parsedTeamID, err := strconv.ParseUint(teamIDStr, 10, 64)
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid team_id")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_team_id"))
 			return
 		}
 		teamID = uint(parsedTeamID)
@@ -3364,7 +3367,7 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 	if adminStr != "" {
 		parsedAdmin, err := strconv.ParseBool(strings.ToLower(adminStr))
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid admin value")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_admin"))
 			return
 		}
 		admin = parsedAdmin
@@ -3374,7 +3377,7 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 	if serviceStr != "" {
 		parsedService, err := strconv.ParseBool(strings.ToLower(serviceStr))
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid service value")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_service"))
 			return
 		}
 		service = parsedService
@@ -3384,7 +3387,7 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 	if activeStr != "" {
 		parsedActive, err := strconv.ParseBool(strings.ToLower(activeStr))
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid active value")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_active"))
 			return
 		}
 		active = parsedActive
@@ -3399,19 +3402,19 @@ func (h *HandlersMap) AdminUsersPOSTHandler(w http.ResponseWriter, r *http.Reque
 
 	if err := h.Users.Create(user); err != nil {
 		log.Err(err).Msg("error saving user")
-		writeError(http.StatusInternalServerError, "Failed to create user")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_create_user"))
 		return
 	}
 
 	if !active {
 		if err := h.Users.SetActive(false, username, uuid); err != nil {
 			log.Err(err).Msg("error setting active flag for new user")
-			writeError(http.StatusInternalServerError, "User created but failed to set active flag")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.user_created_active_fail"))
 			return
 		}
 	}
 
-	writeSuccess("User created")
+	writeSuccess(h.T(r.Context())("admin.msg.user_created"))
 }
 
 // AdminUserUpdatePOSTHandler updates editable user settings from admin view
@@ -3422,7 +3425,7 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3433,7 +3436,7 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Invalid user id",
+			Message: h.T(r.Context())("admin.msg.invalid_user_id"),
 		})
 		return
 	}
@@ -3454,18 +3457,18 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 	}
 
 	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
-		writeError(http.StatusBadRequest, "AJAX requests only")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.ajax_only"))
 		return
 	}
 	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 
 	var req AdminUserUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin user update JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 
@@ -3478,7 +3481,7 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		if email != "" {
 			parsedEmail, err := mail.ParseAddress(email)
 			if err != nil || parsedEmail.Address != email {
-				writeError(http.StatusBadRequest, "email is invalid")
+				writeError(http.StatusBadRequest, h.T(r.Context())("profile.email_invalid"))
 				return
 			}
 		}
@@ -3493,29 +3496,29 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 	serviceStr := strings.TrimSpace(req.Service)
 	activeStr := strings.TrimSpace(req.Active)
 	if adminStr == "" || serviceStr == "" || activeStr == "" {
-		writeError(http.StatusBadRequest, "Admin, service and active values are required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.admin_service_active_required"))
 		return
 	}
 
 	teamID64, err := strconv.ParseUint(teamIDStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid team_id")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_team_id"))
 		return
 	}
 	teamID := uint(teamID64)
 	adminValue, err := strconv.ParseBool(strings.ToLower(adminStr))
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid admin value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_admin"))
 		return
 	}
 	serviceValue, err := strconv.ParseBool(strings.ToLower(serviceStr))
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid service value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_service"))
 		return
 	}
 	activeValue, err := strconv.ParseBool(strings.ToLower(activeStr))
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid active value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_active"))
 		return
 	}
 
@@ -3523,11 +3526,11 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		var teamCount int64
 		if err := h.Teams.DB.Model(&teams.PlatformTeam{}).Where("id = ? AND uuid = ?", teamID, uuid).Count(&teamCount).Error; err != nil {
 			log.Err(err).Msg("error validating team for user update")
-			writeError(http.StatusInternalServerError, "Failed to validate team")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_validate_team"))
 			return
 		}
 		if teamCount == 0 {
-			writeError(http.StatusBadRequest, "Team not found")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.team_not_found"))
 			return
 		}
 	}
@@ -3542,15 +3545,15 @@ func (h *HandlersMap) AdminUserUpdatePOSTHandler(w http.ResponseWriter, r *http.
 		Updates(updates)
 	if updateResult.Error != nil {
 		log.Err(updateResult.Error).Msg("error updating user")
-		writeError(http.StatusInternalServerError, "Failed to update user")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_user"))
 		return
 	}
 	if updateResult.RowsAffected == 0 {
-		writeError(http.StatusNotFound, "User not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.user_not_found"))
 		return
 	}
 
-	writeSuccess("User updated")
+	writeSuccess(h.T(r.Context())("admin.msg.user_updated"))
 }
 
 // AdminUserPasswordPOSTHandler resets a user's password from the admin view
@@ -3561,7 +3564,7 @@ func (h *HandlersMap) AdminUserPasswordPOSTHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3572,7 +3575,7 @@ func (h *HandlersMap) AdminUserPasswordPOSTHandler(w http.ResponseWriter, r *htt
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Invalid user id",
+			Message: h.T(r.Context())("admin.msg.invalid_user_id"),
 		})
 		return
 	}
@@ -3593,31 +3596,30 @@ func (h *HandlersMap) AdminUserPasswordPOSTHandler(w http.ResponseWriter, r *htt
 	}
 
 	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
-		writeError(http.StatusBadRequest, "AJAX requests only")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.ajax_only"))
 		return
 	}
 	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 
 	var req AdminUserPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin user password JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 
-	switch {
-	case strings.TrimSpace(req.NewPassword) == "":
-		writeError(http.StatusBadRequest, "new password is required")
+	if strings.TrimSpace(req.NewPassword) == "" {
+		writeError(http.StatusBadRequest, h.T(r.Context())("profile.new_required"))
 		return
 	}
 
 	passHash, err := h.Users.HashPasswordWithSalt(req.NewPassword)
 	if err != nil {
 		log.Err(err).Msg("error hashing admin user password")
-		writeError(http.StatusInternalServerError, "Failed to update password")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_password"))
 		return
 	}
 
@@ -3626,15 +3628,15 @@ func (h *HandlersMap) AdminUserPasswordPOSTHandler(w http.ResponseWriter, r *htt
 		Update("pass_hash", passHash)
 	if updateResult.Error != nil {
 		log.Err(updateResult.Error).Msg("error updating admin user password")
-		writeError(http.StatusInternalServerError, "Failed to update password")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_password"))
 		return
 	}
 	if updateResult.RowsAffected == 0 {
-		writeError(http.StatusNotFound, "User not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.user_not_found"))
 		return
 	}
 
-	writeSuccess("Password updated")
+	writeSuccess(h.T(r.Context())("profile.password_updated_msg"))
 }
 
 // AdminUsersExportHandler exports users as JSON
@@ -3645,7 +3647,7 @@ func (h *HandlersMap) AdminUsersExportHandler(w http.ResponseWriter, r *http.Req
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3656,7 +3658,7 @@ func (h *HandlersMap) AdminUsersExportHandler(w http.ResponseWriter, r *http.Req
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to load users",
+			Message: h.T(r.Context())("admin.msg.failed_load_users"),
 		})
 		return
 	}
@@ -3667,7 +3669,7 @@ func (h *HandlersMap) AdminUsersExportHandler(w http.ResponseWriter, r *http.Req
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to generate export JSON",
+			Message: h.T(r.Context())("admin.msg.failed_export_json"),
 		})
 		return
 	}
@@ -3687,7 +3689,7 @@ func (h *HandlersMap) AdminUsersImportHandler(w http.ResponseWriter, r *http.Req
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3710,18 +3712,18 @@ func (h *HandlersMap) AdminUsersImportHandler(w http.ResponseWriter, r *http.Req
 	var payload adminUsersTransferPayload
 	if err := h.decodeUsersImportPayload(r, &payload); err != nil {
 		log.Err(err).Msg("error parsing users import payload")
-		writeError(http.StatusBadRequest, "Invalid import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_import_payload"))
 		return
 	}
 	if len(payload.Users) == 0 {
-		writeError(http.StatusBadRequest, "No users found in import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.no_users_in_payload"))
 		return
 	}
 
 	createdUsers, updatedUsers, skippedUsers, err := h.importAdminUsersFromPayload(uuid, payload.Users)
 	if err != nil {
 		log.Err(err).Msg("error importing users")
-		writeError(http.StatusInternalServerError, "Failed to import users")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_import_users"))
 		return
 	}
 
@@ -3733,7 +3735,7 @@ func (h *HandlersMap) AdminUsersImportHandler(w http.ResponseWriter, r *http.Req
 		messageParts = append(messageParts, "users skipped "+strconv.Itoa(skippedUsers))
 	}
 
-	writeSuccess("Import complete: " + strings.Join(messageParts, ", "))
+	writeSuccess(h.T(r.Context())("admin.msg.import_complete") + strings.Join(messageParts, ", "))
 }
 
 // AdminUsersEnableAllPOSTHandler enables all users
@@ -3744,7 +3746,7 @@ func (h *HandlersMap) AdminUsersEnableAllPOSTHandler(w http.ResponseWriter, r *h
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3755,7 +3757,7 @@ func (h *HandlersMap) AdminUsersEnableAllPOSTHandler(w http.ResponseWriter, r *h
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to enable all users",
+			Message: h.T(r.Context())("admin.msg.failed_enable_users"),
 		})
 		return
 	}
@@ -3763,7 +3765,7 @@ func (h *HandlersMap) AdminUsersEnableAllPOSTHandler(w http.ResponseWriter, r *h
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
 		Success: true,
 		Status:  "ok",
-		Message: "Enabled " + strconv.FormatInt(result.RowsAffected, 10) + " user(s)",
+		Message: h.T(r.Context())("admin.msg.enabled_users", result.RowsAffected),
 	})
 }
 
@@ -3775,7 +3777,7 @@ func (h *HandlersMap) AdminUsersDisableAllPOSTHandler(w http.ResponseWriter, r *
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3785,7 +3787,7 @@ func (h *HandlersMap) AdminUsersDisableAllPOSTHandler(w http.ResponseWriter, r *
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Not authenticated",
+			Message: h.T(r.Context())("admin.msg.not_authenticated"),
 		})
 		return
 	}
@@ -3798,7 +3800,7 @@ func (h *HandlersMap) AdminUsersDisableAllPOSTHandler(w http.ResponseWriter, r *
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to disable all users",
+			Message: h.T(r.Context())("admin.msg.failed_disable_users"),
 		})
 		return
 	}
@@ -3806,7 +3808,7 @@ func (h *HandlersMap) AdminUsersDisableAllPOSTHandler(w http.ResponseWriter, r *
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
 		Success: true,
 		Status:  "ok",
-		Message: "Disabled " + strconv.FormatInt(result.RowsAffected, 10) + " user(s). Current user not modified.",
+		Message: h.T(r.Context())("admin.msg.disabled_users", result.RowsAffected),
 	})
 }
 
@@ -3818,7 +3820,7 @@ func (h *HandlersMap) AdminUsersDeleteAllPOSTHandler(w http.ResponseWriter, r *h
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3828,7 +3830,7 @@ func (h *HandlersMap) AdminUsersDeleteAllPOSTHandler(w http.ResponseWriter, r *h
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Not authenticated",
+			Message: h.T(r.Context())("admin.msg.not_authenticated"),
 		})
 		return
 	}
@@ -3839,7 +3841,7 @@ func (h *HandlersMap) AdminUsersDeleteAllPOSTHandler(w http.ResponseWriter, r *h
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to delete all users",
+			Message: h.T(r.Context())("admin.msg.failed_delete_users"),
 		})
 		return
 	}
@@ -3847,7 +3849,7 @@ func (h *HandlersMap) AdminUsersDeleteAllPOSTHandler(w http.ResponseWriter, r *h
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
 		Success: true,
 		Status:  "ok",
-		Message: "Deleted " + strconv.FormatInt(result.RowsAffected, 10) + " user(s). Current user preserved.",
+		Message: h.T(r.Context())("admin.msg.deleted_users", result.RowsAffected),
 	})
 }
 
@@ -3859,7 +3861,7 @@ func (h *HandlersMap) AdminChallengesExportHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3870,7 +3872,7 @@ func (h *HandlersMap) AdminChallengesExportHandler(w http.ResponseWriter, r *htt
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to load challenges/categories",
+			Message: h.T(r.Context())("admin.msg.failed_load_challenges"),
 		})
 		return
 	}
@@ -3880,7 +3882,7 @@ func (h *HandlersMap) AdminChallengesExportHandler(w http.ResponseWriter, r *htt
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, adminActionResponse{
 			Success: false,
 			Status:  "error",
-			Message: "Failed to generate export JSON",
+			Message: h.T(r.Context())("admin.msg.failed_export_json"),
 		})
 		return
 	}
@@ -3900,7 +3902,7 @@ func (h *HandlersMap) AdminChallengesImportHandler(w http.ResponseWriter, r *htt
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3923,18 +3925,18 @@ func (h *HandlersMap) AdminChallengesImportHandler(w http.ResponseWriter, r *htt
 	var payload adminChallengesTransferPayload
 	if err := h.decodeChallengeImportPayload(r, &payload); err != nil {
 		log.Err(err).Msg("error parsing challenges import payload")
-		writeError(http.StatusBadRequest, "Invalid import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_import_payload"))
 		return
 	}
 	if len(payload.Challenges) == 0 {
-		writeError(http.StatusBadRequest, "No challenges found in import payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.no_challenges_in_payload"))
 		return
 	}
 
 	importedChallenges, createdCategories, skippedChallenges, unassignedCountries, err := h.importAdminChallengesFromPayload(uuid, payload)
 	if err != nil {
 		log.Err(err).Msg("error importing challenges")
-		writeError(http.StatusInternalServerError, "Failed to import challenges")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_import_challenges"))
 		return
 	}
 
@@ -3959,7 +3961,7 @@ func (h *HandlersMap) AdminChallengesDeleteAllPOSTHandler(w http.ResponseWriter,
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -3982,7 +3984,7 @@ func (h *HandlersMap) AdminChallengesDeleteAllPOSTHandler(w http.ResponseWriter,
 	challengesList, err := h.Challenges.GetAll(uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading challenges before bulk delete")
-		writeError(http.StatusInternalServerError, "Failed to load challenges")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_load_challenges"))
 		return
 	}
 
@@ -3994,7 +3996,7 @@ func (h *HandlersMap) AdminChallengesDeleteAllPOSTHandler(w http.ResponseWriter,
 		exists, err := h.Countries.Exists(countryCode)
 		if err != nil {
 			log.Err(err).Msg("error checking challenge country before bulk delete")
-			writeError(http.StatusInternalServerError, "Failed to release challenge countries")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_release_country_refs"))
 			return
 		}
 		if !exists {
@@ -4002,7 +4004,7 @@ func (h *HandlersMap) AdminChallengesDeleteAllPOSTHandler(w http.ResponseWriter,
 		}
 		if err := h.Countries.ReleaseCountry(countryCode); err != nil {
 			log.Err(err).Msg("error releasing challenge country before bulk delete")
-			writeError(http.StatusInternalServerError, "Failed to release challenge countries")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_release_country_refs"))
 			return
 		}
 	}
@@ -4010,11 +4012,11 @@ func (h *HandlersMap) AdminChallengesDeleteAllPOSTHandler(w http.ResponseWriter,
 	deletedCount, err := h.Challenges.DeleteAll(uuid)
 	if err != nil {
 		log.Err(err).Msg("error deleting all challenges")
-		writeError(http.StatusInternalServerError, "Failed to delete all challenges")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_challenges"))
 		return
 	}
 
-	writeSuccess("Deleted " + strconv.FormatInt(deletedCount, 10) + " challenge(s)")
+	writeSuccess(h.T(r.Context())("admin.msg.deleted_challenge_count", deletedCount))
 }
 
 // AdminChallengesEnableAllPOSTHandler enables all challenges
@@ -4025,7 +4027,7 @@ func (h *HandlersMap) AdminChallengesEnableAllPOSTHandler(w http.ResponseWriter,
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4048,7 +4050,7 @@ func (h *HandlersMap) AdminChallengesEnableAllPOSTHandler(w http.ResponseWriter,
 	updatedCount, err := h.Challenges.SetAllActive(uuid, true)
 	if err != nil {
 		log.Err(err).Msg("error enabling all challenges")
-		writeError(http.StatusInternalServerError, "Failed to enable all challenges")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_enable_all_challenges"))
 		return
 	}
 
@@ -4056,7 +4058,7 @@ func (h *HandlersMap) AdminChallengesEnableAllPOSTHandler(w http.ResponseWriter,
 		h.createAdminActivityLog(r, "enabled", fmt.Sprintf("enabled all challenges (%d)", updatedCount), 0)
 	}
 
-	writeSuccess("Enabled " + strconv.FormatInt(updatedCount, 10) + " challenge(s)")
+	writeSuccess(h.T(r.Context())("admin.msg.enabled_challenge_count", updatedCount))
 }
 
 // AdminChallengesDisableAllPOSTHandler disables all challenges
@@ -4067,7 +4069,7 @@ func (h *HandlersMap) AdminChallengesDisableAllPOSTHandler(w http.ResponseWriter
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4090,7 +4092,7 @@ func (h *HandlersMap) AdminChallengesDisableAllPOSTHandler(w http.ResponseWriter
 	updatedCount, err := h.Challenges.SetAllActive(uuid, false)
 	if err != nil {
 		log.Err(err).Msg("error disabling all challenges")
-		writeError(http.StatusInternalServerError, "Failed to disable all challenges")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_disable_all_challenges"))
 		return
 	}
 
@@ -4098,7 +4100,7 @@ func (h *HandlersMap) AdminChallengesDisableAllPOSTHandler(w http.ResponseWriter
 		h.createAdminActivityLog(r, "disabled", fmt.Sprintf("disabled all challenges (%d)", updatedCount), 0)
 	}
 
-	writeSuccess("Disabled " + strconv.FormatInt(updatedCount, 10) + " challenge(s)")
+	writeSuccess(h.T(r.Context())("admin.msg.disabled_challenge_count", updatedCount))
 }
 
 // AdminChallengeCategoriesDeleteAllPOSTHandler deletes all categories after ensuring no challenges exist
@@ -4109,7 +4111,7 @@ func (h *HandlersMap) AdminChallengeCategoriesDeleteAllPOSTHandler(w http.Respon
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4132,22 +4134,22 @@ func (h *HandlersMap) AdminChallengeCategoriesDeleteAllPOSTHandler(w http.Respon
 	challengesList, err := h.Challenges.GetAll(uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading challenges before category bulk delete")
-		writeError(http.StatusInternalServerError, "Failed to load challenges")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_load_challenges"))
 		return
 	}
 	if len(challengesList) > 0 {
-		writeError(http.StatusBadRequest, "Delete all challenges before deleting categories")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.delete_challenges_before_categories"))
 		return
 	}
 
 	deletedCount, err := h.Challenges.DeleteAllCategories(uuid)
 	if err != nil {
 		log.Err(err).Msg("error deleting all categories")
-		writeError(http.StatusInternalServerError, "Failed to delete all categories")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_categories"))
 		return
 	}
 
-	writeSuccess("Deleted " + strconv.FormatInt(deletedCount, 10) + " categor(ies)")
+	writeSuccess(h.T(r.Context())("admin.msg.deleted_category_count", deletedCount))
 }
 
 // AdminChallengesTemplateHandler for admin challenges page for GET requests
@@ -4158,7 +4160,7 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4293,7 +4295,7 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 				Label:     "Hint",
 				Subject:   teamNamesByID[hintEntry.TeamID],
 				Action:    "hint",
-				Message:   "Hint requested",
+				Message:   h.T(r.Context())("hint.requested"),
 				Arguments: "penalty=" + strconv.Itoa(hintEntry.Penalty),
 				At:        hintEntry.CreatedAt,
 			})
@@ -4307,7 +4309,7 @@ func (h *HandlersMap) AdminChallengesTemplateHandler(w http.ResponseWriter, r *h
 				Label:     "Failure",
 				Subject:   teamNamesByID[failureEntry.TeamID],
 				Action:    "failure",
-				Message:   "Incorrect submission",
+				Message:   h.T(r.Context())("score.incorrect_submission"),
 				Arguments: "flag=" + failureEntry.Flag,
 				At:        failureEntry.CreatedAt,
 			})
@@ -4352,7 +4354,7 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4373,14 +4375,14 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	}
 
 	if !strings.Contains(r.Header.Get(ContentType), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 
 	var req AdminChallengeCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin challenges JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 
@@ -4388,7 +4390,7 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	description := strings.TrimSpace(req.Description)
 	challengeURL, err := challenges.NormalizeChallengeURL(req.URL)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid challenge URL")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_challenge_url"))
 		return
 	}
 	categoryIDStr := strings.TrimSpace(req.CategoryID)
@@ -4403,7 +4405,7 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	hint := strings.TrimSpace(req.Hint)
 
 	if title == "" || flag == "" {
-		writeError(http.StatusBadRequest, "Title and flag are required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.title_flag_required"))
 		return
 	}
 	if hintPenaltyStr == "" {
@@ -4415,56 +4417,56 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	if country != "" {
 		selectedCountry, err := h.Countries.GetByCode(country)
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid country code")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_country_code"))
 			return
 		}
 		if !selectedCountry.Active || selectedCountry.Assigned {
-			writeError(http.StatusBadRequest, "Country must be active and available")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.country_active_available"))
 			return
 		}
 	}
 	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
 	if err != nil || categoryID == 0 {
-		writeError(http.StatusBadRequest, "Please select a category")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.select_category"))
 		return
 	}
 	category, err := h.Challenges.GetCategoryByID(uint(categoryID), uuid)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Please select a valid category")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.select_valid_category"))
 		return
 	}
 	active := false
 	if activeStr != "" {
 		parsedActive, err := strconv.ParseBool(activeStr)
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid active value")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_active"))
 			return
 		}
 		active = parsedActive
 	}
 	points, err := strconv.ParseInt(pointsStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid points value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_points"))
 		return
 	}
 	bonus, err := strconv.ParseInt(bonusStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid bonus value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_bonus"))
 		return
 	}
 	bonusDecay, err := strconv.ParseInt(bonusDecayStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid bonus_decay value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_bonus_decay"))
 		return
 	}
 	hintPenalty, err := strconv.ParseInt(hintPenaltyStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid hint_penalty value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_hint_penalty"))
 		return
 	}
 	helpPenalty, err := strconv.ParseInt(helpPenaltyStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid help_penalty value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_help_penalty"))
 		return
 	}
 
@@ -4487,14 +4489,14 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 
 	if err := h.Challenges.CreateAndReturn(&challenge); err != nil {
 		log.Err(err).Msg("error creating challenge")
-		writeError(http.StatusInternalServerError, "Failed to create challenge")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_create_challenge"))
 		return
 	}
 	if country != "" {
 		if err := h.Countries.AssignCountryToChallenge(country, challenge.ID); err != nil {
 			log.Err(err).Msg("error assigning country to challenge")
 			_ = h.Challenges.Delete(challenge.ID, uuid)
-			writeError(http.StatusInternalServerError, "Failed to assign country to challenge")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_assign_country"))
 			return
 		}
 	}
@@ -4506,7 +4508,7 @@ func (h *HandlersMap) AdminChallengesPOSTHandler(w http.ResponseWriter, r *http.
 	createMsg := fmt.Sprintf(logs.ActivityCreateChallenge, countryLabel, category.Name, challenge.Points)
 	h.createAdminActivityLogVisible(r, false, "created", createMsg, challenge.ID)
 
-	writeSuccess("Challenge created")
+	writeSuccess(h.T(r.Context())("admin.msg.challenge_created"))
 }
 
 // AdminChallengeUpdatePOSTHandler for updating an existing challenge via POST requests
@@ -4518,7 +4520,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4539,21 +4541,21 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	}
 
 	if !strings.Contains(r.Header.Get(ContentType), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 
 	challengeIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
 	challengeID, err := strconv.ParseUint(challengeIDStr, 10, 64)
 	if err != nil || challengeID == 0 {
-		writeError(http.StatusBadRequest, "Invalid challenge id")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_challenge_id"))
 		return
 	}
 
 	var req AdminChallengeCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin challenge update JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 
@@ -4561,7 +4563,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	description := strings.TrimSpace(req.Description)
 	challengeURL, err := challenges.NormalizeChallengeURL(req.URL)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid challenge URL")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_challenge_url"))
 		return
 	}
 	categoryIDStr := strings.TrimSpace(req.CategoryID)
@@ -4576,7 +4578,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	hint := strings.TrimSpace(req.Hint)
 
 	if title == "" || flag == "" {
-		writeError(http.StatusBadRequest, "Title and flag are required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.title_flag_required"))
 		return
 	}
 	if hintPenaltyStr == "" {
@@ -4587,7 +4589,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	}
 	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
 	if err != nil || categoryID == 0 {
-		writeError(http.StatusBadRequest, "Valid category_id is required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.valid_category_id_required"))
 		return
 	}
 	active, err := strconv.ParseBool(activeStr)
@@ -4598,40 +4600,40 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 		case "inactive", "off":
 			active = false
 		default:
-			writeError(http.StatusBadRequest, "Invalid active value")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_active"))
 			return
 		}
 	}
 	points, err := strconv.ParseInt(pointsStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid points value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_points"))
 		return
 	}
 	bonus, err := strconv.ParseInt(bonusStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid bonus value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_bonus"))
 		return
 	}
 	bonusDecay, err := strconv.ParseInt(bonusDecayStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid bonus_decay value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_bonus_decay"))
 		return
 	}
 	hintPenalty, err := strconv.ParseInt(hintPenaltyStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid hint_penalty value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_hint_penalty"))
 		return
 	}
 	helpPenalty, err := strconv.ParseInt(helpPenaltyStr, 10, 64)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid help_penalty value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_help_penalty"))
 		return
 	}
 
 	challenge, err := h.Challenges.GetByID(uint(challengeID), uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading challenge to update")
-		writeError(http.StatusNotFound, "Challenge not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.challenge_not_found"))
 		return
 	}
 	previousActive := challenge.Active
@@ -4639,11 +4641,11 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 	if country != previousCountry && country != "" {
 		selectedCountry, err := h.Countries.GetByCode(country)
 		if err != nil {
-			writeError(http.StatusBadRequest, "Invalid country code")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_country_code"))
 			return
 		}
 		if !selectedCountry.Active || selectedCountry.Assigned {
-			writeError(http.StatusBadRequest, "Country must be active and available")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.country_active_available"))
 			return
 		}
 	}
@@ -4664,7 +4666,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 
 	if err := h.Challenges.Update(challenge); err != nil {
 		log.Err(err).Msg("error updating challenge")
-		writeError(http.StatusInternalServerError, "Failed to update challenge")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_challenge"))
 		return
 	}
 	if previousCountry != country {
@@ -4672,13 +4674,13 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 			exists, err := h.Countries.Exists(previousCountry)
 			if err != nil {
 				log.Err(err).Msg("error checking previous challenge country")
-				writeError(http.StatusInternalServerError, "Failed to update challenge country assignment")
+				writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_country_assignment"))
 				return
 			}
 			if exists {
 				if err := h.Countries.ReleaseCountry(previousCountry); err != nil {
 					log.Err(err).Msg("error releasing previous challenge country")
-					writeError(http.StatusInternalServerError, "Failed to update challenge country assignment")
+					writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_country_assignment"))
 					return
 				}
 			}
@@ -4686,7 +4688,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 		if country != "" {
 			if err := h.Countries.AssignCountryToChallenge(country, challenge.ID); err != nil {
 				log.Err(err).Msg("error assigning updated challenge country")
-				writeError(http.StatusInternalServerError, "Failed to update challenge country assignment")
+				writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_country_assignment"))
 				return
 			}
 		}
@@ -4703,7 +4705,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 			category, err := h.Challenges.GetCategoryByID(challenge.CategoryID, uuid)
 			if err != nil {
 				log.Err(err).Msg("error retrieving challenge category for admin activity")
-				writeError(http.StatusInternalServerError, "Failed to retrieve challenge category")
+				writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_retrieve_category"))
 				return
 			}
 			categoryName = category.Name
@@ -4718,7 +4720,7 @@ func (h *HandlersMap) AdminChallengeUpdatePOSTHandler(w http.ResponseWriter, r *
 		h.createAdminActivityLog(r, action, actionMsg, challenge.ID)
 	}
 
-	writeSuccess("Challenge updated")
+	writeSuccess(h.T(r.Context())("admin.msg.challenge_updated"))
 }
 
 // AdminChallengeDeletePOSTHandler for deleting an existing challenge via POST requests
@@ -4729,7 +4731,7 @@ func (h *HandlersMap) AdminChallengeDeletePOSTHandler(w http.ResponseWriter, r *
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4752,14 +4754,14 @@ func (h *HandlersMap) AdminChallengeDeletePOSTHandler(w http.ResponseWriter, r *
 	challengeIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
 	challengeID, err := strconv.ParseUint(challengeIDStr, 10, 64)
 	if err != nil || challengeID == 0 {
-		writeError(http.StatusBadRequest, "Invalid challenge id")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_challenge_id"))
 		return
 	}
 
 	challenge, err := h.Challenges.GetByID(uint(challengeID), uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading challenge to delete")
-		writeError(http.StatusNotFound, "Challenge not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.challenge_not_found"))
 		return
 	}
 	country := strings.ToUpper(strings.TrimSpace(challenge.Country))
@@ -4767,13 +4769,13 @@ func (h *HandlersMap) AdminChallengeDeletePOSTHandler(w http.ResponseWriter, r *
 		exists, err := h.Countries.Exists(country)
 		if err != nil {
 			log.Err(err).Msg("error checking challenge country before delete")
-			writeError(http.StatusInternalServerError, "Failed to release challenge country")
+			writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_release_country"))
 			return
 		}
 		if exists {
 			if err := h.Countries.ReleaseCountry(country); err != nil {
 				log.Err(err).Msg("error releasing challenge country before delete")
-				writeError(http.StatusInternalServerError, "Failed to release challenge country")
+				writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_release_country"))
 				return
 			}
 		}
@@ -4781,11 +4783,11 @@ func (h *HandlersMap) AdminChallengeDeletePOSTHandler(w http.ResponseWriter, r *
 
 	if err := h.Challenges.Delete(uint(challengeID), uuid); err != nil {
 		log.Err(err).Msg("error deleting challenge")
-		writeError(http.StatusInternalServerError, "Failed to delete challenge")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_challenge"))
 		return
 	}
 
-	writeSuccess("Challenge deleted")
+	writeSuccess(h.T(r.Context())("admin.msg.challenge_deleted"))
 }
 
 // AdminChallengeCategoriesPOSTHandler for admin challenge categories creation via POST requests
@@ -4795,7 +4797,7 @@ func (h *HandlersMap) AdminChallengeCategoriesPOSTHandler(w http.ResponseWriter,
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4816,14 +4818,14 @@ func (h *HandlersMap) AdminChallengeCategoriesPOSTHandler(w http.ResponseWriter,
 	}
 
 	if !strings.Contains(r.Header.Get(ContentType), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 
 	var req AdminCategoryCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin category JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 
@@ -4832,7 +4834,7 @@ func (h *HandlersMap) AdminChallengeCategoriesPOSTHandler(w http.ResponseWriter,
 	logo := strings.TrimSpace(req.Logo)
 
 	if name == "" {
-		writeError(http.StatusBadRequest, "Category name is required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.category_name_required"))
 		return
 	}
 
@@ -4845,11 +4847,11 @@ func (h *HandlersMap) AdminChallengeCategoriesPOSTHandler(w http.ResponseWriter,
 
 	if err := h.Challenges.CreateCategory(category); err != nil {
 		log.Err(err).Msg("error creating category")
-		writeError(http.StatusInternalServerError, "Failed to create category")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_create_category"))
 		return
 	}
 
-	writeSuccess("Category created")
+	writeSuccess(h.T(r.Context())("admin.msg.category_created"))
 }
 
 // AdminChallengeCategoryUpdatePOSTHandler updates an existing challenge category via POST requests
@@ -4859,7 +4861,7 @@ func (h *HandlersMap) AdminChallengeCategoryUpdatePOSTHandler(w http.ResponseWri
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4880,21 +4882,21 @@ func (h *HandlersMap) AdminChallengeCategoryUpdatePOSTHandler(w http.ResponseWri
 	}
 
 	if !strings.Contains(r.Header.Get(ContentType), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 
 	categoryIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
 	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
 	if err != nil || categoryID == 0 {
-		writeError(http.StatusBadRequest, "Invalid category id")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_category_id"))
 		return
 	}
 
 	var req AdminCategoryCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin category update JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 
@@ -4903,14 +4905,14 @@ func (h *HandlersMap) AdminChallengeCategoryUpdatePOSTHandler(w http.ResponseWri
 	logo := strings.TrimSpace(req.Logo)
 
 	if name == "" {
-		writeError(http.StatusBadRequest, "Category name is required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.category_name_required"))
 		return
 	}
 
 	category, err := h.Challenges.GetCategoryByID(uint(categoryID), uuid)
 	if err != nil {
 		log.Err(err).Msg("error loading category to update")
-		writeError(http.StatusNotFound, "Category not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.category_not_found"))
 		return
 	}
 
@@ -4920,11 +4922,11 @@ func (h *HandlersMap) AdminChallengeCategoryUpdatePOSTHandler(w http.ResponseWri
 
 	if err := h.Challenges.UpdateCategory(category); err != nil {
 		log.Err(err).Msg("error updating category")
-		writeError(http.StatusInternalServerError, "Failed to update category")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_category"))
 		return
 	}
 
-	writeSuccess("Category updated")
+	writeSuccess(h.T(r.Context())("admin.msg.category_updated"))
 }
 
 // AdminChallengeCategoryDeletePOSTHandler deletes a category if no challenges are assigned
@@ -4934,7 +4936,7 @@ func (h *HandlersMap) AdminChallengeCategoryDeletePOSTHandler(w http.ResponseWri
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -4957,34 +4959,34 @@ func (h *HandlersMap) AdminChallengeCategoryDeletePOSTHandler(w http.ResponseWri
 	categoryIDStr := strings.TrimSpace(chi.URLParam(r, "id"))
 	categoryID, err := strconv.ParseUint(categoryIDStr, 10, 64)
 	if err != nil || categoryID == 0 {
-		writeError(http.StatusBadRequest, "Invalid category id")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_category_id"))
 		return
 	}
 
 	if _, err := h.Challenges.GetCategoryByID(uint(categoryID), uuid); err != nil {
 		log.Err(err).Msg("error loading category to delete")
-		writeError(http.StatusNotFound, "Category not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.category_not_found"))
 		return
 	}
 
 	hasChallenges, err := h.Challenges.CategoryHasChallenges(uint(categoryID), uuid)
 	if err != nil {
 		log.Err(err).Msg("error checking category usage")
-		writeError(http.StatusInternalServerError, "Failed to verify category usage")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_verify_category_usage"))
 		return
 	}
 	if hasChallenges {
-		writeError(http.StatusConflict, "Category is assigned to challenges and was not deleted")
+		writeError(http.StatusConflict, h.T(r.Context())("admin.msg.category_assigned_not_deleted"))
 		return
 	}
 
 	if err := h.Challenges.DeleteCategory(uint(categoryID), uuid); err != nil {
 		log.Err(err).Msg("error deleting category")
-		writeError(http.StatusInternalServerError, "Failed to delete category")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_category"))
 		return
 	}
 
-	writeSuccess("Category deleted")
+	writeSuccess(h.T(r.Context())("admin.msg.category_deleted"))
 }
 
 // AdminActivityTemplateHandler for admin activity page for GET requests
@@ -4995,7 +4997,7 @@ func (h *HandlersMap) AdminActivityTemplateHandler(w http.ResponseWriter, r *htt
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5041,7 +5043,7 @@ func (h *HandlersMap) AdminActivityPOSTHandler(w http.ResponseWriter, r *http.Re
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5062,19 +5064,19 @@ func (h *HandlersMap) AdminActivityPOSTHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	if !strings.Contains(r.Header.Get(ContentType), JSONApplication) {
-		writeError(http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		writeError(http.StatusUnsupportedMediaType, h.T(r.Context())("feed.content_type"))
 		return
 	}
 
 	if h.Logs == nil || h.Sessions == nil {
-		writeError(http.StatusInternalServerError, "Activity logging is unavailable")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.activity_logging_unavailable"))
 		return
 	}
 
 	var req AdminActivityCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Err(err).Msg("error parsing admin activity JSON payload")
-		writeError(http.StatusBadRequest, "Invalid JSON payload")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 		return
 	}
 
@@ -5082,23 +5084,23 @@ func (h *HandlersMap) AdminActivityPOSTHandler(w http.ResponseWriter, r *http.Re
 	action := strings.TrimSpace(req.Action)
 	message := strings.TrimSpace(req.Message)
 	if subject == "" && message == "" {
-		writeError(http.StatusBadRequest, "Subject or message is required")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.subject_message_required"))
 		return
 	}
 
 	activity, err := h.Logs.NewActivity(req.Visible, subject, action, message, 0, uuid)
 	if err != nil {
 		log.Err(err).Msg("error building custom admin activity log")
-		writeError(http.StatusInternalServerError, "Failed to build activity entry")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_build_activity"))
 		return
 	}
 	if err := h.Logs.CreateActivity(activity); err != nil {
 		log.Err(err).Msg("error creating custom admin activity log")
-		writeError(http.StatusInternalServerError, "Failed to create activity entry")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_create_activity"))
 		return
 	}
 
-	writeSuccess("Activity entry created")
+	writeSuccess(h.T(r.Context())("admin.msg.activity_entry_created"))
 }
 
 // AdminActivityDeletePOSTHandler deletes a custom activity entry.
@@ -5109,7 +5111,7 @@ func (h *HandlersMap) AdminActivityDeletePOSTHandler(w http.ResponseWriter, r *h
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5123,27 +5125,27 @@ func (h *HandlersMap) AdminActivityDeletePOSTHandler(w http.ResponseWriter, r *h
 	}
 
 	if h.Logs == nil {
-		writeError(http.StatusInternalServerError, "Activity logging is unavailable")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.activity_logging_unavailable"))
 		return
 	}
 
 	idValue := strings.TrimSpace(chi.URLParam(r, "id"))
 	id, err := strconv.ParseUint(idValue, 10, 64)
 	if err != nil || id == 0 {
-		writeError(http.StatusBadRequest, "Invalid activity entry ID")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_activity_id"))
 		return
 	}
 
 	if err := h.Logs.DeleteActivity(uint(id), uuid); err != nil {
 		log.Err(err).Msg("error deleting activity entry")
-		writeError(http.StatusInternalServerError, "Failed to delete activity entry")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_activity"))
 		return
 	}
 
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, adminActionResponse{
 		Success: true,
 		Status:  "ok",
-		Message: "Activity entry deleted",
+		Message: h.T(r.Context())("admin.msg.activity_deleted"),
 	})
 }
 
@@ -5154,7 +5156,7 @@ func (h *HandlersMap) AdminChatTemplateHandler(w http.ResponseWriter, r *http.Re
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5215,7 +5217,7 @@ func (h *HandlersMap) AdminChatSetHiddenPOSTHandler(w http.ResponseWriter, r *ht
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5247,14 +5249,14 @@ func (h *HandlersMap) AdminChatSetHiddenPOSTHandler(w http.ResponseWriter, r *ht
 	idStr := strings.TrimSpace(chi.URLParam(r, "id"))
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil || id == 0 {
-		writeError(http.StatusBadRequest, "Invalid chat id")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_chat_id"))
 		return
 	}
 
 	entry, err := h.Chat.GetByID(uint(id))
 	if err != nil {
 		log.Err(err).Msg("error loading chat entry")
-		writeError(http.StatusNotFound, "Chat message not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.chat_message_not_found"))
 		return
 	}
 
@@ -5263,13 +5265,13 @@ func (h *HandlersMap) AdminChatSetHiddenPOSTHandler(w http.ResponseWriter, r *ht
 		var req adminChatVisibilityRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			log.Err(err).Msg("error parsing admin chat visibility JSON payload")
-			writeError(http.StatusBadRequest, "Invalid JSON payload")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 			return
 		}
 		parsedHiddenValue, err := parseAdminChatHiddenValue(req.Hidden)
 		if err != nil {
 			log.Err(err).Msg("error parsing admin chat hidden value")
-			writeError(http.StatusBadRequest, "Invalid hidden value")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_hidden"))
 			return
 		}
 		hiddenValue = parsedHiddenValue
@@ -5279,19 +5281,19 @@ func (h *HandlersMap) AdminChatSetHiddenPOSTHandler(w http.ResponseWriter, r *ht
 
 	if err := h.Chat.SetHiddenByID(uint(id), hiddenValue); err != nil {
 		log.Err(err).Msg("error updating chat visibility")
-		writeError(http.StatusInternalServerError, "Failed to update chat visibility")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_chat_visibility"))
 		return
 	}
 
 	if hiddenValue {
-		writeSuccess("Chat message hidden")
+		writeSuccess(h.T(r.Context())("admin.msg.chat_message_hidden"))
 		return
 	}
 	if entry.Hidden {
-		writeSuccess("Chat message unhidden")
+		writeSuccess(h.T(r.Context())("admin.msg.chat_message_unhidden"))
 		return
 	}
-	writeSuccess("Chat visibility updated")
+	writeSuccess(h.T(r.Context())("admin.msg.chat_visibility_updated"))
 }
 
 // AdminChatDeletePOSTHandler deletes a chat entry
@@ -5301,7 +5303,7 @@ func (h *HandlersMap) AdminChatDeletePOSTHandler(w http.ResponseWriter, r *http.
 	}
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5333,23 +5335,23 @@ func (h *HandlersMap) AdminChatDeletePOSTHandler(w http.ResponseWriter, r *http.
 	idStr := strings.TrimSpace(chi.URLParam(r, "id"))
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil || id == 0 {
-		writeError(http.StatusBadRequest, "Invalid chat id")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_chat_id"))
 		return
 	}
 
 	if _, err := h.Chat.GetByID(uint(id)); err != nil {
 		log.Err(err).Msg("error loading chat entry for delete")
-		writeError(http.StatusNotFound, "Chat message not found")
+		writeError(http.StatusNotFound, h.T(r.Context())("admin.msg.chat_message_not_found"))
 		return
 	}
 
 	if err := h.Chat.Delete(uint(id)); err != nil {
 		log.Err(err).Msg("error deleting chat entry")
-		writeError(http.StatusInternalServerError, "Failed to delete chat message")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_chat"))
 		return
 	}
 
-	writeSuccess("Chat message deleted")
+	writeSuccess(h.T(r.Context())("admin.msg.chat_message_deleted"))
 }
 
 // AdminCountriesTemplateHandler for admin countries page for GET requests
@@ -5360,7 +5362,7 @@ func (h *HandlersMap) AdminCountriesTemplateHandler(w http.ResponseWriter, r *ht
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5422,7 +5424,7 @@ func (h *HandlersMap) AdminCountriesDeleteAllPOSTHandler(w http.ResponseWriter, 
 
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5443,18 +5445,18 @@ func (h *HandlersMap) AdminCountriesDeleteAllPOSTHandler(w http.ResponseWriter, 
 	}
 
 	if h.Countries == nil || h.Challenges == nil {
-		writeError(http.StatusInternalServerError, "Countries or challenges manager is not initialized")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.countries_or_challenges_not_initialized"))
 		return
 	}
 	if !strings.EqualFold(r.Header.Get("X-Requested-With"), "XMLHttpRequest") {
-		writeError(http.StatusBadRequest, "AJAX requests only")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.ajax_only"))
 		return
 	}
 
 	tx := h.Countries.DB.Begin()
 	if tx.Error != nil {
 		log.Err(tx.Error).Msg("error starting delete-all-countries transaction")
-		writeError(http.StatusInternalServerError, "Failed to delete all countries")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_countries"))
 		return
 	}
 	defer func() {
@@ -5467,7 +5469,7 @@ func (h *HandlersMap) AdminCountriesDeleteAllPOSTHandler(w http.ResponseWriter, 
 	if err := tx.Model(&challenges.Challenge{}).Where("uuid = ?", uuid).Update("country", "").Error; err != nil {
 		tx.Rollback()
 		log.Err(err).Msg("error clearing challenge country references before bulk country delete")
-		writeError(http.StatusInternalServerError, "Failed to clear challenge country references")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_clear_country_refs"))
 		return
 	}
 
@@ -5475,17 +5477,17 @@ func (h *HandlersMap) AdminCountriesDeleteAllPOSTHandler(w http.ResponseWriter, 
 	if deleteResult.Error != nil {
 		tx.Rollback()
 		log.Err(deleteResult.Error).Msg("error deleting all countries")
-		writeError(http.StatusInternalServerError, "Failed to delete all countries")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_countries"))
 		return
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		log.Err(err).Msg("error committing delete-all-countries transaction")
-		writeError(http.StatusInternalServerError, "Failed to delete all countries")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_delete_all_countries"))
 		return
 	}
 
-	writeSuccess("Deleted " + strconv.FormatInt(deleteResult.RowsAffected, 10) + " country(ies)")
+	writeSuccess(h.T(r.Context())("admin.msg.deleted_country_count", deleteResult.RowsAffected))
 }
 
 // AdminCountryUpdatePOSTHandler for updating country active status via POST requests
@@ -5496,7 +5498,7 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 	// Get UUID from URL path parameters and validate it
 	uuid := chi.URLParam(r, "uuid")
 	if uuid == "" || uuid != h.Config.Map.UUID {
-		log.Err(errors.New("Invalid UUID")).Msgf("UUID: %s", uuid)
+		log.Err(errors.New("invalid UUID")).Msgf("UUID: %s", uuid)
 		h.ErrorInvalidUUID(w, r)
 		return
 	}
@@ -5526,16 +5528,16 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 	}
 	countryIDParam := strings.TrimSpace(chi.URLParam(r, "id"))
 	if countryIDParam == "" {
-		writeError(http.StatusBadRequest, "Missing country ID")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.missing_country_id"))
 		return
 	}
 	countryID, err := strconv.ParseUint(countryIDParam, 10, 32)
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid country ID")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_country_id"))
 		return
 	}
 	if h.Countries == nil {
-		writeError(http.StatusInternalServerError, "Countries manager is not initialized")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.countries_not_initialized"))
 		return
 	}
 	activeValue := "false"
@@ -5544,7 +5546,7 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 			Active bool `json:"active"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(http.StatusBadRequest, "Invalid JSON payload")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_json_payload"))
 			return
 		}
 		if req.Active {
@@ -5552,7 +5554,7 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 		}
 	} else {
 		if err := r.ParseForm(); err != nil {
-			writeError(http.StatusBadRequest, "Invalid form payload")
+			writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_form_payload"))
 			return
 		}
 		activeValue = strings.TrimSpace(r.FormValue("active"))
@@ -5562,13 +5564,13 @@ func (h *HandlersMap) AdminCountryUpdatePOSTHandler(w http.ResponseWriter, r *ht
 	}
 	active, err := strconv.ParseBool(strings.ToLower(activeValue))
 	if err != nil {
-		writeError(http.StatusBadRequest, "Invalid active value")
+		writeError(http.StatusBadRequest, h.T(r.Context())("admin.msg.invalid_active"))
 		return
 	}
 	if err := h.Countries.SetActiveByID(uint(countryID), active); err != nil {
 		log.Err(err).Msg("error updating country active status")
-		writeError(http.StatusInternalServerError, "Failed to update country status")
+		writeError(http.StatusInternalServerError, h.T(r.Context())("admin.msg.failed_update_country_status"))
 		return
 	}
-	writeSuccess("Country status updated")
+	writeSuccess(h.T(r.Context())("admin.msg.country_status_updated"))
 }

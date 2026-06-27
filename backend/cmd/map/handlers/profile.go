@@ -31,18 +31,18 @@ func (h *HandlersMap) ProfileGETHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	if h.Users == nil {
 		log.Error().Msg("users manager not initialized")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "profile is unavailable"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("profile.unavailable")})
 		return
 	}
 
 	user, err := h.Users.Get(username, uuid)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "authentication required"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("profile.auth_required")})
 			return
 		}
 		log.Err(err).Msg("error retrieving profile user")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "profile is unavailable"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("profile.unavailable")})
 		return
 	}
 
@@ -54,7 +54,7 @@ func (h *HandlersMap) ProfileGETHandler(w http.ResponseWriter, r *http.Request) 
 	team, found, err := h.currentProfileTeam(user.TeamID, uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving profile team")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "profile is unavailable"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("profile.unavailable")})
 		return
 	}
 	if found {
@@ -87,17 +87,17 @@ func (h *HandlersMap) ProfilePOSTHandler(w http.ResponseWriter, r *http.Request)
 	}
 	if h.Users == nil {
 		log.Error().Msg("users manager not initialized")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "profile is unavailable"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("profile.unavailable")})
 		return
 	}
 	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnsupportedMediaType, MapErrorResponse{Error: "Content-Type must be application/json"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnsupportedMediaType, MapErrorResponse{Error: h.T(r.Context())("feed.content_type")})
 		return
 	}
 
 	var req MapProfileAccountUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid JSON payload"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("feed.invalid_json")})
 		return
 	}
 
@@ -106,7 +106,7 @@ func (h *HandlersMap) ProfilePOSTHandler(w http.ResponseWriter, r *http.Request)
 	if email != "" {
 		parsed, err := mail.ParseAddress(email)
 		if err != nil || parsed.Address != email {
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "email is invalid"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("profile.email_invalid")})
 			return
 		}
 	}
@@ -119,18 +119,18 @@ func (h *HandlersMap) ProfilePOSTHandler(w http.ResponseWriter, r *http.Request)
 		})
 	if result.Error != nil {
 		log.Err(result.Error).Msg("error updating profile account")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "profile could not be updated"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("profile.not_updated")})
 		return
 	}
 	if result.RowsAffected == 0 {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "authentication required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("profile.auth_required")})
 		return
 	}
 
 	user, err := h.Users.Get(username, uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving updated profile user")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "profile could not be updated"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("profile.not_updated")})
 		return
 	}
 
@@ -155,47 +155,47 @@ func (h *HandlersMap) ProfilePasswordPOSTHandler(w http.ResponseWriter, r *http.
 	}
 	if h.Users == nil {
 		log.Error().Msg("users manager not initialized")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "profile is unavailable"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("profile.unavailable")})
 		return
 	}
 	if !strings.Contains(strings.ToLower(r.Header.Get(ContentType)), JSONApplication) {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnsupportedMediaType, MapErrorResponse{Error: "Content-Type must be application/json"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnsupportedMediaType, MapErrorResponse{Error: h.T(r.Context())("feed.content_type")})
 		return
 	}
 
 	var req MapProfilePasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "invalid JSON payload"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("feed.invalid_json")})
 		return
 	}
 
 	switch {
 	case req.CurrentPassword == "":
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "current password is required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("profile.current_required")})
 		return
 	case strings.TrimSpace(req.NewPassword) == "":
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "new password is required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("profile.new_required")})
 		return
 	case utf8.RuneCountInString(req.NewPassword) < minProfilePasswordLength:
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "new password must be at least 8 characters"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("profile.new_min_length")})
 		return
 	case req.NewPassword != req.ConfirmPassword:
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "new passwords do not match"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("profile.new_mismatch")})
 		return
 	case req.CurrentPassword == req.NewPassword:
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: "new password must be different"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("profile.new_must_differ")})
 		return
 	}
 
 	valid, _ := h.Users.CheckLoginCredentials(username, req.CurrentPassword, uuid)
 	if !valid {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "current password is incorrect"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("profile.current_incorrect")})
 		return
 	}
 
 	if err := h.Users.SetPassword(username, req.NewPassword, uuid); err != nil {
 		log.Err(err).Msg("error updating profile password")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: "password could not be updated"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("profile.password_not_updated")})
 		return
 	}
 
@@ -207,20 +207,20 @@ func (h *HandlersMap) ProfilePasswordPOSTHandler(w http.ResponseWriter, r *http.
 
 func (h *HandlersMap) profileSessionUsername(w http.ResponseWriter, r *http.Request) (username string, ok bool) {
 	if h.Sessions == nil {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "authentication required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("profile.auth_required")})
 		return "", false
 	}
 	// SCS panics if the LoadAndSave middleware has not prepared the context.
 	defer func() {
 		if recover() != nil {
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "authentication required"})
+			HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("profile.auth_required")})
 			username = ""
 			ok = false
 		}
 	}()
 	username = h.Sessions.GetString(r.Context(), string(ContextKeyUser))
 	if username == "" {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: "authentication required"})
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusUnauthorized, MapErrorResponse{Error: h.T(r.Context())("profile.auth_required")})
 		return "", false
 	}
 	return username, true

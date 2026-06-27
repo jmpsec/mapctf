@@ -80,8 +80,6 @@ const (
 	apiAdminPath = "/admin"
 	// API teams path
 	apiTeamsPath = "/teams"
-	// API users path
-	apiUsersPath = "/users"
 	// API settings path
 	apiSettingsPath = "/settings"
 	// API challenges path
@@ -248,7 +246,7 @@ func mapCTFService() {
 	}))
 	// Middleware
 	muxAPI.Use(middleware.RequestID)
-	muxAPI.Use(middleware.RealIP)
+	muxAPI.Use(handlers.RealIP)
 	muxAPI.Use(middleware.Recoverer)
 	// Root
 	muxAPI.Get(rootPath, handlersCTF.RootHandler)
@@ -281,12 +279,12 @@ func mapCTFService() {
 				r.Use(handlersCTF.RequireAdmin)
 				r.Get(apiTeamsPath, handlersCTF.AdminTeamsHandler)  // GET /api/v1/admin/{uuid}/teams
 				r.Post(apiTeamsPath, handlersCTF.CreateTeamHandler) // POST /api/v1/admin/{uuid}/teams
-				//r.Delete(apiTeamsPath+"/{entID}/{id}", handlersCTF.DeleteTeamHandler) // DELETE /api/v1/admin/teams/{entID}/{id}
+				// r.Delete(apiTeamsPath+"/{entID}/{id}", handlersCTF.DeleteTeamHandler) // DELETE /api/v1/admin/teams/{entID}/{id}
 				r.Get(apiSettingsPath, handlersCTF.SettingsHandler)           // GET /api/v1/admin/{uuid}/settings
 				r.Get(apiChallengesPath, handlersCTF.AdminChallengesHandler)  // GET /api/v1/admin/{uuid}/challenges
 				r.Post(apiChallengesPath, handlersCTF.CreateChallengeHandler) // POST /api/v1/admin/{uuid}/challenges
-				//r.Patch(apiChallengesPath+"/{entID}/{id}", handlersCTF.UpdateChallengeHandler) // PATCH /api/v1/admin/challenges/{entID}/{id}
-				//r.Delete(apiChallengesPath+"/{entID}/{id}", handlersCTF.DeleteChallengeHandler) // DELETE /api/v1/admin/challenges/{entID}/{id}
+				// r.Patch(apiChallengesPath+"/{entID}/{id}", handlersCTF.UpdateChallengeHandler) // PATCH /api/v1/admin/challenges/{entID}/{id}
+				// r.Delete(apiChallengesPath+"/{entID}/{id}", handlersCTF.DeleteChallengeHandler) // DELETE /api/v1/admin/challenges/{entID}/{id}
 			})
 		})
 	})
@@ -558,7 +556,9 @@ func main() {
 				if usersMgr.Exists(username, uuid) {
 					// User exists, reset password
 					log.Info().Msgf("User '%s' already exists for UUID %s, resetting password...", username, uuid)
-					usersMgr.SetPassword(username, password, uuid)
+					if err := usersMgr.SetPassword(username, password, uuid); err != nil {
+						return fmt.Errorf("failed to reset password for admin user '%s': %w", username, err)
+					}
 					fmt.Printf("Password reset successfully for admin user '%s' (UUID %s).\n", username, uuid)
 				} else {
 					// User doesn't exist, create it
