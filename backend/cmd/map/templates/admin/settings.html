@@ -334,7 +334,7 @@
               <div class="admin-settings-list">
                 <div class="admin-setting-row">
                   <label for="language">language</label>
-                  <form id="form_language" action="/{{ .UUID }}/admin/settings" method="post">
+                  <form id="form_language" action="/{{ .UUID }}/admin/settings" method="post" data-reload-on-success="true">
                     <input type="hidden" name="setting_name" value="language" />
                     <select id="language" name="setting_value" onchange="saveSettingValue(this)">
                       <option value="en" {{ if eq .Language "en" }}selected{{ end }}>🇬🇧 en</option>
