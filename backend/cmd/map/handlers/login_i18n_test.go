@@ -246,3 +246,37 @@ func TestLoginHandlerRendersPortugueseLocale(t *testing.T) {
 		require.Contains(t, body, want)
 	}
 }
+
+func TestLoginHandlerRendersGermanLocale(t *testing.T) {
+	if _, err := os.Stat(filepath.Join("..", "templates", "login.html")); err != nil {
+		t.Skipf("login template not available: %v", err)
+	}
+	handler, sessions := newLoginI18nHandler(t, "de")
+	req := newTemplateRequestWithUUID(http.MethodGet, "/"+jsonTestUUID+"/login", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.LoginHandler)).ServeHTTP(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+	for _, want := range []string{`<html lang="de">`, "CTF spielen", "Benutzername", "Passwort", "Anmelden", `window.MCTF_LANG = "de"`} {
+		require.Contains(t, rr.Body.String(), want)
+	}
+}
+
+func TestLoginHandlerRendersItalianLocale(t *testing.T) {
+	if _, err := os.Stat(filepath.Join("..", "templates", "login.html")); err != nil {
+		t.Skipf("login template not available: %v", err)
+	}
+	handler, sessions := newLoginI18nHandler(t, "it")
+	req := newTemplateRequestWithUUID(http.MethodGet, "/"+jsonTestUUID+"/login", jsonTestUUID)
+	ctx, err := sessions.Load(req.Context(), "")
+	require.NoError(t, err)
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler.LocaleMiddleware(http.HandlerFunc(handler.LoginHandler)).ServeHTTP(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+	for _, want := range []string{`<html lang="it">`, "Gioca a CTF", "Nome utente", "Password", "Accedi", `window.MCTF_LANG = "it"`} {
+		require.Contains(t, rr.Body.String(), want)
+	}
+}
