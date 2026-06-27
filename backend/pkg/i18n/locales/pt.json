@@ -832,5 +832,7 @@
   "admin.msg.logo_name_required": "O nome do logo é obrigatório",
   "admin.msg.subject_message_required": "O assunto ou a mensagem é obrigatório",
   "admin.msg.title_flag_required": "O título e o flag são obrigatórios",
-  "admin.msg.user_pass_required": "O nome de usuário e a senha são obrigatórios"
+  "admin.msg.user_pass_required": "O nome de usuário e a senha são obrigatórios",
+  "profile.language": "Idioma",
+  "profile.language_invalid": "Idioma não suportado"
 }

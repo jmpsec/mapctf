@@ -67,6 +67,26 @@ func New() (*Catalog, error) {
 // Supported returns the configured language tags.
 func (c *Catalog) Supported() []language.Tag { return c.supported }
 
+// SupportedCodes returns the BCP-47 codes (e.g. "en", "es") of the configured
+// language tags, suitable for validating user-supplied language preferences.
+func (c *Catalog) SupportedCodes() []string {
+	out := make([]string, 0, len(c.supported))
+	for _, t := range c.supported {
+		out = append(out, t.String())
+	}
+	return out
+}
+
+// IsSupported reports whether code matches one of the configured locales.
+func (c *Catalog) IsSupported(code string) bool {
+	for _, sc := range c.SupportedCodes() {
+		if sc == code {
+			return true
+		}
+	}
+	return false
+}
+
 // Resolve picks the best supported tag for the requested language strings,
 // ignoring empty values. English is returned when nothing matches.
 func (c *Catalog) Resolve(preferred ...string) language.Tag {

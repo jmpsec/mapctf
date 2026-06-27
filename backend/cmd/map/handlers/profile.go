@@ -103,6 +103,11 @@ func (h *HandlersMap) ProfilePOSTHandler(w http.ResponseWriter, r *http.Request)
 
 	fullName := strings.TrimSpace(req.FullName)
 	email := strings.TrimSpace(req.Email)
+	language := strings.TrimSpace(req.Language)
+	if language != "" && !h.catalog().IsSupported(language) {
+		HTTPResponse(w, JSONApplicationUTF8, http.StatusBadRequest, MapErrorResponse{Error: h.T(r.Context())("profile.language_invalid")})
+		return
+	}
 	if email != "" {
 		parsed, err := mail.ParseAddress(email)
 		if err != nil || parsed.Address != email {
@@ -114,8 +119,9 @@ func (h *HandlersMap) ProfilePOSTHandler(w http.ResponseWriter, r *http.Request)
 	result := h.Users.DB.Model(&users.PlatformUser{}).
 		Where("username = ? AND uuid = ?", username, uuid).
 		Updates(map[string]interface{}{
-			"name":  fullName,
-			"email": email,
+			"name":     fullName,
+			"email":    email,
+			"language": language,
 		})
 	if result.Error != nil {
 		log.Err(result.Error).Msg("error updating profile account")
@@ -132,6 +138,10 @@ func (h *HandlersMap) ProfilePOSTHandler(w http.ResponseWriter, r *http.Request)
 		log.Err(err).Msg("error retrieving updated profile user")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("profile.not_updated")})
 		return
+	}
+
+	if h.Sessions != nil {
+		h.Sessions.Put(r.Context(), string(ContextKeyLanguage), language)
 	}
 
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapProfileAccountUpdateResponse{
@@ -278,6 +288,7 @@ func profileAccountResponse(user users.PlatformUser, tr func(string, ...any) str
 		Email:    user.Email,
 		Role:     profileRole(user.Admin, user.Service, tr),
 		Status:   profileStatus(user.Active, tr),
+		Language: user.Language,
 	}
 }
 

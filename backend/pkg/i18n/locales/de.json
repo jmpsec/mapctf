@@ -832,5 +832,7 @@
   "admin.msg.logo_name_required": "Logoname ist erforderlich",
   "admin.msg.subject_message_required": "Betreff oder Nachricht ist erforderlich",
   "admin.msg.title_flag_required": "Titel und Flag sind erforderlich",
-  "admin.msg.user_pass_required": "Benutzername und Passwort sind erforderlich"
+  "admin.msg.user_pass_required": "Benutzername und Passwort sind erforderlich",
+  "profile.language": "Sprache",
+  "profile.language_invalid": "Nicht unterstützte Sprache"
 }

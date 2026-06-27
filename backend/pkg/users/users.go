@@ -34,6 +34,7 @@ type PlatformUser struct {
 	LastUserAgent string
 	LastAccess    time.Time
 	LastTokenUse  time.Time
+	Language      string
 	UUID          string `gorm:"index"`
 }
 

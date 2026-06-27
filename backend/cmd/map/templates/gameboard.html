@@ -1065,6 +1065,7 @@
           setText(root, ".js-profile-username", account.username);
           setFieldValue(root, '.js-profile-account-form [name="full_name"]', account.name);
           setFieldValue(root, '.js-profile-account-form [name="email"]', account.email);
+          setFieldValue(root, '.js-profile-account-form [name="language"]', account.language || "");
           setText(root, ".js-profile-role", account.role);
           setText(root, ".js-profile-status-label", account.status);
           if (!team) {
@@ -1118,6 +1119,7 @@
             var payload = {
               full_name: form.elements.full_name.value,
               email: form.elements.email.value,
+              language: form.elements.language ? form.elements.language.value : "",
             };
 
             if (submitBtn) {
@@ -1146,9 +1148,13 @@
                 var account = (data && data.account) || {};
                 setFieldValue(root, '.js-profile-account-form [name="full_name"]', account.name);
                 setFieldValue(root, '.js-profile-account-form [name="email"]', account.email);
+                setFieldValue(root, '.js-profile-account-form [name="language"]', account.language || "");
                 setText(root, ".js-profile-role", account.role);
                 setText(root, ".js-profile-status-label", account.status);
                 setAccountMessage(root, "success", (data && data.message) || "Profile updated");
+                if (data && data.account && data.account.language) {
+                  window.MCTF_LANG = data.account.language;
+                }
               })
               .catch(function (error) {
                 setAccountMessage(root, "error", error.message || "Profile could not be updated");

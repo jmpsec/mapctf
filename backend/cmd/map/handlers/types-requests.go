@@ -79,6 +79,7 @@ type MapLogoutResponse MapLoginResponse
 type MapProfileAccountUpdateRequest struct {
 	FullName string `json:"full_name"`
 	Email    string `json:"email"`
+	Language string `json:"language"`
 }
 
 // MapProfilePasswordRequest receives password changes from the profile modal.
@@ -94,6 +95,7 @@ type MapProfileAccountResponse struct {
 	Email    string `json:"email"`
 	Role     string `json:"role"`
 	Status   string `json:"status"`
+	Language string `json:"language"`
 }
 
 type MapProfileTeamResponse struct {
