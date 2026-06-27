@@ -1066,6 +1066,10 @@
           setFieldValue(root, '.js-profile-account-form [name="full_name"]', account.name);
           setFieldValue(root, '.js-profile-account-form [name="email"]', account.email);
           setFieldValue(root, '.js-profile-account-form [name="language"]', account.language || "");
+          var acctForm = root.querySelector(".js-profile-account-form");
+          if (acctForm) {
+            acctForm.dataset.initialLanguage = account.language || "";
+          }
           setText(root, ".js-profile-role", account.role);
           setText(root, ".js-profile-status-label", account.status);
           if (!team) {
@@ -1116,6 +1120,7 @@
           form.addEventListener("submit", function (event) {
             event.preventDefault();
             var submitBtn = form.querySelector('button[type="submit"]');
+            var previousLanguage = form.dataset.initialLanguage || "";
             var payload = {
               full_name: form.elements.full_name.value,
               email: form.elements.email.value,
@@ -1152,9 +1157,15 @@
                 setText(root, ".js-profile-role", account.role);
                 setText(root, ".js-profile-status-label", account.status);
                 setAccountMessage(root, "success", (data && data.message) || "Profile updated");
-                if (data && data.account && data.account.language) {
-                  window.MCTF_LANG = data.account.language;
+                var newLanguage = (data && data.account && data.account.language) || "";
+                if (newLanguage) {
+                  window.MCTF_LANG = newLanguage;
                 }
+                if (newLanguage !== previousLanguage) {
+                  window.location.reload();
+                  return;
+                }
+                form.dataset.initialLanguage = newLanguage;
               })
               .catch(function (error) {
                 setAccountMessage(root, "error", error.message || "Profile could not be updated");
