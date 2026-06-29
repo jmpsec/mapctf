@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -273,156 +274,157 @@ func (h *HandlersMap) JSONCountriesHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	allCountries, err := h.Countries.GetAll()
-	if err != nil {
-		log.Err(err).Msg("error retrieving countries")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
-		return
-	}
-
-	activeChallenges, err := h.Challenges.GetActive(uuid)
-	if err != nil {
-		log.Err(err).Msg("error retrieving active challenges for country data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
-		return
-	}
-
-	categoriesByID := map[uint]challenges.Category{}
-	allCategories, err := h.Challenges.GetAllCategories(uuid)
-	if err != nil {
-		log.Err(err).Msg("error retrieving categories for country data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
-		return
-	}
-	for _, category := range allCategories {
-		categoriesByID[category.ID] = category
-	}
-
-	activeChallengesByCode := make(map[string]challenges.Challenge, len(activeChallenges))
-	activeChallengeIDs := make(map[uint]string, len(activeChallenges))
-	for _, challenge := range activeChallenges {
-		countryCode := strings.ToUpper(strings.TrimSpace(challenge.Country))
-		if countryCode == "" {
-			continue
-		}
-		if _, exists := activeChallengesByCode[countryCode]; exists {
-			continue
-		}
-		activeChallengesByCode[countryCode] = challenge
-		activeChallengeIDs[challenge.ID] = countryCode
-	}
-
-	completedByCountry := make(map[string][]string, len(activeChallengesByCode))
-	ownerByCountry := make(map[string]string, len(activeChallengesByCode))
-	solvedByCurrentCountry := make(map[string]bool, len(activeChallengesByCode))
+	// Resolve the current user's team up front so the response can be cached per
+	// (uuid, teamID): only the solved-by-current field depends on the team.
 	currentTeamID := uint(0)
-	if h.Teams != nil {
-		if h.Sessions != nil && h.Users != nil {
-			username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
-			if username != "" {
-				user, err := h.Users.Get(username, uuid)
-				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-					log.Err(err).Msg("error retrieving current user for country data")
-					HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
-					return
+	if h.Teams != nil && h.Sessions != nil && h.Users != nil {
+		username := h.Sessions.GetString(r.Context(), string(ContextKeyUser))
+		if username != "" {
+			user, err := h.Users.Get(username, uuid)
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Err(err).Msg("error retrieving current user for country data")
+				HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
+				return
+			}
+			currentTeamID = user.TeamID
+		}
+	}
+
+	key := feedKey("countries", uuid) + ":" + strconv.FormatUint(uint64(currentTeamID), 10)
+	h.serveCachedJSON(w, key, func() (int, []byte) {
+		allCountries, err := h.Countries.GetAll()
+		if err != nil {
+			log.Err(err).Msg("error retrieving countries")
+			return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
+		}
+
+		activeChallenges, err := h.Challenges.GetActive(uuid)
+		if err != nil {
+			log.Err(err).Msg("error retrieving active challenges for country data")
+			return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
+		}
+
+		categoriesByID := map[uint]challenges.Category{}
+		allCategories, err := h.Challenges.GetAllCategories(uuid)
+		if err != nil {
+			log.Err(err).Msg("error retrieving categories for country data")
+			return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
+		}
+		for _, category := range allCategories {
+			categoriesByID[category.ID] = category
+		}
+
+		activeChallengesByCode := make(map[string]challenges.Challenge, len(activeChallenges))
+		activeChallengeIDs := make(map[uint]string, len(activeChallenges))
+		for _, challenge := range activeChallenges {
+			countryCode := strings.ToUpper(strings.TrimSpace(challenge.Country))
+			if countryCode == "" {
+				continue
+			}
+			if _, exists := activeChallengesByCode[countryCode]; exists {
+				continue
+			}
+			activeChallengesByCode[countryCode] = challenge
+			activeChallengeIDs[challenge.ID] = countryCode
+		}
+
+		completedByCountry := make(map[string][]string, len(activeChallengesByCode))
+		ownerByCountry := make(map[string]string, len(activeChallengesByCode))
+		solvedByCurrentCountry := make(map[string]bool, len(activeChallengesByCode))
+
+		if h.Teams != nil {
+			var allTeams []teams.PlatformTeam
+			if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&allTeams).Error; err != nil {
+				log.Err(err).Msg("error retrieving teams for country data")
+				return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
+			}
+
+			teamNamesByID := make(map[uint]string, len(allTeams))
+			for _, team := range allTeams {
+				teamNamesByID[team.ID] = team.Name
+			}
+
+			var teamScores []teams.TeamScore
+			if err := h.Teams.DB.Where("uuid = ?", uuid).Order("created_at ASC").Find(&teamScores).Error; err != nil {
+				log.Err(err).Msg("error retrieving team scores for country data")
+				return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
+			}
+
+			seenCompletedByCountry := make(map[string]map[string]struct{}, len(activeChallengesByCode))
+			for _, score := range teamScores {
+				countryCode, ok := activeChallengeIDs[score.ChallengeID]
+				if !ok {
+					continue
 				}
-				currentTeamID = user.TeamID
+
+				teamName := strings.TrimSpace(teamNamesByID[score.TeamID])
+				if teamName == "" {
+					continue
+				}
+
+				if seenCompletedByCountry[countryCode] == nil {
+					seenCompletedByCountry[countryCode] = make(map[string]struct{})
+				}
+				if _, seen := seenCompletedByCountry[countryCode][teamName]; !seen {
+					completedByCountry[countryCode] = append(completedByCountry[countryCode], teamName)
+					seenCompletedByCountry[countryCode][teamName] = struct{}{}
+				}
+
+				if currentTeamID != 0 && score.TeamID == currentTeamID {
+					solvedByCurrentCountry[countryCode] = true
+				}
+
+				ownerByCountry[countryCode] = teamName
 			}
 		}
 
-		var allTeams []teams.PlatformTeam
-		if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&allTeams).Error; err != nil {
-			log.Err(err).Msg("error retrieving teams for country data")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
-			return
-		}
-
-		teamNamesByID := make(map[uint]string, len(allTeams))
-		for _, team := range allTeams {
-			teamNamesByID[team.ID] = team.Name
-		}
-
-		var teamScores []teams.TeamScore
-		if err := h.Teams.DB.Where("uuid = ?", uuid).Order("created_at ASC").Find(&teamScores).Error; err != nil {
-			log.Err(err).Msg("error retrieving team scores for country data")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_country")})
-			return
-		}
-
-		seenCompletedByCountry := make(map[string]map[string]struct{}, len(activeChallengesByCode))
-		for _, score := range teamScores {
-			countryCode, ok := activeChallengeIDs[score.ChallengeID]
-			if !ok {
-				continue
+		response := make(map[string]JSONCountryDataResponse, len(allCountries))
+		for _, country := range allCountries {
+			countryCode := strings.ToUpper(strings.TrimSpace(country.CountryCode))
+			challenge, hasChallenge := activeChallengesByCode[countryCode]
+			completed := completedByCountry[countryCode]
+			if completed == nil {
+				completed = []string{}
 			}
 
-			teamName := strings.TrimSpace(teamNamesByID[score.TeamID])
-			if teamName == "" {
-				continue
+			categoryName := ""
+			if hasChallenge {
+				if category, exists := categoriesByID[challenge.CategoryID]; exists {
+					categoryName = category.Name
+				}
+			}
+			challengeURL := ""
+			if hasChallenge {
+				if normalizedURL, err := challenges.NormalizeChallengeURL(challenge.URL); err == nil {
+					challengeURL = normalizedURL
+				}
 			}
 
-			if seenCompletedByCountry[countryCode] == nil {
-				seenCompletedByCountry[countryCode] = make(map[string]struct{})
-			}
-			if _, seen := seenCompletedByCountry[countryCode][teamName]; !seen {
-				completedByCountry[countryCode] = append(completedByCountry[countryCode], teamName)
-				seenCompletedByCountry[countryCode][teamName] = struct{}{}
-			}
-
-			if currentTeamID != 0 && score.TeamID == currentTeamID {
-				solvedByCurrentCountry[countryCode] = true
-			}
-
-			ownerByCountry[countryCode] = teamName
-		}
-	}
-
-	response := make(map[string]JSONCountryDataResponse, len(allCountries))
-	for _, country := range allCountries {
-		countryCode := strings.ToUpper(strings.TrimSpace(country.CountryCode))
-		challenge, hasChallenge := activeChallengesByCode[countryCode]
-		completed := completedByCountry[countryCode]
-		if completed == nil {
-			completed = []string{}
-		}
-
-		categoryName := ""
-		if hasChallenge {
-			if category, exists := categoriesByID[challenge.CategoryID]; exists {
-				categoryName = category.Name
-			}
-		}
-		challengeURL := ""
-		if hasChallenge {
-			if normalizedURL, err := challenges.NormalizeChallengeURL(challenge.URL); err == nil {
-				challengeURL = normalizedURL
+			response[country.Name] = JSONCountryDataResponse{
+				CountryCode:     country.CountryCode,
+				FlagEmoji:       countryCodeToFlagEmoji(country.CountryCode),
+				Active:          hasChallenge,
+				SolvedByCurrent: solvedByCurrentCountry[countryCode],
+				Points:          challenge.Points,
+				HintPenalty:     challenge.HintPenalty,
+				HelpPenalty:     challenge.HelpPenalty,
+				Category:        categoryName,
+				Owner:           ownerByCountry[countryCode],
+				Completed:       completed,
+				Intro:           challenge.Description,
+				URL:             challengeURL,
+				LandPath:        country.LandPath,
+				LandClass:       country.LandClass,
+				LandStyle:       country.LandStyle,
+				MarkerPath:      country.MarkerPath,
+				MarkerClass:     country.MarkerClass,
+				MarkerStyle:     country.MarkerStyle,
+				MarkerTransform: country.MarkerTransform,
 			}
 		}
 
-		response[country.Name] = JSONCountryDataResponse{
-			CountryCode:     country.CountryCode,
-			FlagEmoji:       countryCodeToFlagEmoji(country.CountryCode),
-			Active:          hasChallenge,
-			SolvedByCurrent: solvedByCurrentCountry[countryCode],
-			Points:          challenge.Points,
-			HintPenalty:     challenge.HintPenalty,
-			HelpPenalty:     challenge.HelpPenalty,
-			Category:        categoryName,
-			Owner:           ownerByCountry[countryCode],
-			Completed:       completed,
-			Intro:           challenge.Description,
-			URL:             challengeURL,
-			LandPath:        country.LandPath,
-			LandClass:       country.LandClass,
-			LandStyle:       country.LandStyle,
-			MarkerPath:      country.MarkerPath,
-			MarkerClass:     country.MarkerClass,
-			MarkerStyle:     country.MarkerStyle,
-			MarkerTransform: country.MarkerTransform,
-		}
-	}
-
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, response)
+		return http.StatusOK, marshalJSON(response)
+	})
 }
 
 // JSONWorldDominationHandler returns aggregate completion metrics for the authenticated user's team
@@ -449,81 +451,82 @@ func (h *HandlersMap) JSONWorldDominationHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Resolve the user/team up front so the result can be cached per (uuid, teamID).
 	user, err := h.Users.Get(username, uuid)
 	if err != nil {
 		log.Err(err).Msg("error retrieving user for world domination data")
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_domination")})
 		return
 	}
+	teamID := user.TeamID
 
-	activeChallenges, err := h.Challenges.GetActive(uuid)
-	if err != nil {
-		log.Err(err).Msg("error retrieving active challenges for world domination data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_domination")})
-		return
-	}
-
-	response := JSONWorldDominationResponse{
-		CompletedChallenges: 0,
-		TotalChallenges:     len(activeChallenges),
-		CompletionPct:       0,
-		WinRatePct:          0,
-		LoseRatePct:         0,
-	}
-
-	if user.TeamID == 0 {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, response)
-		return
-	}
-
-	var currentTeam teams.PlatformTeam
-	if err := h.Teams.DB.Where("id = ? AND uuid = ?", user.TeamID, uuid).First(&currentTeam).Error; err == nil {
-		response.CurrentTeam = currentTeam.Name
-	}
-
-	activeChallengeIDs := make(map[uint]struct{}, len(activeChallenges))
-	for _, challenge := range activeChallenges {
-		activeChallengeIDs[challenge.ID] = struct{}{}
-	}
-
-	if len(activeChallengeIDs) == 0 {
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, response)
-		return
-	}
-
-	var scores []teams.TeamScore
-	if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&scores).Error; err != nil {
-		log.Err(err).Msg("error retrieving team scores for world domination data")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_domination")})
-		return
-	}
-
-	currentTeamCompleted := make(map[uint]struct{})
-	currentTeamSolveCount := 0
-	otherTeamsSolveCount := 0
-
-	for _, score := range scores {
-		if _, ok := activeChallengeIDs[score.ChallengeID]; !ok {
-			continue
+	key := feedKey("domination", uuid) + ":" + strconv.FormatUint(uint64(teamID), 10)
+	h.serveCachedJSON(w, key, func() (int, []byte) {
+		activeChallenges, err := h.Challenges.GetActive(uuid)
+		if err != nil {
+			log.Err(err).Msg("error retrieving active challenges for world domination data")
+			return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_domination")})
 		}
 
-		if score.TeamID == user.TeamID {
-			currentTeamSolveCount++
-			currentTeamCompleted[score.ChallengeID] = struct{}{}
-			continue
+		response := JSONWorldDominationResponse{
+			CompletedChallenges: 0,
+			TotalChallenges:     len(activeChallenges),
+			CompletionPct:       0,
+			WinRatePct:          0,
+			LoseRatePct:         0,
 		}
 
-		otherTeamsSolveCount++
-	}
+		if teamID == 0 {
+			return http.StatusOK, marshalJSON(response)
+		}
 
-	response.CompletedChallenges = len(currentTeamCompleted)
-	response.CompletionPct = calculatePercentage(response.CompletedChallenges, response.TotalChallenges)
+		var currentTeam teams.PlatformTeam
+		if err := h.Teams.DB.Where("id = ? AND uuid = ?", teamID, uuid).First(&currentTeam).Error; err == nil {
+			response.CurrentTeam = currentTeam.Name
+		}
 
-	totalSolveCount := currentTeamSolveCount + otherTeamsSolveCount
-	response.WinRatePct = calculatePercentage(currentTeamSolveCount, totalSolveCount)
-	response.LoseRatePct = calculatePercentage(otherTeamsSolveCount, totalSolveCount)
+		activeChallengeIDs := make(map[uint]struct{}, len(activeChallenges))
+		for _, challenge := range activeChallenges {
+			activeChallengeIDs[challenge.ID] = struct{}{}
+		}
 
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, response)
+		if len(activeChallengeIDs) == 0 {
+			return http.StatusOK, marshalJSON(response)
+		}
+
+		var scores []teams.TeamScore
+		if err := h.Teams.DB.Where("uuid = ?", uuid).Find(&scores).Error; err != nil {
+			log.Err(err).Msg("error retrieving team scores for world domination data")
+			return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_domination")})
+		}
+
+		currentTeamCompleted := make(map[uint]struct{})
+		currentTeamSolveCount := 0
+		otherTeamsSolveCount := 0
+
+		for _, score := range scores {
+			if _, ok := activeChallengeIDs[score.ChallengeID]; !ok {
+				continue
+			}
+
+			if score.TeamID == teamID {
+				currentTeamSolveCount++
+				currentTeamCompleted[score.ChallengeID] = struct{}{}
+				continue
+			}
+
+			otherTeamsSolveCount++
+		}
+
+		response.CompletedChallenges = len(currentTeamCompleted)
+		response.CompletionPct = calculatePercentage(response.CompletedChallenges, response.TotalChallenges)
+
+		totalSolveCount := currentTeamSolveCount + otherTeamsSolveCount
+		response.WinRatePct = calculatePercentage(currentTeamSolveCount, totalSolveCount)
+		response.LoseRatePct = calculatePercentage(otherTeamsSolveCount, totalSolveCount)
+
+		return http.StatusOK, marshalJSON(response)
+	})
 }
 
 func calculatePercentage(numerator, denominator int) int {
