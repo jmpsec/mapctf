@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -76,18 +75,6 @@ func (c *respCache) l1Put(key string, body []byte) {
 		return
 	}
 	c.l1.Store(key, &respCacheEntry{body: body, fetchedAt: time.Now()})
-}
-
-func (c *respCache) l1DeletePrefix(prefix string) {
-	if c == nil {
-		return
-	}
-	c.l1.Range(func(k, _ any) bool {
-		if ks, ok := k.(string); ok && strings.HasPrefix(ks, prefix) {
-			c.l1.Delete(ks)
-		}
-		return true
-	})
 }
 
 func feedKey(name, uuid string) string { return feedCacheKeyPrefix + name + ":" + uuid }
