@@ -137,6 +137,7 @@ func (h *HandlersMap) ChatPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("chat.failed_create")})
 		return
 	}
+	h.invalidateFeed("chat", uuid)
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapChatResponse{
 		Success: true,
 	})
@@ -318,6 +319,8 @@ func (h *HandlersMap) ScorePOSTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.invalidateFeed("teams", uuid)
+	h.invalidateFeed("activity", uuid)
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapScoreResponse{
 		Success:       true,
 		Message:       h.T(r.Context())("score.completed"),
@@ -523,6 +526,8 @@ func (h *HandlersMap) HintPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.invalidateFeed("teams", uuid)
+	h.invalidateFeed("activity", uuid)
 	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, MapHintResponse{
 		Success:         true,
 		Message:         h.T(r.Context())("hint.unlocked"),

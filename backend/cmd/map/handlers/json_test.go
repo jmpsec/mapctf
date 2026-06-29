@@ -846,3 +846,48 @@ func TestJSONWorldDominationHandlerReturnsCurrentTeamMetrics(t *testing.T) {
 	require.Equal(t, 67, resp.WinRatePct)
 	require.Equal(t, 33, resp.LoseRatePct)
 }
+
+func TestJSONChallengesFeedCacheServesL1AndInvalidates(t *testing.T) {
+	db := newJSONTestDB(t)
+	challengeManager, err := challenges.CreateChallengeManager(db)
+	require.NoError(t, err)
+	require.NoError(t, challengeManager.Create(challenges.Challenge{
+		Title:   "Cached challenge",
+		Country: "ES",
+		Active:  true,
+		Points:  100,
+		UUID:    jsonTestUUID,
+	}))
+
+	handler := CreateHandlersMap(
+		WithConfig(config.MapCTFConfiguration{Map: config.ConfigurationMap{UUID: jsonTestUUID}}),
+		WithChallenges(challengeManager),
+	)
+	// L1-only cache (no Redis) keeps the test network-free.
+	handler.feeds = &respCache{}
+
+	fetch := func() []challenges.Challenge {
+		req := newRequestWithUUID(http.MethodGet, "/json/challenges", jsonTestUUID)
+		rec := httptest.NewRecorder()
+		handler.JSONChallengesHandler(rec, req)
+		require.Equal(t, http.StatusOK, rec.Code)
+		var out []challenges.Challenge
+		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &out))
+		return out
+	}
+
+	// First fetch misses and populates the cache.
+	require.Len(t, fetch(), 1)
+
+	// Deactivate the challenge directly in the DB, bypassing the handler/cache.
+	require.NoError(t, challengeManager.DB.Model(&challenges.Challenge{}).
+		Where("uuid = ?", jsonTestUUID).Update("active", false).Error)
+
+	// Cached read still returns the stale challenge, proving L1 served it.
+	cached := fetch()
+	require.Len(t, cached, 1, "cached feed should not reflect a bypassing DB write")
+
+	// After invalidation the next fetch reflects the DB state.
+	handler.invalidateFeed("challenges", jsonTestUUID)
+	require.Empty(t, fetch(), "invalidated feed should reflect the DB state")
+}

@@ -35,6 +35,7 @@ type HandlersMap struct {
 	ServiceName string
 	DB          *gorm.DB
 	RedisCache  *cache.RedisManager
+	feeds       *respCache
 	Teams       *teams.TeamManager
 	Users       *users.UserManager
 	Challenges  *challenges.ChallengeManager
