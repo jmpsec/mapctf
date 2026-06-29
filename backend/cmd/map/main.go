@@ -234,6 +234,8 @@ func mapCTFService() {
 	if err != nil {
 		log.Fatal().Msgf("Failed to initialize settings: %v", err)
 	}
+	// Cache platform settings in Redis (read-heavy, write-invalidate).
+	settingsMgr.SetCache(redis.Client)
 	if err := settingsMgr.Initialization(flagParams.ConfigValues.Map.UUID); err != nil {
 		log.Fatal().Msgf("Failed to initialize default settings: %v", err)
 	}

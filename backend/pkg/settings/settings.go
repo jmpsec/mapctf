@@ -140,6 +140,7 @@ type SettingLog struct {
 type SettingsManager struct {
 	DB      *gorm.DB
 	Service string
+	cache   *settingsCache
 }
 
 // CreateSettingsManager to initialize the settings struct and tables
@@ -242,6 +243,7 @@ func (m *SettingsManager) Create(setting PlatformSetting) error {
 	if err := m.LogEvent(setting.ID, EventCreate, m.Service, setting.UUID); err != nil {
 		return fmt.Errorf("logEvent PlatformSetting %w", err)
 	}
+	m.invalidate(setting.UUID)
 	return nil
 }
 
@@ -253,21 +255,44 @@ func (m *SettingsManager) Exists(name string, uuid string) bool {
 }
 
 // Get setting by name including service settings
+// Get returns a setting by name, served from the settings cache when enabled.
+// It preserves gorm.ErrRecordNotFound semantics so existing callers are unaffected.
 func (m *SettingsManager) Get(name string, uuid string) (PlatformSetting, error) {
-	var setting PlatformSetting
-	if err := m.DB.Where("name = ? AND uuid = ?", name, uuid).First(&setting).Error; err != nil {
-		return setting, err
+	entry, err := m.loadCached(uuid)
+	if err != nil {
+		return PlatformSetting{}, err
 	}
-	return setting, nil
+	if setting, ok := entry.byName[name]; ok {
+		return setting, nil
+	}
+	return PlatformSetting{}, gorm.ErrRecordNotFound
 }
 
-// GetAll settings for a given uuid
+// GetAll settings for a given uuid, served from the settings cache when enabled.
 func (m *SettingsManager) GetAll(uuid string) ([]PlatformSetting, error) {
+	entry, err := m.loadCached(uuid)
+	if err != nil {
+		return nil, err
+	}
+	return entry.slice, nil
+}
+
+// getAllFromDB is the uncached DB read used to populate the cache.
+func (m *SettingsManager) getAllFromDB(uuid string) ([]PlatformSetting, error) {
 	var settings []PlatformSetting
 	if err := m.DB.Where("uuid = ?", uuid).Find(&settings).Error; err != nil {
 		return nil, err
 	}
 	return settings, nil
+}
+
+// loadFromDB builds a cache entry straight from the database.
+func (m *SettingsManager) loadFromDB(uuid string) (*settingsCacheEntry, error) {
+	slice, err := m.getAllFromDB(uuid)
+	if err != nil {
+		return nil, err
+	}
+	return newEntry(slice), nil
 }
 
 // ExistsGet checks if setting exists and returns the setting
@@ -330,6 +355,7 @@ func (m *SettingsManager) Save(setting PlatformSetting, username string) error {
 	if err := m.LogEvent(setting.ID, EventUpdate, username, setting.UUID); err != nil {
 		return fmt.Errorf("logEvent PlatformSetting %w", err)
 	}
+	m.invalidate(setting.UUID)
 	return nil
 }
 
@@ -339,6 +365,7 @@ func (m *SettingsManager) Change(name, valueType string, uuid string, value any,
 	if err != nil {
 		return fmt.Errorf("failed to get setting: %w", err)
 	}
+	defer m.invalidate(uuid)
 	column, err := valueColumnByType(valueType)
 	if err != nil {
 		return fmt.Errorf("failed to resolve setting value column: %w", err)
