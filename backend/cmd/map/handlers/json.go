@@ -89,21 +89,20 @@ func (h *HandlersMap) JSONActivityHandler(w http.ResponseWriter, r *http.Request
 	if !ok {
 		return
 	}
-	// Get all activity logs for the given UUID
-	activityLogs, err := h.Logs.AllActivity(uuid)
-	if err != nil {
-		log.Err(err).Msg(h.T(r.Context())("feed.error_activity"))
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_activity")})
-		return
-	}
-	visibleActivityLogs := make([]logs.ActivityLog, 0, len(activityLogs))
-	for _, activityLog := range activityLogs {
-		if activityLog.Visible {
-			visibleActivityLogs = append(visibleActivityLogs, activityLog)
+	h.serveCachedJSON(w, feedKey("activity", uuid), func() (int, []byte) {
+		activityLogs, err := h.Logs.AllActivity(uuid)
+		if err != nil {
+			log.Err(err).Msg(h.T(r.Context())("feed.error_activity"))
+			return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_activity")})
 		}
-	}
-	// Send response
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, visibleActivityLogs)
+		visibleActivityLogs := make([]logs.ActivityLog, 0, len(activityLogs))
+		for _, activityLog := range activityLogs {
+			if activityLog.Visible {
+				visibleActivityLogs = append(visibleActivityLogs, activityLog)
+			}
+		}
+		return http.StatusOK, marshalJSON(visibleActivityLogs)
+	})
 }
 
 // JSONGameClockHandler returns server-authoritative game clock state.
@@ -184,52 +183,49 @@ func (h *HandlersMap) JSONTeamsHandler(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	// Get all teams for the given UUID
-	allTeams, err := h.Teams.GetAll(uuid)
-	if err != nil {
-		log.Err(err).Msg(h.T(r.Context())("feed.error_teams"))
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_teams")})
-		return
-	}
-
-	showTeamMembers, err := h.Settings.GetGameboardShowTeamMembers(uuid)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Err(err).Msg("error retrieving gameboard_show_team_members setting")
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_team_settings")})
-		return
-	}
-
-	membersByTeamID := make(map[uint][]string)
-	if showTeamMembers {
-		allUsers, err := h.Users.GetAll(uuid)
+	h.serveCachedJSON(w, feedKey("teams", uuid), func() (int, []byte) {
+		allTeams, err := h.Teams.GetAll(uuid)
 		if err != nil {
-			log.Err(err).Msg("error retrieving users for teams JSON")
-			HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_team_members")})
-			return
+			log.Err(err).Msg(h.T(r.Context())("feed.error_teams"))
+			return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_teams")})
 		}
-		for _, user := range allUsers {
-			if user.TeamID == 0 || !user.Active || user.Service {
+
+		showTeamMembers, err := h.Settings.GetGameboardShowTeamMembers(uuid)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Err(err).Msg("error retrieving gameboard_show_team_members setting")
+			return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_team_settings")})
+		}
+
+		membersByTeamID := make(map[uint][]string)
+		if showTeamMembers {
+			allUsers, err := h.Users.GetAll(uuid)
+			if err != nil {
+				log.Err(err).Msg("error retrieving users for teams JSON")
+				return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_team_members")})
+			}
+			for _, user := range allUsers {
+				if user.TeamID == 0 || !user.Active || user.Service {
+					continue
+				}
+				membersByTeamID[user.TeamID] = append(membersByTeamID[user.TeamID], user.Username)
+			}
+		}
+
+		filteredTeams := make([]JSONTeamResponse, 0, len(allTeams))
+		for _, team := range allTeams {
+			if !team.Active || !team.Visible {
 				continue
 			}
-			membersByTeamID[user.TeamID] = append(membersByTeamID[user.TeamID], user.Username)
+			filteredTeams = append(filteredTeams, JSONTeamResponse{
+				Name:        team.Name,
+				Logo:        team.Logo,
+				Points:      team.Points,
+				LastScore:   teamLastScorePtr(team.LastScore),
+				TeamMembers: membersByTeamID[team.ID],
+			})
 		}
-	}
-
-	filteredTeams := make([]JSONTeamResponse, 0, len(allTeams))
-	for _, team := range allTeams {
-		if !team.Active || !team.Visible {
-			continue
-		}
-		filteredTeams = append(filteredTeams, JSONTeamResponse{
-			Name:        team.Name,
-			Logo:        team.Logo,
-			Points:      team.Points,
-			LastScore:   teamLastScorePtr(team.LastScore),
-			TeamMembers: membersByTeamID[team.ID],
-		})
-	}
-	// Send response
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, filteredTeams)
+		return http.StatusOK, marshalJSON(filteredTeams)
+	})
 }
 
 func teamLastScorePtr(lastScore time.Time) *time.Time {
@@ -249,15 +245,14 @@ func (h *HandlersMap) JSONChallengesHandler(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
-	// Get all active challenges for the given UUID
-	challenges, err := h.Challenges.GetActive(uuid)
-	if err != nil {
-		log.Err(err).Msg(h.T(r.Context())("feed.error_challenges"))
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_challenges")})
-		return
-	}
-	// Send response
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, challenges)
+	h.serveCachedJSON(w, feedKey("challenges", uuid), func() (int, []byte) {
+		challenges, err := h.Challenges.GetActive(uuid)
+		if err != nil {
+			log.Err(err).Msg(h.T(r.Context())("feed.error_challenges"))
+			return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_challenges")})
+		}
+		return http.StatusOK, marshalJSON(challenges)
+	})
 }
 
 // JSONCountriesHandler returns live gameboard country data for all countries,
@@ -545,17 +540,16 @@ func (h *HandlersMap) JSONChatHandler(w http.ResponseWriter, r *http.Request) {
 	if h.Config.DebugHTTP.Enabled {
 		DebugHTTPDump(h.DebugHTTP, r, h.Config.DebugHTTP.ShowBody)
 	}
-	_, ok := h.validatedJSONUUID(w, r)
+	uuid, ok := h.validatedJSONUUID(w, r)
 	if !ok {
 		return
 	}
-	// Get all chat entries for the given UUID
-	chatEntries, err := h.Chat.GetVisible()
-	if err != nil {
-		log.Err(err).Msg(h.T(r.Context())("feed.error_chat"))
-		HTTPResponse(w, JSONApplicationUTF8, http.StatusInternalServerError, MapErrorResponse{Error: h.T(r.Context())("feed.error_chat")})
-		return
-	}
-	// Send response
-	HTTPResponse(w, JSONApplicationUTF8, http.StatusOK, chatEntries)
+	h.serveCachedJSON(w, feedKey("chat", uuid), func() (int, []byte) {
+		chatEntries, err := h.Chat.GetVisible()
+		if err != nil {
+			log.Err(err).Msg(h.T(r.Context())("feed.error_chat"))
+			return http.StatusInternalServerError, marshalJSON(MapErrorResponse{Error: h.T(r.Context())("feed.error_chat")})
+		}
+		return http.StatusOK, marshalJSON(chatEntries)
+	})
 }
