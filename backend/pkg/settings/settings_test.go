@@ -576,3 +576,43 @@ func TestSaveFailsWhenLogInsertFails(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "logEvent PlatformSetting")
 }
+
+func TestSettingsCacheServesReadsAndInvalidatesOnWrite(t *testing.T) {
+	// L1-only cache (no Redis) keeps the test network-free; the Redis L2 path
+	// uses the same load/invalidate logic and is exercised in environments with
+	// a reachable Redis.
+	db, sqlDB := newTestDB(t)
+	defer sqlDB.Close()
+	m, err := CreateSettingsManager(db, "test-service")
+	require.NoError(t, err)
+	m.SetCache(nil)
+	require.NoError(t, m.Initialization("tenant-a"))
+
+	// Seed a value through the manager (write path invalidates the cache).
+	require.NoError(t, m.SetLanguage("es", "alice", "tenant-a"))
+	got, err := m.GetLanguage("tenant-a")
+	require.NoError(t, err)
+	require.Equal(t, "es", got) // miss -> DB -> populate cache
+
+	// Mutate the DB directly, bypassing the manager so no invalidation happens.
+	require.NoError(t, db.Model(&PlatformSetting{}).
+		Where("name = ? AND uuid = ?", Language, "tenant-a").
+		Update("value_string", "fr").Error)
+
+	// Cached read still returns the stale value, proving the cache served it.
+	got, err = m.GetLanguage("tenant-a")
+	require.NoError(t, err)
+	require.Equal(t, "es", got, "cached read should not reflect a bypassing DB write")
+
+	// After invalidation the next read picks up the DB value.
+	m.invalidate("tenant-a")
+	got, err = m.GetLanguage("tenant-a")
+	require.NoError(t, err)
+	require.Equal(t, "fr", got)
+
+	// A manager write invalidates, so the new value is visible immediately.
+	require.NoError(t, m.SetLanguage("de", "alice", "tenant-a"))
+	got, err = m.GetLanguage("tenant-a")
+	require.NoError(t, err)
+	require.Equal(t, "de", got)
+}
