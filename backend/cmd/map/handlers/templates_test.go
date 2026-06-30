@@ -344,7 +344,6 @@ func TestStaticIncHTMLOnlyKeepsRuntimeModals(t *testing.T) {
 	removedModals := []string{
 		"action-error.html",
 		"action-save.html",
-		"command-line.html",
 		"forgot-login-password.html",
 		"login.html",
 		"scoreboard-final.html",

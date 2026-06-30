@@ -1,7 +1,7 @@
 # Admin: separate team logos from teams
 
-**Date:** 2026-05-02  
-**Status:** Approved for implementation planning  
+**Date:** 2026-05-02
+**Status:** Approved for implementation planning
 **Scope:** Map service admin UI and HTTP routes under `backend/cmd/map` (`handlers/admin.go`, `main.go`, templates, `admin.js`). Data model `teams.TeamLogo` unchanged.
 
 ## Goals
@@ -113,4 +113,3 @@ Implementation note: duplicate chi registrations pointing at shared handler func
 
 - Import and update handlers must not allow privilege escalation by relabeling a custom logo as platform (`custom: false`) via JSON.
 - Delete-all must not remove platform rows (availability and UX for re-assigning teams).
-

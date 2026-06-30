@@ -891,3 +891,42 @@ func TestJSONChallengesFeedCacheServesL1AndInvalidates(t *testing.T) {
 	handler.invalidateFeed("challenges", jsonTestUUID)
 	require.Empty(t, fetch(), "invalidated feed should reflect the DB state")
 }
+
+func TestJSONWorldDominationFeedCacheKeysPerTeam(t *testing.T) {
+	handler, sessions, teamManager, userManager, challengeManager := newJSONWorldDominationHandler(t)
+	handler.feeds = &respCache{} // L1-only, network-free
+
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{Model: gorm.Model{ID: 10}, Name: "Blue Team", UUID: jsonTestUUID, Active: true, Visible: true}))
+	require.NoError(t, teamManager.Create(teams.PlatformTeam{Model: gorm.Model{ID: 11}, Name: "Red Team", UUID: jsonTestUUID, Active: true, Visible: true}))
+	require.NoError(t, userManager.Create(users.PlatformUser{Username: "alice", TeamID: 10, Active: true, UUID: jsonTestUUID}))
+	require.NoError(t, userManager.Create(users.PlatformUser{Username: "bob", TeamID: 11, Active: true, UUID: jsonTestUUID}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{Model: gorm.Model{ID: 101}, Title: "One", Active: true, UUID: jsonTestUUID}))
+	require.NoError(t, challengeManager.Create(challenges.Challenge{Model: gorm.Model{ID: 102}, Title: "Two", Active: true, UUID: jsonTestUUID}))
+	// Blue Team has solved challenge 101.
+	require.NoError(t, teamManager.CreateScore(teams.TeamScore{TeamID: 10, ChallengeID: 101, Points: 100, UUID: jsonTestUUID, ScoredBy: "alice"}))
+
+	fetch := func(username string) JSONWorldDominationResponse {
+		req := newRequestWithUUID(http.MethodGet, "/json/domination", jsonTestUUID)
+		ctx, err := sessions.Load(req.Context(), "")
+		require.NoError(t, err)
+		sessions.Put(ctx, string(ContextKeyUser), username)
+		req = req.WithContext(ctx)
+		rr := httptest.NewRecorder()
+		handler.JSONWorldDominationHandler(rr, req)
+		require.Equal(t, http.StatusOK, rr.Code, "body: %s", rr.Body.String())
+		var resp JSONWorldDominationResponse
+		require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+		return resp
+	}
+
+	// Alice's team has 1 completed; this misses and caches under (uuid, team 10).
+	require.Equal(t, 1, fetch("alice").CompletedChallenges)
+	// Bob's team has 0 completed; a shared cache would have leaked Alice's "1".
+	// A separate per-team key means this misses and computes 0.
+	require.Equal(t, 0, fetch("bob").CompletedChallenges, "per-team cache must not leak another team's result")
+
+	// Bob's team now solves a challenge, bypassing the cache (no invalidation wired for per-team feeds).
+	require.NoError(t, teamManager.CreateScore(teams.TeamScore{TeamID: 11, ChallengeID: 102, Points: 100, UUID: jsonTestUUID, ScoredBy: "bob"}))
+	// Cached read still returns the stale 0, proving the L1 cache served it.
+	require.Equal(t, 0, fetch("bob").CompletedChallenges, "cached feed should not reflect a bypassing DB write")
+}
