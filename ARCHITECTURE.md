@@ -155,6 +155,16 @@ Admin write paths include:
 
 The admin handlers support both browser form workflows and JSON/XHR-style responses depending on request headers.
 
+The dashboard reads UUID-scoped game settings, team standings, successful score
+records, challenge counts, and visible activity. It refreshes every 15 seconds
+through the same authenticated admin page. Started games within their configured
+time window show metrics (with paused games labeled); otherwise only an empty
+competition message is shown. Capture counts and activity are limited to the
+configured start time, or all records for the UUID when no start is set. Standings
+use stored team totals, including penalties. Dashboard query failures return an
+error rather than fabricated zeroes; refresh failures retain the last snapshot
+with a stale-data notice.
+
 ## Routing and Middleware
 
 The `mapctf-map` router uses Chi with:

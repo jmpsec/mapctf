@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ .Title }}</title>
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
-    <link rel="stylesheet" href="/static/css/mapctf.css?v=20260503-admin-dashboard" />
+    <link rel="stylesheet" href="/static/css/mapctf.css?v=20260918-live-dashboard-2" />
   </head>
   <body data-section="admin" data-admin-page="dashboard">
     <div class="mctf-sprite" id="mctf-svg-sprite"></div>
@@ -66,43 +66,49 @@
             </span>
           </header>
 
-          <section class="admin-dashboard" aria-label="Live game metrics">
+          <p id="dashboard-refresh-error" class="admin-section--status" role="status" hidden>{{ T "admin.dashboard.refresh_error" }}</p>
+          <section id="admin-dashboard" class="admin-dashboard" aria-label="{{ T "admin.dashboard.live_metrics" }}">
+            {{ if not .Dashboard.Ongoing }}
+            <p class="dashboard-panel">{{ T "admin.dashboard.no_competition" }}</p>
+            {{ else }}
+            {{ with .Dashboard }}
             <div class="dashboard-command-strip">
               <div class="dashboard-command-status">
-                <span class="dashboard-status-dot dashboard-status-dot--live"></span>
+                <span class="dashboard-status-dot {{ if .Paused }}dashboard-status-dot--warn{{ else }}dashboard-status-dot--live{{ end }}"></span>
                 <span>{{ T "admin.dashboard.live_metrics" }}</span>
               </div>
               <div class="dashboard-command-meta">
-                <span>Event window 14:00-18:30 UTC</span>
-                <span>Telemetry sample 12:42:16</span>
+                {{ if not .Start.IsZero }}<span>{{ T "admin.dashboard.started_at" }} {{ .Start.UTC.Format "2006-01-02 15:04 UTC" }}</span>{{ end }}
+                {{ if not .End.IsZero }}<span>{{ T "admin.dashboard.ends_at" }} {{ .End.UTC.Format "2006-01-02 15:04 UTC" }}</span>{{ end }}
+                <span>{{ T "admin.dashboard.updated_at" }} <time datetime="{{ .Updated.Format "2006-01-02T15:04:05Z07:00" }}">{{ .Updated.Format "15:04:05 UTC" }}</time></span>
               </div>
             </div>
 
             <div class="dashboard-kpi-grid">
               <article class="dashboard-kpi dashboard-kpi--strong">
                 <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_game_state" }}</span>
-                <strong>Live</strong>
-                <span class="dashboard-kpi-detail">4h 17m remaining</span>
+                <strong data-metric="state">{{ if .Paused }}{{ T "admin.dashboard.paused" }}{{ else }}{{ T "admin.dashboard.live" }}{{ end }}</strong>
+                <span class="dashboard-kpi-detail">{{ T "admin.dashboard.refresh_interval" }}</span>
               </article>
               <article class="dashboard-kpi">
-                <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_teams_online" }}</span>
-                <strong>18 / 24</strong>
-                <span class="dashboard-kpi-detail">75% active in last 5m</span>
+                <span class="dashboard-kpi-label">{{ T "admin.dashboard.competing_teams" }}</span>
+                <strong data-metric="teams">{{ .TeamCount }}</strong>
+                <span class="dashboard-kpi-detail">{{ T "admin.dashboard.competing_teams_detail" }}</span>
               </article>
               <article class="dashboard-kpi">
-                <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_flags_hour" }}</span>
-                <strong>142</strong>
-                <span class="dashboard-kpi-detail">+18% over baseline</span>
+                <span class="dashboard-kpi-label">{{ T "admin.dashboard.captures_hour" }}</span>
+                <strong data-metric="captures-hour">{{ .Hour }}</strong>
+                <span class="dashboard-kpi-detail">{{ T "admin.dashboard.successful_captures" }}</span>
               </article>
               <article class="dashboard-kpi">
                 <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_solve_coverage" }}</span>
-                <strong>73%</strong>
-                <span class="dashboard-kpi-detail">34 of 46 challenges touched</span>
+                <strong data-metric="coverage">{{ .Coverage }}%</strong>
+                <span class="dashboard-kpi-detail">{{ T "admin.dashboard.coverage_detail" .SolvedChallenges .ActiveChallenges }}</span>
               </article>
               <article class="dashboard-kpi">
-                <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_platform_pulse" }}</span>
-                <strong>p95 118ms</strong>
-                <span class="dashboard-kpi-detail">API stable, DB nominal</span>
+                <span class="dashboard-kpi-label">{{ T "admin.dashboard.total_captures" }}</span>
+                <strong data-metric="captures-total">{{ .Captures }}</strong>
+                <span class="dashboard-kpi-detail">{{ if .Start.IsZero }}{{ T "admin.dashboard.all_captures" }}{{ else }}{{ T "admin.dashboard.since_start" }}{{ end }}</span>
               </article>
             </div>
 
@@ -114,115 +120,45 @@
                       <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_competition" }}</span>
                       <h4>{{ T "admin.dashboard.leaderboard_preview" }}</h4>
                     </div>
-                    <a href="/{{ .UUID }}/gameboard">{{ T "admin.dashboard.view_board" }}</a>
+                    <a href="/{{ $.UUID }}/gameboard">{{ T "admin.dashboard.view_board" }}</a>
                   </header>
                   <div class="dashboard-leaderboard">
+                    {{ range .Leaders }}
                     <div class="dashboard-leader-row">
-                      <span class="dashboard-rank">01</span>
-                      <span class="dashboard-team">Orion Labs</span>
-                      <span class="dashboard-score">12,480</span>
-                      <span class="dashboard-meter"><span style="width: 96%"></span></span>
+                      <span class="dashboard-rank">{{ .Rank }}</span>
+                      <span class="dashboard-team">{{ .Name }}</span>
+                      <span class="dashboard-score">{{ .Points }} {{ T "gb.points" }}</span>
                     </div>
-                    <div class="dashboard-leader-row">
-                      <span class="dashboard-rank">02</span>
-                      <span class="dashboard-team">Cipher Forge</span>
-                      <span class="dashboard-score">11,920</span>
-                      <span class="dashboard-meter"><span style="width: 88%"></span></span>
-                    </div>
-                    <div class="dashboard-leader-row">
-                      <span class="dashboard-rank">03</span>
-                      <span class="dashboard-team">Blue Sector</span>
-                      <span class="dashboard-score">10,640</span>
-                      <span class="dashboard-meter"><span style="width: 78%"></span></span>
-                    </div>
-                    <div class="dashboard-leader-row">
-                      <span class="dashboard-rank">04</span>
-                      <span class="dashboard-team">Null Route</span>
-                      <span class="dashboard-score">9,870</span>
-                      <span class="dashboard-meter"><span style="width: 70%"></span></span>
-                    </div>
+                    {{ else }}
+                    <p>{{ T "gb.no_teams_yet" }}</p>
+                    {{ end }}
                   </div>
                 </article>
 
                 <article class="dashboard-panel">
                   <header class="dashboard-panel-header">
-                    <div>
-                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_progress" }}</span>
-                      <h4>{{ T "admin.dashboard.capture_velocity" }}</h4>
-                    </div>
+                    <h4>{{ T "admin.dashboard.challenge_availability" }}</h4>
+                    <a href="/{{ $.UUID }}/admin/challenges">{{ T "admin.dashboard.manage" }}</a>
                   </header>
-                  <div class="dashboard-velocity-chart" aria-label="Capture velocity by hour">
-                    <span style="height: 34%"></span>
-                    <span style="height: 48%"></span>
-                    <span style="height: 42%"></span>
-                    <span style="height: 66%"></span>
-                    <span style="height: 58%"></span>
-                    <span style="height: 82%"></span>
-                    <span style="height: 73%"></span>
-                    <span style="height: 91%"></span>
-                    <span style="height: 76%"></span>
-                    <span style="height: 68%"></span>
+                  <div class="dashboard-split-stat">
+                    <span>{{ T "admin.challenges.active" }}</span>
+                    <strong data-metric="active-challenges">{{ .ActiveChallenges }}</strong>
                   </div>
                   <div class="dashboard-split-stat">
+                    <span>{{ T "admin.challenges.inactive" }}</span>
+                    <strong data-metric="inactive-challenges">{{ .InactiveChallenges }}</strong>
+                  </div>
+                </article>
+
+                <article class="dashboard-panel">
+                  <header class="dashboard-panel-header">
+                    <h4>{{ T "admin.dashboard.recent_captures" }}</h4>
+                  </header>
+                  <div class="dashboard-split-stat">
                     <span>{{ T "admin.dashboard.last_10m" }}</span>
-                    <strong>27 solves</strong>
+                    <strong data-metric="captures-10m">{{ .TenMins }}</strong>
                   </div>
-                </article>
-
-                <article class="dashboard-panel">
-                  <header class="dashboard-panel-header">
-                    <div>
-                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_challenges" }}</span>
-                      <h4>{{ T "admin.dashboard.challenge_health" }}</h4>
-                    </div>
-                    <a href="/{{ .UUID }}/admin/challenges">{{ T "admin.dashboard.manage" }}</a>
-                  </header>
-                  <div class="dashboard-health-list">
-                    <div>
-                      <span>Web</span>
-                      <strong>12 / 14 solved</strong>
-                      <span class="dashboard-meter"><span style="width: 86%"></span></span>
-                    </div>
-                    <div>
-                      <span>Forensics</span>
-                      <strong>8 / 10 solved</strong>
-                      <span class="dashboard-meter"><span style="width: 80%"></span></span>
-                    </div>
-                    <div>
-                      <span>Crypto</span>
-                      <strong>5 / 8 solved</strong>
-                      <span class="dashboard-meter dashboard-meter--warn"><span style="width: 62%"></span></span>
-                    </div>
-                  </div>
-                </article>
-
-                <article class="dashboard-panel">
-                  <header class="dashboard-panel-header">
-                    <div>
-                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_platform" }}</span>
-                      <h4>{{ T "admin.dashboard.infrastructure_status" }}</h4>
-                    </div>
-                  </header>
-                  <div class="dashboard-service-list">
-                    <div><span class="dashboard-status-dot dashboard-status-dot--ok"></span><span>API gateway</span><strong>98.8%</strong></div>
-                    <div><span class="dashboard-status-dot dashboard-status-dot--ok"></span><span>PostgreSQL</span><strong>36 conns</strong></div>
-                    <div><span class="dashboard-status-dot dashboard-status-dot--warn"></span><span>Submission queue</span><strong>41 jobs</strong></div>
-                    <div><span class="dashboard-status-dot dashboard-status-dot--ok"></span><span>Redis cache</span><strong>2.1ms</strong></div>
-                  </div>
-                </article>
-
-                <article class="dashboard-panel">
-                  <header class="dashboard-panel-header">
-                    <div>
-                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_operations" }}</span>
-                      <h4>{{ T "admin.dashboard.incident_queue" }}</h4>
-                    </div>
-                  </header>
-                  <div class="dashboard-incident-list">
-                    <div><span class="dashboard-severity dashboard-severity--high">High</span><span>Submission burst from shared ASN</span></div>
-                    <div><span class="dashboard-severity dashboard-severity--medium">Medium</span><span>Hint requests above forecast</span></div>
-                    <div><span class="dashboard-severity dashboard-severity--low">Low</span><span>Two teams idle after onboarding</span></div>
-                  </div>
+                  <p class="dashboard-kpi-detail">{{ T "admin.dashboard.successful_captures" }}</p>
                 </article>
               </div>
 
@@ -235,30 +171,31 @@
                     </div>
                   </header>
                   <ol class="dashboard-activity-feed">
-                    <li><time>12:39</time><span>Orion Labs solved <strong>forensics_02</strong></span></li>
-                    <li><time>12:41</time><span>Rate limiter shifted to balanced profile</span></li>
-                    <li><time>12:43</time><span>New registration from EU-West</span></li>
-                    <li><time>12:46</time><span>Hint published for <strong>web_04</strong></span></li>
-                    <li><time>12:49</time><span>Crypto track crossed 60% coverage</span></li>
+                    {{ range .Activity }}
+                    <li>
+                      <time datetime="{{ .CreatedAt.UTC.Format "2006-01-02T15:04:05Z07:00" }}" title="{{ .CreatedAt.UTC.Format "2006-01-02 15:04:05 UTC" }}">{{ .CreatedAt.UTC.Format "15:04 UTC" }}</time>
+                      <span>{{ .Message }}</span>
+                    </li>
+                    {{ else }}
+                    <li>{{ T "gb.no_activity_yet" }}</li>
+                    {{ end }}
                   </ol>
                 </article>
-
                 <article class="dashboard-panel">
                   <header class="dashboard-panel-header">
-                    <div>
-                      <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_control" }}</span>
-                      <h4>{{ T "admin.dashboard.quick_actions" }}</h4>
-                    </div>
+                    <h4>{{ T "admin.dashboard.quick_actions" }}</h4>
                   </header>
                   <div class="dashboard-action-list">
-                    <a href="/{{ .UUID }}/admin/users">{{ T "admin.dashboard.review_users" }}</a>
-                    <a href="/{{ .UUID }}/admin/teams">{{ T "admin.dashboard.manage_teams" }}</a>
-                    <a href="/{{ .UUID }}/admin/activity">{{ T "admin.dashboard.audit_activity" }}</a>
-                    <a href="/{{ .UUID }}/admin/chat">{{ T "admin.dashboard.moderate_chat" }}</a>
+                    <a href="/{{ $.UUID }}/admin/users">{{ T "admin.dashboard.review_users" }}</a>
+                    <a href="/{{ $.UUID }}/admin/teams">{{ T "admin.dashboard.manage_teams" }}</a>
+                    <a href="/{{ $.UUID }}/admin/activity">{{ T "admin.dashboard.audit_activity" }}</a>
+                    <a href="/{{ $.UUID }}/admin/chat">{{ T "admin.dashboard.moderate_chat" }}</a>
                   </div>
                 </article>
               </aside>
             </div>
+            {{ end }}
+            {{ end }}
           </section>
 
         </div>
@@ -271,5 +208,6 @@
     <script type="text/javascript" src="/static/js/mapctf.js"></script>
     <script type="text/javascript" src="/static/js/functions.js"></script>
     <script type="text/javascript" src="/static/js/admin.js"></script>
+    <script src="/static/js/dashboard.js?v=20260918" defer></script>
   </body>
 </html>

@@ -480,9 +480,16 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	// Prepare template
-	t, err := template.New("index.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/index.html")
+	t, err := htmltemplate.New("index.html").Funcs(h.adminTemplateFuncs(r)).ParseFiles(h.Config.Map.TemplatesDir + "/admin/index.html")
 	if err != nil {
 		log.Err(err).Msg("error getting admin template")
+		http.Error(w, h.T(r.Context())("admin.dashboard.unavailable"), http.StatusInternalServerError)
+		return
+	}
+	dashboard, err := h.loadDashboard(uuid, time.Now().UTC())
+	if err != nil {
+		log.Err(err).Msg("error loading dashboard")
+		http.Error(w, h.T(r.Context())("admin.dashboard.unavailable"), http.StatusServiceUnavailable)
 		return
 	}
 	// Prepare template data
@@ -490,6 +497,7 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 	tr := h.T(r.Context())
 	i18nJSON, _ := json.Marshal(h.LocaleMessages(r.Context()))
 	templateData := AdminTemplateData{
+		Dashboard:     dashboard,
 		Title:         tr("admin.title.dashboard"),
 		Lang:          h.Locale(r.Context()).String(),
 		I18NJSON:      htmltemplate.JS(i18nJSON),
@@ -499,6 +507,7 @@ func (h *HandlersMap) AdminTemplateHandler(w http.ResponseWriter, r *http.Reques
 		Status:        r.URL.Query().Get("status"),
 		Message:       r.URL.Query().Get("msg"),
 	}
+	w.Header().Set("Cache-Control", "no-store")
 	if err := t.Execute(w, templateData); err != nil {
 		log.Err(err).Msg("template error")
 		return

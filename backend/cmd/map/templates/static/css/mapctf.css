@@ -6319,10 +6319,13 @@ General Admin
 }
 .dashboard-activity-feed li {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-columns: 78px minmax(0, 1fr);
   gap: 10px;
   color: #b7d9de;
   line-height: 1.35;
+}
+.dashboard-activity-feed li span {
+  overflow-wrap: anywhere;
 }
 .dashboard-activity-feed time {
   color: #21b4ba;
@@ -6354,6 +6357,15 @@ General Admin
   }
 }
 @media (max-width: 820px) {
+  body[data-admin-page="dashboard"] .mctf-viewport .mctf-admin-main {
+    padding: 20px 16px;
+  }
+  body[data-admin-page="dashboard"] .admin-page-header {
+    position: static;
+  }
+  body[data-admin-page="dashboard"] .admin-page-header-actions {
+    flex-wrap: wrap;
+  }
   .dashboard-command-strip,
   .dashboard-command-meta,
   .dashboard-panel-header {

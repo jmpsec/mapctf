@@ -144,6 +144,7 @@ type AdminSettingsTemplateData struct {
 
 // AdminTemplateData for passing data to the admin template
 type AdminTemplateData struct {
+	Dashboard     dashboardData
 	Title         string
 	Lang          string
 	I18NJSON      template.JS
