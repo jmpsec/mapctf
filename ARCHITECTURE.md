@@ -158,12 +158,17 @@ The admin handlers support both browser form workflows and JSON/XHR-style respon
 The dashboard reads UUID-scoped game settings, team standings, successful score
 records, challenge counts, and visible activity. It refreshes every 15 seconds
 through the same authenticated admin page. Started games within their configured
-time window show metrics (with paused games labeled); otherwise only an empty
-competition message is shown. Capture counts and activity are limited to the
-configured start time, or all records for the UUID when no start is set. Standings
-use stored team totals, including penalties. Dashboard query failures return an
-error rather than fabricated zeroes; refresh failures retain the last snapshot
-with a stale-data notice.
+time window show metrics (with paused games labeled). Ended games show a summary
+with complete standings; games that have not started show an empty competition
+message. Ended-game captures and activity stop at the configured end time, and
+standings are rebuilt from score records minus hint penalties within the game
+window. This is a summary of retained records, not an immutable archive: roster,
+challenge configuration, and deleted records still reflect their current state.
+Capture counts and activity are limited to the configured start time, or all
+records for the UUID when no start is set. Standings for ongoing games use stored
+team totals, including penalties. Dashboard query failures return an error rather
+than fabricated zeroes; refresh failures retain the last snapshot with a
+stale-data notice.
 
 ## Routing and Middleware
 

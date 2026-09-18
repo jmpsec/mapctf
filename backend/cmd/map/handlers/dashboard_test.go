@@ -51,7 +51,8 @@ func TestDashboardCompetitionState(t *testing.T) {
 	}{
 		{name: "not started"},
 		{name: "scheduled", started: true, start: now.Add(time.Hour)},
-		{name: "ended", started: true, end: now.Add(-time.Minute)},
+		{name: "ended", started: true, end: now.Add(-time.Minute), state: "Ended"},
+		{name: "never started with past schedule", end: now.Add(-time.Minute)},
 		{name: "running", started: true, start: now.Add(-time.Hour), end: now.Add(time.Hour), state: "Live"},
 		{name: "paused", started: true, paused: true, state: "Paused"},
 	} {
@@ -142,4 +143,72 @@ func TestDashboardDatabaseFailureIsNotAnEmptyCompetition(t *testing.T) {
 	rec := renderDashboard(t, h)
 	require.Equal(t, http.StatusServiceUnavailable, rec.Code)
 	require.NotContains(t, rec.Body.String(), "There is no ongoing competition.")
+}
+
+func TestDashboardEndedSummaryStopsAtEndTime(t *testing.T) {
+	h := newDashboardHandler(t)
+	now := time.Now().UTC()
+	start, end := now.Add(-4*time.Hour), now.Add(-2*time.Hour)
+	require.NoError(t, h.Settings.SetGameStarted(true, "admin", jsonTestUUID))
+	require.NoError(t, h.Settings.SetGameStartTime(start, "admin", jsonTestUUID))
+	require.NoError(t, h.Settings.SetGameEndTime(end, "admin", jsonTestUUID))
+	require.NoError(t, h.Settings.SetGamePaused(true, "admin", jsonTestUUID))
+	require.NoError(t, h.Teams.Create(teams.PlatformTeam{Model: gorm.Model{ID: 1}, Name: "Winning team", Points: 9999, Active: true, Visible: true, UUID: jsonTestUUID}))
+	for _, name := range []string{"Team B", "Team C", "Team D", "Team E", "Team F"} {
+		require.NoError(t, h.Teams.Create(teams.PlatformTeam{Name: name, Active: true, Visible: true, UUID: jsonTestUUID}))
+	}
+	require.NoError(t, h.Challenges.Create(challenges.Challenge{Model: gorm.Model{ID: 1}, Active: true, UUID: jsonTestUUID}))
+	require.NoError(t, h.Challenges.Create(challenges.Challenge{Model: gorm.Model{ID: 2}, Active: true, UUID: jsonTestUUID}))
+	for _, score := range []teams.TeamScore{
+		{Model: gorm.Model{CreatedAt: start.Add(-time.Minute)}, TeamID: 1, ChallengeID: 2, Points: 500, UUID: jsonTestUUID},
+		{Model: gorm.Model{CreatedAt: end}, TeamID: 1, ChallengeID: 1, Points: 100, UUID: jsonTestUUID},
+		{Model: gorm.Model{CreatedAt: end.Add(time.Minute)}, TeamID: 1, ChallengeID: 2, Points: 900, UUID: jsonTestUUID},
+		{Model: gorm.Model{CreatedAt: end}, TeamID: 1, ChallengeID: 2, Points: 500, UUID: jsonOtherTestUUID},
+	} {
+		require.NoError(t, h.Teams.CreateScore(score))
+	}
+	for _, hint := range []logs.HintsLog{
+		{Model: gorm.Model{CreatedAt: start.Add(-time.Minute)}, TeamID: 1, Penalty: 5, UUID: jsonTestUUID},
+		{Model: gorm.Model{CreatedAt: end.Add(-time.Minute)}, TeamID: 1, Penalty: 20, UUID: jsonTestUUID},
+		{Model: gorm.Model{CreatedAt: end.Add(time.Minute)}, TeamID: 1, Penalty: 30, UUID: jsonTestUUID},
+		{Model: gorm.Model{CreatedAt: end}, TeamID: 1, Penalty: 50, UUID: jsonOtherTestUUID},
+	} {
+		require.NoError(t, h.Logs.CreateHintsLog(hint))
+	}
+	require.NoError(t, h.Logs.CreateActivity(logs.ActivityLog{Model: gorm.Model{CreatedAt: end}, Visible: true, Message: "Last game capture", UUID: jsonTestUUID}))
+	require.NoError(t, h.Logs.CreateActivity(logs.ActivityLog{Model: gorm.Model{CreatedAt: end.Add(time.Minute)}, Visible: true, Message: "After-game activity", UUID: jsonTestUUID}))
+
+	data, err := h.loadDashboard(jsonTestUUID, now)
+	require.NoError(t, err)
+	require.False(t, data.Ongoing)
+	require.Equal(t, int64(1), data.Captures)
+	require.Equal(t, int64(1), data.Hour)
+	require.Equal(t, int64(1), data.TenMins)
+	require.Equal(t, 50, data.Coverage)
+	require.Len(t, data.Leaders, 6)
+	require.Equal(t, 80, data.Leaders[0].Points)
+	require.Equal(t, "Winning team", data.Leaders[0].Name)
+	require.Equal(t, 0, data.Leaders[5].Points)
+	require.Len(t, data.Activity, 1)
+	require.Equal(t, "Last game capture", data.Activity[0].Message)
+	later, err := h.loadDashboard(jsonTestUUID, now.Add(24*time.Hour))
+	require.NoError(t, err)
+	require.Equal(t, data.Captures, later.Captures)
+	require.Equal(t, data.Hour, later.Hour)
+	require.Equal(t, data.Leaders, later.Leaders)
+	atEnd, err := h.loadDashboard(jsonTestUUID, end)
+	require.NoError(t, err)
+	require.True(t, atEnd.Ended)
+	require.False(t, atEnd.Ongoing)
+	require.Equal(t, data.Leaders, atEnd.Leaders)
+
+	rec := renderDashboard(t, h)
+	require.Equal(t, http.StatusOK, rec.Code)
+	body := strings.Split(rec.Body.String(), "<script")[0]
+	for _, value := range []string{"Competition summary", "Competition standings", "Winning team", "Team F", "80 Points", "Last game capture", `data-metric="state">Ended</strong>`} {
+		require.Contains(t, body, value)
+	}
+	for _, absent := range []string{"There is no ongoing competition.", "Live game metrics", "After-game activity", "Captures in the last hour", "Last 10m", "9999", ">Paused</strong>"} {
+		require.NotContains(t, body, absent)
+	}
 }

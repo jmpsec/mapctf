@@ -12,7 +12,7 @@ import (
 )
 
 type dashboardData struct {
-	Ongoing, Paused                           bool
+	Ongoing, Paused, Ended                    bool
 	Start, End, Updated                       time.Time
 	TeamCount, Coverage                       int
 	ActiveChallenges, InactiveChallenges      int64
@@ -41,10 +41,15 @@ func (h *HandlersMap) loadDashboard(uuid string, now time.Time) (dashboardData, 
 	if d.End, err = h.Settings.GetGameEndTime(uuid); err != nil {
 		return d, err
 	}
-	if d.Start.After(now) || (!d.End.IsZero() && !d.End.After(now)) {
+	if d.Start.After(now) {
 		return d, nil
 	}
-	d.Ongoing = true
+	d.Ended = !d.End.IsZero() && !d.End.After(now)
+	d.Ongoing = !d.Ended
+	cutoff := now
+	if d.Ended {
+		cutoff = d.End
+	}
 	if d.Paused, err = h.Settings.GetGamePaused(uuid); err != nil {
 		return d, err
 	}
@@ -55,9 +60,40 @@ func (h *HandlersMap) loadDashboard(uuid string, now time.Time) (dashboardData, 
 	if err != nil {
 		return d, err
 	}
+	finalPoints := make(map[uint]int)
+	if d.Ended {
+		// Rebuild results from the scoring ledger so post-game scores and hint
+		// purchases cannot change the completed competition's standings.
+		var captures, penalties []struct {
+			TeamID uint
+			Points int
+		}
+		if err := h.Teams.DB.Model(&teams.TeamScore{}).
+			Select("team_id, SUM(points) AS points").
+			Where("uuid = ? AND created_at >= ? AND created_at <= ?", uuid, d.Start, cutoff).
+			Group("team_id").Scan(&captures).Error; err != nil {
+			return d, err
+		}
+		if err := h.Logs.DB.Model(&logs.HintsLog{}).
+			Select("team_id, SUM(penalty) AS points").
+			Where("uuid = ? AND created_at >= ? AND created_at <= ?", uuid, d.Start, cutoff).
+			Group("team_id").Scan(&penalties).Error; err != nil {
+			return d, err
+		}
+		for _, capture := range captures {
+			finalPoints[capture.TeamID] += capture.Points
+		}
+		for _, penalty := range penalties {
+			finalPoints[penalty.TeamID] -= penalty.Points
+		}
+	}
 	for _, team := range allTeams {
 		if team.Active && team.Visible {
-			d.Leaders = append(d.Leaders, dashboardLeader{Name: team.Name, Points: team.Points})
+			points := team.Points
+			if d.Ended {
+				points = finalPoints[team.ID]
+			}
+			d.Leaders = append(d.Leaders, dashboardLeader{Name: team.Name, Points: points})
 		}
 	}
 	d.TeamCount = len(d.Leaders)
@@ -67,7 +103,7 @@ func (h *HandlersMap) loadDashboard(uuid string, now time.Time) (dashboardData, 
 		}
 		return strings.ToLower(d.Leaders[i].Name) < strings.ToLower(d.Leaders[j].Name)
 	})
-	if len(d.Leaders) > 5 {
+	if !d.Ended && len(d.Leaders) > 5 {
 		d.Leaders = d.Leaders[:5]
 	}
 	for i := range d.Leaders {
@@ -87,29 +123,29 @@ func (h *HandlersMap) loadDashboard(uuid string, now time.Time) (dashboardData, 
 		count *int64
 	}{
 		{d.Start, &d.Captures},
-		{now.Add(-time.Hour), &d.Hour},
-		{now.Add(-10 * time.Minute), &d.TenMins},
+		{cutoff.Add(-time.Hour), &d.Hour},
+		{cutoff.Add(-10 * time.Minute), &d.TenMins},
 	} {
 		since := metric.since
 		if since.Before(d.Start) {
 			since = d.Start
 		}
 		if err := h.Teams.DB.Model(&teams.TeamScore{}).
-			Where("uuid = ? AND created_at >= ? AND created_at <= ?", uuid, since, now).
+			Where("uuid = ? AND created_at >= ? AND created_at <= ?", uuid, since, cutoff).
 			Count(metric.count).Error; err != nil {
 			return d, err
 		}
 	}
 	activeIDs := h.Challenges.DB.Model(&challenges.Challenge{}).Select("id").Where("uuid = ? AND active = ?", uuid, true)
 	if err := h.Teams.DB.Model(&teams.TeamScore{}).
-		Where("uuid = ? AND created_at >= ? AND created_at <= ? AND challenge_id IN (?)", uuid, d.Start, now, activeIDs).
+		Where("uuid = ? AND created_at >= ? AND created_at <= ? AND challenge_id IN (?)", uuid, d.Start, cutoff, activeIDs).
 		Distinct("challenge_id").Count(&d.SolvedChallenges).Error; err != nil {
 		return d, err
 	}
 	if d.ActiveChallenges > 0 {
 		d.Coverage = int(100 * d.SolvedChallenges / d.ActiveChallenges)
 	}
-	if err := h.Logs.DB.Where("uuid = ? AND visible = ? AND created_at >= ? AND created_at <= ?", uuid, true, d.Start, now).
+	if err := h.Logs.DB.Where("uuid = ? AND visible = ? AND created_at >= ? AND created_at <= ?", uuid, true, d.Start, cutoff).
 		Order("created_at DESC, id DESC").Limit(8).Find(&d.Activity).Error; err != nil {
 		return d, err
 	}

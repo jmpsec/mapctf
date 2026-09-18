@@ -67,19 +67,19 @@
           </header>
 
           <p id="dashboard-refresh-error" class="admin-section--status" role="status" hidden>{{ T "admin.dashboard.refresh_error" }}</p>
-          <section id="admin-dashboard" class="admin-dashboard" aria-label="{{ T "admin.dashboard.live_metrics" }}">
-            {{ if not .Dashboard.Ongoing }}
+          <section id="admin-dashboard" class="admin-dashboard" aria-label="{{ if .Dashboard.Ended }}{{ T "admin.dashboard.summary" }}{{ else }}{{ T "admin.dashboard.live_metrics" }}{{ end }}">
+            {{ if not (or .Dashboard.Ongoing .Dashboard.Ended) }}
             <p class="dashboard-panel">{{ T "admin.dashboard.no_competition" }}</p>
             {{ else }}
             {{ with .Dashboard }}
             <div class="dashboard-command-strip">
               <div class="dashboard-command-status">
-                <span class="dashboard-status-dot {{ if .Paused }}dashboard-status-dot--warn{{ else }}dashboard-status-dot--live{{ end }}"></span>
-                <span>{{ T "admin.dashboard.live_metrics" }}</span>
+                <span class="dashboard-status-dot {{ if .Ended }}{{ else if .Paused }}dashboard-status-dot--warn{{ else }}dashboard-status-dot--live{{ end }}"></span>
+                <span>{{ if .Ended }}{{ T "admin.dashboard.summary" }}{{ else }}{{ T "admin.dashboard.live_metrics" }}{{ end }}</span>
               </div>
               <div class="dashboard-command-meta">
                 {{ if not .Start.IsZero }}<span>{{ T "admin.dashboard.started_at" }} {{ .Start.UTC.Format "2006-01-02 15:04 UTC" }}</span>{{ end }}
-                {{ if not .End.IsZero }}<span>{{ T "admin.dashboard.ends_at" }} {{ .End.UTC.Format "2006-01-02 15:04 UTC" }}</span>{{ end }}
+                {{ if not .End.IsZero }}<span>{{ if .Ended }}{{ T "admin.dashboard.ended_at" }}{{ else }}{{ T "admin.dashboard.ends_at" }}{{ end }} {{ .End.UTC.Format "2006-01-02 15:04 UTC" }}</span>{{ end }}
                 <span>{{ T "admin.dashboard.updated_at" }} <time datetime="{{ .Updated.Format "2006-01-02T15:04:05Z07:00" }}">{{ .Updated.Format "15:04:05 UTC" }}</time></span>
               </div>
             </div>
@@ -87,8 +87,8 @@
             <div class="dashboard-kpi-grid">
               <article class="dashboard-kpi dashboard-kpi--strong">
                 <span class="dashboard-kpi-label">{{ T "admin.dashboard.kpi_game_state" }}</span>
-                <strong data-metric="state">{{ if .Paused }}{{ T "admin.dashboard.paused" }}{{ else }}{{ T "admin.dashboard.live" }}{{ end }}</strong>
-                <span class="dashboard-kpi-detail">{{ T "admin.dashboard.refresh_interval" }}</span>
+                <strong data-metric="state">{{ if .Ended }}{{ T "admin.dashboard.ended" }}{{ else if .Paused }}{{ T "admin.dashboard.paused" }}{{ else }}{{ T "admin.dashboard.live" }}{{ end }}</strong>
+                <span class="dashboard-kpi-detail">{{ if .Ended }}{{ T "admin.dashboard.results_at_end" }}{{ else }}{{ T "admin.dashboard.refresh_interval" }}{{ end }}</span>
               </article>
               <article class="dashboard-kpi">
                 <span class="dashboard-kpi-label">{{ T "admin.dashboard.competing_teams" }}</span>
@@ -96,7 +96,7 @@
                 <span class="dashboard-kpi-detail">{{ T "admin.dashboard.competing_teams_detail" }}</span>
               </article>
               <article class="dashboard-kpi">
-                <span class="dashboard-kpi-label">{{ T "admin.dashboard.captures_hour" }}</span>
+                <span class="dashboard-kpi-label">{{ if .Ended }}{{ T "admin.dashboard.final_hour" }}{{ else }}{{ T "admin.dashboard.captures_hour" }}{{ end }}</span>
                 <strong data-metric="captures-hour">{{ .Hour }}</strong>
                 <span class="dashboard-kpi-detail">{{ T "admin.dashboard.successful_captures" }}</span>
               </article>
@@ -118,7 +118,7 @@
                   <header class="dashboard-panel-header">
                     <div>
                       <span class="dashboard-panel-kicker">{{ T "admin.dashboard.kicker_competition" }}</span>
-                      <h4>{{ T "admin.dashboard.leaderboard_preview" }}</h4>
+                      <h4>{{ if .Ended }}{{ T "admin.dashboard.standings" }}{{ else }}{{ T "admin.dashboard.leaderboard_preview" }}{{ end }}</h4>
                     </div>
                     <a href="/{{ $.UUID }}/gameboard">{{ T "admin.dashboard.view_board" }}</a>
                   </header>
@@ -155,7 +155,7 @@
                     <h4>{{ T "admin.dashboard.recent_captures" }}</h4>
                   </header>
                   <div class="dashboard-split-stat">
-                    <span>{{ T "admin.dashboard.last_10m" }}</span>
+                    <span>{{ if .Ended }}{{ T "admin.dashboard.final_10m" }}{{ else }}{{ T "admin.dashboard.last_10m" }}{{ end }}</span>
                     <strong data-metric="captures-10m">{{ .TenMins }}</strong>
                   </div>
                   <p class="dashboard-kpi-detail">{{ T "admin.dashboard.successful_captures" }}</p>
