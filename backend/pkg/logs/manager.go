@@ -3,6 +3,7 @@ package logs
 import (
 	"fmt"
 
+	dbbackend "github.com/jmpsec/mapctf/pkg/backend"
 	"gorm.io/gorm"
 )
 
@@ -18,23 +19,23 @@ func CreateLogManager(backend *gorm.DB) (*LogManager, error) {
 	}
 	l := &LogManager{DB: backend}
 	// table activity_logs
-	if err := backend.AutoMigrate(&ActivityLog{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &ActivityLog{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (activity_logs): %w", err)
 	}
 	// table scoreboard_logs
-	if err := backend.AutoMigrate(&ScoreboardLog{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &ScoreboardLog{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (scoreboard_logs): %w", err)
 	}
 	// table hints_logs
-	if err := backend.AutoMigrate(&HintsLog{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &HintsLog{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (hints_logs): %w", err)
 	}
 	// table failures_logs
-	if err := backend.AutoMigrate(&FailuresLog{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &FailuresLog{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (failures_logs): %w", err)
 	}
 	// table registration_logs
-	if err := backend.AutoMigrate(&RegistrationLog{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &RegistrationLog{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (registration_logs): %w", err)
 	}
 	return l, nil

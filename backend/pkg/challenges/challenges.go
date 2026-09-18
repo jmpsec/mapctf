@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	dbbackend "github.com/jmpsec/mapctf/pkg/backend"
 	"gorm.io/gorm"
 )
 
@@ -49,7 +50,7 @@ func CreateChallengeManager(backend *gorm.DB) (*ChallengeManager, error) {
 	c := &ChallengeManager{
 		DB: backend,
 	}
-	if err := backend.AutoMigrate(&Challenge{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &Challenge{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (challenges): %w", err)
 	}
 	// Best-effort legacy migration: copy old penalty values into hint_penalty.
@@ -59,7 +60,7 @@ func CreateChallengeManager(backend *gorm.DB) (*ChallengeManager, error) {
 		}
 	}
 	// table categories
-	if err := backend.AutoMigrate(&Category{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &Category{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (categories): %w", err)
 	}
 	return c, nil

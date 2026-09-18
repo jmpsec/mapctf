@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	dbbackend "github.com/jmpsec/mapctf/pkg/backend"
 	"gorm.io/gorm"
 )
 
@@ -150,11 +151,11 @@ func CreateSettingsManager(backend *gorm.DB, service string) (*SettingsManager, 
 	}
 	s := &SettingsManager{DB: backend, Service: service}
 	// table platform_settings
-	if err := backend.AutoMigrate(&PlatformSetting{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &PlatformSetting{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (platform_settings): %w", err)
 	}
 	// table setting_logs
-	if err := backend.AutoMigrate(&SettingLog{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &SettingLog{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (setting_logs): %w", err)
 	}
 	return s, nil
