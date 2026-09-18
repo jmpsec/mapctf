@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	dbbackend "github.com/jmpsec/mapctf/pkg/backend"
 	"github.com/jmpsec/mapctf/pkg/config"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -59,7 +60,7 @@ func CreateUserManager(backend *gorm.DB, jwtConfig *config.ConfigurationJWT) (*U
 	}
 	u := &UserManager{DB: backend, JWTConfig: jwtConfig}
 	// table platform_users
-	if err := backend.AutoMigrate(&PlatformUser{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &PlatformUser{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (platform_users): %w", err)
 	}
 	return u, nil

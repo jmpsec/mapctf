@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	dbbackend "github.com/jmpsec/mapctf/pkg/backend"
 	"gorm.io/gorm"
 )
 
@@ -64,7 +65,7 @@ func CreateCountries(backend *gorm.DB, uuid string) (*CountriesManager, error) {
 	}
 	s := &CountriesManager{DB: backend, UUID: uuid}
 	// table map_countries
-	if err := backend.AutoMigrate(&MapCountry{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &MapCountry{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (map_countries): %w", err)
 	}
 	return s, nil

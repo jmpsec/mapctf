@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	dbbackend "github.com/jmpsec/mapctf/pkg/backend"
 	"gorm.io/gorm"
 )
 
@@ -37,7 +38,7 @@ func CreateChatManager(backend *gorm.DB, uuid string) (*ChatManager, error) {
 	}
 	c := &ChatManager{DB: backend, UUID: uuid}
 	// table chat_entries
-	if err := backend.AutoMigrate(&ChatEntry{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &ChatEntry{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (chat_entries): %w", err)
 	}
 	return c, nil

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	dbbackend "github.com/jmpsec/mapctf/pkg/backend"
 	"gorm.io/gorm"
 )
 
@@ -49,19 +50,19 @@ func CreateTeams(backend *gorm.DB) (*TeamManager, error) {
 		DB: backend,
 	}
 	// table platform_teams
-	if err := backend.AutoMigrate(&PlatformTeam{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &PlatformTeam{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (platform_teams): %w", err)
 	}
 	// table team_memberships
-	if err := backend.AutoMigrate(&TeamMembership{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &TeamMembership{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (team_memberships): %w", err)
 	}
 	// table team_scores
-	if err := backend.AutoMigrate(&TeamScore{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &TeamScore{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (team_scores): %w", err)
 	}
 	// table team_logos
-	if err := backend.AutoMigrate(&TeamLogo{}); err != nil {
+	if err := dbbackend.SafeAutoMigrate(backend, &TeamLogo{}); err != nil {
 		return nil, fmt.Errorf("failed to AutoMigrate table (team_logos): %w", err)
 	}
 	return t, nil
