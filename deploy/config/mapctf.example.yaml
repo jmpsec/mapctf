@@ -1,47 +1,250 @@
+###############################################################################
+# MapCTF Configuration File
+#
+# This file defines all runtime settings for the MapCTF API and Map services.
+# Copy it to config/mapctf.yaml and adjust the values for your environment.
+#
+# Every field below can also be overridden by environment variables or CLI
+# flags. Run `mapctf-api help` or `mapctf-map help` for the full flag list.
+###############################################################################
+
+# ---------------------------------------------------------------------------
+# version — Schema version of this configuration file.
+#
+# Used by the application to validate that the YAML structure matches what
+# the running binary expects. When the configuration schema changes in a
+# backwards-incompatible way, this number is incremented.
+#
+# Current supported versions: 1
+# Version 0 (field omitted) is accepted for backwards compatibility with
+# pre-versioning config files.
+# ---------------------------------------------------------------------------
+version: 1
+
+# ---------------------------------------------------------------------------
+# service — Core service settings shared by the API and Map binaries.
+# ---------------------------------------------------------------------------
 service:
+    # listener — IP address the HTTP server binds to.
+    # Use 0.0.0.0 to listen on all interfaces.
     listener: 0.0.0.0
+
+    # port — TCP port for the HTTP server. Must be numeric.
+    # API service default: 9000 / Map service default: 9000
     port: "9000"
+
+    # logLevel — Verbosity of log output.
+    # Valid values: debug, info, warn, error
     logLevel: info
+
+    # logFormat — Format of log entries.
+    # Valid values: console (human-readable), json (structured JSON)
     logFormat: console
+
+    # host — Hostname the service advertises to the outside world.
+    # Used for generating URLs and redirects.
     host: 0.0.0.0
+
+    # auth — Authentication mechanism for the service.
+    # Valid values: none (no auth), db (database-backed user auth)
     auth: none
+
+    # uuid — Unique identifier for this MapCTF instance.
+    # If left empty, a random UUID is generated at startup.
+    # Set this to a stable UUID in production so sessions persist across restarts.
     uuid: ""
+
+# ---------------------------------------------------------------------------
+# db — Database connection settings.
+#
+# The platform supports PostgreSQL, MySQL, and SQLite. The type field
+# determines which other fields are required.
+# ---------------------------------------------------------------------------
 db:
+    # type — Database driver to use.
+    # Valid values: postgres, mysql, sqlite
     type: postgres
+
+    # host — Database server hostname or IP address.
+    # Required when type is postgres or mysql. Ignored for sqlite.
     host: 127.0.0.1
+
+    # port — Database server TCP port. Must be numeric.
+    # Required when type is postgres or mysql. Ignored for sqlite.
+    # PostgreSQL default: 5432 / MySQL default: 3306
     port: "5432"
+
+    # name — Database name on the server.
+    # Required when type is postgres or mysql. Ignored for sqlite.
     name: mapctf
+
+    # username — Database user for authentication.
+    # Required when type is postgres or mysql. Ignored for sqlite.
     username: mapctf-user
+
+    # password — Database password for authentication.
+    # Required when type is postgres or mysql. Ignored for sqlite.
     password: mapctf-pass
+
+    # sslmode — PostgreSQL SSL connection mode.
+    # Valid values: disable, require, verify-ca, verify-full
+    # Only used when type is postgres. Ignored for mysql and sqlite.
     sslmode: disable
+
+    # maxIdleConns — Maximum number of idle connections retained in the pool.
+    # Set to 0 to use the driver default.
     maxIdleConns: 20
+
+    # maxOpenConns — Maximum number of concurrently open connections to the
+    # database. Set to 0 for unlimited.
     maxOpenConns: 100
+
+    # connMaxLifetime — Maximum lifetime of a connection in seconds before
+    # it is recycled. Set to 0 for no limit.
     connMaxLifetime: 30
+
+    # connRetry — Interval in seconds between retry attempts when the
+    # database is unreachable on startup. Set to 0 to fail immediately
+    # without retrying.
     connRetry: 10
+
+    # filePath — Path to the SQLite database file.
+    # Required when type is sqlite. Ignored for postgres and mysql.
+    # Use ":memory:" for an in-memory database (useful for testing).
     filePath: ./mapctf.db
+
+# ---------------------------------------------------------------------------
+# redis — Cache and session store connection settings.
+#
+# Either provide host/port individually or use connectionString for a
+# full Redis URL. When connectionString is set, host/port are ignored.
+# ---------------------------------------------------------------------------
 redis:
+    # host — Redis server hostname or IP address.
+    # Required when connectionString is not provided.
     host: 127.0.0.1
+
+    # port — Redis server TCP port. Must be numeric.
+    # Required when connectionString is not provided.
     port: "6379"
+
+    # password — Redis authentication password. Leave empty if Redis
+    # does not require authentication.
     password: ""
+
+    # connectionString — Full Redis connection URL.
+    # Format: redis://<user>:<pass>@<host>:<port>/<db>?<options>
+    # When set, this takes precedence over host/port/password/db.
     connectionString: ""
+
+    # db — Redis logical database number (0-15).
     db: 0
+
+    # connRetry — Interval in seconds between retry attempts when Redis is
+    # unreachable on startup. Set to 0 to fail immediately without retrying.
     connRetry: 10
+
+# ---------------------------------------------------------------------------
+# metrics — Prometheus metrics endpoint settings.
+#
+# When enabled, the service exposes /metrics on the configured listener
+# and port for Prometheus scraping.
+# ---------------------------------------------------------------------------
 metrics:
+    # enabled — Whether to expose Prometheus metrics.
     enabled: false
+
+    # listener — IP address for the metrics HTTP server.
+    # Only used when enabled is true.
     listener: 0.0.0.0
+
+    # port — TCP port for the metrics HTTP server. Must be numeric.
+    # Only used when enabled is true.
     port: "9090"
+
+# ---------------------------------------------------------------------------
+# tls — TLS termination settings for the HTTP server.
+#
+# When enabled, the service listens with HTTPS using the provided
+# certificate and key files.
+# ---------------------------------------------------------------------------
 tls:
+    # termination — Whether to enable TLS termination.
+    # When true, certificateFile and keyFile are required.
     termination: false
+
+    # certificateFile — Path to the TLS certificate file (PEM format).
+    # Required when termination is true.
     certificateFile: config/certs/tls.crt
+
+    # keyFile — Path to the TLS private key file (PEM format).
+    # Required when termination is true.
     keyFile: config/certs/tls.key
+
+# ---------------------------------------------------------------------------
+# jwt — JSON Web Token settings for user authentication.
+#
+# Used when service.auth is set to "db". The secret signs and verifies
+# JWT tokens issued to authenticated users.
+# ---------------------------------------------------------------------------
 jwt:
+    # secret — Secret key used to sign JWT tokens.
+    # Must be set when service.auth is "db". Use a long, random string.
     secret: ""
+
+    # hoursToExpire — Token lifetime in hours. After this duration, the
+    # token expires and the user must re-authenticate.
+    # Set to 0 for tokens that never expire (not recommended).
     hoursToExpire: 2
+
+# ---------------------------------------------------------------------------
+# map — Map UI and gameboard settings.
+#
+# Controls paths to static assets, templates, seed data, and the
+# instance UUID used to scope game data.
+# ---------------------------------------------------------------------------
 map:
+    # sessionKey — Secret key used to sign session cookies.
+    # Must be set to a long, random string in production.
     sessionKey: ""
+
+    # staticDir — Path to the directory containing static assets
+    # (CSS, JavaScript, images, SVGs) served by the Map service.
     staticDir: ./static
+
+    # templatesDir — Path to the directory containing HTML templates
+    # rendered by the Map service.
     templatesDir: ./templates
-debughttp:
+
+    # countriesFile — Path to the JSON seed file containing country
+    # geographic data (SVG paths, markers, coordinates).
+    countriesFile: config/map-countries-seed.json
+
+    # logosFile — Path to the JSON seed file containing team logo
+    # definitions.
+    logosFile: config/team-logos-seed.json
+
+    # uuid — Unique identifier for the game instance.
+    # If left empty, a random UUID is generated at startup.
+    # Set this to a stable UUID in production so game data persists
+    # across restarts.
+    uuid: ""
+
+# ---------------------------------------------------------------------------
+# debugHttp — HTTP request debug logging.
+#
+# When enabled, every incoming HTTP request is dumped to a log file.
+# This is useful for debugging API and webhook issues but should be
+# disabled in production due to performance and privacy concerns.
+# ---------------------------------------------------------------------------
+debugHttp:
+    # enabled — Whether to enable HTTP request debug logging.
     enabled: false
+
+    # file — Path to the file where HTTP requests are dumped.
+    # Required when enabled is true.
     file: debug-http-mapctf.log
+
+    # showBody — Whether to include the request body in the debug log.
+    # Setting this to true may expose sensitive data in the log file.
     showBody: false
