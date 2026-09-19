@@ -13,6 +13,7 @@ import (
 // Helper to generate an example configuration file
 func GenConfigFile(path string, cfg MapCTFConfiguration, overwrite bool) error {
 	cfg.ServiceConfigFile = ""
+	cfg.SchemaVersion = ConfigSchemaVersion
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal configuration: %w", err)

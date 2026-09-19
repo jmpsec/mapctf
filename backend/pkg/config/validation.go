@@ -28,8 +28,31 @@ var validLogFormats = map[string]struct{}{
 	LogFormatJSON:    {},
 }
 
+// SupportedSchemaVersions lists every schema version the application accepts.
+// When a new version is introduced, add it here and implement any migration
+// logic in ValidateSchemaVersion.
+var supportedSchemaVersions = map[int]struct{}{
+	1: {},
+}
+
+// ValidateSchemaVersion checks that the configuration's schema version is
+// supported by this build. A zero value is accepted for backwards
+// compatibility with pre-versioning YAML files, and is treated as version 1.
+func ValidateSchemaVersion(version int) error {
+	if version == 0 {
+		return nil
+	}
+	if _, ok := supportedSchemaVersions[version]; !ok {
+		return fmt.Errorf("configuration version %d is not supported (current version is %d); see ConfigSchemaVersion in pkg/config/types.go", version, ConfigSchemaVersion)
+	}
+	return nil
+}
+
 // Validate that required pieces of the configuration are set
 func ValidateConfigValues(cfg MapCTFConfiguration) error {
+	if err := ValidateSchemaVersion(cfg.SchemaVersion); err != nil {
+		return err
+	}
 	if cfg.Service.Listener == "" {
 		return fmt.Errorf("service.listener cannot be empty")
 	}

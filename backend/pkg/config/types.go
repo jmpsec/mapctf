@@ -25,8 +25,20 @@ const (
 	DBTypeSQLite   string = "sqlite"
 )
 
+// ConfigSchemaVersion is the current schema version for YAML configuration
+// files. When the configuration structure changes in a backwards-incompatible
+// way, increment this constant and update ValidateConfigValues to handle
+// migrations from prior versions.
+//
+// Version history:
+//
+//	1 — Initial schema. Covers all fields present before versioning was
+//	    introduced.
+const ConfigSchemaVersion int = 1
+
 // MapCTFConfiguration to hold all configuration values
 type MapCTFConfiguration struct {
+	SchemaVersion     int                    `yaml:"version" mapstructure:"version"`
 	ServiceConfigFile string                 `yaml:"-"`
 	Service           ConfigurationService   `mapstructure:"service"`
 	DB                ConfigurationDB        `mapstructure:"db"`

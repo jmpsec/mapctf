@@ -47,7 +47,8 @@ func TestLoadCheckConfigurationUsesProvidedFile(t *testing.T) {
 	t.Cleanup(func() { flagParams = oldParams })
 
 	path := filepath.Join(t.TempDir(), "mapctf.yaml")
-	if err := os.WriteFile(path, []byte(`service:
+	if err := os.WriteFile(path, []byte(`version: 1
+service:
   listener: 127.0.0.1
   port: "9001"
   logLevel: info
